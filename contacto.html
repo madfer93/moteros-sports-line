@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moteros Sports Line | Inicio</title> 
+
+    <!-- CSS externo -->
+    <link rel="stylesheet" href="css/styles.css">  
+    
+    <!-- SDK de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+    <div class="container">
+        <div class="logo">
+            <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line" style="height:50px;">
+            <h1 id="siteTitle">MOTEROS SPORTS LINE</h1>
+        </div>
+        <nav class="nav">
+            <a href="index.html">Inicio</a>
+            <a href="catalogo.html">Tienda</a>
+            <a href="blog.html">Blog</a>
+            <a href="contacto.html">Contacto</a>
+        </nav>
+        </div>
+    </header>
+
+    <!-- Hero pequeño -->
+    <section class="hero" style="padding: 4rem 1rem; background: linear-gradient(135deg, var(--primary), var(--primary-dark));">
+        <div class="container" style="text-align: center; color: white;">
+            <h1 style="font-size: clamp(2.2rem, 5vw, 3.5rem); margin-bottom: 1rem;">
+                Nuestros Locales
+            </h1>
+            <p style="font-size: 1.3rem; opacity: 0.95; max-width: 700px; margin: 0 auto;">
+                Visítanos en cualquiera de nuestras tiendas físicas. ¡Te esperamos con los mejores accesorios para tu moto!
+            </p>
+        </div>
+    </section>
+
+    <!-- Locales -->
+    <section style="padding: 4rem 0; background: white;">
+        <div class="container">
+            <div class="locales-grid" id="localesGrid">
+                <!-- Se llenará con JavaScript -->
+                <div class="loading">Cargando locales...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Moteros Sports Line</h4>
+                    <p>Tu seguridad es nuestra prioridad</p>
+                    <p style="margin-top: 1rem; opacity: 0.8;">
+                        Especialistas en accesorios y protección para motociclistas
+                    </p>
+                </div>
+                <div class="footer-section">
+                    <h4>Contacto General</h4>
+                    <p>📞 <a href="tel:+573101234567" style="color: white;">310 123 4567</a></p>
+                    <p>✉️ <a href="mailto:info@moterossl.com" style="color: white;">info@moterossl.com</a></p>
+                </div>
+                <div class="footer-section">
+                    <h4>Síguenos</h4>
+                    <p>📘 <a href="#" style="color: white;">Facebook</a></p>
+                    <p>📷 <a href="#" style="color: white;">Instagram</a></p>
+                    <p>🎵 <a href="#" style="color: white;">TikTok</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Moteros Sports Line | Variedades JyM - Todos los derechos reservados</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+
+    <script>
+        function cargarLocales() {
+            const grid = document.getElementById('localesGrid');
+            
+            // Obtener locales desde CONFIG.TIENDAS
+            const locales = Object.values(CONFIG.TIENDAS);
+
+            if (locales.length === 0) {
+                grid.innerHTML = '<p style="text-align:center; padding:4rem; color:#999;">No hay locales disponibles</p>';
+                return;
+            }
+
+            grid.innerHTML = locales.map(local => `
+                <div class="local-card">
+                    <h3 style="color: var(--primary); font-size: 1.8rem; margin-bottom: 1rem;">
+                        📍 ${local.nombre}
+                    </h3>
+                    <p><strong>Dirección:</strong><br>${local.direccion}</p>
+                    <p style="margin: 1rem 0;">
+                        <strong>Teléfono:</strong><br>
+                        <a href="tel:+57${local.telefono}" style="color: var(--primary); font-weight: bold; text-decoration: none;">
+                            ${local.telefono}
+                        </a>
+                    </p>
+                    <p><strong>Horario:</strong><br>${local.horario}</p>
+                    ${local.email ? `
+                        <p style="margin: 1rem 0;">
+                            <strong>Email:</strong><br>
+                            <a href="mailto:${local.email}" style="color: var(--primary);">
+                                ${local.email}
+                            </a>
+                        </p>
+                    ` : ''}
+                    
+                    <div style="margin-top: 2rem; text-align: center;">
+                        <a href="https://wa.me/57${local.telefono}?text=${encodeURIComponent('¡Hola! Estoy interesado en visitar el local ' + local.nombre + ' y consultar sobre sus productos 🏍️')}"
+                           class="btn-whatsapp"
+                           target="_blank"
+                           style="padding: 1rem 2rem; font-size: 1.1rem;">
+                            💬 Contactar por WhatsApp
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Cargar al iniciar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarLocales();
+        });
+    </script>
+</body>
+</html>

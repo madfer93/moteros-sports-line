@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moteros Sports Line | Blog</title>
+
+    <!-- CSS externo -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/blog-mejorado.css">
+
+    <!-- SDK de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line" style="height:50px;">
+                <h1 id="siteTitle">MOTEROS SPORTS LINE</h1>
+            </div>
+            <nav class="nav">
+                <a href="index.html">Inicio</a>
+                <a href="catalogo.html">Tienda</a>
+                <a href="blog.html" class="active">Blog</a>
+                <a href="contacto.html">Contacto</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero" style="padding: 4rem 0; background: linear-gradient(135deg, #ff6b00, #ff8534); color: white; text-align: center;">
+        <div class="container">
+            <h1>Nuestro Blog</h1>
+            <p>Noticias, tips, rutas y aventuras para la comunidad motera 🏍️</p>
+        </div>
+    </section>
+
+    <section style="padding: 4rem 0; background: #f8f9fa;">
+        <div class="container">
+            <div id="postsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2.5rem;">
+                <!-- Loading -->
+                <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: #666;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🔥</div>
+                    <h3>Cargando las últimas publicaciones...</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Moteros Sports Line</h4>
+                    <p>Tu seguridad es nuestra prioridad</p>
+                    <p style="margin-top: 1rem; opacity: 0.8;">
+                        Especialistas en accesorios y protección para motociclistas
+                    </p>
+                </div>
+                <div class="footer-section">
+                    <h4>Contacto General</h4>
+                    <p>📞 <a href="tel:+573101234567" style="color: white;">310 123 4567</a></p>
+                    <p>✉️ <a href="mailto:info@moterossl.com" style="color: white;">info@moterossl.com</a></p>
+                </div>
+                <div class="footer-section">
+                    <h4>Síguenos</h4>
+                    <p>📘 <a href="#" style="color: white;">Facebook</a></p>
+                    <p>📷 <a href="#" style="color: white;">Instagram</a></p>
+                    <p>🎵 <a href="#" style="color: white;">TikTok</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Moteros Sports Line | Variedades JyM - Todos los derechos reservados</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Nuestros scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/blog.js"></script>
+</body>
+</html>

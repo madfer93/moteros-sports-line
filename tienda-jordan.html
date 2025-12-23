@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda Jordan | Moteros Sports Line</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .venta-form { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin: 2rem 0; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .form-group { display: flex; flex-direction: column; position: relative; }
+        .form-group label { margin-bottom: 0.5rem; font-weight: 600; }
+        .form-group input, .form-group select { padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        #resultadosBusqueda { position: absolute; top: 100%; left: 0; width: 100%; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; background: white; margin-top: 0.5rem; display: none; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        #resultadosBusqueda div { padding: 1rem; cursor: pointer; border-bottom: 1px solid #eee; }
+        #resultadosBusqueda div:hover { background: #f0f8ff; }
+        .alert { padding: 1rem; border-radius: 8px; margin: 1rem 0; font-weight: 600; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo"><h1>🏍️ MOTEROS SPORTS LINE</h1></div>
+            <nav class="nav">
+                <a href="index.html">Inicio</a>
+                <a href="tienda-jordan.html" class="active">Tienda Jordan</a>
+                <a href="contacto.html">Contacto</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero" style="padding: 3rem 2rem; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;">
+        <div class="container" style="text-align: center;">
+            <h1 id="nombreLocal">🏢 Tienda Jordan</h1>
+            <p id="infoLocal">Cargando información...</p>
+        </div>
+    </section>
+
+    <section class="container">
+        <h2 style="margin: 2rem 0 1rem; text-align:center;">💳 Registrar Venta</h2>
+        <div id="alertVenta"></div>
+
+        <div class="venta-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Local</label>
+                    <input type="text" value="Jordan" disabled style="background: #f8f9fa;">
+                </div>
+                <div class="form-group">
+                    <label>Método de Pago</label>
+                    <select id="ventaMetodo">
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Daviplata">Daviplata</option>
+                        <option value="Nequi">Nequi</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Buscar Producto</label>
+                <input type="text" id="ventaBuscar" placeholder="Nombre, marca, referencia o código PROD..." oninput="buscarProductoVenta()">
+                <div id="resultadosBusqueda"></div>
+            </div>
+
+            <div id="productoSeleccionado" style="display: none; background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                <p><strong>Producto:</strong> <span id="ventaProductoNombre"></span></p>
+                <p><strong>Precio:</strong> <span id="ventaProductoPrecio"></span></p>
+                <p><strong>Stock disponible:</strong> <span id="ventaProductoStock">Cargando...</span></p>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Cantidad</label>
+                    <input type="number" id="ventaCantidad" value="1" min="1" onchange="calcularTotal()">
+                </div>
+                <div class="form-group" style="display: flex; align-items: end;">
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; width: 100%; text-align: center;">
+                        <strong>Total: <span id="ventaTotal" style="font-size: 1.8rem; color: #3b82f6;">$0</span></strong>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="registrarVenta()" style="width: 100%; padding: 1rem; font-size: 1.2rem; background: #3b82f6; color: white; border: none; border-radius: 10px; cursor: pointer; margin-top: 1rem;">
+                ✅ Registrar Venta
+            </button>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container"><p>&copy; 2025 Moteros Sports Line - Tienda Jordan</p></div>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script>
+        const { createClient } = supabase;
+        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+        const LOCAL_TABLE = 'inventario_jordan';
+        let todosLosProductos = [];
+        let productoSeleccionado = null;
+
+        async function cargarInfoLocal() {
+            try {
+                const { data } = await supabaseClient.from('locales').select('*').eq('id_local', 'LOCAL03');
+                if (data && data.length > 0) {
+                    const local = data[0];
+                    document.getElementById('nombreLocal').textContent = `🏢 Tienda ${local.nombre}`;
+                    document.getElementById('infoLocal').innerHTML = `📍 ${local.direccion}<br>📞 <a href="tel:${local.telefono}" style="color:white; text-decoration:underline;">${local.telefono}</a><br>🕒 ${local.horario}`;
+                } else fallbackLocalInfo();
+            } catch (err) { fallbackLocalInfo(); }
+        }
+
+        function fallbackLocalInfo() {
+            document.getElementById('infoLocal').innerHTML = '📍 Carrera Nueva 3 #90-12<br>📞 <a href="tel:3123334444" style="color:white; text-decoration:underline;">312 333 4444</a><br>🕒 Lun-Dom 10AM-8PM';
+        }
+
+        async function cargarProductosVenta() {
+            const { data } = await supabaseClient.from('productos').select('id, id_producto, nombre, marca, precio, referencia').eq('estado', 'Activo');
+            todosLosProductos = data || [];
+        }
+
+        function buscarProductoVenta() {
+            const query = document.getElementById('ventaBuscar').value.toLowerCase().trim();
+            const resultados = document.getElementById('resultadosBusqueda');
+            if (query.length < 2) { resultados.style.display = 'none'; return; }
+            const matches = todosLosProductos.filter(p => p.nombre.toLowerCase().includes(query) || p.marca.toLowerCase().includes(query) || p.referencia?.toLowerCase().includes(query) || p.id_producto?.toLowerCase().includes(query)).slice(0, 10);
+            if (matches.length > 0) {
+                resultados.innerHTML = matches.map(p => `<div onclick="seleccionarProducto('${p.id_producto}')"><strong>${p.nombre}</strong><br><small>${p.marca} • $${parseInt(p.precio).toLocaleString('es-CO')} • ${p.id_producto}</small></div>`).join('');
+                resultados.style.display = 'block';
+            } else {
+                resultados.innerHTML = '<div style="padding:1rem; text-align:center; color:#999;">No encontrado</div>';
+                resultados.style.display = 'block';
+            }
+        }
+
+        async function seleccionarProducto(idProducto) {
+            productoSeleccionado = todosLosProductos.find(p => p.id_producto === idProducto);
+            if (!productoSeleccionado) return;
+            document.getElementById('ventaBuscar').value = productoSeleccionado.nombre;
+            document.getElementById('resultadosBusqueda').style.display = 'none';
+            document.getElementById('ventaProductoNombre').textContent = productoSeleccionado.nombre;
+            document.getElementById('ventaProductoPrecio').textContent = '$' + parseInt(productoSeleccionado.precio).toLocaleString('es-CO');
+            const { data } = await supabaseClient.from(LOCAL_TABLE).select('cantidad').eq('id_producto', idProducto);
+            const stock = data && data.length > 0 ? data[0].cantidad : 0;
+            document.getElementById('ventaProductoStock').textContent = stock + ' unidades';
+            document.getElementById('ventaProductoStock').style.color = stock > 0 ? 'green' : 'red';
+            document.getElementById('productoSeleccionado').style.display = 'block';
+            calcularTotal();
+        }
+
+        function calcularTotal() {
+            if (!productoSeleccionado) return;
+            const cant = parseInt(document.getElementById('ventaCantidad').value) || 1;
+            document.getElementById('ventaTotal').textContent = '$' + (productoSeleccionado.precio * cant).toLocaleString('es-CO');
+        }
+
+        async function registrarVenta() {
+            if (!productoSeleccionado) return alert('Selecciona un producto');
+            const cantidad = parseInt(document.getElementById('ventaCantidad').value) || 1;
+            if (cantidad < 1) return alert('Cantidad inválida');
+            const { data: stockData } = await supabaseClient.from(LOCAL_TABLE).select('cantidad').eq('id_producto', productoSeleccionado.id_producto);
+            const stockActual = stockData && stockData.length > 0 ? stockData[0].cantidad : 0;
+            if (cantidad > stockActual) return alert(`Solo hay ${stockActual} en stock`);
+            
+            await supabaseClient.from('ventas').insert({
+                local: 'Jordan',
+                id_producto: productoSeleccionado.id_producto,
+                nombre_producto: productoSeleccionado.nombre,
+                cantidad,
+                precio_unitario: productoSeleccionado.precio,
+                total: productoSeleccionado.precio * cantidad,
+                metodo_pago: document.getElementById('ventaMetodo').value,
+                usuario: 'Tienda Jordan'
+            });
+
+            await supabaseClient.from(LOCAL_TABLE).update({ cantidad: stockActual - cantidad }).eq('id_producto', productoSeleccionado.id_producto);
+            document.getElementById('alertVenta').innerHTML = '<div class="alert alert-success">✅ Venta registrada correctamente</div>';
+            resetForm();
+        }
+
+        function resetForm() {
+            document.getElementById('ventaBuscar').value = '';
+            document.getElementById('ventaCantidad').value = '1';
+            document.getElementById('productoSeleccionado').style.display = 'none';
+            document.getElementById('ventaTotal').textContent = '$0';
+            productoSeleccionado = null;
+            setTimeout(() => document.getElementById('alertVenta').innerHTML = '', 5000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { cargarInfoLocal(); cargarProductosVenta(); });
+    </script>
+</body>
+</html>

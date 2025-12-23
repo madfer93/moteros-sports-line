@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo | Moteros Sports Line</title>
+    
+    <!-- SDK de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --primary: #ff6b00;
+            --primary-hover: #ff8533;
+            --secondary: #1a1a1a;
+            --gray-light: #f5f5f5;
+            --gray-dark: #666;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: var(--gray-light);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            font-weight: 800;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .nav a:hover {
+            color: var(--primary);
+        }
+        
+        .cart-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .cart-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+        
+        /* Sección Filtros */
+        .filtros-section {
+            background: white;
+            padding: 2.5rem 0;
+            margin: 2rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .filtros-title {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            color: var(--secondary);
+        }
+        
+        .filtros-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .filtros-container select,
+        .filtros-container input {
+            padding: 0.9rem 1.2rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: white;
+        }
+        
+        .filtros-container select:focus,
+        .filtros-container input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
+        }
+        
+        .filtros-container input {
+            min-width: 280px;
+        }
+        
+        .btn-limpiar {
+            background: var(--gray-dark);
+            color: white;
+            border: none;
+            padding: 0.9rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-limpiar:hover {
+            background: #888;
+        }
+        
+        /* Productos */
+        .productos-section {
+            padding: 3rem 0;
+            min-height: 60vh;
+        }
+        
+        .contador {
+            text-align: center;
+            font-size: 1.1rem;
+            color: var(--gray-dark);
+            margin-bottom: 2rem;
+            font-weight: 500;
+        }
+        
+        .productos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .producto-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .producto-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+        }
+        
+        .producto-imagen-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 75%; /* Aspect ratio 4:3 */
+            overflow: hidden;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+        }
+        
+        .producto-imagen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+        
+        .producto-card:hover .producto-imagen {
+            transform: scale(1.1);
+        }
+        
+        .badge-categoria {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--primary);
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 2;
+            box-shadow: 0 2px 10px rgba(255, 107, 0, 0.3);
+        }
+        
+        .producto-info {
+            padding: 1.8rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .producto-nombre {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+        
+        .producto-marca {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.8rem;
+        }
+        
+        .producto-descripcion {
+            color: #888;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1.2rem;
+            flex: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .producto-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .producto-precio {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        
+        .btn-ver-mas {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+        
+        .btn-ver-mas:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 2rem;
+            padding: 0;
+            border-radius: 25px;
+            max-width: 1100px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        
+        .modal-close:hover {
+            background: #f5f5f5;
+            transform: rotate(90deg);
+        }
+        
+        /* Loading/Empty states */
+        .empty-state {
+            text-align: center;
+            padding: 6rem 2rem;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state-text {
+            font-size: 1.3rem;
+            color: #666;
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--secondary);
+            color: white;
+            padding: 3rem 0 1.5rem;
+            margin-top: 5rem;
+        }
+        
+        .footer-content {
+            text-align: center;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav { display: none; }
+            .header .container { justify-content: center; }
+            .filtros-container { flex-direction: column; width: 100%; }
+            .filtros-container select,
+            .filtros-container input,
+            .btn-limpiar { width: 100%; }
+            .productos-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 1.5rem;
+            }
+            .producto-nombre { font-size: 1.1rem; }
+            .producto-precio { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>🏍️ MOTEROS SPORTS LINE</h1>
+            </div>
+            <nav class="nav">
+                <a href="index.html">Inicio</a>
+                <a href="catalogo.html">Catálogo</a>
+                <a href="contacto.html">Contacto</a>
+            </nav>
+            <button class="cart-btn" onclick="abrirCarrito()">
+                <span>🛒</span>
+                <span><strong id="cartCount">0</strong> items</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Filtros -->
+    <section class="filtros-section">
+        <div class="container">
+            <h2 class="filtros-title">Encuentra tu producto ideal</h2>
+            <div class="filtros-container">
+                <select id="filtroCategoria" onchange="aplicarFiltros()">
+                    <option value="">Todas las categorías</option>
+                    <option value="Cascos">Cascos</option>
+                    <option value="Guantes">Guantes</option>
+                    <option value="Chaquetas">Chaquetas</option>
+                    <option value="Botas">Botas</option>
+                    <option value="Intercomunicadores">Intercomunicadores</option>
+                    <option value="Camaras">Cámaras</option>
+                    <option value="Accesorios">Accesorios</option>
+                </select>
+                <select id="filtroPrecio" onchange="aplicarFiltros()">
+                    <option value="">Todos los precios</option>
+                    <option value="0-200000">Hasta $200.000</option>
+                    <option value="200000-500000">$200.000 - $500.000</option>
+                    <option value="500000-1000000">$500.000 - $1.000.000</option>
+                    <option value="1000000-99999999">Más de $1.000.000</option>
+                </select>
+                <input type="text" id="buscarProducto" placeholder="🔍 Buscar por nombre o marca..." onkeyup="aplicarFiltros()">
+                <button class="btn-limpiar" onclick="limpiarFiltros()">Limpiar filtros</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Productos -->
+    <section class="productos-section">
+        <div class="container">
+            <p class="contador" id="contadorProductos">Cargando productos...</p>
+            <div class="productos-grid" id="productosGrid"></div>
+        </div>
+    </section>
+
+    <!-- Modal Detalle -->
+    <div id="modalDetalle" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="cerrarModalDetalle()">×</button>
+            <div id="contenidoDetalle" style="padding: 3rem;"></div>
+        </div>
+    </div>
+
+    <!-- Modal Carrito -->
+    <div id="modalCarrito" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="cerrarModalCarrito()">×</button>
+            <div style="padding: 3rem;">
+                <h2 style="text-align:center; color: var(--primary); margin-bottom: 2rem; font-size: 2rem;">🛒 Mi Carrito</h2>
+                <div id="listaCarrito" style="max-height:400px; overflow-y:auto; margin:2rem 0;"></div>
+                <div style="text-align:center; padding:2rem; background:#f8f9fa; border-radius:15px; margin:2rem 0;">
+                    <strong style="font-size:2rem;">Total: $<span id="totalCarrito">0</span></strong>
+                </div>
+                <div style="text-align:center; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="enviarPedidoWhatsApp()" class="btn-ver-mas" style="padding:1.2rem 2.5rem; font-size: 1.1rem;">
+                        💬 Enviar por WhatsApp
+                    </button>
+                    <button onclick="vaciarCarrito()" class="btn-limpiar" style="padding:1.2rem 2rem;">
+                        Vaciar Carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">&copy; 2025 Moteros Sports Line</p>
+                <p style="opacity: 0.7;">Tu seguridad es nuestra prioridad</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Config externo -->
+    <script src="js/config.js"></script>
+
+    <script>
+        // Cliente Supabase
+        const { createClient } = supabase;
+        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+
+        // Variables globales
+        let todosLosProductos = [];
+        let productosFiltrados = [];
+        let carrito = JSON.parse(localStorage.getItem('carrito_moteros') || '[]');
+        let productoActual = null;
+
+        // Actualizar contador del carrito
+        function actualizarContadorCarrito() {
+            const total = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+            document.getElementById('cartCount').textContent = total;
+        }
+
+        // Cargar productos
+        async function cargarProductos() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('productos')
+                    .select('*')
+                    .eq('estado', 'Activo')
+                    .order('nombre', { ascending: true });
+
+                if (error) throw error;
+
+                todosLosProductos = data || [];
+                productosFiltrados = [...todosLosProductos];
+                
+                console.log(`✅ ${todosLosProductos.length} productos cargados`);
+                
+                mostrarProductos();
+                actualizarContadorCarrito();
+                
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('contadorProductos').textContent = 'Error al cargar productos';
+                document.getElementById('productosGrid').innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div class="empty-state-text">Error al cargar los productos</div>
+                        <p style="margin-top: 1rem; color: #999;">${err.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Filtros
+        function aplicarFiltros() {
+            const cat = document.getElementById('filtroCategoria').value;
+            const pre = document.getElementById('filtroPrecio').value;
+            const bus = document.getElementById('buscarProducto').value.toLowerCase();
+
+            productosFiltrados = todosLosProductos.filter(p => {
+                if (cat && p.categoria !== cat) return false;
+                if (pre) {
+                    const [min, max] = pre.split('-').map(Number);
+                    if (p.precio < min || p.precio > max) return false;
+                }
+                if (bus) {
+                    const busqueda = `${p.nombre} ${p.marca} ${p.descripcion_corta || ''}`.toLowerCase();
+                    if (!busqueda.includes(bus)) return false;
+                }
+                return true;
+            });
+
+            mostrarProductos();
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('filtroCategoria').value = '';
+            document.getElementById('filtroPrecio').value = '';
+            document.getElementById('buscarProducto').value = '';
+            aplicarFiltros();
+        }
+
+        // Mostrar productos
+        function mostrarProductos() {
+            const grid = document.getElementById('productosGrid');
+            const contador = document.getElementById('contadorProductos');
+
+            contador.textContent = `${productosFiltrados.length} ${productosFiltrados.length === 1 ? 'producto encontrado' : 'productos encontrados'}`;
+
+            if (productosFiltrados.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="empty-state-icon">🔍</div>
+                        <div class="empty-state-text">No se encontraron productos</div>
+                        <p style="margin-top: 1rem; color: #999;">Intenta con otros filtros de búsqueda</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = productosFiltrados.map(p => `
+                <div class="producto-card" onclick="verDetalle('${p.id}')">
+                    <div class="producto-imagen-wrapper">
+                        <img class="producto-imagen" 
+                             src="${p.url_imagen || 'https://via.placeholder.com/400x300?text=' + encodeURIComponent(p.nombre)}" 
+                             alt="${p.nombre}"
+                             loading="lazy"
+                             onerror="this.src='https://via.placeholder.com/400x300?text=${encodeURIComponent(p.nombre)}'">
+                        <span class="badge-categoria">${p.categoria}</span>
+                    </div>
+                    <div class="producto-info">
+                        <h3 class="producto-nombre">${p.nombre}</h3>
+                        <p class="producto-marca">${p.marca}</p>
+                        <p class="producto-descripcion">${p.descripcion_corta || 'Producto de alta calidad'}</p>
+                        <div class="producto-footer">
+                            <span class="producto-precio">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
+                            <button class="btn-ver-mas" onclick="event.stopPropagation(); verDetalle('${p.id}')">Ver detalle</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            console.log(`✅ ${productosFiltrados.length} productos mostrados en grid`);
+        }
+
+        // Ver detalle
+        function verDetalle(id) {
+            productoActual = todosLosProductos.find(p => p.id === id);
+            if (!productoActual) return;
+
+            document.getElementById('contenidoDetalle').innerHTML = `
+                <div style="display:flex; flex-wrap:wrap; gap:3rem;">
+                    <div style="flex:1; min-width:300px;">
+                        <img src="${productoActual.url_imagen || 'https://via.placeholder.com/600'}" 
+                             style="width:100%; border-radius:20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);" 
+                             onerror="this.src='https://via.placeholder.com/600'">
+                    </div>
+                    <div style="flex:1; min-width:300px;">
+                        <h2 style="color: var(--primary); font-size: 2.2rem; margin-bottom: 1rem;">${productoActual.nombre}</h2>
+                        <p style="font-size:1.4rem; color: #333; margin-bottom: 1.5rem;"><strong>${productoActual.marca}</strong></p>
+                        <p style="font-size:2.8rem; color: var(--primary); font-weight:800; margin-bottom: 2rem;">
+                            $${parseInt(productoActual.precio).toLocaleString('es-CO')}
+                        </p>
+
+                        ${productoActual.descripcion_corta ? `
+                            <div style="margin-bottom: 1.5rem;">
+                                <h4 style="margin-bottom: 0.5rem; color: #333;">Descripción</h4>
+                                <p style="color: #666; line-height: 1.6;">${productoActual.descripcion_corta}</p>
+                            </div>
+                        ` : ''}
+                        
+                        ${productoActual.descripcion_tecnica ? `
+                            <div style="margin-bottom: 2rem;">
+                                <h4 style="margin-bottom: 0.5rem; color: #333;">Características técnicas</h4>
+                                <p style="color: #666; line-height: 1.6;">${productoActual.descripcion_tecnica.replace(/\n/g, '<br>')}</p>
+                            </div>
+                        ` : ''}
+
+                        <div style="background: #f8f9fa; padding: 2rem; border-radius: 15px; margin: 2rem 0;">
+                            <label style="font-weight: 600; font-size: 1.1rem; margin-bottom: 1rem; display: block;">Cantidad:</label>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <input type="number" id="cantidadDetalle" value="1" min="1" 
+                                       style="padding: 1rem; width: 100px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1.1rem;">
+                                <button onclick="agregarAlCarrito()" class="btn-ver-mas" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                                    🛒 Agregar al Carrito
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 2rem;">
+                            <a href="https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent('Hola, me interesa: ' + productoActual.nombre + ' (' + productoActual.marca + ')')}"
+                               target="_blank"
+                               style="background: #25D366; color: white; padding: 1.2rem 3rem; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 1.1rem; display: inline-block; transition: all 0.3s;">
+                                💬 Consultar por WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('modalDetalle').classList.add('active');
+        }
+
+        // Agregar al carrito
+        function agregarAlCarrito() {
+            if (!productoActual) return;
+            const cantidad = parseInt(document.getElementById('cantidadDetalle').value) || 1;
+
+            const existente = carrito.find(item => item.id === productoActual.id);
+            if (existente) {
+                existente.cantidad += cantidad;
+            } else {
+                carrito.push({
+                    id: productoActual.id,
+                    nombre: productoActual.nombre,
+                    marca: productoActual.marca,
+                    precio: productoActual.precio,
+                    cantidad: cantidad
+                });
+            }
+
+            localStorage.setItem('carrito_moteros', JSON.stringify(carrito));
+            actualizarContadorCarrito();
+            alert(`✅ ${cantidad} x ${productoActual.nombre} agregado al carrito`);
+            cerrarModalDetalle();
+        }
+
+        // Modal Carrito
+        function abrirCarrito() {
+            const lista = document.getElementById('listaCarrito');
+            const totalEl = document.getElementById('totalCarrito');
+
+            if (carrito.length === 0) {
+                lista.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🛒</div>
+                        <div class="empty-state-text">Tu carrito está vacío</div>
+                    </div>
+                `;
+                totalEl.textContent = '0';
+            } else {
+                lista.innerHTML = carrito.map((item, i) => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:1.5rem; border-bottom:2px solid #f0f0f0; gap: 1rem;">
+                        <div style="flex: 1;">
+                            <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">${item.nombre}</strong>
+                            <small style="color: #666;">${item.marca} • $${parseInt(item.precio).toLocaleString('es-CO')} c/u</small>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; background: #f5f5f5; padding: 0.5rem; border-radius: 10px;">
+                                <button onclick="cambiarCantidad(${i}, -1)" style="width: 32px; height: 32px; border: none; background: white; border-radius: 50%; cursor: pointer; font-weight: bold;">−</button>
+                                <span style="padding: 0 1rem; font-weight: 600; min-width: 30px; text-align: center;">${item.cantidad}</span>
+                                <button onclick="cambiarCantidad(${i}, 1)" style="width: 32px; height: 32px; border: none; background: white; border-radius: 50%; cursor: pointer; font-weight: bold;">+</button>
+                            </div>
+                            <button onclick="eliminarDelCarrito(${i})" style="background:#dc3545; color:white; border:none; padding:0.7rem 1rem; border-radius:10px; cursor: pointer; font-weight: 600;">✖</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                const total = carrito.reduce((s, item) => s + item.precio * item.cantidad, 0);
+                totalEl.textContent = total.toLocaleString('es-CO');
+            }
+            document.getElementById('modalCarrito').classList.add('active');
+        }
+
+        function cambiarCantidad(i, delta) {
+            const nueva = carrito[i].cantidad + delta;
+            if (nueva < 1) return eliminarDelCarrito(i);
+            carrito[i].cantidad = nueva;
+            guardarCarrito();
+        }
+
+        function eliminarDelCarrito(i) {
+            carrito.splice(i, 1);
+            guardarCarrito();
+        }
+
+        function vaciarCarrito() {
+            if (confirm('¿Estás seguro de vaciar el carrito?')) {
+                carrito = [];
+                guardarCarrito();
+            }
+        }
+
+        function guardarCarrito() {
+            localStorage.setItem('carrito_moteros', JSON.stringify(carrito));
+            abrirCarrito();
+            actualizarContadorCarrito();
+        }
+
+        function enviarPedidoWhatsApp() {
+            if (carrito.length === 0) return alert('El carrito está vacío');
+
+            let mensaje = "¡Hola Moteros Sports Line! 👋\n\n*Quiero consultar por:*\n\n";
+            carrito.forEach(item => {
+                mensaje += `• ${item.cantidad} x ${item.nombre}\n  ${item.marca}\n  $${parseInt(item.precio).toLocaleString('es-CO')} c/u\n\n`;
+            });
+            const total = carrito.reduce((s, item) => s + item.precio * item.cantidad, 0);
+            mensaje += `*Total estimado: $${total.toLocaleString('es-CO')}*\n\n¡Gracias! 🙌`;
+
+            window.open(`https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent(mensaje)}`, '_blank');
+        }
+
+        // Cerrar modales
+        function cerrarModalDetalle() {
+            document.getElementById('modalDetalle').classList.remove('active');
+        }
+        
+        function cerrarModalCarrito() {
+            document.getElementById('modalCarrito').classList.remove('active');
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.classList.remove('active');
+            }
+        };
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Iniciando Moteros Sports Line...');
+            cargarProductos();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,618 @@
+/* ═══════════════════════════════════════════════════════════════
+   MOTEROS SPORTS LINE - BLOG CSS MEJORADO
+   Versión: 3.0 | Videos Grandes y Responsive
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════
+   BLOG GRID - MEJORADO
+   ═══════════════════════════════════════════════════════════════ */
+#postsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+    gap: 3rem;
+    padding: 2rem 0;
+}
+
+/* Tarjetas con video ocupan TODO el ancho disponible */
+.blog-card:has(.video-container) {
+    grid-column: span 1;
+}
+
+/* En pantallas grandes, las tarjetas con video pueden ocupar 2 columnas */
+@media (min-width: 1400px) {
+    #postsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .blog-card:has(.video-tiktok) {
+        grid-column: span 1; /* Una columna para TikTok (vertical) */
+    }
+    
+    .blog-card:has(.video-youtube),
+    .blog-card:has(.video-instagram),
+    .blog-card:has(.video-facebook) {
+        grid-column: span 2; /* Dos columnas para videos horizontales */
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BLOG CARDS - MEJORADO
+   ═══════════════════════════════════════════════════════════════ */
+.blog-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.blog-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+.blog-card-image {
+    width: 100%;
+    height: 280px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+}
+
+.blog-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.blog-card:hover .blog-card-image img {
+    transform: scale(1.05);
+}
+
+.blog-card-content {
+    padding: 2.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.blog-card-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ff6b00;
+    margin-bottom: 1.2rem;
+    line-height: 1.3;
+}
+
+.blog-card-text {
+    color: #555;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    flex: 1;
+    margin-bottom: 1.5rem;
+}
+
+.blog-card-meta {
+    padding-top: 1.2rem;
+    border-top: 1px solid #f0f0f0;
+}
+
+.blog-card-date {
+    color: #999;
+    font-size: 0.95rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VIDEO CONTAINERS - MEJORADOS Y MÁS GRANDES
+   ═══════════════════════════════════════════════════════════════ */
+.video-container {
+    position: relative;
+    width: 100%;
+    margin: 0;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* YouTube - MÁS GRANDE */
+.video-youtube {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* Aspect ratio 16:9 */
+    height: 0;
+    overflow: hidden;
+}
+
+.video-youtube iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* TikTok - MUCHO MÁS GRANDE Y CENTRADO */
+.video-tiktok {
+    position: relative;
+    width: 100%;
+    max-width: none; /* Sin límite de ancho */
+    height: 0;
+    padding-bottom: 177%; /* Aspect ratio de TikTok (9:16) */
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #000;
+}
+
+/* Si el contenedor es muy ancho, limitamos el ancho del TikTok */
+@media (min-width: 768px) {
+    .video-tiktok {
+        max-width: 605px; /* Ancho máximo de TikTok */
+        padding-bottom: 0;
+        height: 1000px; /* Altura fija grande */
+    }
+}
+
+.video-tiktok iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* TikTok Fallback (sin ID) */
+.video-tiktok-fallback {
+    background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+    padding: 4rem;
+    text-align: center;
+    border-radius: 12px;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.video-tiktok-fallback h3 {
+    color: white;
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+}
+
+.tiktok-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff0050 0%, #00f2ea 100%);
+    color: white;
+    padding: 1.2rem 3rem;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 0, 80, 0.4);
+}
+
+.tiktok-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(255, 0, 80, 0.5);
+}
+
+/* Instagram - MÁS GRANDE */
+.video-instagram {
+    position: relative;
+    min-height: 700px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #fafafa;
+    padding: 2rem;
+}
+
+.video-instagram iframe {
+    width: 100%;
+    max-width: 540px;
+    min-height: 700px;
+    border: none;
+}
+
+/* Facebook - MÁS GRANDE */
+.video-facebook {
+    position: relative;
+    min-height: 500px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    background: #f0f2f5;
+    padding: 2rem;
+}
+
+.video-facebook iframe {
+    width: 100%;
+    max-width: 800px;
+    min-height: 500px;
+    border: none;
+}
+
+/* Fallback Link - MÁS GRANDE */
+.video-fallback {
+    background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+    padding: 4rem;
+    text-align: center;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.video-fallback h3 {
+    color: white;
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+}
+
+.video-link {
+    display: inline-block;
+    background: #ff6b00;
+    color: white;
+    padding: 1.2rem 2.5rem;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4);
+}
+
+.video-link:hover {
+    background: #ff8533;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 107, 0, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ESTADOS: LOADING, EMPTY, ERROR
+   ═══════════════════════════════════════════════════════════════ */
+.blog-loading,
+.blog-empty,
+.blog-error {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 6rem 2rem;
+}
+
+.blog-loading {
+    color: #666;
+}
+
+.blog-loading .spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #ff6b00;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 2rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.blog-loading p {
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.blog-empty {
+    color: #666;
+}
+
+.blog-empty-icon {
+    font-size: 6rem;
+    margin-bottom: 1.5rem;
+}
+
+.blog-empty h2 {
+    font-size: 2rem;
+    margin-bottom: 0.8rem;
+    color: #333;
+}
+
+.blog-empty p {
+    font-size: 1.2rem;
+    color: #888;
+}
+
+.blog-error {
+    background: #fff5f5;
+    border-radius: 20px;
+    color: #c00;
+    padding: 4rem 2rem;
+}
+
+.blog-error-icon {
+    font-size: 5rem;
+    margin-bottom: 1.5rem;
+}
+
+.blog-error h3 {
+    margin-bottom: 0.8rem;
+    font-size: 1.8rem;
+}
+
+.blog-error p {
+    color: #666;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+.btn-retry {
+    background: #ff6b00;
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-retry:hover {
+    background: #ff8533;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE - MEJORADO
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Tablets */
+@media (max-width: 1024px) {
+    #postsGrid {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+    }
+    
+    .video-tiktok {
+        max-width: 500px;
+        height: 850px;
+    }
+    
+    .video-instagram {
+        min-height: 650px;
+    }
+    
+    .video-instagram iframe {
+        min-height: 650px;
+    }
+    
+    .video-facebook {
+        min-height: 450px;
+    }
+    
+    .video-facebook iframe {
+        min-height: 450px;
+    }
+}
+
+/* Móviles */
+@media (max-width: 768px) {
+    #postsGrid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 1rem;
+    }
+    
+    .blog-card-title {
+        font-size: 1.5rem;
+    }
+    
+    .blog-card-content {
+        padding: 1.5rem;
+    }
+    
+    .blog-card-image {
+        height: 220px;
+    }
+    
+    /* TikTok en móvil */
+    .video-tiktok {
+        max-width: 100%;
+        height: 700px;
+    }
+    
+    /* Instagram en móvil */
+    .video-instagram {
+        min-height: 600px;
+        padding: 1rem;
+    }
+    
+    .video-instagram iframe {
+        min-height: 600px;
+    }
+    
+    /* Facebook en móvil */
+    .video-facebook {
+        min-height: 400px;
+        padding: 1rem;
+    }
+    
+    .video-facebook iframe {
+        min-height: 400px;
+    }
+    
+    /* Fallbacks en móvil */
+    .video-tiktok-fallback,
+    .video-fallback {
+        padding: 3rem 1.5rem;
+        min-height: 300px;
+    }
+    
+    .tiktok-btn,
+    .video-link {
+        padding: 1rem 2rem;
+        font-size: 1rem;
+    }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+    #postsGrid {
+        grid-template-columns: 1fr;
+        padding: 0.5rem;
+    }
+    
+    .blog-card {
+        border-radius: 15px;
+    }
+    
+    .blog-card-image {
+        height: 180px;
+    }
+    
+    .blog-card-content {
+        padding: 1.2rem;
+    }
+    
+    .blog-card-title {
+        font-size: 1.3rem;
+    }
+    
+    .blog-card-text {
+        font-size: 0.95rem;
+    }
+    
+    /* TikTok en móvil pequeño */
+    .video-tiktok {
+        height: 600px;
+    }
+    
+    /* Instagram en móvil pequeño */
+    .video-instagram {
+        min-height: 500px;
+    }
+    
+    .video-instagram iframe {
+        min-height: 500px;
+    }
+    
+    /* Facebook en móvil pequeño */
+    .video-facebook {
+        min-height: 350px;
+    }
+    
+    .video-facebook iframe {
+        min-height: 350px;
+    }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 360px) {
+    .blog-card-content {
+        padding: 1rem;
+    }
+    
+    .video-tiktok {
+        height: 550px;
+    }
+    
+    .video-instagram {
+        min-height: 450px;
+    }
+    
+    .video-instagram iframe {
+        min-height: 450px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PANTALLAS GRANDES - MÁXIMA CALIDAD
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width: 1600px) {
+    #postsGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 4rem;
+        max-width: 1800px;
+        margin: 0 auto;
+    }
+    
+    .video-tiktok {
+        max-width: 650px;
+        height: 1100px;
+    }
+    
+    .video-instagram {
+        min-height: 800px;
+    }
+    
+    .video-instagram iframe {
+        min-height: 800px;
+        max-width: 600px;
+    }
+    
+    .video-facebook {
+        min-height: 600px;
+    }
+    
+    .video-facebook iframe {
+        min-height: 600px;
+        max-width: 900px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMACIONES Y TRANSICIONES
+   ═══════════════════════════════════════════════════════════════ */
+.video-container {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mejor contraste para videos */
+.video-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.02);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Loading de video */
+.video-container.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ff6b00;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 2;
+}

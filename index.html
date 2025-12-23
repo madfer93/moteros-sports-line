@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moteros Sports Line | Inicio</title>
+    <meta name="description" content="Accesorios y equipamiento de calidad para motociclistas exigentes. Cascos, guantes, chaquetas y más.">
+    
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Carrito Flotante -->
+    <button class="cart-floating" onclick="abrirCarrito()">
+        <span class="cart-floating-icon">🛒</span>
+        <span class="cart-floating-count" id="cartFloatingCount">0</span>
+    </button>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line">
+                <h1 id="siteTitle">MOTEROS SPORTS LINE</h1>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="active">Inicio</a>
+                <a href="catalogo.html">Tienda</a>
+                <a href="blog.html">Blog</a>
+                <a href="contacto.html">Contacto</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Tu Seguridad es Nuestra Prioridad</h1>
+            <p>Accesorios de calidad para motociclistas exigentes</p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="totalProductos">...</span>
+                    <span class="stat-label">Productos</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">3</span>
+                    <span class="stat-label">Locales</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">1000+</span>
+                    <span class="stat-label">Clientes Felices</span>
+                </div>
+            </div>
+            <div class="hero-buttons">
+                <a href="catalogo.html" class="btn-primary">Ver Catálogo</a>
+                <a href="https://wa.me/573113408416" class="btn-whatsapp" target="_blank">WhatsApp 💬</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categorías -->
+    <section class="categorias">
+        <div class="container">
+            <h2>Nuestras Categorías</h2>
+            <div class="categorias-grid">
+                <div class="categoria-card" onclick="irATienda('Cascos')">
+                    <div class="categoria-icon">🪖</div>
+                    <h3>Cascos</h3>
+                    <p id="count-cascos">...</p>
+                </div>
+                <div class="categoria-card" onclick="irATienda('Guantes')">
+                    <div class="categoria-icon">🧤</div>
+                    <h3>Guantes</h3>
+                    <p id="count-guantes">...</p>
+                </div>
+                <div class="categoria-card" onclick="irATienda('Chaquetas')">
+                    <div class="categoria-icon">🧥</div>
+                    <h3>Chaquetas</h3>
+                    <p id="count-chaquetas">...</p>
+                </div>
+                <div class="categoria-card" onclick="irATienda('Botas')">
+                    <div class="categoria-icon">🥾</div>
+                    <h3>Botas</h3>
+                    <p id="count-botas">...</p>
+                </div>
+                <div class="categoria-card" onclick="irATienda('Intercomunicadores')">
+                    <div class="categoria-icon">📡</div>
+                    <h3>Intercomunicadores</h3>
+                    <p id="count-intercomunicadores">...</p>
+                </div>
+                <div class="categoria-card" onclick="irATienda('Camaras')">
+                    <div class="categoria-icon">📹</div>
+                    <h3>Cámaras</h3>
+                    <p id="count-camaras">...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Promociones Carousel -->
+    <section class="promo-carousel-section" id="seccionPromociones">
+        <div class="container">
+            <div class="promo-carousel-header">
+                <h2>🔥 Ofertas Especiales</h2>
+                <p>¡Haz clic en "Agregar" y el descuento se aplica automáticamente!</p>
+            </div>
+            <div class="promo-carousel-container">
+                <button class="promo-nav-btn prev" onclick="moverCarruselPromo(-1)">❮</button>
+                <div class="promo-carousel-track" id="promoCarouselTrack">
+                    <div class="promo-empty"><p>Cargando promociones...</p></div>
+                </div>
+                <button class="promo-nav-btn next" onclick="moverCarruselPromo(1)">❯</button>
+            </div>
+            <div class="promo-indicators" id="promoIndicators"></div>
+        </div>
+    </section>
+
+    <!-- Productos Destacados -->
+    <section class="productos">
+        <div class="container">
+            <h2>⭐ Productos Destacados</h2>
+            <div id="productosDestacados" class="productos-grid">
+                <div class="loading">Cargando productos destacados...</div>
+            </div>
+            <div class="ver-mas-container">
+                <a href="catalogo.html" class="btn-secondary">Ver todos los productos</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Locales -->
+    <section class="contacto">
+        <div class="container">
+            <h2>Nuestros Locales</h2>
+            <div id="localesGrid" class="locales-grid">
+                <div class="local-card">
+                    <h3>📍 Alcalá</h3>
+                    <p><strong>Dirección:</strong> Calle Nueva 1 #12-34</p>
+                    <p><strong>Teléfono:</strong> 310 111 2222</p>
+                    <p><strong>Horario:</strong> Lun-Sáb 9AM-7PM</p>
+                </div>
+                <div class="local-card">
+                    <h3>📍 Local 01</h3>
+                    <p><strong>Dirección:</strong> Avenida Nueva 2 #56-78</p>
+                    <p><strong>Teléfono:</strong> 311 222 3333</p>
+                    <p><strong>Horario:</strong> Lun-Sáb 8AM-6PM</p>
+                </div>
+                <div class="local-card">
+                    <h3>📍 Jordán</h3>
+                    <p><strong>Dirección:</strong> Carrera Nueva 3 #90-12</p>
+                    <p><strong>Teléfono:</strong> 312 333 4444</p>
+                    <p><strong>Horario:</strong> Lun-Dom 10AM-8PM</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal Carrito -->
+    <div id="modalCarrito" class="modal">
+        <div class="modal-content cart-modal">
+            <div class="modal-header">
+                <h2>🛒 Mi Carrito</h2>
+                <button class="modal-close" onclick="cerrarCarrito()">&times;</button>
+            </div>
+            <div class="modal-body" id="carritoBody"></div>
+            <div class="modal-footer" id="carritoFooter"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Moteros Sports Line</h4>
+                    <p>Tu seguridad es nuestra prioridad</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Contacto General</h4>
+                    <p>📞 <a href="tel:+573113408416">311 340 8416</a></p>
+                    <p>✉️ <a href="mailto:info@moterossl.com">info@moterossl.com</a></p>
+                </div>
+                <div class="footer-section">
+                    <h4>Síguenos</h4>
+                    <p>📘 <a href="#">Facebook</a></p>
+                    <p>📷 <a href="#">Instagram</a></p>
+                    <p>🎵 <a href="#">TikTok</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Moteros Sports Line | Desarrollado por Variedades JyM</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/index.js"></script>
+</body>
+</html>
