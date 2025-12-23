@@ -2,14 +2,7 @@
 # MOTEROS SPORTS LINE - GITIGNORE
 # ═══════════════════════════════════════════════════════════════
 
-# ─────────────────────────────────────────────────────────────────
-# ARCHIVOS DE CONFIGURACIÓN CON CREDENCIALES (MUY IMPORTANTE)
-# ─────────────────────────────────────────────────────────────────
-js/config.js
-config.js
-**/config.js
-
-# Variables de entorno
+# Variables de entorno (estos SÍ son sensibles)
 .env
 .env.local
 .env.production
@@ -19,39 +12,26 @@ config.js
 # ─────────────────────────────────────────────────────────────────
 # SISTEMA OPERATIVO
 # ─────────────────────────────────────────────────────────────────
-# macOS
 .DS_Store
 .AppleDouble
 .LSOverride
 ._*
-
-# Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
-# Linux
 *~
 
 # ─────────────────────────────────────────────────────────────────
 # EDITORES E IDEs
 # ─────────────────────────────────────────────────────────────────
-# Visual Studio Code
 .vscode/
 *.code-workspace
-
-# JetBrains (WebStorm, PhpStorm, etc.)
 .idea/
 *.iml
-
-# Sublime Text
 *.sublime-project
 *.sublime-workspace
-
-# Vim
 *.swp
 *.swo
-*~
 
 # ─────────────────────────────────────────────────────────────────
 # DEPENDENCIAS
@@ -67,8 +47,6 @@ vendor/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Temporales
 tmp/
 temp/
 *.tmp
@@ -80,8 +58,6 @@ temp/
 dist/
 build/
 out/
-*.min.js
-*.min.css
 
 # ─────────────────────────────────────────────────────────────────
 # ARCHIVOS DE BACKUP
@@ -89,19 +65,3 @@ out/
 *.bak
 *.backup
 *.old
-
-# ─────────────────────────────────────────────════════════════════
-# NOTAS IMPORTANTES PARA EL DESARROLLADOR
-# ═══════════════════════════════════════════════════════════════
-# 
-# ⚠️  NUNCA subas js/config.js a GitHub - contiene las credenciales de Supabase
-# 
-# Para configurar en producción, crea un archivo config.js.example con:
-#
-# const CONFIG = {
-#   SUPABASE_URL: 'TU_URL_AQUI',
-#   SUPABASE_KEY: 'TU_KEY_AQUI',
-#   // ... resto de configuración
-# };
-#
-# ═══════════════════════════════════════════════════════════════
