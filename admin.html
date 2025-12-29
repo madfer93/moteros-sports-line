@@ -13,13 +13,44 @@
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- Modal Cambiar Contraseña -->
+    <div id="modalCambiarPassword" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h3>🔐 Cambiar Contraseña</h3>
+                <button onclick="cerrarModalPassword()" class="btn-cerrar">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Contraseña Actual <span class="required">*</span></label>
+                    <input type="password" id="passwordActual" class="form-control" placeholder="Ingresa tu contraseña actual">
+                </div>
+                <div class="form-group">
+                    <label>Nueva Contraseña <span class="required">*</span></label>
+                    <input type="password" id="passwordNueva" class="form-control" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="form-group">
+                    <label>Confirmar Nueva Contraseña <span class="required">*</span></label>
+                    <input type="password" id="passwordConfirmar" class="form-control" placeholder="Repite la nueva contraseña">
+                </div>
+                <div class="alert alert-info" style="margin-top:1rem; font-size:0.85rem;">
+                    💡 La contraseña se guarda de forma segura en la base de datos.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="cambiarPassword()" class="btn btn-success">💾 Guardar</button>
+                <button onclick="cerrarModalPassword()" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="login-wrapper">
         <div class="login-card">
             <div class="login-logo">🏍️</div>
             <h1>Admin Panel</h1>
             <p class="subtitle">Moteros Sports Line</p>
-            <input type="password" id="adminPassword" class="login-input" placeholder="Ingresa la contraseña">
+            <input type="password" id="adminPassword" class="login-input" placeholder="Ingresa la contraseña" onkeypress="if(event.key==='Enter')loginAdmin()">
             <button onclick="loginAdmin()" class="login-btn">Iniciar Sesión</button>
             <p id="loginError" class="login-error"></p>
         </div>
@@ -27,492 +58,1975 @@
 
     <!-- ADMIN PANEL -->
     <div id="adminPanel" style="display:none;">
-        <!-- Mobile Header -->
-        <div class="mobile-header">
-            <button onclick="toggleSidebar()">☰</button>
-            <span style="font-weight:600;">Moteros Admin</span>
-            <button onclick="logout()">🚪</button>
+        
+        <!-- ═══════════════ HEADER CON MENÚ HORIZONTAL ═══════════════ -->
+        <header class="top-header">
+            <div class="header-brand">
+                <span class="brand-icon">🏍️</span>
+                <span class="brand-name">Moteros Admin</span>
+            </div>
+            
+            <nav class="header-nav">
+                <!-- PRINCIPAL -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">📊 Principal <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" data-section="dashboard">📊 Dashboard</a>
+                        <a href="#" data-section="estadisticas">📈 Estadísticas</a>
+                        <a href="#" data-section="reportes">📑 Reportes</a>
+                    </div>
+                </div>
+
+                <!-- VENTAS -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">💰 Ventas <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" data-section="ventas">💰 Gestión Ventas</a>
+                        <a href="tienda-alcala.html" target="_blank">🏪 POS Alcalá</a>
+                        <a href="tienda-01.html" target="_blank">🏬 POS Local 01</a>
+                        <a href="tienda-jordan.html" target="_blank">🏢 POS Jordán</a>
+                        <a href="tienda-digital.html" target="_blank">🌐 Tienda Digital</a>
+                    </div>
+                </div>
+
+                <!-- ENVÍOS - NUEVO -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">📦 Envíos <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" data-section="envios">📦 Gestión Envíos</a>
+                        <a href="#" data-section="envios-estadisticas">📊 Estadísticas Envíos</a>
+                    </div>
+                </div>  
+
+                <!-- CATÁLOGO -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">📦 Catálogo <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" data-section="productos">📦 Productos</a>
+                        <a href="#" data-section="destacados">⭐ Destacados</a>
+                        <a href="#" data-section="inventario">📋 Inventario</a>
+                        <a href="#" data-section="bodegas">🏭 Bodegas</a>
+                        <a href="#" data-section="alertas">⚠️ Alertas Stock</a>
+                    </div>
+                </div>
+
+                <!-- FINANZAS -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">💵 Finanzas <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" data-section="cierres">💵 Cierres de Caja</a>
+                        <a href="#" data-section="gastos">💸 Gastos</a>
+                        <a href="#" data-section="deudores">👥 Deudores</a>
+                        <a href="#" data-section="proveedores">🏭 Proveedores</a>
+                        <a href="#" data-section="compras">🛒 Compras</a>
+                        <a href="#" data-section="deudas">📋 Deudas Negocio</a>
+                        <a href="#" data-section="creditos">🏍️ Crédito Motero</a>
+                    </div>
+                </div>
+
+                <!-- MARKETING -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">📢 Marketing <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" data-section="promociones">🏷️ Promociones</a>
+                        <a href="#" data-section="blog">📝 Blog</a>
+                        <a href="#" data-section="alianzas">🤝 Alianzas</a>
+                    </div>
+                </div>
+
+                <!-- SISTEMA -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">⚙️ Sistema <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" data-section="configuracion">⚙️ Configuración</a>
+                        <a href="#" onclick="mostrarCambiarPassword()">🔐 Cambiar Contraseña</a>
+                        <a href="#" onclick="logout()" class="logout-link">🚪 Cerrar Sesión</a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="header-user">
+                <span class="user-greeting">👤 Admin</span>
+                <button onclick="logout()" class="btn-header-logout" title="Cerrar sesión">🚪</button>
+            </div>
+
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+        </header>
+
+        <!-- Mobile Navigation -->
+        <div class="mobile-nav" id="mobileNav">
+            <div class="mobile-nav-header">
+                <span>🏍️ Menú</span>
+                <button onclick="toggleMobileMenu()">✕</button>
+            </div>
+            <div class="mobile-nav-content">
+                <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">Principal</div>
+                    <a href="#" data-section="dashboard" onclick="toggleMobileMenu()">📊 Dashboard</a>
+                    <a href="#" data-section="estadisticas" onclick="toggleMobileMenu()">📈 Estadísticas</a>
+                    <a href="#" data-section="reportes" onclick="toggleMobileMenu()">📑 Reportes</a>
+                </div>
+                <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">Ventas</div>
+                    <a href="#" data-section="ventas" onclick="toggleMobileMenu()">💰 Gestión Ventas</a>
+                    <a href="tienda-alcala.html" target="_blank">🏪 POS Alcalá</a>
+                    <a href="tienda-01.html" target="_blank">🏬 POS Local 01</a>
+                    <a href="tienda-jordan.html" target="_blank">🏢 POS Jordán</a>
+                    <a href="tienda-digital.html" target="_blank">🌐 Tienda Digital</a>
+                </div>
+                <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">Catálogo</div>
+                    <a href="#" data-section="productos" onclick="toggleMobileMenu()">📦 Productos</a>
+                    <a href="#" data-section="destacados" onclick="toggleMobileMenu()">⭐ Destacados</a>
+                    <a href="#" data-section="inventario" onclick="toggleMobileMenu()">📋 Inventario</a>
+                    <a href="#" data-section="bodegas" onclick="toggleMobileMenu()">🏭 Bodegas</a>
+                    <a href="#" data-section="alertas" onclick="toggleMobileMenu()">⚠️ Alertas Stock</a>
+                </div>
+                <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">Finanzas</div>
+                    <a href="#" data-section="cierres" onclick="toggleMobileMenu()">💵 Cierres de Caja</a>
+                    <a href="#" data-section="gastos" onclick="toggleMobileMenu()">💸 Gastos</a>
+                    <a href="#" data-section="deudores" onclick="toggleMobileMenu()">👥 Deudores</a>
+                    <a href="#" data-section="proveedores" onclick="toggleMobileMenu()">🏭 Proveedores</a>
+                    <a href="#" data-section="compras" onclick="toggleMobileMenu()">🛒 Compras</a>
+                    <a href="#" data-section="deudas" onclick="toggleMobileMenu()">📋 Deudas Negocio</a>
+                    <a href="#" data-section="creditos" onclick="toggleMobileMenu()">🏍️ Crédito Motero</a>
+                </div>
+                <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">Marketing</div>
+                    <a href="#" data-section="promociones" onclick="toggleMobileMenu()">🏷️ Promociones</a>
+                    <a href="#" data-section="blog" onclick="toggleMobileMenu()">📝 Blog</a>
+                    <a href="#" data-section="alianzas" onclick="toggleMobileMenu()">🤝 Alianzas</a>
+                </div>
+                <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">Sistema</div>
+                    <a href="#" data-section="configuracion" onclick="toggleMobileMenu()">⚙️ Configuración</a>
+                    <a href="#" onclick="mostrarCambiarPassword(); toggleMobileMenu()">🔐 Cambiar Contraseña</a>
+                    <a href="#" onclick="logout()" class="logout-link">🚪 Cerrar Sesión</a>
+                </div>
+            </div>
         </div>
 
-        <!-- Overlay -->
-        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
-
-        <div class="admin-layout">
-            <!-- Sidebar -->
-            <aside class="sidebar" id="sidebar">
-                <div class="sidebar-logo">
-                    <div class="logo-placeholder">🏍️</div>
-                    <span>Moteros Admin</span>
+        <!-- ═══════════════ CONTENIDO PRINCIPAL ═══════════════ -->
+        <main class="main-content-horizontal">
+            
+            <!-- ═══════════════════ DASHBOARD ═══════════════════ -->
+            <section id="dashboardSection" class="section active">
+                <div class="page-header">
+                    <h1>Dashboard</h1>
+                    <p>Resumen general del sistema</p>
                 </div>
 
-                <nav class="sidebar-nav">
-                    <button class="nav-item active" data-section="dashboard">
-                        <span class="icon">📊</span> Dashboard
-                    </button>
-                    <button class="nav-item" data-section="estadisticas">
-                        <span class="icon">📈</span> Estadísticas
-                    </button>
-                    <button class="nav-item" data-section="productos">
-                        <span class="icon">📦</span> Productos
-                    </button>
-                    <button class="nav-item" data-section="destacados">
-                        <span class="icon">⭐</span> Destacados
-                    </button>
-                    <button class="nav-item" data-section="ventas">
-                        <span class="icon">💰</span> Ventas
-                    </button>
-                    <button class="nav-item" data-section="inventario">
-                        <span class="icon">📋</span> Inventario
-                    </button>
-                    <button class="nav-item" data-section="alertas">
-                        <span class="icon">⚠️</span> Alertas Stock
-                    </button>
-                    
-                    <div class="nav-divider"></div>
-                    
-                    <button class="nav-item" data-section="promociones">
-                        <span class="icon">🏷️</span> Promociones
-                    </button>
-                    <button class="nav-item" data-section="blog">
-                        <span class="icon">📝</span> Blog
-                    </button>
-                    
-                    <div class="nav-divider"></div>
-                    
-                    <button class="nav-item" data-section="configuracion">
-                        <span class="icon">⚙️</span> Configuración
-                    </button>
-                </nav>
-
-                <div class="sidebar-footer">
-                    <button class="logout-btn" onclick="logout()">
-                        🚪 Cerrar Sesión
-                    </button>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon orange">📦</div>
+                        <div class="stat-info">
+                            <h3 id="statProductos">-</h3>
+                            <p>Productos Activos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">📊</div>
+                        <div class="stat-info">
+                            <h3 id="statStockTotal">-</h3>
+                            <p>Stock Total</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">💰</div>
+                        <div class="stat-info">
+                            <h3 id="statVentasHoy">$0</h3>
+                            <p>Ventas Hoy</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">👥</div>
+                        <div class="stat-info">
+                            <h3 id="statDeudores">0</h3>
+                            <p>Deudores Activos</p>
+                        </div>
+                    </div>
                 </div>
-            </aside>
 
-            <!-- Main Content -->
-            <main class="main-content">
-                
-                <!-- ═══════════════════ DASHBOARD ═══════════════════ -->
-                <section id="dashboardSection" class="section active">
-                    <div class="page-header">
-                        <h1>Dashboard</h1>
-                        <p>Resumen general del sistema</p>
-                    </div>
-
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon orange">📦</div>
-                            <div class="stat-info">
-                                <h3 id="statProductos">-</h3>
-                                <p>Productos Activos</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon green">📊</div>
-                            <div class="stat-info">
-                                <h3 id="statStockTotal">-</h3>
-                                <p>Stock Total</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon yellow">⚠️</div>
-                            <div class="stat-info">
-                                <h3 id="statStockBajo">-</h3>
-                                <p>Stock Bajo</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon red">❌</div>
-                            <div class="stat-info">
-                                <h3 id="statAgotados">-</h3>
-                                <p>Agotados</p>
-                            </div>
+                <div class="stats-grid" style="margin-top:1rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">⚠️</div>
+                        <div class="stat-info">
+                            <h3 id="statStockBajo">-</h3>
+                            <p>Stock Bajo</p>
                         </div>
                     </div>
-
-                    <div class="charts-grid">
-                        <div class="card">
-                            <div class="card-header"><h3>📊 Stock por Local</h3></div>
-                            <div class="card-body"><canvas id="chartStockLocales"></canvas></div>
-                        </div>
-                        <div class="card">
-                            <div class="card-header"><h3>📦 Productos por Categoría</h3></div>
-                            <div class="card-body"><canvas id="chartCategorias"></canvas></div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">❌</div>
+                        <div class="stat-info">
+                            <h3 id="statAgotados">-</h3>
+                            <p>Agotados</p>
                         </div>
                     </div>
-                </section>
-
-                <!-- ═══════════════════ ESTADÍSTICAS ═══════════════════ -->
-                <section id="estadisticasSection" class="section">
-                    <div class="page-header">
-                        <h1>Estadísticas por Local</h1>
-                        <p>Análisis detallado del inventario por sede</p>
-                    </div>
-
-                    <div class="stats-grid" style="margin-bottom:2rem;">
-                        <div class="stat-card"><div class="stat-icon blue">🏷️</div><div class="stat-info"><h3 id="totalProductosGlobal">-</h3><p>Productos en Catálogo</p></div></div>
-                        <div class="stat-card"><div class="stat-icon green">📦</div><div class="stat-info"><h3 id="totalUnidadesGlobal">-</h3><p>Unidades Totales</p></div></div>
-                        <div class="stat-card"><div class="stat-icon orange">💰</div><div class="stat-info"><h3 id="valorInventarioGlobal">-</h3><p>Valor Inventario</p></div></div>
-                        <div class="stat-card"><div class="stat-icon red">🚨</div><div class="stat-info"><h3 id="alertasGlobal">-</h3><p>Alertas Activas</p></div></div>
-                    </div>
-
-                    <div class="locales-grid" id="localesStatsGrid">
-                        <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
-                    </div>
-
-                    <div class="card" style="margin-top:2rem;">
-                        <div class="card-header"><h3>📊 Tabla Comparativa</h3></div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table class="data-table">
-                                    <thead><tr><th>Local</th><th>Stock Total</th><th>Productos</th><th>Stock Bajo</th><th>Agotados</th><th>Valor Est.</th></tr></thead>
-                                    <tbody id="tbodyComparativa"></tbody>
-                                </table>
-                            </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">💳</div>
+                        <div class="stat-info">
+                            <h3 id="statDeudaTotal">$0</h3>
+                            <p>Por Cobrar (Deudores)</p>
                         </div>
                     </div>
-                </section>
-
-                <!-- ═══════════════════ PRODUCTOS ═══════════════════ -->
-                <section id="productosSection" class="section">
-                    <div class="page-header">
-                        <h1>Gestión de Productos</h1>
-                        <p>Administra el catálogo de productos</p>
-                    </div>
-
-                    <div class="actions-bar">
-                        <button onclick="mostrarFormProducto()" class="btn btn-primary">➕ Nuevo Producto</button>
-                        <button onclick="cargarProductos()" class="btn btn-secondary">🔄 Recargar</button>
-                        <div class="search-input">
-                            <input type="text" id="buscarProductoAdmin" placeholder="Buscar producto..." oninput="filtrarProductosAdmin()">
+                    <div class="stat-card">
+                        <div class="stat-icon orange">🏭</div>
+                        <div class="stat-info">
+                            <h3 id="statProveedores">$0</h3>
+                            <p>Por Pagar (Proveedores)</p>
                         </div>
                     </div>
+                </div>
 
-                    <div id="formProducto" class="form-modal">
-                        <h3 id="formTituloProducto">➕ Nuevo Producto</h3>
-                        <input type="hidden" id="productoId">
-                        
-                        <div class="dropzone" id="dropzoneProducto" onclick="document.getElementById('fileInputProducto').click()">
-                            <div class="dropzone-icon">📸</div>
-                            <div class="dropzone-text">Arrastra una imagen aquí</div>
-                            <div class="dropzone-subtext">o haz clic para seleccionar (JPG, PNG, WebP - Max 5MB)</div>
-                            <input type="file" id="fileInputProducto" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'producto')">
-                            <div class="preview-container" id="previewContainerProducto" style="display:none;">
-                                <img id="previewProducto" class="preview-image">
-                                <button class="remove-preview" onclick="event.stopPropagation(); removerPreview('producto')">×</button>
-                            </div>
-                        </div>
-                        <div class="upload-progress" id="uploadProgressProducto">
-                            <div class="progress-bar"><div class="progress-fill" id="progressFillProducto" style="width:0%"></div></div>
-                            <div class="progress-text">Subiendo imagen...</div>
-                        </div>
+                <div class="charts-grid">
+                    <div class="card">
+                        <div class="card-header"><h3>📊 Stock por Local</h3></div>
+                        <div class="card-body"><canvas id="chartStockLocales"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>📦 Productos por Categoría</h3></div>
+                        <div class="card-body"><canvas id="chartCategorias"></canvas></div>
+                    </div>
+                </div>
 
-                        <div class="form-row">
-                            <div class="form-group"><label>Nombre <span class="required">*</span></label><input type="text" id="productoNombre" class="form-control" placeholder="Nombre del producto"></div>
-                            <div class="form-group"><label>Referencia</label><input type="text" id="productoReferencia" class="form-control" placeholder="REF-001"></div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Categoría <span class="required">*</span></label>
-                                <select id="productoCategoria" class="form-control">
-                                    <option value="">Seleccionar...</option>
-                                    <option value="Cascos">Cascos</option>
-                                    <option value="Guantes">Guantes</option>
-                                    <option value="Chaquetas">Chaquetas</option>
-                                    <option value="Botas">Botas</option>
-                                    <option value="Maleteros">Maleteros</option>
-                                    <option value="Impermeables">Impermeables</option>
-                                    <option value="Intercomunicadores">Intercomunicadores</option>
-                                    <option value="Camaras">Cámaras</option>
-                                    <option value="Accesorios">Accesorios</option>
-                                    <option value="Protecciones">Protecciones</option>
-                                </select>
-                            </div>
-                            <div class="form-group"><label>Marca <span class="required">*</span></label><input type="text" id="productoMarca" class="form-control" placeholder="Marca"></div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group"><label>Precio <span class="required">*</span></label><input type="number" id="productoPrecio" class="form-control" placeholder="0" min="0"></div>
-                            <div class="form-group">
-                                <label>Estado</label>
-                                <select id="productoEstado" class="form-control">
-                                    <option value="Activo">Activo</option>
-                                    <option value="Inactivo">Inactivo</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group"><label>Descripción corta</label><textarea id="productoDescCorta" class="form-control" rows="2" placeholder="Descripción breve"></textarea></div>
-                        <div class="form-group"><label>Descripción técnica</label><textarea id="productoDescTecnica" class="form-control" rows="3" placeholder="Características técnicas"></textarea></div>
-                        <div class="form-group"><label>URL Imagen (alternativa)</label><input type="url" id="productoImagen" class="form-control" placeholder="https://..."><p class="form-hint">Si no subes imagen, puedes pegar una URL directa</p></div>
-                        <div style="display:flex; gap:1rem; margin-top:1.5rem;">
-                            <button onclick="guardarProducto()" class="btn btn-success">💾 Guardar</button>
-                            <button onclick="cancelarFormProducto()" class="btn btn-secondary">Cancelar</button>
+                <div class="charts-grid" style="margin-top:1rem;">
+                    <div class="card">
+                        <div class="card-header"><h3>💵 Ventas por Método de Pago (Hoy)</h3></div>
+                        <div class="card-body"><canvas id="chartMetodosPagoDash"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>📈 Ventas Últimos 7 Días</h3></div>
+                        <div class="card-body"><canvas id="chartVentas7Dias"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ ESTADÍSTICAS ═══════════════════ -->
+            <section id="estadisticasSection" class="section">
+                <div class="page-header">
+                    <h1>Estadísticas por Local</h1>
+                    <p>Análisis detallado del inventario por sede</p>
+                </div>
+
+                <div class="stats-grid" style="margin-bottom:2rem;">
+                    <div class="stat-card"><div class="stat-icon blue">🏷️</div><div class="stat-info"><h3 id="totalProductosGlobal">-</h3><p>Productos en Catálogo</p></div></div>
+                    <div class="stat-card"><div class="stat-icon green">📦</div><div class="stat-info"><h3 id="totalUnidadesGlobal">-</h3><p>Unidades Totales</p></div></div>
+                    <div class="stat-card"><div class="stat-icon orange">💰</div><div class="stat-info"><h3 id="valorInventarioGlobal">-</h3><p>Valor Inventario</p></div></div>
+                    <div class="stat-card"><div class="stat-icon red">🚨</div><div class="stat-info"><h3 id="alertasGlobal">-</h3><p>Alertas Activas</p></div></div>
+                </div>
+
+                <div class="locales-grid" id="localesStatsGrid">
+                    <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
+                </div>
+
+                <div class="card" style="margin-top:2rem;">
+                    <div class="card-header"><h3>📊 Tabla Comparativa</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead><tr><th>Local</th><th>Stock Total</th><th>Productos</th><th>Stock Bajo</th><th>Agotados</th><th>Valor Est.</th></tr></thead>
+                                <tbody id="tbodyComparativa"></tbody>
+                            </table>
                         </div>
                     </div>
+                </div>
+            </section>
 
-                    <div id="listaProductos" class="productos-admin-grid">
-                        <div class="loading"><div class="spinner"></div><p>Cargando productos...</p></div>
+            <!-- ═══════════════════ REPORTES ═══════════════════ -->
+            <section id="reportesSection" class="section">
+                <div class="page-header">
+                    <h1>📑 Reportes</h1>
+                    <p>Reportes y análisis del negocio</p>
+                </div>
+
+                <div class="reports-grid">
+                    <div class="report-card">
+                        <div class="report-icon">📊</div>
+                        <h3>Margen por Categoría</h3>
+                        <p>Análisis de rentabilidad por categoría de producto</p>
+                        <button onclick="cargarReporteMargen()" class="btn btn-primary">Ver Reporte</button>
                     </div>
-                </section>
-
-                <!-- ═══════════════════ DESTACADOS ═══════════════════ -->
-                <section id="destacadosSection" class="section">
-                    <div class="page-header">
-                        <h1>⭐ Productos Destacados</h1>
-                        <p>Selecciona los productos que aparecerán en la página de inicio</p>
+                    <div class="report-card">
+                        <div class="report-icon">🏆</div>
+                        <h3>Top Productos</h3>
+                        <p>Productos más vendidos por categoría</p>
+                        <button onclick="cargarReporteTop()" class="btn btn-primary">Ver Reporte</button>
                     </div>
+                    <div class="report-card">
+                        <div class="report-icon">💳</div>
+                        <h3>Ventas por Método</h3>
+                        <p>Análisis de métodos de pago utilizados</p>
+                        <button onclick="cargarReporteMetodos()" class="btn btn-primary">Ver Reporte</button>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-icon">📈</div>
+                        <h3>Ventas por Local</h3>
+                        <p>Comparativa de ventas entre locales</p>
+                        <button onclick="cargarReporteLocales()" class="btn btn-primary">Ver Reporte</button>
+                    </div>
+                </div>
 
-                    <div class="destacados-info">
-                        <span class="destacados-info-icon">💡</span>
-                        <div class="destacados-info-text">
-                            <h4>¿Cómo funciona?</h4>
-                            <p>Selecciona hasta <strong>8 productos</strong> del panel izquierdo. Los clientes podrán agregarlos al carrito con un clic desde el inicio.</p>
+                <div id="contenidoReporte" class="card" style="margin-top:2rem; display:none;">
+                    <div class="card-header">
+                        <h3 id="tituloReporte">Reporte</h3>
+                        <button onclick="exportarReporte()" class="btn btn-secondary btn-sm">📥 Exportar</button>
+                    </div>
+                    <div class="card-body" id="bodyReporte"></div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ PRODUCTOS ═══════════════════ -->
+            <section id="productosSection" class="section">
+                <div class="page-header">
+                    <h1>Gestión de Productos</h1>
+                    <p>Administra el catálogo de productos</p>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="mostrarFormProducto()" class="btn btn-primary">➕ Nuevo Producto</button>
+                    <button onclick="cargarProductos()" class="btn btn-secondary">🔄 Recargar</button>
+                    <div class="search-input">
+                        <input type="text" id="buscarProductoAdmin" placeholder="Buscar producto..." oninput="filtrarProductosAdmin()">
+                    </div>
+                </div>
+
+                <div id="formProducto" class="form-modal">
+                    <h3 id="formTituloProducto">➕ Nuevo Producto</h3>
+                    <input type="hidden" id="productoId">
+                            <input type="hidden" id="productoIdProducto">
+                    
+                    <div class="dropzone" id="dropzoneProducto" onclick="document.getElementById('fileInputProducto').click()">
+                        <div class="dropzone-icon">📸</div>
+                        <div class="dropzone-text">Arrastra una imagen aquí</div>
+                        <div class="dropzone-subtext">o haz clic para seleccionar (JPG, PNG, WebP - Max 5MB)</div>
+                        <input type="file" id="fileInputProducto" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'producto')">
+                        <div class="preview-container" id="previewContainerProducto" style="display:none;">
+                            <img id="previewProducto" class="preview-image">
+                            <button class="remove-preview" onclick="event.stopPropagation(); removerPreview('producto')">×</button>
                         </div>
                     </div>
-
-                    <div class="actions-bar">
-                        <button onclick="cargarDestacadosAdmin()" class="btn btn-secondary">🔄 Recargar</button>
-                        <span id="contadorDestacados" style="margin-left: auto; font-weight: 600; color: var(--gray-600);"></span>
+                    <div class="upload-progress" id="uploadProgressProducto">
+                        <div class="progress-bar"><div class="progress-fill" id="progressFillProducto" style="width:0%"></div></div>
+                        <div class="progress-text">Subiendo imagen...</div>
                     </div>
 
-                    <div class="destacados-layout">
-                        <div class="destacados-panel">
-                            <div class="destacados-panel-header">
-                                <h3>📦 Productos Disponibles</h3>
-                                <span class="contador" id="contadorDisponibles">0</span>
-                            </div>
-                            <div class="destacados-search">
-                                <input type="text" id="buscarDestacado" placeholder="🔍 Buscar producto..." oninput="filtrarProductosDestacados()">
-                            </div>
-                            <div class="destacados-panel-body" id="listaProductosDisponibles">
-                                <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
-                            </div>
-                        </div>
-
-                        <div class="destacados-panel" style="border: 2px solid var(--primary);">
-                            <div class="destacados-panel-header" style="background: linear-gradient(135deg, #fff7ed, #ffedd5);">
-                                <h3 style="color: var(--primary);">⭐ Destacados Activos</h3>
-                                <span class="contador" id="contadorActivos">0 / 8</span>
-                            </div>
-                            <div class="destacados-panel-body" id="listaDestacadosActivos">
-                                <div class="destacados-empty">
-                                    <div class="destacados-empty-icon">⭐</div>
-                                    <h4>Sin productos destacados</h4>
-                                    <p>Haz clic en "Agregar" en un producto del panel izquierdo</p>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Nombre <span class="required">*</span></label><input type="text" id="productoNombre" class="form-control" placeholder="Nombre del producto"></div>
+                        <div class="form-group"><label>Referencia</label><input type="text" id="productoReferencia" class="form-control" placeholder="REF-001"></div>
                     </div>
-
-                    <div class="destacados-preview">
-                        <h4>👁️ Vista previa del inicio</h4>
-                        <div class="destacados-preview-grid" id="previewDestacados">
-                            <p style="color: var(--gray-400); grid-column: 1/-1; text-align: center;">Los productos destacados aparecerán aquí</p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ═══════════════════ VENTAS ═══════════════════ -->
-                <section id="ventasSection" class="section">
-                    <div class="page-header">
-                        <h1>Gestión de Ventas</h1>
-                        <p>Acceso a puntos de venta y reportes en tiempo real</p>
-                    </div>
-
-                    <div class="pos-grid">
-                        <div class="pos-card"><div class="pos-icon">🏪</div><h3>Tienda Alcalá</h3><p>Registro de ventas y control de caja</p><a href="tienda-alcala.html" target="_blank" class="btn btn-primary btn-lg">Abrir POS Alcalá</a></div>
-                        <div class="pos-card"><div class="pos-icon">🏬</div><h3>Tienda Local 01</h3><p>Registro de ventas y control de caja</p><a href="tienda-01.html" target="_blank" class="btn btn-success btn-lg">Abrir POS Local 01</a></div>
-                        <div class="pos-card"><div class="pos-icon">🏢</div><h3>Tienda Jordán</h3><p>Registro de ventas y control de caja</p><a href="tienda-jordan.html" target="_blank" class="btn btn-info btn-lg">Abrir POS Jordán</a></div>
-                    </div>
-
-                    <div class="card" style="margin-top:2rem;">
-                        <div class="card-header">
-                            <h3>📊 Ventas del Día</h3>
-                            <div><span id="fechaHoy" style="color:var(--gray-500); margin-right:1rem;"></span><button onclick="exportarVentasDia()" class="btn btn-secondary btn-sm">📥 Exportar CSV</button></div>
-                        </div>
-                        <div class="card-body">
-                            <div class="stats-grid" id="ventasDiaStats"><div class="loading"><div class="spinner"></div><p>Cargando ventas...</p></div></div>
-                            <div class="charts-grid" style="margin-top:2rem;">
-                                <div class="card"><div class="card-header"><h4>💳 Por Método de Pago</h4></div><div class="card-body"><canvas id="chartMetodosPago"></canvas></div></div>
-                                <div class="card"><div class="card-header"><h4>🏪 Por Local</h4></div><div class="card-body"><canvas id="chartVentasLocales"></canvas></div></div>
-                            </div>
-                            <div class="table-container" style="margin-top:2rem;">
-                                <table class="data-table">
-                                    <thead><tr><th>Hora</th><th>Local</th><th>Producto</th><th>Cant.</th><th>Total</th><th>Método</th></tr></thead>
-                                    <tbody id="tbodyVentasDia"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ═══════════════════ INVENTARIO ═══════════════════ -->
-                <section id="inventarioSection" class="section">
-                    <div class="page-header"><h1>Gestión de Inventario</h1><p>Controla el stock de cada local</p></div>
-                    <div class="actions-bar">
-                        <select id="inventarioLocal" class="form-control" style="max-width:300px;" onchange="cargarInventarioLocal()">
-                            <option value="">-- Seleccionar Local --</option>
-                            <option value="inventario_alcala">🏪 Alcalá</option>
-                            <option value="inventario_01">🏬 Local 01</option>
-                            <option value="inventario_jordan">🏢 Jordán</option>
-                        </select>
-                        <button onclick="cargarInventarioLocal()" class="btn btn-secondary">🔄 Recargar</button>
-                        <button onclick="exportarInventario()" class="btn btn-primary">📥 Exportar CSV</button>
-                    </div>
-                    <div id="contenidoInventario" class="card"><div class="card-body"><div class="alert alert-info">👆 Selecciona un local para ver su inventario</div></div></div>
-                </section>
-
-                <!-- ═══════════════════ ALERTAS ═══════════════════ -->
-                <section id="alertasSection" class="section">
-                    <div class="page-header"><h1>Alertas de Stock</h1><p>Productos que requieren atención</p></div>
-                    <div class="actions-bar"><button onclick="cargarAlertasStock()" class="btn btn-secondary">🔄 Actualizar</button></div>
-                    <div id="contenidoAlertas" class="card"><div class="card-body"><div class="loading"><div class="spinner"></div><p>Cargando alertas...</p></div></div></div>
-                </section>
-
-                <!-- ═══════════════════ PROMOCIONES ═══════════════════ -->
-                <section id="promocionesSection" class="section">
-                    <div class="page-header"><h1>Gestión de Promociones</h1><p>Administra ofertas y descuentos</p></div>
-                    <div class="actions-bar">
-                        <button onclick="mostrarFormPromocion()" class="btn btn-primary">➕ Nueva Promoción</button>
-                        <button onclick="cargarPromociones()" class="btn btn-secondary">🔄 Recargar</button>
-                    </div>
-
-                    <!-- Formulario Promoción con Selector Visual -->
-                    <div id="formPromocion" class="form-modal">
-                        <h3 id="formTituloPromocion">➕ Nueva Promoción</h3>
-                        <input type="hidden" id="promocionIdOriginal">
-                        
-                        <div class="form-row">
-                            <div class="form-group"><label>ID Promoción <span class="required">*</span></label><input type="text" id="promocionId" class="form-control" placeholder="PROMO06"></div>
-                            <div class="form-group"><label>Nombre <span class="required">*</span></label><input type="text" id="promocionNombre" class="form-control" placeholder="Nombre de la promoción"></div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group"><label>Descuento (%) <span class="required">*</span></label><input type="number" id="promocionDescuento" class="form-control" placeholder="20" min="1" max="100"></div>
-                            <div class="form-group"><label>Locales Aplicables</label><input type="text" id="promocionLocales" class="form-control" placeholder="Todos"><p class="form-hint">Deja vacío para "Todos"</p></div>
-                        </div>
-
-                        <!-- 🔥 SELECTOR VISUAL DE PRODUCTOS -->
+                    <div class="form-row">
                         <div class="form-group">
-                            <label>Productos Incluidos <span class="required">*</span><span id="contadorProductosPromo" style="margin-left: 10px; color: var(--primary); font-weight: 600;">0 seleccionados</span></label>
-                            <div style="position: relative; margin-bottom: 10px;">
-                                <input type="text" id="buscarProductoPromo" class="form-control" placeholder="🔍 Buscar por nombre, marca o categoría..." oninput="filtrarProductosPromo()">
-                            </div>
-                            <div id="productosSeleccionadosPromo" class="productos-seleccionados-container" style="display: none;">
-                                <div class="productos-seleccionados-header">
-                                    <strong>✓ Productos en esta promoción:</strong>
-                                    <button type="button" onclick="limpiarSeleccionPromo()" class="btn btn-secondary btn-sm">🗑️ Limpiar todo</button>
-                                </div>
-                                <div id="listaProductosSeleccionados" class="productos-seleccionados-lista"></div>
-                            </div>
-                            <div class="selector-productos-promo">
-                                <div class="selector-productos-header"><span>Haz clic en un producto para agregarlo:</span></div>
-                                <div id="listaProductosPromo" class="productos-promo-grid"><div class="loading"><div class="spinner"></div><p>Cargando productos...</p></div></div>
-                            </div>
-                            <input type="hidden" id="promocionProductos">
-                            <p class="form-hint">💡 Los IDs se guardan automáticamente cuando seleccionas productos</p>
+                            <label>Categoría <span class="required">*</span></label>
+                            <select id="productoCategoria" class="form-control">
+                                <option value="">Seleccionar...</option>
+                                <option value="Cascos">Cascos</option>
+                                <option value="Guantes">Guantes</option>
+                                <option value="Chaquetas">Chaquetas</option>
+                                <option value="Botas">Botas</option>
+                                <option value="Maleteros">Maleteros</option>
+                                <option value="Impermeables">Impermeables</option>
+                                <option value="Intercomunicadores">Intercomunicadores</option>
+                                <option value="Camaras">Cámaras</option>
+                                <option value="Accesorios">Accesorios</option>
+                                <option value="Protecciones">Protecciones</option>
+                            </select>
                         </div>
-
+                        <div class="form-group"><label>Marca <span class="required">*</span></label><input type="text" id="productoMarca" class="form-control" placeholder="Marca"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Precio Compra</label>
+                            <input type="number" id="productoPrecioCompra" class="form-control" placeholder="0" min="0">
+                            <p class="form-hint">Costo de adquisición</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Precio Venta <span class="required">*</span></label>
+                            <input type="number" id="productoPrecio" class="form-control" placeholder="0" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Margen</label>
+                            <input type="text" id="productoMargen" class="form-control" readonly placeholder="0%">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select id="productoEstado" class="form-control">
+                                <option value="Activo">Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- ASIGNAR STOCK A TIENDAS -->
+                    <div class="form-section" style="background: #f0fdf4; padding: 1rem; border-radius: 0.75rem; margin: 1rem 0; border: 1px solid #bbf7d0;">
+                        <h4 style="margin-bottom: 1rem; color: #166534;">📦 Stock por Tienda</h4>
                         <div class="form-row">
-                            <div class="form-group"><label>Fecha Inicio</label><input type="text" id="promocionInicio" class="form-control" placeholder="DD/MM/AAAA"></div>
-                            <div class="form-group"><label>Fecha Fin</label><input type="text" id="promocionFin" class="form-control" placeholder="DD/MM/AAAA"></div>
+                            <div class="form-group">
+                                <label>🏪 Alcalá</label>
+                                <input type="number" id="stockAlcala" class="form-control" placeholder="0" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>🏬 Local 01</label>
+                                <input type="number" id="stockLocal01" class="form-control" placeholder="0" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>🏢 Jordán</label>
+                                <input type="number" id="stockJordan" class="form-control" placeholder="0" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>🌐 Digital</label>
+                                <input type="number" id="stockDigital" class="form-control" placeholder="0" min="0" value="0">
+                            </div>
+                        </div>
+                        <p class="form-hint">💡 Ingresa la cantidad inicial de stock en cada tienda</p>
+                    </div>
+                    
+                    <div class="form-group"><label>Descripción corta</label><textarea id="productoDescCorta" class="form-control" rows="2" placeholder="Descripción breve"></textarea></div>
+                    <div class="form-group"><label>Descripción técnica</label><textarea id="productoDescTecnica" class="form-control" rows="3" placeholder="Características técnicas"></textarea></div>
+                    <div class="form-group"><label>URL Imagen (alternativa)</label><input type="url" id="productoImagen" class="form-control" placeholder="https://..."><p class="form-hint">Si no subes imagen, puedes pegar una URL directa</p></div>
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button onclick="guardarProducto()" class="btn btn-success">💾 Guardar</button>
+                        <button onclick="cancelarFormProducto()" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+
+                <div id="listaProductos" class="productos-admin-grid">
+                    <div class="loading"><div class="spinner"></div><p>Cargando productos...</p></div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ DESTACADOS ═══════════════════ -->
+            <section id="destacadosSection" class="section">
+                <div class="page-header">
+                    <h1>⭐ Productos Destacados</h1>
+                    <p>Selecciona los productos que aparecerán en la página de inicio</p>
+                </div>
+
+                <div class="destacados-info">
+                    <span class="destacados-info-icon">💡</span>
+                    <div class="destacados-info-text">
+                        <h4>¿Cómo funciona?</h4>
+                        <p>Selecciona hasta <strong>8 productos</strong> del panel izquierdo.</p>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="cargarDestacadosAdmin()" class="btn btn-secondary">🔄 Recargar</button>
+                    <span id="contadorDestacados" style="margin-left: auto; font-weight: 600; color: var(--gray-600);"></span>
+                </div>
+
+                <div class="destacados-layout">
+                    <div class="destacados-panel">
+                        <div class="destacados-panel-header">
+                            <h3>📦 Productos Disponibles</h3>
+                            <span class="contador" id="contadorDisponibles">0</span>
+                        </div>
+                        <div class="destacados-search">
+                            <input type="text" id="buscarDestacado" placeholder="🔍 Buscar producto..." oninput="filtrarProductosDestacados()">
+                        </div>
+                        <div class="destacados-panel-body" id="listaProductosDisponibles">
+                            <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
+                        </div>
+                    </div>
+
+                    <div class="destacados-panel" style="border: 2px solid var(--primary);">
+                        <div class="destacados-panel-header" style="background: linear-gradient(135deg, #fff7ed, #ffedd5);">
+                            <h3 style="color: var(--primary);">⭐ Destacados Activos</h3>
+                            <span class="contador" id="contadorActivos">0 / 8</span>
+                        </div>
+                        <div class="destacados-panel-body" id="listaDestacadosActivos">
+                            <div class="destacados-empty">
+                                <div class="destacados-empty-icon">⭐</div>
+                                <h4>Sin productos destacados</h4>
+                                <p>Haz clic en "Agregar" en un producto del panel izquierdo</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ VENTAS ═══════════════════ -->
+            <section id="ventasSection" class="section">
+                <div class="page-header">
+                    <h1>Gestión de Ventas</h1>
+                    <p>Acceso a puntos de venta y reportes</p>
+                </div>
+
+                <div class="pos-grid">
+                    <div class="pos-card"><div class="pos-icon">🏪</div><h3>Tienda Alcalá</h3><p>Registro de ventas y control de caja</p><a href="tienda-alcala.html" target="_blank" class="btn btn-primary btn-lg">Abrir POS</a></div>
+                    <div class="pos-card"><div class="pos-icon">🏬</div><h3>Tienda Local 01</h3><p>Registro de ventas y control de caja</p><a href="tienda-01.html" target="_blank" class="btn btn-success btn-lg">Abrir POS</a></div>
+                    <div class="pos-card"><div class="pos-icon">🏢</div><h3>Tienda Jordán</h3><p>Registro de ventas y control de caja</p><a href="tienda-jordan.html" target="_blank" class="btn btn-info btn-lg">Abrir POS</a></div>
+                    <div class="pos-card" style="border: 2px solid var(--primary);"><div class="pos-icon">🌐</div><h3>Tienda Digital</h3><p>Ventas online y envíos</p><a href="tienda-digital.html" target="_blank" class="btn btn-warning btn-lg">Abrir POS Digital</a></div>
+                </div>
+
+                <div class="card" style="margin-top:2rem;">
+                    <div class="card-header">
+                        <h3>📊 Ventas del Día</h3>
+                        <div><span id="fechaHoy" style="color:var(--gray-500); margin-right:1rem;"></span><button onclick="exportarVentasDia()" class="btn btn-secondary btn-sm">📥 Exportar CSV</button></div>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid" id="ventasDiaStats"><div class="loading"><div class="spinner"></div><p>Cargando ventas...</p></div></div>
+                        <div class="charts-grid" style="margin-top:2rem;">
+                            <div class="card"><div class="card-header"><h4>💳 Por Método de Pago</h4></div><div class="card-body"><canvas id="chartMetodosPago"></canvas></div></div>
+                            <div class="card"><div class="card-header"><h4>🏪 Por Local</h4></div><div class="card-body"><canvas id="chartVentasLocales"></canvas></div></div>
+                        </div>
+                        <div class="table-container" style="margin-top:2rem;">
+                            <table class="data-table">
+                                <thead><tr><th>Hora</th><th>Local</th><th>Producto</th><th>Cant.</th><th>Total</th><th>Método</th></tr></thead>
+                                <tbody id="tbodyVentasDia"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ INVENTARIO ═══════════════════ -->
+            <section id="inventarioSection" class="section">
+                <div class="page-header"><h1>Gestión de Inventario</h1><p>Controla el stock de cada local</p></div>
+                <div class="actions-bar">
+                    <select id="inventarioLocal" class="form-control" style="max-width:300px;" onchange="cargarInventarioLocal()">
+                        <option value="">-- Seleccionar Local --</option>
+                        <option value="inventario_alcala">🏪 Alcalá</option>
+                        <option value="inventario_01">🏬 Local 01</option>
+                        <option value="inventario_jordan">🏢 Jordán</option>
+                        <option value="inventario_digital">🌐 Digital</option>
+                    </select>
+                    <button onclick="cargarInventarioLocal()" class="btn btn-secondary">🔄 Recargar</button>
+                    <button onclick="exportarInventario()" class="btn btn-primary">📥 Exportar CSV</button>
+                </div>
+                <div id="contenidoInventario" class="card"><div class="card-body"><div class="alert alert-info">👆 Selecciona un local para ver su inventario</div></div></div>
+            </section>
+
+            <!-- ═══════════════════ BODEGAS ═══════════════════ -->
+            <section id="bodegasSection" class="section">
+                <div class="page-header">
+                    <h1>🏭 Gestión de Bodegas</h1>
+                    <p>Control de inventario en bodegas</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🏭</div>
+                        <div class="stat-info">
+                            <h3 id="totalBodegas">4</h3>
+                            <p>Bodegas Activas</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">📦</div>
+                        <div class="stat-info">
+                            <h3 id="totalItemsBodega">0</h3>
+                            <p>Items en Bodega</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">🔄</div>
+                        <div class="stat-info">
+                            <h3 id="movimientosMes">0</h3>
+                            <p>Movimientos del Mes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="mostrarFormMovimiento()" class="btn btn-primary">➕ Nuevo Movimiento</button>
+                    <select id="bodegaFiltro" class="form-control" style="max-width:200px;" onchange="cargarBodega()">
+                        <option value="">Todas las bodegas</option>
+                        <option value="Alcala">🏪 Bodega Alcalá</option>
+                        <option value="01">🏬 Bodega Local 01</option>
+                        <option value="Jordan">🏢 Bodega Jordán</option>
+                        <option value="Digital">🌐 Bodega Digital</option>
+                    </select>
+                    <button onclick="cargarBodega()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-header"><h3>📋 Inventario de Bodegas</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bodega</th>
+                                        <th>Producto</th>
+                                        <th>Cantidad</th>
+                                        <th>Ubicación</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyBodegas">
+                                    <tr><td colspan="5" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ ALERTAS ═══════════════════ -->
+            <section id="alertasSection" class="section">
+                <div class="page-header"><h1>Alertas de Stock</h1><p>Productos que requieren atención</p></div>
+                <div class="actions-bar"><button onclick="cargarAlertasStock()" class="btn btn-secondary">🔄 Actualizar</button></div>
+                <div id="contenidoAlertas" class="card"><div class="card-body"><div class="loading"><div class="spinner"></div><p>Cargando alertas...</p></div></div></div>
+            </section>
+
+            <!-- ═══════════════════ CIERRES DE CAJA ═══════════════════ -->
+            <section id="cierresSection" class="section">
+                <div class="page-header">
+                    <h1>💵 Cierres de Caja</h1>
+                    <p>Control de apertura y cierre de caja por tienda</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon green">🏪</div>
+                        <div class="stat-info">
+                            <h3 id="cierresAlcalaHoy">-</h3>
+                            <p>Alcalá Hoy</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🏬</div>
+                        <div class="stat-info">
+                            <h3 id="cierres01Hoy">-</h3>
+                            <p>Local 01 Hoy</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">🏢</div>
+                        <div class="stat-info">
+                            <h3 id="cierresJordanHoy">-</h3>
+                            <p>Jordán Hoy</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">⚠️</div>
+                        <div class="stat-info">
+                            <h3 id="cierresDiferencias">-</h3>
+                            <p>Con Diferencias</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <select id="cierresLocalFiltro" class="form-control" style="max-width:200px;" onchange="cargarCierresCaja()">
+                        <option value="">Todos los locales</option>
+                        <option value="Alcala">🏪 Alcalá</option>
+                        <option value="01">🏬 Local 01</option>
+                        <option value="Jordan">🏢 Jordán</option>
+                    </select>
+                    <input type="date" id="cierresFechaFiltro" class="form-control" style="max-width:180px;" onchange="cargarCierresCaja()">
+                    <button onclick="cargarCierresCaja()" class="btn btn-secondary">🔄 Actualizar</button>
+                    <button onclick="exportarCierres()" class="btn btn-primary">📥 Exportar</button>
+                </div>
+
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-header"><h3>📊 Historial de Cierres</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Local</th>
+                                        <th>Vendedor</th>
+                                        <th>Ventas Sistema</th>
+                                        <th>Efectivo Contado</th>
+                                        <th>Diferencia</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyCierres">
+                                    <tr><td colspan="8" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ GASTOS ═══════════════════ -->
+            <section id="gastosSection" class="section">
+                <div class="page-header">
+                    <h1>💸 Gastos por Tienda</h1>
+                    <p>Registro y control de gastos operativos</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon red">💸</div>
+                        <div class="stat-info">
+                            <h3 id="gastosMesTotal">$0</h3>
+                            <p>Gastos del Mes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">🏪</div>
+                        <div class="stat-info">
+                            <h3 id="gastosAlcala">$0</h3>
+                            <p>Alcalá</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🏬</div>
+                        <div class="stat-info">
+                            <h3 id="gastos01">$0</h3>
+                            <p>Local 01</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">🏢</div>
+                        <div class="stat-info">
+                            <h3 id="gastosJordan">$0</h3>
+                            <p>Jordán</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="mostrarFormGasto()" class="btn btn-primary">➕ Registrar Gasto</button>
+                    <select id="gastosLocalFiltro" class="form-control" style="max-width:200px;" onchange="cargarGastos()">
+                        <option value="">Todos los locales</option>
+                        <option value="Alcala">🏪 Alcalá</option>
+                        <option value="01">🏬 Local 01</option>
+                        <option value="Jordan">🏢 Jordán</option>
+                    </select>
+                    <button onclick="cargarGastos()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+
+                <div id="formGasto" class="form-modal" style="display:none;">
+                    <h3>➕ Registrar Gasto</h3>
+                    <input type="hidden" id="gastoId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Local <span class="required">*</span></label>
+                            <select id="gastoLocal" class="form-control" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Alcala">🏪 Alcalá</option>
+                                <option value="01">🏬 Local 01</option>
+                                <option value="Jordan">🏢 Jordán</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Categoría <span class="required">*</span></label>
+                            <select id="gastoCategoria" class="form-control" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="1">Productos de Aseo</option>
+                                <option value="2">Papelería</option>
+                                <option value="3">Servicios Públicos</option>
+                                <option value="4">Arriendo</option>
+                                <option value="5">Mantenimiento</option>
+                                <option value="6">Transporte</option>
+                                <option value="7">Alimentación</option>
+                                <option value="8">Publicidad</option>
+                                <option value="9">Nómina</option>
+                                <option value="10">Otros</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción <span class="required">*</span></label>
+                        <input type="text" id="gastoDescripcion" class="form-control" placeholder="Ej: Resma de papel, productos de aseo..." required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Monto <span class="required">*</span></label>
+                            <input type="number" id="gastoMonto" class="form-control" placeholder="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Método de Pago</label>
+                            <select id="gastoMetodo" class="form-control">
+                                <option value="efectivo">Efectivo</option>
+                                <option value="transferencia">Transferencia</option>
+                                <option value="tarjeta">Tarjeta</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha</label>
+                            <input type="date" id="gastoFecha" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Registrado por</label>
+                            <input type="text" id="gastoRegistradoPor" class="form-control" placeholder="Nombre">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notas adicionales</label>
+                        <textarea id="gastoNotas" class="form-control" rows="2" placeholder="Observaciones..."></textarea>
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button onclick="guardarGasto()" class="btn btn-success">💾 Guardar</button>
+                        <button onclick="cancelarFormGasto()" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-header"><h3>📋 Registro de Gastos</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Local</th>
+                                        <th>Categoría</th>
+                                        <th>Descripción</th>
+                                        <th>Monto</th>
+                                        <th>Método</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyGastos">
+                                    <tr><td colspan="7" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ DEUDORES ═══════════════════ -->
+            <section id="deudoresSection" class="section">
+                <div class="page-header">
+                    <h1>👥 Gestión de Deudores</h1>
+                    <p>Control de clientes con deudas pendientes</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon red">💰</div>
+                        <div class="stat-info">
+                            <h3 id="deudoresTotalDeuda">$0</h3>
+                            <p>Deuda Total</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">👥</div>
+                        <div class="stat-info">
+                            <h3 id="deudoresActivos">0</h3>
+                            <p>Deudores Activos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">⚠️</div>
+                        <div class="stat-info">
+                            <h3 id="deudoresMora">0</h3>
+                            <p>En Mora (+30 días)</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3 id="deudoresCerrados">0</h3>
+                            <p>Pagados Este Mes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="mostrarFormDeudor()" class="btn btn-primary">➕ Nuevo Deudor</button>
+                    <select id="deudoresEstadoFiltro" class="form-control" style="max-width:180px;" onchange="cargarDeudores()">
+                        <option value="ABIERTO">🔴 Abiertos</option>
+                        <option value="CERRADO">🟢 Cerrados</option>
+                        <option value="">Todos</option>
+                    </select>
+                    <select id="deudoresLocalFiltro" class="form-control" style="max-width:180px;" onchange="cargarDeudores()">
+                        <option value="">Todas las sedes</option>
+                        <option value="Alcalá">Alcalá</option>
+                        <option value="Cero1">Cero1 / Local 01</option>
+                        <option value="Jordán">Jordán</option>
+                    </select>
+                    <input type="text" id="deudoresBuscar" class="form-control" placeholder="🔍 Buscar..." style="max-width:200px;" oninput="buscarDeudores()">
+                    <button onclick="cargarDeudores()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+
+                <div id="formDeudor" class="form-modal" style="display:none;">
+                    <h3 id="formTituloDeudor">➕ Nuevo Deudor</h3>
+                    <input type="hidden" id="deudorId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre Completo <span class="required">*</span></label>
+                            <input type="text" id="deudorNombre" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono <span class="required">*</span></label>
+                            <input type="tel" id="deudorTelefono" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Sede de Venta <span class="required">*</span></label>
+                            <select id="deudorSede" class="form-control" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Alcalá">Alcalá</option>
+                                <option value="Cero1">Cero1 / Local 01</option>
+                                <option value="Jordán">Jordán</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Compra</label>
+                            <input type="date" id="deudorFecha" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción de la Compra <span class="required">*</span></label>
+                        <textarea id="deudorDescripcion" class="form-control" rows="2" required placeholder="Ej: Casco Shaft 526, Guantes..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Monto Total <span class="required">*</span></label>
+                            <input type="number" id="deudorMontoOriginal" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Saldo Actual <span class="required">*</span></label>
+                            <input type="number" id="deudorSaldo" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Contacto de Referencia</label>
+                        <input type="text" id="deudorReferencia" class="form-control" placeholder="Persona que respalda">
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button onclick="guardarDeudor()" class="btn btn-success">💾 Guardar</button>
+                        <button onclick="cancelarFormDeudor()" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-header"><h3>📋 Lista de Deudores</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Teléfono</th>
+                                        <th>Sede</th>
+                                        <th>Descripción</th>
+                                        <th>Monto Original</th>
+                                        <th>Saldo</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyDeudores">
+                                    <tr><td colspan="8" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ PROVEEDORES ═══════════════════ -->
+            <section id="proveedoresSection" class="section">
+                <div class="page-header">
+                    <h1>🏭 Gestión de Proveedores</h1>
+                    <p>Administra proveedores</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🏭</div>
+                        <div class="stat-info">
+                            <h3 id="proveedoresTotal">0</h3>
+                            <p>Proveedores</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3 id="proveedoresActivos">0</h3>
+                            <p>Activos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">💰</div>
+                        <div class="stat-info">
+                            <h3 id="proveedoresSaldoPendiente">$0</h3>
+                            <p>Saldo Pendiente</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="mostrarFormProveedor()" class="btn btn-primary">➕ Nuevo Proveedor</button>
+                    <input type="text" id="proveedoresBuscar" class="form-control" placeholder="🔍 Buscar proveedor..." style="max-width:250px;" oninput="buscarProveedores()">
+                    <button onclick="cargarProveedores()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+
+                <div id="formProveedor" class="form-modal" style="display:none;">
+                    <h3 id="formTituloProveedor">➕ Nuevo Proveedor</h3>
+                    <input type="hidden" id="proveedorId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Razón Social / Nombre <span class="required">*</span></label>
+                            <input type="text" id="proveedorNombre" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>NIT</label>
+                            <input type="text" id="proveedorNit" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Contacto</label>
+                            <input type="text" id="proveedorContacto" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="tel" id="proveedorTelefono" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Condición de Pago</label>
+                            <select id="proveedorCondicion" class="form-control">
+                                <option value="contado">Contado</option>
+                                <option value="credito_15">Crédito 15 días</option>
+                                <option value="credito_30">Crédito 30 días</option>
+                                <option value="credito_60">Crédito 60 días</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="proveedorEmail" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notas</label>
+                        <textarea id="proveedorNotas" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button onclick="guardarProveedor()" class="btn btn-success">💾 Guardar</button>
+                        <button onclick="cancelarFormProveedor()" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-header"><h3>🏭 Lista de Proveedores</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Proveedor</th>
+                                        <th>Contacto</th>
+                                        <th>Teléfono</th>
+                                        <th>Condición</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyProveedores">
+                                    <tr><td colspan="6" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ COMPRAS ═══════════════════ -->
+            <section id="comprasSection" class="section">
+                <div class="page-header">
+                    <h1>🛒 Compras a Proveedores</h1>
+                    <p>Control de compras y pagos a proveedores</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon red">💰</div>
+                        <div class="stat-info">
+                            <h3 id="comprasPendientes">$0</h3>
+                            <p>Por Pagar</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">📋</div>
+                        <div class="stat-info">
+                            <h3 id="comprasAbiertas">0</h3>
+                            <p>Compras Abiertas</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3 id="comprasPagadasMes">0</h3>
+                            <p>Pagadas Este Mes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="mostrarFormCompra()" class="btn btn-primary">➕ Nueva Compra</button>
+                    <select id="comprasEstadoFiltro" class="form-control" style="max-width:180px;" onchange="cargarCompras()">
+                        <option value="">Todas</option>
+                        <option value="ABIERTO">🔴 Pendientes</option>
+                        <option value="CERRADO">🟢 Cerradas</option>
+                    </select>
+                    <input type="text" id="comprasBuscar" class="form-control" placeholder="🔍 Buscar proveedor..." style="max-width:200px;" oninput="buscarCompras()">
+                    <button onclick="cargarCompras()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+
+                <!-- FORMULARIO MODAL NUEVA COMPRA -->
+                <div id="formCompra" class="form-modal" style="display:none;">
+                    <h3 id="formTituloCompra">➕ Nueva Compra a Proveedor</h3>
+                    <input type="hidden" id="compraId">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Año <span class="required">*</span></label>
+                            <select id="compraAnio" class="form-control" required>
+                                <option value="2024">2024</option>
+                                <option value="2025" selected>2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mes Compra <span class="required">*</span></label>
+                            <select id="compraMes" class="form-control" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="01.ENE">01.ENE</option>
+                                <option value="02.FEB">02.FEB</option>
+                                <option value="03.MAR">03.MAR</option>
+                                <option value="04.ABR">04.ABR</option>
+                                <option value="05.MAY">05.MAY</option>
+                                <option value="06.JUN">06.JUN</option>
+                                <option value="07.JUL">07.JUL</option>
+                                <option value="08.AGO">08.AGO</option>
+                                <option value="09.SEP">09.SEP</option>
+                                <option value="10.OCT">10.OCT</option>
+                                <option value="11.NOV">11.NOV</option>
+                                <option value="12.DIC">12.DIC</option>
+                                <option value="ANTIGUO">ANTIGUO</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Día</label>
+                            <input type="number" id="compraDia" class="form-control" placeholder="1-31" min="1" max="31">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cuenta</label>
+                            <select id="compraCuenta" class="form-control">
+                                <option value="">Sin asignar</option>
+                                <option value="GLO">GLO</option>
+                                <option value="CLAU">CLAU</option>
+                                <option value="EFECTIVO">EFECTIVO</option>
+                                <option value="CREDITO">CREDITO</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:2;">
+                            <label>Proveedor <span class="required">*</span></label>
+                            <input type="text" id="compraProveedor" class="form-control" list="listaProveedoresDatalist" placeholder="Nombre del proveedor" required>
+                            <datalist id="listaProveedoresDatalist"></datalist>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label># Factura</label>
+                            <input type="text" id="compraFactura" class="form-control" placeholder="Número de factura">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Vencimiento</label>
+                            <input type="date" id="compraVencimiento" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Consecutivo Moteros</label>
+                            <input type="text" id="compraConsecutivo" class="form-control" placeholder="Ej: 1001">
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Compra <span class="required">*</span></label>
+                            <input type="text" id="compraValor" class="form-control" placeholder="$0" oninput="formatearMonedaInput(this)" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Factura Electrónica</label>
+                            <select id="compraFElectronica" class="form-control">
+                                <option value="">No</option>
+                                <option value="SI">Sí</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Estado</label>
-                            <select id="promocionEstado" class="form-control">
-                                <option value="Activa">Activa</option>
-                                <option value="Inactiva">Inactiva</option>
-                                <option value="Finalizada">Finalizada</option>
+                            <select id="compraEstado" class="form-control">
+                                <option value="ABIERTO">🔴 ABIERTO (Pendiente)</option>
+                                <option value="CERRADO">🟢 CERRADO (Pagado)</option>
                             </select>
                         </div>
-                        <div style="display:flex; gap:1rem; margin-top:1.5rem;">
-                            <button onclick="guardarPromocion()" class="btn btn-success">💾 Guardar</button>
-                            <button onclick="cancelarFormPromocion()" class="btn btn-secondary">Cancelar</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notas</label>
+                        <textarea id="compraNotas" class="form-control" rows="2" placeholder="Observaciones adicionales..."></textarea>
+                    </div>
+
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button onclick="guardarCompra()" class="btn btn-success">💾 Guardar Compra</button>
+                        <button onclick="cancelarFormCompra()" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+
+                <!-- MODAL REGISTRAR PAGO -->
+                <div id="modalPagoCompra" class="modal-overlay" style="display:none;">
+                    <div class="modal-content" style="max-width:500px;">
+                        <div class="modal-header">
+                            <h3>💵 Registrar Pago</h3>
+                            <button onclick="cerrarModalPago()" class="btn-cerrar">×</button>
                         </div>
-                    </div>
-
-                    <div id="listaPromociones"><div class="loading"><div class="spinner"></div><p>Cargando promociones...</p></div></div>
-                </section>
-
-                <!-- ═══════════════════ BLOG ═══════════════════ -->
-                <section id="blogSection" class="section">
-                    <div class="page-header"><h1>Gestión del Blog</h1><p>Publica contenido y noticias</p></div>
-                    <div class="actions-bar">
-                        <button onclick="mostrarFormPost()" class="btn btn-primary">➕ Nueva Publicación</button>
-                        <button onclick="cargarPosts()" class="btn btn-secondary">🔄 Recargar</button>
-                    </div>
-
-                    <div id="formPost" class="form-modal">
-                        <h3 id="formTituloPost">➕ Nueva Publicación</h3>
-                        <input type="hidden" id="postId">
-                        <div class="dropzone" id="dropzonePost" onclick="document.getElementById('fileInputPost').click()">
-                            <div class="dropzone-icon">🖼️</div>
-                            <div class="dropzone-text">Imagen del post</div>
-                            <div class="dropzone-subtext">Arrastra o haz clic para seleccionar</div>
-                            <input type="file" id="fileInputPost" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'post')">
-                            <div class="preview-container" id="previewContainerPost" style="display:none;">
-                                <img id="previewPost" class="preview-image">
-                                <button class="remove-preview" onclick="event.stopPropagation(); removerPreview('post')">×</button>
+                        <div class="modal-body">
+                            <input type="hidden" id="pagoCompraId">
+                            <div class="alert alert-info" style="margin-bottom:1rem;">
+                                <strong>Proveedor:</strong> <span id="pagoProveedorNombre">-</span><br>
+                                <strong>Factura:</strong> <span id="pagoFacturaNum">-</span><br>
+                                <strong>Saldo Pendiente:</strong> <span id="pagoSaldoPendiente">$0</span>
+                            </div>
+                            <div class="form-group">
+                                <label>Mes del Pago <span class="required">*</span></label>
+                                <select id="pagoMes" class="form-control" required>
+                                    <option value="">Seleccionar mes...</option>
+                                    <option value="pago_ene">Enero 2024</option>
+                                    <option value="pago_feb">Febrero 2024</option>
+                                    <option value="pago_mar">Marzo 2024</option>
+                                    <option value="pago_abr">Abril 2024</option>
+                                    <option value="pago_may">Mayo 2024</option>
+                                    <option value="pago_jun">Junio 2024</option>
+                                    <option value="pago_jul">Julio 2024</option>
+                                    <option value="pago_ago">Agosto 2024</option>
+                                    <option value="pago_sep">Septiembre 2024</option>
+                                    <option value="pago_oct">Octubre 2024</option>
+                                    <option value="pago_nov">Noviembre 2024</option>
+                                    <option value="pago_dic">Diciembre 2024</option>
+                                    <option value="pago_ene_2025">Enero 2025</option>
+                                    <option value="pago_feb_2025">Febrero 2025</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Monto del Pago <span class="required">*</span></label>
+                                <input type="text" id="pagoMonto" class="form-control" placeholder="$0" oninput="formatearMonedaInput(this)" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Notas</label>
+                                <input type="text" id="pagoNotas" class="form-control" placeholder="Referencia o nota del pago">
                             </div>
                         </div>
-                        <div class="upload-progress" id="uploadProgressPost"><div class="progress-bar"><div class="progress-fill" id="progressFillPost" style="width:0%"></div></div><div class="progress-text">Subiendo imagen...</div></div>
-                        <div class="form-group"><label>Título <span class="required">*</span></label><input type="text" id="postTitulo" class="form-control" placeholder="Título del post"></div>
-                        <div class="form-group"><label>Contenido <span class="required">*</span></label><textarea id="postContenido" class="form-control" rows="6" placeholder="Escribe el contenido..."></textarea></div>
-                        <div class="form-group"><label>URL Imagen (alternativa)</label><input type="url" id="postImagenUrl" class="form-control" placeholder="https://..."></div>
-                        <div class="form-group"><label>Video (URL TikTok/YouTube)</label><input type="url" id="postVideo" class="form-control" placeholder="https://www.tiktok.com/@usuario/video/123"><p class="form-hint">Pega la URL completa del video</p></div>
-                        <div style="display:flex; gap:1rem; margin-top:1.5rem;">
-                            <button onclick="guardarPost()" class="btn btn-success">💾 Publicar</button>
-                            <button onclick="cancelarFormPost()" class="btn btn-secondary">Cancelar</button>
+                        <div class="modal-footer">
+                            <button onclick="guardarPagoCompra()" class="btn btn-success">💾 Registrar Pago</button>
+                            <button onclick="cerrarModalPago()" class="btn btn-secondary">Cancelar</button>
                         </div>
                     </div>
+                </div>
 
-                    <div id="listaPosts" class="productos-admin-grid"><div class="loading"><div class="spinner"></div><p>Cargando publicaciones...</p></div></div>
-                </section>
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-header"><h3>📋 Lista de Compras</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Cuenta</th>
+                                        <th>Proveedor</th>
+                                        <th># Factura</th>
+                                        <th>Valor</th>
+                                        <th>Saldo</th>
+                                        <th>Vencimiento</th>
+                                        <th>F.Elec</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyCompras">
+                                    <tr><td colspan="10" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-                <!-- ═══════════════════ CONFIGURACIÓN ═══════════════════ -->
-                <section id="configuracionSection" class="section">
-                    <div class="page-header"><h1>Configuración</h1><p>Ajustes generales del sistema</p></div>
-                    <div class="config-grid">
-                        <div class="config-card">
-                            <h4>🖼️ Branding</h4>
-                            <div class="dropzone" id="dropzoneLogo" onclick="document.getElementById('fileInputLogo').click()" style="padding:1.5rem;">
-                                <div class="dropzone-icon" style="font-size:2rem;">🏍️</div>
-                                <div class="dropzone-text">Logo de la empresa</div>
-                                <input type="file" id="fileInputLogo" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'logo')">
-                                <div class="preview-container" id="previewContainerLogo" style="display:none;">
-                                    <img id="previewLogo" class="preview-image" style="max-height:100px;">
-                                    <button class="remove-preview" onclick="event.stopPropagation(); removerPreview('logo')">×</button>
+            <!-- ═══════════════════ DEUDAS DEL NEGOCIO ═══════════════════ -->
+            <section id="deudasSection" class="section">
+                <div class="page-header">
+                    <h1>📋 Deudas del Negocio</h1>
+                    <p>Control de préstamos y obligaciones financieras</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon red">💰</div>
+                        <div class="stat-info">
+                            <h3 id="deudasTotalSaldo">$0</h3>
+                            <p>Saldo Total</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">📊</div>
+                        <div class="stat-info">
+                            <h3 id="deudasMontoOriginal">$0</h3>
+                            <p>Monto Original</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">💵</div>
+                        <div class="stat-info">
+                            <h3 id="deudasPagado">$0</h3>
+                            <p>Total Pagado</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📋</div>
+                        <div class="stat-info">
+                            <h3 id="deudasActivas">0</h3>
+                            <p>Deudas Activas</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="mostrarFormDeuda()" class="btn btn-primary">➕ Nueva Deuda</button>
+                    <button onclick="cargarDeudasNegocio()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+
+                <div id="formDeuda" class="form-modal" style="display:none;">
+                    <h3>➕ Registrar Deuda/Préstamo</h3>
+                    <input type="hidden" id="deudaId">
+                    <div class="form-group">
+                        <label>Concepto <span class="required">*</span></label>
+                        <input type="text" id="deudaConcepto" class="form-control" placeholder="Ej: Préstamo compra MT" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Número de Factura</label>
+                            <input type="text" id="deudaFactura" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Acreedor</label>
+                            <input type="text" id="deudaAcreedor" class="form-control" placeholder="A quién se debe">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Monto Original <span class="required">*</span></label>
+                            <input type="number" id="deudaMontoOriginal" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Saldo Actual <span class="required">*</span></label>
+                            <input type="number" id="deudaSaldo" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notas</label>
+                        <textarea id="deudaNotas" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button onclick="guardarDeudaNegocio()" class="btn btn-success">💾 Guardar</button>
+                        <button onclick="cancelarFormDeuda()" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-header"><h3>📋 Lista de Deudas</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Concepto</th>
+                                        <th># Factura</th>
+                                        <th>Acreedor</th>
+                                        <th>Monto Original</th>
+                                        <th>Saldo Actual</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyDeudas">
+                                    <tr><td colspan="7" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ CRÉDITO MOTERO ═══════════════════ -->
+            <section id="creditosSection" class="section">
+                <div class="page-header">
+                    <h1>🏍️ Crédito Motero</h1>
+                    <p>Gestión de créditos a clientes</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon orange">💳</div>
+                        <div class="stat-info">
+                            <h3 id="creditosActivos">0</h3>
+                            <p>Créditos Activos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">💰</div>
+                        <div class="stat-info">
+                            <h3 id="creditosSaldoTotal">$0</h3>
+                            <p>Saldo por Cobrar</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">⚠️</div>
+                        <div class="stat-info">
+                            <h3 id="creditosMora">0</h3>
+                            <p>En Mora</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3 id="creditosPagados">0</h3>
+                            <p>Pagados</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="mostrarFormCredito()" class="btn btn-primary">➕ Nuevo Crédito</button>
+                    <select id="creditosEstadoFiltro" class="form-control" style="max-width:180px;" onchange="cargarCreditos()">
+                        <option value="activo">🟡 Activos</option>
+                        <option value="mora">🔴 En Mora</option>
+                        <option value="pagado">🟢 Pagados</option>
+                        <option value="">Todos</option>
+                    </select>
+                    <button onclick="cargarCreditos()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-header"><h3>📋 Créditos</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Teléfono</th>
+                                        <th>Monto Total</th>
+                                        <th>Saldo</th>
+                                        <th>Cuotas</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyCreditos">
+                                    <tr><td colspan="7" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ PROMOCIONES ═══════════════════ -->
+            <section id="promocionesSection" class="section">
+                <div class="page-header"><h1>Gestión de Promociones</h1><p>Administra ofertas y descuentos</p></div>
+                <div class="actions-bar">
+                    <button onclick="mostrarFormPromocion()" class="btn btn-primary">➕ Nueva Promoción</button>
+                    <button onclick="cargarPromociones()" class="btn btn-secondary">🔄 Recargar</button>
+                </div>
+
+                <div id="formPromocion" class="form-modal" style="display:none;">
+                    <h3 id="formTituloPromocion">➕ Nueva Promoción</h3>
+                    <input type="hidden" id="promocionIdOriginal">
+                    
+                    <div class="form-row">
+                        <div class="form-group"><label>ID Promoción <span class="required">*</span></label><input type="text" id="promocionId" class="form-control" placeholder="PROMO06"></div>
+                        <div class="form-group"><label>Nombre <span class="required">*</span></label><input type="text" id="promocionNombre" class="form-control" placeholder="Nombre de la promoción"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Descuento (%) <span class="required">*</span></label><input type="number" id="promocionDescuento" class="form-control" placeholder="20" min="1" max="100"></div>
+                        <div class="form-group"><label>Locales Aplicables</label><input type="text" id="promocionLocales" class="form-control" placeholder="Todos"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Productos Incluidos <span class="required">*</span></label>
+                        <div id="listaProductosPromo" class="productos-promo-grid"><div class="loading"><div class="spinner"></div><p>Cargando...</p></div></div>
+                        <input type="hidden" id="promocionProductos">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group"><label>Fecha Inicio</label><input type="text" id="promocionInicio" class="form-control" placeholder="DD/MM/AAAA"></div>
+                        <div class="form-group"><label>Fecha Fin</label><input type="text" id="promocionFin" class="form-control" placeholder="DD/MM/AAAA"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado</label>
+                        <select id="promocionEstado" class="form-control">
+                            <option value="Activa">Activa</option>
+                            <option value="Inactiva">Inactiva</option>
+                            <option value="Finalizada">Finalizada</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button onclick="guardarPromocion()" class="btn btn-success">💾 Guardar</button>
+                        <button onclick="cancelarFormPromocion()" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+
+                <div id="listaPromociones"><div class="loading"><div class="spinner"></div><p>Cargando promociones...</p></div></div>
+            </section>
+
+            <!-- ═══════════════════ BLOG ═══════════════════ -->
+            <section id="blogSection" class="section">
+                <div class="page-header"><h1>Gestión del Blog</h1><p>Publica contenido y noticias</p></div>
+                <div class="actions-bar">
+                    <button onclick="mostrarFormPost()" class="btn btn-primary">➕ Nueva Publicación</button>
+                    <button onclick="cargarPosts()" class="btn btn-secondary">🔄 Recargar</button>
+                </div>
+
+                <div id="formPost" class="form-modal" style="display:none;">
+                    <h3 id="formTituloPost">➕ Nueva Publicación</h3>
+                    <input type="hidden" id="postId">
+                    <div class="dropzone" id="dropzonePost" onclick="document.getElementById('fileInputPost').click()">
+                        <div class="dropzone-icon">🖼️</div>
+                        <div class="dropzone-text">Imagen del post</div>
+                        <input type="file" id="fileInputPost" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'post')">
+                        <div class="preview-container" id="previewContainerPost" style="display:none;">
+                            <img id="previewPost" class="preview-image">
+                            <button class="remove-preview" onclick="event.stopPropagation(); removerPreview('post')">×</button>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Título <span class="required">*</span></label><input type="text" id="postTitulo" class="form-control" placeholder="Título del post"></div>
+                    <div class="form-group"><label>Contenido <span class="required">*</span></label><textarea id="postContenido" class="form-control" rows="6" placeholder="Escribe el contenido..."></textarea></div>
+                    <div class="form-group"><label>URL Imagen (alternativa)</label><input type="url" id="postImagenUrl" class="form-control" placeholder="https://..."></div>
+                    <div class="form-group"><label>Video (URL TikTok/YouTube)</label><input type="url" id="postVideo" class="form-control" placeholder="https://www.tiktok.com/@usuario/video/123"></div>
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button onclick="guardarPost()" class="btn btn-success">💾 Publicar</button>
+                        <button onclick="cancelarFormPost()" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+
+                <div id="listaPosts" class="productos-admin-grid"><div class="loading"><div class="spinner"></div><p>Cargando publicaciones...</p></div></div>
+            </section>
+
+            <!-- ═══════════════════ ALIANZAS ═══════════════════ -->
+            <section id="alianzasSection" class="section">
+                <div class="page-header">
+                    <h1>🤝 Alianzas y Convenios</h1>
+                    <p>Gestiona alianzas empresariales y procesadores de pago</p>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="mostrarFormAlianza()" class="btn btn-primary">➕ Nueva Alianza</button>
+                    <button onclick="cargarAlianzas()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-header"><h3>🤝 Lista de Alianzas</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Tipo</th>
+                                        <th>Descripción</th>
+                                        <th>Contacto</th>
+                                        <th>Procesador</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyAlianzas">
+                                    <tr><td colspan="7" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ CONFIGURACIÓN ═══════════════════ -->
+            <section id="configuracionSection" class="section">
+                <div class="page-header"><h1>Configuración</h1><p>Ajustes generales del sistema</p></div>
+                <div class="config-grid">
+                    <div class="config-card">
+                        <h4>🖼️ Branding</h4>
+                        <div class="form-group"><label>Logo (URL)</label><input type="url" id="configLogo" class="form-control" placeholder="https://..."></div>
+                        <div class="form-group"><label>Nombre de la Tienda</label><input type="text" id="configNombre" class="form-control" placeholder="Moteros Sports Line"></div>
+                        <div class="form-group"><label>Slogan</label><input type="text" id="configSlogan" class="form-control" placeholder="Tu estilo, tu pasión"></div>
+                        <div class="form-group"><label>Color Principal</label><div class="color-picker-group"><input type="color" id="configColor" value="#ff6b00" class="color-preview"></div></div>
+                    </div>
+                    <div class="config-card">
+                        <h4>📱 Redes Sociales</h4>
+                        <div class="form-group"><label>WhatsApp (con código país)</label><input type="text" id="configWhatsapp" class="form-control" placeholder="573113408416"></div>
+                        <div class="form-group"><label>Facebook</label><input type="url" id="configFacebook" class="form-control" placeholder="https://facebook.com/..."></div>
+                        <div class="form-group"><label>Instagram</label><input type="url" id="configInstagram" class="form-control" placeholder="https://instagram.com/..."></div>
+                        <div class="form-group"><label>TikTok</label><input type="url" id="configTiktok" class="form-control" placeholder="https://tiktok.com/..."></div>
+                    </div>
+                    <div class="config-card">
+                        <h4>📧 Contacto</h4>
+                        <div class="form-group"><label>Email principal</label><input type="email" id="configEmail" class="form-control" placeholder="moterossportline@gmail.com"></div>
+                        <div class="form-group"><label>Teléfono</label><input type="text" id="configTelefono" class="form-control" placeholder="3113408416"></div>
+                        <div class="form-group"><label>Dirección principal</label><input type="text" id="configDireccion" class="form-control" placeholder="Calle 123 #45-67"></div>
+                    </div>
+                    <div class="config-card">
+                        <h4>⚙️ Sistema</h4>
+                        <div class="form-group"><label>Stock mínimo por defecto</label><input type="number" id="configStockMinimo" class="form-control" placeholder="5" min="1"></div>
+                        <div class="form-group"><label>Moneda</label><select id="configMoneda" class="form-control"><option value="COP">COP - Peso Colombiano</option><option value="USD">USD - Dólar</option></select></div>
+                    </div>
+                </div>
+                <div style="margin-top:2rem;"><button onclick="guardarConfiguracion()" class="btn btn-success btn-lg">💾 Guardar Configuración</button></div>
+            </section>
+
+            <!-- ═══════════════ SECCIÓN ENVÍOS ═══════════════ -->
+            <section id="enviosSection" class="section">
+                <div class="page-header">
+                    <h1>📦 Gestión de Envíos</h1>
+                    <p>Control y seguimiento de pedidos con envío a domicilio</p>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon orange">📋</div>
+                        <div class="stat-info">
+                            <h3 id="enviosPendientes">0</h3>
+                            <p>Pendientes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🚚</div>
+                        <div class="stat-info">
+                            <h3 id="enviosEnTransito">0</h3>
+                            <p>En Tránsito</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3 id="enviosEntregados">0</h3>
+                            <p>Entregados (mes)</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">🔄</div>
+                        <div class="stat-info">
+                            <h3 id="enviosDevueltos">0</h3>
+                            <p>Devoluciones</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtros y Acciones -->
+                <div class="actions-bar">
+                    <select id="enviosEstadoFiltro" class="form-control" style="max-width:180px;" onchange="cargarEnvios()">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente">📋 Pendientes</option>
+                        <option value="preparando">📦 Preparando</option>
+                        <option value="despachado">🚚 Despachados</option>
+                        <option value="en_transito">🛣️ En Tránsito</option>
+                        <option value="entregado">✅ Entregados</option>
+                        <option value="devuelto">🔄 Devueltos</option>
+                    </select>
+                    <input type="text" id="enviosBuscar" class="form-control" placeholder="🔍 Buscar cliente, guía..." style="max-width:250px;" oninput="buscarEnvios()">
+                    <input type="date" id="enviosFechaFiltro" class="form-control" style="max-width:160px;" onchange="cargarEnvios()">
+                    <button onclick="cargarEnvios()" class="btn btn-secondary">🔄 Actualizar</button>
+                    <button onclick="exportarEnvios()" class="btn btn-primary">📥 Exportar</button>
+                </div>
+
+                <!-- Tabla de Envíos -->
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-header"><h3>📋 Lista de Envíos</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pedido</th>
+                                        <th>Fecha</th>
+                                        <th>Cliente</th>
+                                        <th>Ciudad</th>
+                                        <th>Transportadora</th>
+                                        <th>Guía</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyEnvios">
+                                    <tr><td colspan="9" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Editar Envío -->
+                <div id="modalEditarEnvio" class="modal-overlay" style="display:none;">
+                    <div class="modal-content" style="max-width:600px;">
+                        <div class="modal-header">
+                            <h3>📦 Actualizar Envío</h3>
+                            <button onclick="cerrarModalEnvio()" class="btn-cerrar">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="envioId">
+                            
+                            <!-- Info del cliente (solo lectura) -->
+                            <div class="alert alert-info" style="margin-bottom:1rem;">
+                                <strong>Pedido:</strong> <span id="envioNumeroPedido">-</span><br>
+                                <strong>Cliente:</strong> <span id="envioClienteNombre">-</span><br>
+                                <strong>Teléfono:</strong> <span id="envioClienteTelefono">-</span><br>
+                                <strong>Dirección:</strong> <span id="envioDireccion">-</span><br>
+                                <strong>Ciudad:</strong> <span id="envioCiudad">-</span>
+                            </div>
+
+                            <!-- Productos del pedido -->
+                            <div class="form-group">
+                                <label>📦 Productos</label>
+                                <div id="envioProductos" class="alert" style="background:#f8fafc; max-height:100px; overflow-y:auto;">-</div>
+                            </div>
+
+                            <hr style="margin: 1rem 0; border-color: #e2e8f0;">
+
+                            <!-- Campos editables -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Transportadora</label>
+                                    <input type="text" id="envioTransportadora" class="form-control" placeholder="Ej: Servientrega, Interrapidísimo...">
+                                </div>
+                                <div class="form-group">
+                                    <label>Número de Guía</label>
+                                    <input type="text" id="envioGuia" class="form-control" placeholder="Número de tracking">
                                 </div>
                             </div>
-                            <div class="form-group"><label>O URL del Logo</label><input type="url" id="configLogo" class="form-control" placeholder="https://..."></div>
-                            <div class="form-group"><label>Nombre de la Tienda</label><input type="text" id="configNombre" class="form-control" placeholder="Moteros Sports Line"></div>
-                            <div class="form-group"><label>Slogan</label><input type="text" id="configSlogan" class="form-control" placeholder="Tu estilo, tu pasión"></div>
-                            <div class="form-group"><label>Color Principal</label><div class="color-picker-group"><input type="color" id="configColor" value="#ff6b00" class="color-preview"><span style="color:var(--gray-500); font-size:0.9rem;">Color de marca</span></div></div>
+
+                            <div class="form-group">
+                                <label>URL de Rastreo (opcional)</label>
+                                <input type="url" id="envioUrlTracking" class="form-control" placeholder="https://...">
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Estado del Envío</label>
+                                    <select id="envioEstado" class="form-control">
+                                        <option value="pendiente">📋 Pendiente</option>
+                                        <option value="preparando">📦 Preparando</option>
+                                        <option value="despachado">🚚 Despachado</option>
+                                        <option value="en_transito">🛣️ En Tránsito</option>
+                                        <option value="entregado">✅ Entregado</option>
+                                        <option value="devuelto">🔄 Devuelto</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Costo de Envío</label>
+                                    <input type="number" id="envioCosto" class="form-control" placeholder="0" min="0">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label><input type="checkbox" id="envioIncluidoPrecio"> Envío incluido en precio</label>
+                                </div>
+                                <div class="form-group">
+                                    <label><input type="checkbox" id="envioClientePaga" checked> Cliente paga envío</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Notas</label>
+                                <textarea id="envioNotas" class="form-control" rows="2" placeholder="Observaciones..."></textarea>
+                            </div>
+
+                            <hr style="margin: 1rem 0; border-color: #e2e8f0;">
+
+                            <!-- Notificación -->
+                            <div class="form-group" style="background:#f0fdf4; padding:1rem; border-radius:8px; border:1px solid #bbf7d0;">
+                                <label style="color:#166534; font-weight:600;">📣 Notificar al Cliente</label>
+                                <div style="display:flex; gap:1rem; margin-top:0.5rem;">
+                                    <label><input type="checkbox" id="notificarWhatsApp" checked> 📱 WhatsApp</label>
+                                    <label><input type="checkbox" id="notificarEmail"> 📧 Email</label>
+                                </div>
+                                <div class="form-group" style="margin-top:0.75rem;">
+                                    <label>Mensaje personalizado (opcional)</label>
+                                    <textarea id="envioMensajePersonalizado" class="form-control" rows="2" placeholder="Dejar vacío para usar mensaje automático..."></textarea>
+                                </div>
+                            </div>
                         </div>
-                        <div class="config-card">
-                            <h4>📱 Redes Sociales</h4>
-                            <div class="form-group"><label>WhatsApp (con código país)</label><input type="text" id="configWhatsapp" class="form-control" placeholder="573113408416"></div>
-                            <div class="form-group"><label>Facebook</label><input type="url" id="configFacebook" class="form-control" placeholder="https://facebook.com/..."></div>
-                            <div class="form-group"><label>Instagram</label><input type="url" id="configInstagram" class="form-control" placeholder="https://instagram.com/..."></div>
-                            <div class="form-group"><label>TikTok</label><input type="url" id="configTiktok" class="form-control" placeholder="https://tiktok.com/..."></div>
-                        </div>
-                        <div class="config-card">
-                            <h4>📧 Contacto</h4>
-                            <div class="form-group"><label>Email principal</label><input type="email" id="configEmail" class="form-control" placeholder="contacto@moteros.com"></div>
-                            <div class="form-group"><label>Teléfono</label><input type="text" id="configTelefono" class="form-control" placeholder="3113408416"></div>
-                            <div class="form-group"><label>Dirección principal</label><input type="text" id="configDireccion" class="form-control" placeholder="Calle 123 #45-67"></div>
-                        </div>
-                        <div class="config-card">
-                            <h4>⚙️ Sistema</h4>
-                            <div class="form-group"><label>Stock mínimo por defecto</label><input type="number" id="configStockMinimo" class="form-control" placeholder="5" min="1"></div>
-                            <div class="form-group"><label>Moneda</label><select id="configMoneda" class="form-control"><option value="COP">COP - Peso Colombiano</option><option value="USD">USD - Dólar</option></select></div>
+                        <div class="modal-footer">
+                            <button onclick="guardarEnvioModal(false)" class="btn btn-secondary">💾 Solo Guardar</button>
+                            <button onclick="guardarEnvioModal(true)" class="btn btn-success">💾 Guardar y Notificar</button>
+                            <button onclick="cerrarModalEnvio()" class="btn btn-secondary">Cancelar</button>
                         </div>
                     </div>
-                    <div style="margin-top:2rem;"><button onclick="guardarConfiguracion()" class="btn btn-success btn-lg">💾 Guardar Configuración</button></div>
-                </section>
+                </div>
 
-            </main>
-        </div>
+                <!-- Modal Ver Historial -->
+                <div id="modalHistorialEnvio" class="modal-overlay" style="display:none;">
+                    <div class="modal-content" style="max-width:500px;">
+                        <div class="modal-header">
+                            <h3>📜 Historial del Envío</h3>
+                            <button onclick="cerrarModalHistorial()" class="btn-cerrar">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="historialEnvioContenido">
+                                <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button onclick="cerrarModalHistorial()" class="btn btn-secondary">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ ESTADÍSTICAS DE ENVÍOS ═══════════════════ -->
+            <section id="envios-estadisticasSection" class="section">
+                <div class="page-header">
+                    <h1>📊 Estadísticas de Envíos</h1>
+                    <p>Análisis de viabilidad de Tienda Digital</p>
+                </div>
+
+                <!-- Resumen General -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📦</div>
+                        <div class="stat-info">
+                            <h3 id="statEnviosTotales">0</h3>
+                            <p>Envíos del Mes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3 id="statTasaEntrega">0%</h3>
+                            <p>Tasa de Entrega</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">⏱️</div>
+                        <div class="stat-info">
+                            <h3 id="statTiempoPromedio">0 días</h3>
+                            <p>Tiempo Promedio</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">🔄</div>
+                        <div class="stat-info">
+                            <h3 id="statTasaDevolucion">0%</h3>
+                            <p>Tasa Devolución</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Balance Financiero Envíos -->
+                <div class="stats-grid" style="margin-top:1rem;">
+                    <div class="stat-card" style="border-left:4px solid #10b981;">
+                        <div class="stat-icon green">💰</div>
+                        <div class="stat-info">
+                            <h3 id="statCobradoEnvios">$0</h3>
+                            <p>Cobrado a Clientes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="border-left:4px solid #ef4444;">
+                        <div class="stat-icon red">💸</div>
+                        <div class="stat-info">
+                            <h3 id="statAsumidoEnvios">$0</h3>
+                            <p>Asumido por Negocio</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="border-left:4px solid #3b82f6;">
+                        <div class="stat-icon blue">📊</div>
+                        <div class="stat-info">
+                            <h3 id="statBalanceEnvios">$0</h3>
+                            <p>Balance Envíos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="border-left:4px solid #f59e0b;">
+                        <div class="stat-icon yellow">💵</div>
+                        <div class="stat-info">
+                            <h3 id="statVentasDigital">$0</h3>
+                            <p>Ventas Digital (mes)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos y Tablas -->
+                <div class="charts-grid" style="margin-top:1.5rem;">
+                    <div class="card">
+                        <div class="card-header"><h4>📈 Envíos por Mes</h4></div>
+                        <div class="card-body">
+                            <canvas id="chartEnviosMes"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h4>🚚 Por Transportadora</h4></div>
+                        <div class="card-body">
+                            <canvas id="chartTransportadoras"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ranking Transportadoras -->
+                <div class="card" style="margin-top:1.5rem;">
+                    <div class="card-header"><h3>🏆 Ranking de Transportadoras</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Transportadora</th>
+                                        <th>Envíos</th>
+                                        <th>Entregados</th>
+                                        <th>Devueltos</th>
+                                        <th>Tiempo Prom.</th>
+                                        <th>Tasa Éxito</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyTransportadoras">
+                                    <tr><td colspan="6" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Ciudades -->
+                <div class="card" style="margin-top:1.5rem;">
+                    <div class="card-header"><h3>📍 Top Ciudades Destino</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ciudad</th>
+                                        <th>Departamento</th>
+                                        <th>Envíos</th>
+                                        <th>Total Ventas</th>
+                                        <th>Costo Envío Prom.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyCiudades">
+                                    <tr><td colspan="5" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
     </div>
 
     <script src="js/config.js"></script>

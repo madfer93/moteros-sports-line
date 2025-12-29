@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS Alcalá | Moteros Sports Line</title>
+    <title>POS Digital | Moteros Sports Line</title>
     <link rel="icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="css/pos.css">
@@ -15,15 +15,11 @@
      ═══════════════════════════════════════════════════════════════ -->
 <div id="lockedScreen" class="locked-screen">
     <div class="locked-content">
-        <!-- Resumen de cierre (se muestra después de cerrar caja) -->
         <div id="resumenCierreCompleto" class="hidden"></div>
-        
-        <!-- Pantalla inicial para abrir caja -->
         <div id="pantallaAbrirCaja">
-            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
-                 alt="Moteros Sports Line" class="locked-logo logo-img">
+            <img src="" alt="Moteros Sports Line" class="locked-logo locked-logo-digital logo-img">
             <h2>🔒 Caja Cerrada</h2>
-            <p class="tienda-nombre tienda-nombre-display">Alcalá</p>
+            <p class="tienda-nombre tienda-nombre-digital">📦 Tienda Digital</p>
             <p>Abre la caja para comenzar a vender</p>
             <button class="btn btn-success btn-large" onclick="abrirModalCaja()">
                 📂 Abrir Caja
@@ -35,12 +31,11 @@
 <!-- ═══════════════════════════════════════════════════════════════
      HEADER
      ═══════════════════════════════════════════════════════════════ -->
-<header class="header">
+<header class="header header-digital">
     <div class="header-left">
-        <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
-             alt="Logo" class="header-logo logo-img">
+        <img src="" alt="Logo" class="header-logo logo-img">
         <div>
-            <h1>🏪 Moteros - <span class="tienda-nombre-display">Alcalá</span></h1>
+            <h1>📦 Moteros - Tienda Digital</h1>
         </div>
     </div>
     <div class="header-info">
@@ -51,7 +46,6 @@
     </div>
 </header>
 
-<!-- Alertas -->
 <div id="alertas"></div>
 
 <!-- ═══════════════════════════════════════════════════════════════
@@ -60,10 +54,10 @@
 <div class="container">
     <!-- Panel de Productos -->
     <div class="panel">
-        <h3 class="panel-title">📦 Productos</h3>
+        <h3 class="panel-title">📦 Productos Disponibles</h3>
         <div class="search-box">
             <span class="search-icon">🔍</span>
-            <input type="text" class="search-input" id="inputBuscar" 
+            <input type="text" class="search-input search-input-digital" id="inputBuscar" 
                    placeholder="Buscar por nombre, marca o código..." 
                    oninput="filtrarProductos()">
         </div>
@@ -75,30 +69,69 @@
     <!-- Panel de Carrito -->
     <div class="panel">
         <div class="carrito-header">
-            <h3 class="panel-title" style="margin:0;">🛒 Carrito</h3>
-            <span id="carritoCount" class="carrito-count">0</span>
+            <h3 class="panel-title" style="margin:0;">🛒 Pedido</h3>
+            <span id="carritoCount" class="carrito-count carrito-count-digital">0</span>
         </div>
         
         <div id="carritoItems" class="carrito-items">
-            <div class="carrito-vacio">🛒 El carrito está vacío</div>
+            <div class="carrito-vacio">🛒 El pedido está vacío</div>
         </div>
         
-        <!-- Destino -->
-        <div class="seccion">
-            <h4 class="seccion-titulo">📍 Destino de la Venta</h4>
-            <select id="selectDestino" onchange="actualizarCredito()">
-                <option value="tienda">🏪 Venta en Tienda (cliente se lleva)</option>
-                <option value="digital">📦 Transferir a Tienda Digital (envío)</option>
-            </select>
+        <!-- DATOS DE ENVÍO (obligatorio para digital) -->
+        <div class="envio-form">
+            <h4>📬 Datos de Envío (obligatorio)</h4>
+            <input type="text" id="clienteNombre" placeholder="Nombre completo del cliente *">
+            <div class="row">
+                <input type="tel" id="clienteTelefono" placeholder="Teléfono *">
+                <input type="text" id="clienteCedula" placeholder="Cédula *">
+            </div>
+            <input type="text" id="direccionEnvio" placeholder="Dirección completa de envío *">
+            <div class="row">
+                <input type="text" id="ciudadEnvio" placeholder="Ciudad *">
+                <select id="departamentoEnvio">
+                    <option value="">-- Departamento --</option>
+                    <option value="Amazonas">Amazonas</option>
+                    <option value="Antioquia">Antioquia</option>
+                    <option value="Arauca">Arauca</option>
+                    <option value="Atlántico">Atlántico</option>
+                    <option value="Bogotá D.C.">Bogotá D.C.</option>
+                    <option value="Bolívar">Bolívar</option>
+                    <option value="Boyacá">Boyacá</option>
+                    <option value="Caldas">Caldas</option>
+                    <option value="Caquetá">Caquetá</option>
+                    <option value="Casanare">Casanare</option>
+                    <option value="Cauca">Cauca</option>
+                    <option value="Cesar">Cesar</option>
+                    <option value="Chocó">Chocó</option>
+                    <option value="Córdoba">Córdoba</option>
+                    <option value="Cundinamarca">Cundinamarca</option>
+                    <option value="Guainía">Guainía</option>
+                    <option value="Guaviare">Guaviare</option>
+                    <option value="Huila">Huila</option>
+                    <option value="La Guajira">La Guajira</option>
+                    <option value="Magdalena">Magdalena</option>
+                    <option value="Meta">Meta</option>
+                    <option value="Nariño">Nariño</option>
+                    <option value="Norte de Santander">Norte de Santander</option>
+                    <option value="Putumayo">Putumayo</option>
+                    <option value="Quindío">Quindío</option>
+                    <option value="Risaralda">Risaralda</option>
+                    <option value="San Andrés y Providencia">San Andrés y Providencia</option>
+                    <option value="Santander">Santander</option>
+                    <option value="Sucre">Sucre</option>
+                    <option value="Tolima">Tolima</option>
+                    <option value="Valle del Cauca">Valle del Cauca</option>
+                    <option value="Vaupés">Vaupés</option>
+                    <option value="Vichada">Vichada</option>
+                </select>
+            </div>
+            <textarea id="notasEnvio" rows="2" placeholder="Notas adicionales (barrio, referencias, horario de entrega...)"></textarea>
         </div>
         
         <!-- Métodos de Pago -->
         <div class="seccion">
             <h4 class="seccion-titulo">💰 Método(s) de Pago</h4>
             <div class="metodos-grid">
-                <div class="metodo-btn" data-metodo="Efectivo" onclick="toggleMetodo(this)">
-                    <span class="icono">💵</span>Efectivo
-                </div>
                 <div class="metodo-btn" data-metodo="Transferencia" onclick="toggleMetodo(this)">
                     <span class="icono">🏦</span>Transferencia
                 </div>
@@ -111,8 +144,8 @@
                 <div class="metodo-btn" data-metodo="Tarjeta" onclick="toggleMetodo(this)">
                     <span class="icono">💳</span>Tarjeta
                 </div>
-                <div class="metodo-btn" data-metodo="Datafono" onclick="toggleMetodo(this)">
-                    <span class="icono">🖥️</span>Datáfono
+                <div class="metodo-btn" data-metodo="Contraentrega" onclick="toggleMetodo(this)">
+                    <span class="icono">📦</span>Contraentrega
                 </div>
                 <div class="metodo-btn" data-metodo="Addi" onclick="toggleMetodo(this)">
                     <span class="icono">🅰️</span>Addi
@@ -130,32 +163,34 @@
             <div id="metodosSeleccionados" class="metodos-seleccionados"></div>
         </div>
         
-        <!-- Datos de Crédito -->
+        <!-- Datos de Crédito (si aplica) -->
         <div id="datosCredito" class="datos-credito">
-            <h4>📝 Datos del Cliente (requerido para crédito)</h4>
-            <input type="text" id="creditoNombre" placeholder="Nombre completo *">
-            <div class="row">
-                <input type="tel" id="creditoTelefono" placeholder="Teléfono *">
-                <input type="text" id="creditoCedula" placeholder="Cédula *">
-            </div>
-            <input type="text" id="creditoDireccion" placeholder="Dirección *">
+            <h4>📝 Datos de Crédito</h4>
             <select id="creditoAutoriza">
                 <option value="">-- ¿Quién autoriza el crédito? --</option>
                 <option value="Gerencia">Gerencia</option>
                 <option value="Administrador">Administrador</option>
                 <option value="Jefe de Tienda">Jefe de Tienda</option>
             </select>
+            <select id="creditoCuotas">
+                <option value="1">1 Cuota</option>
+                <option value="2">2 Cuotas</option>
+                <option value="3">3 Cuotas</option>
+                <option value="4">4 Cuotas</option>
+                <option value="6">6 Cuotas</option>
+                <option value="12">12 Cuotas</option>
+            </select>
         </div>
         
         <!-- Total -->
-        <div class="total-box">
-            <small>TOTAL A PAGAR</small>
+        <div class="total-box total-box-digital">
+            <small>TOTAL DEL PEDIDO</small>
             <div id="totalMonto" class="monto">$0</div>
         </div>
         
         <!-- Botón Vender -->
-        <button id="btnVender" class="btn btn-success btn-full btn-large" onclick="procesarVenta()" disabled>
-            ✅ Procesar Venta
+        <button id="btnVender" class="btn btn-full btn-large btn-vender-digital" onclick="procesarVentaDigital()" disabled>
+            📦 Registrar Pedido
         </button>
     </div>
 </div>
@@ -165,10 +200,10 @@
      ═══════════════════════════════════════════════════════════════ -->
 <div id="modalAbrirCaja" class="modal-overlay">
     <div class="modal">
-        <h3>📂 Abrir Caja</h3>
+        <h3>📂 Abrir Caja - Digital</h3>
         <div class="form-group">
             <label>💵 Base de caja (dinero inicial)</label>
-            <input type="number" id="montoInicial" value="100000" min="0" placeholder="100000">
+            <input type="number" id="montoInicial" value="0" min="0" placeholder="0">
         </div>
         <div class="form-group">
             <label>👤 Nombre del vendedor</label>
@@ -182,22 +217,15 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     MODAL: CERRAR CAJA
+     MODAL: CERRAR CAJA (DIGITAL)
      ═══════════════════════════════════════════════════════════════ -->
 <div id="modalCerrarCaja" class="modal-overlay">
     <div class="modal modal-large">
-        <h3>📊 Cierre de Caja</h3>
-        
-        <!-- Resumen del sistema -->
+        <h3>📊 Cierre de Caja - Digital</h3>
         <div id="resumenCierreModal"></div>
         
-        <!-- Conteo por método -->
-        <h4 style="margin:1rem 0 0.6rem; font-size:0.9rem; color:#475569;">💵 Conteo de Dinero</h4>
+        <h4 style="margin:1rem 0 0.6rem; font-size:0.9rem; color:#475569;">💵 Conteo de Pagos Recibidos</h4>
         <div class="cierre-grid">
-            <div class="form-group">
-                <label>💵 Efectivo contado *</label>
-                <input type="number" id="efectivoContado" min="0" placeholder="0">
-            </div>
             <div class="form-group">
                 <label>🏦 Transferencias</label>
                 <input type="number" id="transferenciaContado" min="0" placeholder="0">
@@ -215,8 +243,8 @@
                 <input type="number" id="tarjetaContado" min="0" placeholder="0">
             </div>
             <div class="form-group">
-                <label>🖥️ Datáfono</label>
-                <input type="number" id="datafonoContado" min="0" placeholder="0">
+                <label>📦 Contraentrega</label>
+                <input type="number" id="contraentregaContado" min="0" placeholder="0">
             </div>
             <div class="form-group">
                 <label>🅰️ Addi</label>
@@ -232,18 +260,6 @@
             </div>
         </div>
         
-        <!-- Gastos del día -->
-        <div class="gastos-container">
-            <h4>💸 Gastos del Día</h4>
-            <div id="gastosLista"></div>
-            <button class="btn-agregar-gasto" onclick="agregarGasto()">+ Agregar Gasto</button>
-            <div class="gastos-total">
-                <span>Total Gastos:</span>
-                <span id="totalGastos">$0</span>
-            </div>
-        </div>
-        
-        <!-- Observaciones -->
         <div class="form-group">
             <label>📝 Observaciones (opcional)</label>
             <textarea id="observacionesCierre" rows="2" placeholder="Notas adicionales del cierre..."></textarea>
@@ -251,7 +267,7 @@
         
         <div class="modal-botones">
             <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
-            <button class="btn btn-success" onclick="confirmarCerrarCaja()">✅ Cerrar y Guardar</button>
+            <button class="btn btn-success" onclick="confirmarCerrarCajaDigital()">✅ Cerrar y Guardar</button>
         </div>
     </div>
 </div>
@@ -262,7 +278,7 @@
 <div id="modalEditarPrecio" class="modal-overlay">
     <div class="modal">
         <h3>✏️ Modificar Precio</h3>
-        <p id="nombreProductoEditar" style="font-weight:600; margin-bottom:1rem; color:var(--primary);"></p>
+        <p id="nombreProductoEditar" style="font-weight:600; margin-bottom:1rem; color:#3b82f6;"></p>
         <div class="form-group">
             <label>Precio original</label>
             <input type="text" id="precioOriginal" disabled>
@@ -273,7 +289,7 @@
         </div>
         <div class="form-group">
             <label>Motivo del descuento * (quién autoriza)</label>
-            <input type="text" id="motivoDescuento" placeholder="Ej: Autorizado por Gerencia - descuento cliente frecuente">
+            <input type="text" id="motivoDescuento" placeholder="Ej: Autorizado por Gerencia">
         </div>
         <div class="modal-botones">
             <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
@@ -286,17 +302,16 @@
      SCRIPTS
      ═══════════════════════════════════════════════════════════════ -->
 <script src="js/config.js"></script>
-<script src="js/pos.js"></script>
 <script>
     // ═══════════════════════════════════════════════════════════════
-    // CONFIGURACIÓN DE ESTA TIENDA
-    // Cambiar estos valores para cada tienda
+    // CONFIGURACIÓN TIENDA DIGITAL
     // ═══════════════════════════════════════════════════════════════
     const TIENDA = {
-    nombre: 'Local 01',
-    tablaInventario: 'inventario_01',
-    storageKey: 'pos_caja_local01'
-};
+        nombre: 'Digital',
+        tablaInventario: 'inventario_digital',
+        storageKey: 'pos_caja_digital',
+        esDigital: true
+    };
 </script>
 <script src="js/pos.js"></script>
 

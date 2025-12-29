@@ -12,6 +12,10 @@ let productosFiltrados = [];
 let carrito = JSON.parse(localStorage.getItem('carrito_moteros') || '[]');
 let productoActual = null;
 
+// Placeholders SVG (sin dependencias externas)
+const PLACEHOLDER_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect fill="#f1f5f9" width="400" height="300"/><text fill="#94a3b8" font-family="system-ui" font-size="16" x="50%" y="50%" text-anchor="middle" dy="0.3em">Sin imagen</text></svg>');
+const PLACEHOLDER_LG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"><rect fill="#f1f5f9" width="600" height="600"/><text fill="#94a3b8" font-family="system-ui" font-size="20" x="50%" y="50%" text-anchor="middle" dy="0.3em">Sin imagen</text></svg>');
+
 // ═══════════════════════════════════════════════════════════════
 // CARRITO
 // ═══════════════════════════════════════════════════════════════
@@ -203,11 +207,11 @@ function mostrarProductos() {
     grid.innerHTML = productosFiltrados.map(p => `
         <div class="producto-card" onclick="verDetalle('${p.id}')">
             <div class="producto-imagen-wrapper">
-                <img class="producto-imagen" 
-                     src="${p.url_imagen || 'https://via.placeholder.com/400x300?text=' + encodeURIComponent(p.nombre)}" 
+                <img class="producto-imagen"
+                     src="${p.url_imagen || PLACEHOLDER_IMG}"
                      alt="${p.nombre}"
                      loading="lazy"
-                     onerror="this.src='https://via.placeholder.com/400x300?text=${encodeURIComponent(p.nombre)}'">
+                     onerror="this.src='${PLACEHOLDER_IMG}'">
                 <span class="badge-categoria">${p.categoria}</span>
             </div>
             <div class="producto-info">
@@ -238,9 +242,9 @@ function verDetalle(id) {
     document.getElementById('contenidoDetalle').innerHTML = `
         <div class="detalle-container">
             <div class="detalle-imagen">
-                <img src="${productoActual.url_imagen || 'https://via.placeholder.com/600'}" 
+                <img src="${productoActual.url_imagen || PLACEHOLDER_LG}"
                      alt="${productoActual.nombre}"
-                     onerror="this.src='https://via.placeholder.com/600'">
+                     onerror="this.src='${PLACEHOLDER_LG}'">
             </div>
             <div class="detalle-info">
                 <h2 class="detalle-titulo">${productoActual.nombre}</h2>

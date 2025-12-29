@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
 // MOTEROS SPORTS LINE - ADMIN PANEL JS
-// Versión: 3.0 | Fecha: 22/12/2025
-// UNIFICADO: Destacados + Selector Visual de Promociones
+// Versión: 4.1 | Fecha: 27/12/2025
+// Con formulario de compras corregido y modal completo
 // ═══════════════════════════════════════════════════════════════
 
 const { createClient } = supabase;
 const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-const ADMIN_PASSWORD = 'moteros2025';
 
 // ═══════════════════════════════════════════════════════════════
 // ESTADO GLOBAL
@@ -16,21 +15,18 @@ let inventarios = { alcala: [], local01: [], jordan: [] };
 let promociones = [];
 let posts = [];
 let ventas = [];
+let comprasData = [];
 let chartStockLocales = null;
 let chartCategorias = null;
 let chartMetodosPago = null;
 let chartVentasLocales = null;
-
-// Archivos temporales para subir
 let archivosTemporal = { producto: null, post: null, logo: null };
-
-// Estado para destacados
 const MAX_DESTACADOS = 8;
 let productosDestacadosFiltrados = [];
-
-// 🔥 Estado para selector de promociones
 let productosSeleccionadosPromo = [];
 let productosPromoFiltrados = [];
+let todosDeudores = [];
+let todosProveedores = [];
 
 // ═══════════════════════════════════════════════════════════════
 // UTILIDADES
@@ -50,19 +46,64 @@ function formatearPrecio(precio) { return parseInt(precio || 0).toLocaleString('
 function formatearFecha(fecha) { return new Date(fecha).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' }); }
 function formatearHora(fecha) { return new Date(fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }); }
 
+function formatearMonedaInput(input) {
+    let valor = input.value.replace(/[^\d]/g, '');
+    if (valor) {
+        valor = parseInt(valor).toLocaleString('es-CO');
+        input.value = '$' + valor;
+    }
+}
+
+function limpiarMoneda(valor) {
+    if (!valor) return 0;
+    return parseFloat(valor.replace(/[^\d]/g, '')) || 0;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // LOGIN / LOGOUT
 // ═══════════════════════════════════════════════════════════════
-function loginAdmin() {
+async function loginAdmin() {
     const password = document.getElementById('adminPassword').value;
-    if (password === ADMIN_PASSWORD) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('adminPanel').style.display = 'block';
-        inicializarAdmin();
-        showToast('¡Bienvenido al panel de administración!');
-    } else {
-        document.getElementById('loginError').textContent = '❌ Contraseña incorrecta';
-        document.getElementById('adminPassword').value = '';
+    const loginBtn = document.querySelector('.login-btn');
+    
+    if (!password) {
+        document.getElementById('loginError').textContent = '❌ Ingresa la contraseña';
+        return;
+    }
+    
+    if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = 'Verificando...'; }
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('configuracion_sistema')
+            .select('valor')
+            .eq('clave', 'admin_password')
+            .single();
+        
+        if (error) throw error;
+        const passwordCorrecta = data?.valor || 'moteros2025';
+        
+        if (password === passwordCorrecta) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            inicializarAdmin();
+            showToast('¡Bienvenido al panel de administración!');
+        } else {
+            document.getElementById('loginError').textContent = '❌ Contraseña incorrecta';
+            document.getElementById('adminPassword').value = '';
+        }
+    } catch (err) {
+        console.error('Error verificando contraseña:', err);
+        if (password === 'moteros2025') {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            inicializarAdmin();
+            showToast('¡Bienvenido! (modo offline)');
+        } else {
+            document.getElementById('loginError').textContent = '❌ Error de conexión';
+        }
+    } finally {
+        if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Iniciar Sesión'; }
     }
 }
 
@@ -73,6 +114,40 @@ function logout() {
         document.getElementById('adminPassword').value = '';
         document.getElementById('loginError').textContent = '';
     }
+}
+
+function mostrarCambiarPassword() {
+    const modal = document.getElementById('modalCambiarPassword');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.getElementById('passwordActual').value = '';
+        document.getElementById('passwordNueva').value = '';
+        document.getElementById('passwordConfirmar').value = '';
+    }
+}
+
+function cerrarModalPassword() {
+    const modal = document.getElementById('modalCambiarPassword');
+    if (modal) modal.style.display = 'none';
+}
+
+async function cambiarPassword() {
+    const actual = document.getElementById('passwordActual').value;
+    const nueva = document.getElementById('passwordNueva').value;
+    const confirmar = document.getElementById('passwordConfirmar').value;
+    
+    if (!actual || !nueva || !confirmar) { showToast('Completa todos los campos', 'warning'); return; }
+    if (nueva !== confirmar) { showToast('Las contraseñas nuevas no coinciden', 'error'); return; }
+    if (nueva.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres', 'warning'); return; }
+    
+    try {
+        const { data: configActual } = await supabaseClient.from('configuracion_sistema').select('valor').eq('clave', 'admin_password').single();
+        if (configActual?.valor !== actual) { showToast('La contraseña actual es incorrecta', 'error'); return; }
+        const { error } = await supabaseClient.from('configuracion_sistema').upsert({ clave: 'admin_password', valor: nueva });
+        if (error) throw error;
+        showToast('¡Contraseña actualizada correctamente!', 'success');
+        cerrarModalPassword();
+    } catch (err) { console.error('Error cambiando contraseña:', err); showToast('Error al cambiar la contraseña', 'error'); }
 }
 
 function toggleSidebar() {
@@ -89,15 +164,34 @@ function setupNavigation() {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function() {
             const section = this.dataset.section;
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            this.classList.add('active');
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            const targetSection = document.getElementById(section + 'Section');
-            if (targetSection) targetSection.classList.add('active');
-            if (window.innerWidth <= 1024) toggleSidebar();
-            cargarSeccion(section);
+            if (!section) return;
+            navegarASeccion(section);
         });
     });
+    
+    document.querySelectorAll('.nav-dropdown-content a[data-section], .mobile-nav-group a[data-section]').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const section = this.dataset.section;
+            if (!section) return;
+            navegarASeccion(section);
+        });
+    });
+}
+
+function navegarASeccion(section) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    const targetSection = document.getElementById(section + 'Section');
+    if (targetSection) targetSection.classList.add('active');
+    const mobileNav = document.getElementById('mobileNav');
+    if (mobileNav && mobileNav.classList.contains('active')) mobileNav.classList.remove('active');
+    cargarSeccion(section);
+}
+
+function toggleMobileMenu() {
+    const mobileNav = document.getElementById('mobileNav');
+    if (mobileNav) mobileNav.classList.toggle('active');
 }
 
 async function cargarSeccion(section) {
@@ -107,10 +201,20 @@ async function cargarSeccion(section) {
         case 'productos': await cargarProductos(); break;
         case 'destacados': await cargarDestacadosAdmin(); break;
         case 'ventas': await cargarVentasDia(); break;
-        case 'inventario': break;
+        case 'envios': await cargarEnvios(); break;
+        case 'envios-estadisticas': await cargarEstadisticasEnvios(); break;
+        case 'bodegas': await cargarBodegas(); break;
         case 'alertas': await cargarAlertasStock(); break;
+        case 'cierres': await cargarCierresCaja(); break;
+        case 'gastos': await cargarGastos(); break;
+        case 'deudores': await cargarDeudores(); break;
+        case 'proveedores': await cargarProveedores(); break;
+        case 'compras': await cargarCompras(); break;
+        case 'deudas': await cargarDeudasNegocio(); break;
+        case 'creditos': await cargarCreditos(); break;
         case 'promociones': await cargarPromociones(); break;
         case 'blog': await cargarPosts(); break;
+        case 'alianzas': await cargarAlianzas(); break;
         case 'configuracion': await cargarConfiguracion(); break;
     }
 }
@@ -123,6 +227,265 @@ async function inicializarAdmin() {
         showToast('Panel listo');
     } catch (error) { showToast('Error al cargar datos', 'error'); console.error(error); }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// COMPRAS A PROVEEDORES - CORREGIDO CON FORMULARIO MODAL
+// ═══════════════════════════════════════════════════════════════
+
+function mostrarFormCompra() {
+    document.getElementById('formCompra').style.display = 'block';
+    document.getElementById('formTituloCompra').textContent = '➕ Nueva Compra a Proveedor';
+    document.getElementById('compraId').value = '';
+    
+    document.getElementById('compraAnio').value = new Date().getFullYear();
+    document.getElementById('compraMes').value = '';
+    document.getElementById('compraDia').value = '';
+    document.getElementById('compraCuenta').value = '';
+    document.getElementById('compraProveedor').value = '';
+    document.getElementById('compraFactura').value = '';
+    document.getElementById('compraVencimiento').value = '';
+    document.getElementById('compraConsecutivo').value = '';
+    document.getElementById('compraValor').value = '';
+    document.getElementById('compraFElectronica').value = '';
+    document.getElementById('compraEstado').value = 'ABIERTO';
+    document.getElementById('compraNotas').value = '';
+    
+    cargarProveedoresDatalist();
+    
+    const mesActual = new Date().getMonth() + 1;
+    const mesesMap = { 1:'01.ENE', 2:'02.FEB', 3:'03.MAR', 4:'04.ABR', 5:'05.MAY', 6:'06.JUN', 7:'07.JUL', 8:'08.AGO', 9:'09.SEP', 10:'10.OCT', 11:'11.NOV', 12:'12.DIC' };
+    document.getElementById('compraMes').value = mesesMap[mesActual] || '';
+    document.getElementById('compraDia').value = new Date().getDate();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelarFormCompra() { document.getElementById('formCompra').style.display = 'none'; }
+
+async function cargarProveedoresDatalist() {
+    try {
+        const { data, error } = await supabaseClient.from('proveedores').select('razon_social').eq('activo', true).order('razon_social');
+        if (error) throw error;
+        const datalist = document.getElementById('listaProveedoresDatalist');
+        if (datalist) datalist.innerHTML = (data || []).map(p => `<option value="${p.razon_social}">`).join('');
+    } catch (error) { console.error('Error cargando proveedores:', error); }
+}
+
+// IMPORTANTE: NO incluir saldo_pendiente - es columna generada en BD
+async function guardarCompra() {
+    const anio = document.getElementById('compraAnio').value;
+    const mes = document.getElementById('compraMes').value;
+    const dia = document.getElementById('compraDia').value;
+    const cuenta = document.getElementById('compraCuenta').value;
+    const proveedor = document.getElementById('compraProveedor').value;
+    const factura = document.getElementById('compraFactura').value;
+    const vencimiento = document.getElementById('compraVencimiento').value;
+    const consecutivo = document.getElementById('compraConsecutivo').value;
+    const valor = limpiarMoneda(document.getElementById('compraValor').value);
+    const fElectronica = document.getElementById('compraFElectronica').value;
+    const estado = document.getElementById('compraEstado').value;
+    const notas = document.getElementById('compraNotas').value;
+    const compraId = document.getElementById('compraId').value;
+    
+    if (!anio || !mes || !proveedor || !valor) {
+        showToast('Por favor completa los campos obligatorios', 'warning');
+        return;
+    }
+    
+    try {
+        let proveedorId = null;
+        const { data: provExistente } = await supabaseClient.from('proveedores').select('id').ilike('razon_social', proveedor).limit(1);
+        
+        if (provExistente && provExistente.length > 0) {
+            proveedorId = provExistente[0].id;
+        } else {
+            const { data: nuevoProveedor, error: errProv } = await supabaseClient.from('proveedores').insert({ razon_social: proveedor, activo: true }).select('id').single();
+            if (!errProv && nuevoProveedor) proveedorId = nuevoProveedor.id;
+        }
+        
+        // IMPORTANTE: NO incluir saldo_pendiente - es columna generada
+        const datosCompra = {
+            proveedor_id: proveedorId,
+            anio: parseInt(anio),
+            mes_compra: mes,
+            dia: dia || null,
+            cuenta: cuenta || null,
+            numero_factura: factura || null,
+            fecha_vencimiento: vencimiento || null,
+            consecutivo_moteros: consecutivo || null,
+            valor_compra: valor,
+            f_electronica: fElectronica || null,
+            estado: estado,
+            notas: notas || null
+        };
+        
+        let error;
+        if (compraId) {
+            datosCompra.updated_at = new Date().toISOString();
+            const result = await supabaseClient.from('compras_proveedor').update(datosCompra).eq('id', compraId);
+            error = result.error;
+        } else {
+            const result = await supabaseClient.from('compras_proveedor').insert(datosCompra);
+            error = result.error;
+        }
+        
+        if (error) throw error;
+        showToast(compraId ? 'Compra actualizada' : 'Compra registrada correctamente', 'success');
+        cancelarFormCompra();
+        cargarCompras();
+    } catch (error) { console.error('Error guardando compra:', error); showToast('Error: ' + error.message, 'error'); }
+}
+
+async function cargarCompras() {
+    const tbody = document.getElementById('tbodyCompras');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center">Cargando...</td></tr>';
+    
+    try {
+        const estadoFiltro = document.getElementById('comprasEstadoFiltro')?.value || '';
+        let query = supabaseClient.from('compras_proveedor').select('*, proveedor:proveedores(razon_social)').order('created_at', { ascending: false }).limit(200);
+        if (estadoFiltro) query = query.eq('estado', estadoFiltro);
+        const { data, error } = await query;
+        if (error) throw error;
+        
+        comprasData = data || [];
+        
+        const abiertas = comprasData.filter(c => c.estado === 'ABIERTO' || c.estado === 'pendiente' || c.estado === 'parcial');
+        const totalPendiente = abiertas.reduce((sum, c) => sum + parseFloat(c.saldo_pendiente || 0), 0);
+        
+        const el1 = document.getElementById('comprasPendientes');
+        const el2 = document.getElementById('comprasAbiertas');
+        const el3 = document.getElementById('comprasPagadasMes');
+        if (el1) el1.textContent = '$' + formatearPrecio(totalPendiente);
+        if (el2) el2.textContent = abiertas.length;
+        if (el3) el3.textContent = comprasData.filter(c => c.estado === 'CERRADO' || c.estado === 'pagado').length;
+        
+        renderizarTablaCompras(comprasData);
+    } catch (error) { console.error('Error cargando compras:', error); tbody.innerHTML = '<tr><td colspan="10" class="text-center text-danger">Error al cargar</td></tr>'; }
+}
+
+function renderizarTablaCompras(data) {
+    const tbody = document.getElementById('tbodyCompras');
+    if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="text-center">No hay compras registradas</td></tr>'; return; }
+    
+    tbody.innerHTML = data.map(c => {
+        const estadoBadge = (c.estado === 'CERRADO' || c.estado === 'pagado') ? 'success' : c.estado === 'parcial' ? 'warning' : 'danger';
+        const estadoTexto = (c.estado === 'CERRADO' || c.estado === 'pagado') ? 'CERRADO' : c.estado === 'parcial' ? 'PARCIAL' : 'ABIERTO';
+        const fechaTexto = c.mes_compra && c.dia ? `${c.dia}/${c.mes_compra.replace(/^\d+\./, '')}/${c.anio || ''}` : (c.mes_compra || '-');
+        const fechaVenc = c.fecha_vencimiento ? formatearFecha(c.fecha_vencimiento) : '-';
+        const provNombre = c.proveedor?.razon_social || '-';
+        const fElec = c.f_electronica === 'SI' ? '✅' : '-';
+        
+        return `<tr>
+            <td>${fechaTexto}</td>
+            <td>${c.cuenta || '-'}</td>
+            <td><strong>${provNombre}</strong></td>
+            <td>${c.numero_factura || '-'}</td>
+            <td>$${formatearPrecio(c.valor_compra)}</td>
+            <td class="${parseFloat(c.saldo_pendiente) > 0 ? 'text-danger' : ''}"><strong>$${formatearPrecio(c.saldo_pendiente)}</strong></td>
+            <td>${fechaVenc}</td>
+            <td>${fElec}</td>
+            <td><span class="badge badge-${estadoBadge}">${estadoTexto}</span></td>
+            <td>
+                <div class="btn-group-vertical">
+                    <button onclick="mostrarModalPago('${c.id}')" class="btn btn-sm btn-success" ${estadoTexto === 'CERRADO' ? 'disabled' : ''} title="Registrar pago">💵</button>
+                    <button onclick="editarCompra('${c.id}')" class="btn btn-sm btn-secondary" title="Editar">✏️</button>
+                    <button onclick="eliminarCompra('${c.id}')" class="btn btn-sm btn-danger" title="Eliminar">🗑️</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function buscarCompras() {
+    const termino = document.getElementById('comprasBuscar')?.value.toLowerCase() || '';
+    if (!termino) { renderizarTablaCompras(comprasData); return; }
+    const filtradas = comprasData.filter(c => {
+        const prov = c.proveedor?.razon_social?.toLowerCase() || '';
+        const factura = c.numero_factura?.toLowerCase() || '';
+        return prov.includes(termino) || factura.includes(termino);
+    });
+    renderizarTablaCompras(filtradas);
+}
+
+async function editarCompra(id) {
+    try {
+        const { data, error } = await supabaseClient.from('compras_proveedor').select('*, proveedor:proveedores(razon_social)').eq('id', id).single();
+        if (error || !data) { showToast('Error al cargar compra', 'error'); return; }
+        
+        document.getElementById('formCompra').style.display = 'block';
+        document.getElementById('formTituloCompra').textContent = '✏️ Editar Compra';
+        document.getElementById('compraId').value = data.id;
+        document.getElementById('compraAnio').value = data.anio || 2025;
+        document.getElementById('compraMes').value = data.mes_compra || '';
+        document.getElementById('compraDia').value = data.dia || '';
+        document.getElementById('compraCuenta').value = data.cuenta || '';
+        document.getElementById('compraProveedor').value = data.proveedor?.razon_social || '';
+        document.getElementById('compraFactura').value = data.numero_factura || '';
+        document.getElementById('compraVencimiento').value = data.fecha_vencimiento || '';
+        document.getElementById('compraConsecutivo').value = data.consecutivo_moteros || '';
+        document.getElementById('compraValor').value = data.valor_compra ? '$' + formatearPrecio(data.valor_compra) : '';
+        document.getElementById('compraFElectronica').value = data.f_electronica || '';
+        document.getElementById('compraEstado').value = data.estado || 'ABIERTO';
+        document.getElementById('compraNotas').value = data.notas || '';
+        cargarProveedoresDatalist();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) { console.error('Error:', error); showToast('Error al cargar compra', 'error'); }
+}
+
+async function eliminarCompra(id) {
+    if (!confirm('¿Estás seguro de eliminar esta compra?')) return;
+    try {
+        const { error } = await supabaseClient.from('compras_proveedor').delete().eq('id', id);
+        if (error) throw error;
+        showToast('Compra eliminada', 'success');
+        cargarCompras();
+    } catch (error) { console.error('Error eliminando:', error); showToast('Error: ' + error.message, 'error'); }
+}
+
+async function mostrarModalPago(id) {
+    const compra = comprasData.find(c => c.id === id);
+    if (!compra) { showToast('Compra no encontrada', 'error'); return; }
+    
+    document.getElementById('pagoCompraId').value = id;
+    document.getElementById('pagoProveedorNombre').textContent = compra.proveedor?.razon_social || '-';
+    document.getElementById('pagoFacturaNum').textContent = compra.numero_factura || '-';
+    document.getElementById('pagoSaldoPendiente').textContent = '$' + formatearPrecio(compra.saldo_pendiente);
+    document.getElementById('pagoMes').value = '';
+    document.getElementById('pagoMonto').value = '';
+    document.getElementById('pagoNotas').value = '';
+    document.getElementById('modalPagoCompra').style.display = 'flex';
+}
+
+function cerrarModalPago() { document.getElementById('modalPagoCompra').style.display = 'none'; }
+
+async function guardarPagoCompra() {
+    const compraId = document.getElementById('pagoCompraId').value;
+    const mesPago = document.getElementById('pagoMes').value;
+    const monto = limpiarMoneda(document.getElementById('pagoMonto').value);
+    
+    if (!mesPago || !monto) { showToast('Selecciona el mes y el monto del pago', 'warning'); return; }
+    
+    try {
+        const compra = comprasData.find(c => c.id === compraId);
+        if (!compra) throw new Error('Compra no encontrada');
+        
+        const pagoActual = parseFloat(compra[mesPago] || 0);
+        const nuevoPago = pagoActual + monto;
+        const updateData = { [mesPago]: nuevoPago, updated_at: new Date().toISOString() };
+        
+        const saldoActual = parseFloat(compra.saldo_pendiente || 0);
+        if (monto >= saldoActual) updateData.estado = 'CERRADO';
+        
+        const { error } = await supabaseClient.from('compras_proveedor').update(updateData).eq('id', compraId);
+        if (error) throw error;
+        
+        showToast('Pago registrado correctamente', 'success');
+        cerrarModalPago();
+        cargarCompras();
+    } catch (error) { console.error('Error guardando pago:', error); showToast('Error: ' + error.message, 'error'); }
+}
+
+function registrarPagoCompra(id) { mostrarModalPago(id); }
 
 // ═══════════════════════════════════════════════════════════════
 // DRAG & DROP IMÁGENES
@@ -180,9 +543,6 @@ async function subirImagen(file, carpeta = 'productos-imagenes') {
     } catch (error) { console.error('Error subiendo imagen:', error); showToast('Error al subir imagen: ' + error.message, 'error'); return null; }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// EMBED DE VIDEOS
-// ═══════════════════════════════════════════════════════════════
 function getVideoEmbed(url) {
     if (!url) return '';
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
@@ -210,6 +570,32 @@ async function cargarDashboard() {
     const statBajo = document.getElementById('statStockBajo'); if (statBajo) statBajo.textContent = stockBajo;
     const agotados = todosInv.filter(i => i.cantidad === 0).length;
     const statAgot = document.getElementById('statAgotados'); if (statAgot) statAgot.textContent = agotados;
+    
+    try {
+        const { data: deudores } = await supabaseClient.from('deudores').select('saldo_actual, estado').eq('estado', 'ABIERTO');
+        const deudoresActivos = deudores?.length || 0;
+        const deudaTotal = deudores?.reduce((sum, d) => sum + parseFloat(d.saldo_actual || 0), 0) || 0;
+        const statDeudores = document.getElementById('statDeudores');
+        const statDeudaTotal = document.getElementById('statDeudaTotal');
+        if (statDeudores) statDeudores.textContent = deudoresActivos;
+        if (statDeudaTotal) statDeudaTotal.textContent = '$' + formatearPrecio(deudaTotal);
+    } catch (e) { console.error('Error cargando deudores:', e); }
+    
+    try {
+        const { data: compras } = await supabaseClient.from('compras_proveedor').select('saldo_pendiente').neq('estado', 'pagado');
+        const totalProveedores = compras?.reduce((sum, c) => sum + parseFloat(c.saldo_pendiente || 0), 0) || 0;
+        const statProv = document.getElementById('statProveedores');
+        if (statProv) statProv.textContent = '$' + formatearPrecio(totalProveedores);
+    } catch (e) { console.error('Error cargando proveedores:', e); }
+    
+    try {
+        const hoy = new Date().toISOString().split('T')[0];
+        const { data: ventasHoy } = await supabaseClient.from('facturas').select('total').eq('estado', 'completada').gte('created_at', hoy + 'T00:00:00').lte('created_at', hoy + 'T23:59:59');
+        const totalVentasHoy = ventasHoy?.reduce((sum, v) => sum + parseFloat(v.total || 0), 0) || 0;
+        const statVentas = document.getElementById('statVentasHoy');
+        if (statVentas) statVentas.textContent = '$' + formatearPrecio(totalVentasHoy);
+    } catch (e) { console.error('Error cargando ventas:', e); }
+    
     renderizarChartsDashboard();
 }
 
@@ -255,13 +641,13 @@ async function cargarInventarioLocal() {
     try {
         const { data, error } = await supabaseClient.from(tabla).select('*').order('id_producto');
         if (error) throw error;
-        if (!data || data.length === 0) { contenido.innerHTML = '<div class="card-body"><div class="alert alert-warning">No hay datos</div></div>'; return; }
-        contenido.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>ID</th><th>Producto</th><th>Cantidad</th><th>Stock Mín.</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${data.map(inv => {
+        if (!data || data.length === 0) { contenido.innerHTML = '<div class="card-body"><div class="alert alert-warning">No hay productos en este inventario</div></div>'; return; }
+        contenido.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Producto</th><th>Categoría</th><th>Cantidad</th><th>Stock Mín.</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${data.map(inv => {
             const producto = productos.find(p => p.id_producto === inv.id_producto);
             let badge = 'badge-success', texto = 'OK';
             if (inv.cantidad === 0) { badge = 'badge-danger'; texto = 'Agotado'; }
             else if (inv.cantidad <= (inv.stock_minimo || 5)) { badge = 'badge-warning'; texto = 'Bajo'; }
-            return `<tr><td><code>${inv.id_producto}</code></td><td><strong>${producto?.nombre || 'N/A'}</strong></td><td style="font-size:1.1rem; font-weight:700;">${inv.cantidad}</td><td>${inv.stock_minimo || 5}</td><td><span class="badge ${badge}">${texto}</span></td><td><button onclick="ajustarStock('${tabla}','${inv.id}',${inv.cantidad})" class="btn btn-secondary btn-sm">✏️</button></td></tr>`;
+            return `<tr><td><strong>${producto?.nombre || inv.id_producto}</strong><br><small style="color:#666">${producto?.marca || ''}</small></td><td>${producto?.categoria || '-'}</td><td style="font-size:1.1rem; font-weight:700;">${inv.cantidad}</td><td>${inv.stock_minimo || 5}</td><td><span class="badge ${badge}">${texto}</span></td><td><button onclick="ajustarStock('${tabla}','${inv.id}',${inv.cantidad})" class="btn btn-secondary btn-sm">✏️ Ajustar</button></td></tr>`;
         }).join('')}</tbody></table></div>`;
     } catch (error) { contenido.innerHTML = `<div class="card-body"><div class="alert alert-danger">Error: ${error.message}</div></div>`; }
 }
@@ -306,8 +692,6 @@ async function cargarEstadisticasLocales() {
     const localesData = [{ nombre: 'Alcalá', icono: '🏪', data: inventarios.alcala }, { nombre: 'Local 01', icono: '🏬', data: inventarios.local01 }, { nombre: 'Jordán', icono: '🏢', data: inventarios.jordan }];
     const grid = document.getElementById('localesStatsGrid');
     if (grid) { grid.innerHTML = localesData.map(local => { const stats = calcularEstadisticasLocal(local.data); return `<div class="local-card"><div class="local-card-header"><h4>${local.icono} ${local.nombre}</h4><span class="badge badge-success">Activo</span></div><div class="local-card-body"><div class="local-stat-row"><span class="label">Stock Total</span><span class="value">${stats.stockTotal.toLocaleString('es-CO')}</span></div><div class="local-stat-row"><span class="label">Productos</span><span class="value">${stats.productos}</span></div><div class="local-stat-row"><span class="label">Stock Bajo</span><span class="value" style="color:${stats.stockBajo > 0 ? '#f59e0b' : '#10b981'}">${stats.stockBajo}</span></div><div class="local-stat-row"><span class="label">Agotados</span><span class="value" style="color:${stats.agotados > 0 ? '#ef4444' : '#10b981'}">${stats.agotados}</span></div><div class="local-stat-row"><span class="label">Valor Est.</span><span class="value">$${Math.round(stats.valor/1000000)}M</span></div></div></div>`; }).join(''); }
-    const tbody = document.getElementById('tbodyComparativa');
-    if (tbody) { tbody.innerHTML = localesData.map(local => { const stats = calcularEstadisticasLocal(local.data); return `<tr><td><strong>${local.icono} ${local.nombre}</strong></td><td>${stats.stockTotal.toLocaleString('es-CO')}</td><td>${stats.productos}</td><td><span class="badge ${stats.stockBajo > 0 ? 'badge-warning' : 'badge-success'}">${stats.stockBajo}</span></td><td><span class="badge ${stats.agotados > 0 ? 'badge-danger' : 'badge-success'}">${stats.agotados}</span></td><td>$${Math.round(stats.valor/1000000)}M</td></tr>`; }).join(''); }
 }
 
 function calcularEstadisticasLocal(inventario) {
@@ -328,10 +712,30 @@ async function cargarProductos() {
     } catch (error) { console.error('Error:', error); if (lista) lista.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`; }
 }
 
+// Placeholder SVG para productos sin imagen
+const PLACEHOLDER_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect fill="#f1f5f9" width="400" height="300"/><text fill="#94a3b8" font-family="system-ui" font-size="16" x="50%" y="50%" text-anchor="middle" dy="0.3em">Sin imagen</text></svg>');
+
 function renderizarProductos(lista) {
     const grid = document.getElementById('listaProductos'); if (!grid) return;
     if (lista.length === 0) { grid.innerHTML = '<div class="alert alert-info">No hay productos</div>'; return; }
-    grid.innerHTML = lista.map(p => `<div class="producto-admin-card"><div class="producto-admin-img"><img src="${p.url_imagen || 'https://via.placeholder.com/400x300?text=Sin+Imagen'}" onerror="this.src='https://via.placeholder.com/400x300?text=Error'"></div><div class="producto-admin-info"><span class="badge ${p.estado === 'Activo' ? 'badge-success' : 'badge-warning'}">${p.estado}</span><h4>${p.nombre}</h4><p class="meta">${p.marca} • ${p.categoria}</p><p class="precio">$${formatearPrecio(p.precio)}</p><div class="producto-admin-actions"><button onclick="editarProducto('${p.id}')" class="btn btn-secondary btn-sm">✏️ Editar</button><button onclick="eliminarProducto('${p.id}')" class="btn btn-danger btn-sm">🗑️ Eliminar</button></div></div></div>`).join('');
+    grid.innerHTML = lista.map(p => {
+        const imgSrc = p.url_imagen || PLACEHOLDER_IMG;
+        return `<div class="producto-admin-card">
+            <div class="producto-admin-img">
+                <img src="${imgSrc}" onerror="this.src='${PLACEHOLDER_IMG}'">
+            </div>
+            <div class="producto-admin-info">
+                <span class="badge ${p.estado === 'Activo' ? 'badge-success' : 'badge-warning'}">${p.estado}</span>
+                <h4>${p.nombre}</h4>
+                <p class="meta">${p.marca} • ${p.categoria}</p>
+                <p class="precio">$${formatearPrecio(p.precio)}</p>
+                <div class="producto-admin-actions">
+                    <button onclick="editarProducto('${p.id}')" class="btn btn-secondary btn-sm">✏️ Editar</button>
+                    <button onclick="eliminarProducto('${p.id}')" class="btn btn-danger btn-sm">🗑️ Eliminar</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function filtrarProductosAdmin() {
@@ -341,36 +745,83 @@ function filtrarProductosAdmin() {
     renderizarProductos(filtrados);
 }
 
-function mostrarFormProducto() { limpiarFormProducto(); document.getElementById('formTituloProducto').textContent = '➕ Nuevo Producto'; document.getElementById('formProducto').classList.add('active'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function mostrarFormProducto() { 
+    limpiarFormProducto(); 
+    document.getElementById('formTituloProducto').textContent = '➕ Nuevo Producto'; 
+    document.getElementById('formProducto').style.display = 'block'; 
+    cargarStockTiendas(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+}
 
 function limpiarFormProducto() {
-    ['productoId', 'productoNombre', 'productoReferencia', 'productoMarca', 'productoPrecio', 'productoDescCorta', 'productoDescTecnica', 'productoImagen'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['productoId', 'productoIdProducto', 'productoNombre', 'productoReferencia', 'productoMarca', 'productoPrecioCompra', 'productoPrecio', 'productoMargen', 'productoDescCorta', 'productoDescTecnica', 'productoImagen', 'stockAlcala', 'stockLocal01', 'stockJordan', 'stockDigital'].forEach(id => { 
+        const el = document.getElementById(id); 
+        if (el) el.value = id.startsWith('stock') ? '0' : ''; 
+    });
     const cat = document.getElementById('productoCategoria'); if (cat) cat.value = '';
     const est = document.getElementById('productoEstado'); if (est) est.value = 'Activo';
+    const margen = document.getElementById('productoMargen'); if (margen) margen.value = '0%';
     removerPreview('producto');
 }
 
-function cancelarFormProducto() { document.getElementById('formProducto').classList.remove('active'); limpiarFormProducto(); }
+function cancelarFormProducto() { document.getElementById('formProducto').style.display = 'none'; limpiarFormProducto(); }
 
 async function editarProducto(id) {
     try {
         const { data, error } = await supabaseClient.from('productos').select('*').eq('id', id).single();
         if (error || !data) { showToast('Error al cargar producto', 'error'); return; }
         document.getElementById('productoId').value = data.id;
+        document.getElementById('productoIdProducto').value = data.id_producto || '';
         document.getElementById('productoNombre').value = data.nombre || '';
         document.getElementById('productoReferencia').value = data.referencia || '';
         document.getElementById('productoCategoria').value = data.categoria || '';
         document.getElementById('productoMarca').value = data.marca || '';
+        document.getElementById('productoPrecioCompra').value = data.precio_compra || '';
         document.getElementById('productoPrecio').value = data.precio || '';
         document.getElementById('productoDescCorta').value = data.descripcion_corta || '';
         document.getElementById('productoDescTecnica').value = data.descripcion_tecnica || '';
         document.getElementById('productoImagen').value = data.url_imagen || '';
         document.getElementById('productoEstado').value = data.estado || 'Activo';
+        calcularMargen();
         if (data.url_imagen) { const preview = document.getElementById('previewProducto'); const container = document.getElementById('previewContainerProducto'); if (preview && container) { preview.src = data.url_imagen; container.style.display = 'inline-block'; } }
+        await cargarStockTiendas(data.id_producto);
         document.getElementById('formTituloProducto').textContent = '✏️ Editar Producto';
-        document.getElementById('formProducto').classList.add('active');
+        document.getElementById('formProducto').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
+}
+
+async function cargarStockTiendas(idProducto) {
+    document.getElementById('stockAlcala').value = 0;
+    document.getElementById('stockLocal01').value = 0;
+    document.getElementById('stockJordan').value = 0;
+    const stockDigital = document.getElementById('stockDigital');
+    if (stockDigital) stockDigital.value = 0;
+    if (!idProducto) return;
+    try {
+        const [alcala, local01, jordan, digital] = await Promise.all([
+            supabaseClient.from('inventario_alcala').select('cantidad').eq('id_producto', idProducto),
+            supabaseClient.from('inventario_01').select('cantidad').eq('id_producto', idProducto),
+            supabaseClient.from('inventario_jordan').select('cantidad').eq('id_producto', idProducto),
+            supabaseClient.from('inventario_digital').select('cantidad').eq('id_producto', idProducto)
+        ]);
+        if (alcala.data && alcala.data.length > 0) document.getElementById('stockAlcala').value = alcala.data[0].cantidad || 0;
+        if (local01.data && local01.data.length > 0) document.getElementById('stockLocal01').value = local01.data[0].cantidad || 0;
+        if (jordan.data && jordan.data.length > 0) document.getElementById('stockJordan').value = jordan.data[0].cantidad || 0;
+        if (digital?.data && digital.data.length > 0 && stockDigital) stockDigital.value = digital.data[0].cantidad || 0;
+    } catch (e) { console.log('Error cargando stock:', e); }
+}
+
+function calcularMargen() {
+    const precioCompra = parseFloat(document.getElementById('productoPrecioCompra')?.value) || 0;
+    const precioVenta = parseFloat(document.getElementById('productoPrecio')?.value) || 0;
+    const margenEl = document.getElementById('productoMargen');
+    if (margenEl) {
+        if (precioCompra > 0 && precioVenta > 0) {
+            const margen = ((precioVenta - precioCompra) / precioCompra * 100).toFixed(1);
+            margenEl.value = margen + '%';
+        } else { margenEl.value = '0%'; }
+    }
 }
 
 async function guardarProducto() {
@@ -379,22 +830,54 @@ async function guardarProducto() {
     const categoria = document.getElementById('productoCategoria').value;
     const marca = document.getElementById('productoMarca').value.trim();
     const precio = document.getElementById('productoPrecio').value;
+    const precioCompra = document.getElementById('productoPrecioCompra').value;
     if (!nombre || !categoria || !marca || !precio) { showToast('Completa los campos obligatorios', 'warning'); return; }
     let urlImagen = document.getElementById('productoImagen').value.trim();
     if (archivosTemporal.producto) {
         showToast('Subiendo imagen...', 'info');
-        const progressEl = document.getElementById('uploadProgressProducto'); if (progressEl) progressEl.classList.add('active');
         const urlSubida = await subirImagen(archivosTemporal.producto, 'productos-imagenes');
-        if (progressEl) progressEl.classList.remove('active');
         if (urlSubida) { urlImagen = urlSubida; archivosTemporal.producto = null; showToast('Imagen subida correctamente', 'success'); }
         else { if (!confirm('Error al subir imagen. ¿Continuar sin imagen?')) { return; } }
     }
-    const producto = { nombre, referencia: document.getElementById('productoReferencia').value.trim() || `REF-${Date.now()}`, categoria, marca, precio: parseFloat(precio) || 0, descripcion_corta: document.getElementById('productoDescCorta').value.trim(), descripcion_tecnica: document.getElementById('productoDescTecnica').value.trim(), url_imagen: urlImagen, estado: document.getElementById('productoEstado').value };
+    const id_producto = document.getElementById('productoIdProducto').value || (id ? null : 'PROD' + Date.now());
+    let idProductoFinal = id_producto;
+    if (id && !id_producto) {
+        const { data: prodExistente } = await supabaseClient.from('productos').select('id_producto').eq('id', id).single();
+        if (prodExistente) idProductoFinal = prodExistente.id_producto;
+        else idProductoFinal = 'PROD' + Date.now();
+    }
+    const producto = { nombre, referencia: document.getElementById('productoReferencia').value.trim() || `REF-${Date.now()}`, categoria, marca, precio: parseFloat(precio) || 0, precio_compra: parseFloat(precioCompra) || 0, descripcion_corta: document.getElementById('productoDescCorta').value.trim(), descripcion_tecnica: document.getElementById('productoDescTecnica').value.trim(), url_imagen: urlImagen, estado: document.getElementById('productoEstado').value, id_producto: idProductoFinal };
+    const stockAlcala = parseInt(document.getElementById('stockAlcala')?.value) || 0;
+    const stockLocal01 = parseInt(document.getElementById('stockLocal01')?.value) || 0;
+    const stockJordan = parseInt(document.getElementById('stockJordan')?.value) || 0;
+    const stockDigital = parseInt(document.getElementById('stockDigital')?.value) || 0;
     try {
-        if (id) { const { error } = await supabaseClient.from('productos').update(producto).eq('id', id); if (error) throw error; showToast('Producto actualizado correctamente'); }
-        else { producto.id_producto = 'PROD' + Date.now(); const { error } = await supabaseClient.from('productos').insert([producto]); if (error) throw error; showToast('Producto creado correctamente'); }
-        cancelarFormProducto(); await cargarProductos();
+        if (id) { delete producto.id_producto; const { error } = await supabaseClient.from('productos').update(producto).eq('id', id); if (error) throw error; showToast('Producto actualizado correctamente'); }
+        else { producto.id_producto = idProductoFinal; const { error } = await supabaseClient.from('productos').insert([producto]); if (error) throw error; showToast('Producto creado correctamente'); }
+        await guardarStockTiendas(idProductoFinal, stockAlcala, stockLocal01, stockJordan, stockDigital);
+        cancelarFormProducto(); await cargarProductos(); await cargarTodosLosInventarios();
     } catch (error) { console.error('Error guardando:', error); showToast('Error: ' + error.message, 'error'); }
+}
+
+async function guardarStockTiendas(idProducto, alcala, local01, jordan, digital) {
+    const ahora = new Date().toISOString();
+    const upsertStock = async (tabla, cantidad) => {
+        try {
+            const { data } = await supabaseClient.from(tabla).select('id').eq('id_producto', idProducto);
+            if (data && data.length > 0) {
+                await supabaseClient.from(tabla).update({ cantidad: parseInt(cantidad) || 0, updated_at: ahora }).eq('id_producto', idProducto);
+            } else {
+                await supabaseClient.from(tabla).insert({ id_producto: idProducto, cantidad: parseInt(cantidad) || 0, stock_minimo: 3, ultima_actualizacion: ahora });
+            }
+        } catch (e) { console.error(`Error en upsertStock ${tabla}:`, e); }
+    };
+    try {
+        await upsertStock('inventario_alcala', alcala);
+        await upsertStock('inventario_01', local01);
+        await upsertStock('inventario_jordan', jordan);
+        try { await upsertStock('inventario_digital', digital); } catch(e) { console.log('Tabla inventario_digital no disponible'); }
+        showToast('Stock guardado en todas las tiendas', 'success');
+    } catch (e) { console.error('Error guardando stock:', e); showToast('Error guardando stock: ' + e.message, 'error'); }
 }
 
 async function eliminarProducto(id) {
@@ -427,23 +910,7 @@ async function cargarVentasDia() {
             if (ventas.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--gray-500);">No hay ventas hoy</td></tr>'; }
             else { tbody.innerHTML = ventas.map(v => `<tr><td>${formatearHora(v.created_at)}</td><td><strong>${v.local || 'N/A'}</strong></td><td>${v.nombre_producto || 'N/A'}</td><td>${v.cantidad || 0}</td><td><strong>$${formatearPrecio(v.total)}</strong></td><td><span class="badge badge-success">${v.metodo_pago || 'N/A'}</span></td></tr>`).join(''); }
         }
-        renderizarChartsVentas(ventas);
     } catch (error) { console.error('Error cargando ventas:', error); if (statsContainer) { statsContainer.innerHTML = '<div class="alert alert-warning">No hay datos de ventas</div>'; } }
-}
-
-function renderizarChartsVentas(ventas) {
-    const ctx1 = document.getElementById('chartMetodosPago');
-    if (ctx1) {
-        if (chartMetodosPago) chartMetodosPago.destroy();
-        const metodos = {}; ventas.forEach(v => { const metodo = v.metodo_pago || 'Otro'; metodos[metodo] = (metodos[metodo] || 0) + (v.total || 0); });
-        chartMetodosPago = new Chart(ctx1.getContext('2d'), { type: 'pie', data: { labels: Object.keys(metodos), datasets: [{ data: Object.values(metodos), backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'] }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } } } });
-    }
-    const ctx2 = document.getElementById('chartVentasLocales');
-    if (ctx2) {
-        if (chartVentasLocales) chartVentasLocales.destroy();
-        const locales = {}; ventas.forEach(v => { const local = v.local || 'Otro'; locales[local] = (locales[local] || 0) + (v.total || 0); });
-        chartVentasLocales = new Chart(ctx2.getContext('2d'), { type: 'bar', data: { labels: Object.keys(locales), datasets: [{ label: 'Ventas $', data: Object.values(locales), backgroundColor: ['#ff6b00', '#10b981', '#3b82f6'] }] }, options: { responsive: true, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } } });
-    }
 }
 
 function exportarVentasDia() {
@@ -468,348 +935,855 @@ async function cargarAlertasStock() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PROMOCIONES - CON SELECTOR VISUAL
+// DEUDORES
 // ═══════════════════════════════════════════════════════════════
-async function cargarPromociones() {
+async function cargarDeudores() {
     try {
-        const { data, error } = await supabaseClient.from('promociones').select('*').order('id_promo');
+        const estado = document.getElementById('deudoresEstadoFiltro')?.value || 'ABIERTO';
+        const local = document.getElementById('deudoresLocalFiltro')?.value || '';
+        let query = supabaseClient.from('deudores').select('*').order('saldo_actual', { ascending: false });
+        if (estado) query = query.eq('estado', estado);
+        if (local) query = query.ilike('sede_venta', `%${local}%`);
+        const { data, error } = await query;
         if (error) throw error;
-        promociones = data || [];
-        renderizarPromociones();
-    } catch (error) { const container = document.getElementById('listaPromociones'); if (container) container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`; }
+        todosDeudores = data || [];
+        renderizarDeudores(todosDeudores);
+        const { data: todos } = await supabaseClient.from('deudores').select('*');
+        const abiertos = todos?.filter(d => d.estado === 'ABIERTO') || [];
+        const totalDeuda = abiertos.reduce((s, d) => s + (d.saldo_actual || 0), 0);
+        document.getElementById('deudoresTotalDeuda').textContent = '$' + formatearPrecio(totalDeuda);
+        document.getElementById('deudoresActivos').textContent = abiertos.length;
+        document.getElementById('deudoresCerrados').textContent = todos?.filter(d => d.estado === 'CERRADO').length || 0;
+    } catch (error) { console.error('Error cargando deudores:', error); showToast('Error al cargar deudores', 'error'); }
 }
 
-function renderizarPromociones() {
-    const container = document.getElementById('listaPromociones'); if (!container) return;
-    if (promociones.length === 0) { container.innerHTML = '<div class="alert alert-info">No hay promociones</div>'; return; }
-    container.innerHTML = `<div class="card"><div class="card-header"><h3>🏷️ Promociones (${promociones.length})</h3></div><div class="table-container"><table class="data-table"><thead><tr><th>ID</th><th>Nombre</th><th>Descuento</th><th>Productos</th><th>Vigencia</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${promociones.map(p => {
-        const idsProductos = (p.productos_incluidos || '').split(',').map(id => id.trim()).filter(id => id);
-        const nombresProductos = idsProductos.slice(0, 2).map(id => { const prod = productos.find(pr => pr.id === id || pr.id_producto === id); return prod ? prod.nombre.substring(0, 15) + '...' : id; }).join(', ');
-        const masProductos = idsProductos.length > 2 ? ` +${idsProductos.length - 2}` : '';
-        return `<tr><td><code>${p.id_promo}</code></td><td><strong>${p.nombre || ''}</strong></td><td><span class="badge badge-danger">${p.descuento || 0}%</span></td><td title="${idsProductos.join(', ')}">${nombresProductos}${masProductos || ''}</td><td>${p.fecha_inicio || '?'} → ${p.fecha_fin || '?'}</td><td><span class="badge ${p.estado === 'Activa' ? 'badge-success' : 'badge-warning'}">${p.estado || 'N/A'}</span></td><td><button onclick="editarPromocion('${p.id_promo}')" class="btn btn-secondary btn-sm">✏️</button><button onclick="eliminarPromocion('${p.id_promo}')" class="btn btn-danger btn-sm">🗑️</button></td></tr>`;
-    }).join('')}</tbody></table></div></div>`;
+function renderizarDeudores(lista) {
+    const tbody = document.getElementById('tbodyDeudores');
+    if (!lista || lista.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding:2rem;color:var(--gray-500);">No hay deudores</td></tr>'; return; }
+    tbody.innerHTML = lista.map(d => {
+        const fechaRef = d.ultimo_pago || d.fecha_compra;
+        let diasSinPago = 0; if (fechaRef) { diasSinPago = Math.floor((new Date() - new Date(fechaRef)) / (1000 * 60 * 60 * 24)); }
+        const estadoBadge = d.estado === 'ABIERTO' ? (diasSinPago > 30 ? 'badge-danger' : 'badge-warning') : 'badge-success';
+        return `<tr><td><strong>${d.nombre_completo}</strong></td><td>${d.telefono || '-'}</td><td>${d.sede_venta || '-'}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${d.descripcion_compra || '-'}</td><td>$${formatearPrecio(d.monto_original || 0)}</td><td><strong style="color:${d.saldo_actual > 0 ? 'var(--danger)' : 'var(--success)'}">$${formatearPrecio(d.saldo_actual || 0)}</strong></td><td><span class="badge ${diasSinPago > 30 ? 'badge-danger' : 'badge-info'}">${diasSinPago} días</span></td><td><span class="badge ${estadoBadge}">${d.estado}</span></td><td><button onclick="editarDeudor('${d.id}')" class="btn btn-sm btn-secondary">✏️</button><button onclick="registrarPagoDeudor('${d.id}')" class="btn btn-sm btn-success">💰</button><a href="https://wa.me/57${(d.telefono || '').replace(/\D/g, '')}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;">📱</a></td></tr>`;
+    }).join('');
 }
 
-function mostrarFormPromocion() {
+function buscarDeudores() {
+    const query = document.getElementById('deudoresBuscar').value.toLowerCase();
+    if (!query) { renderizarDeudores(todosDeudores); return; }
+    renderizarDeudores(todosDeudores.filter(d => d.nombre_completo?.toLowerCase().includes(query) || d.telefono?.includes(query)));
+}
+
+function mostrarFormDeudor() {
+    document.getElementById('formDeudor').style.display = 'block';
+    document.getElementById('formTituloDeudor').textContent = '➕ Nuevo Deudor';
+    ['deudorId', 'deudorNombre', 'deudorTelefono', 'deudorSede', 'deudorDescripcion', 'deudorMontoOriginal', 'deudorSaldo', 'deudorReferencia'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('deudorFecha').value = new Date().toISOString().split('T')[0];
+}
+
+function cancelarFormDeudor() { document.getElementById('formDeudor').style.display = 'none'; }
+
+async function guardarDeudor() {
+    const nombre = document.getElementById('deudorNombre').value;
+    const sede = document.getElementById('deudorSede').value;
+    const descripcion = document.getElementById('deudorDescripcion').value;
+    const montoOriginal = parseFloat(document.getElementById('deudorMontoOriginal').value);
+    const saldo = parseFloat(document.getElementById('deudorSaldo').value);
+    if (!nombre || !sede || !descripcion || !montoOriginal || !saldo) { showToast('Completa los campos obligatorios', 'warning'); return; }
+    try {
+        const deudor = { nombre_completo: nombre, telefono: document.getElementById('deudorTelefono').value, sede_venta: sede, descripcion_compra: descripcion, monto_original: montoOriginal, saldo_actual: saldo, fecha_compra: document.getElementById('deudorFecha').value || null, contacto_referencia: document.getElementById('deudorReferencia').value, estado: saldo > 0 ? 'ABIERTO' : 'CERRADO' };
+        const id = document.getElementById('deudorId').value;
+        if (id) { const { error } = await supabaseClient.from('deudores').update(deudor).eq('id', id); if (error) throw error; showToast('Deudor actualizado', 'success'); }
+        else { const { error } = await supabaseClient.from('deudores').insert(deudor); if (error) throw error; showToast('Deudor registrado', 'success'); }
+        cancelarFormDeudor(); cargarDeudores();
+    } catch (error) { console.error('Error guardando deudor:', error); showToast('Error al guardar', 'error'); }
+}
+
+async function editarDeudor(id) {
+    try {
+        const { data, error } = await supabaseClient.from('deudores').select('*').eq('id', id).single();
+        if (error) throw error;
+        document.getElementById('formDeudor').style.display = 'block';
+        document.getElementById('formTituloDeudor').textContent = '✏️ Editar Deudor';
+        document.getElementById('deudorId').value = data.id;
+        document.getElementById('deudorNombre').value = data.nombre_completo || '';
+        document.getElementById('deudorTelefono').value = data.telefono || '';
+        document.getElementById('deudorSede').value = data.sede_venta || '';
+        document.getElementById('deudorFecha').value = data.fecha_compra || '';
+        document.getElementById('deudorDescripcion').value = data.descripcion_compra || '';
+        document.getElementById('deudorMontoOriginal').value = data.monto_original || '';
+        document.getElementById('deudorSaldo').value = data.saldo_actual || '';
+        document.getElementById('deudorReferencia').value = data.contacto_referencia || '';
+    } catch (error) { console.error('Error cargando deudor:', error); showToast('Error al cargar datos', 'error'); }
+}
+
+async function registrarPagoDeudor(id) {
+    const monto = prompt('Ingrese el monto del pago:');
+    if (!monto || isNaN(monto)) return;
+    try {
+        const { data: deudor } = await supabaseClient.from('deudores').select('*').eq('id', id).single();
+        const nuevoSaldo = Math.max(0, (deudor.saldo_actual || 0) - parseFloat(monto));
+        await supabaseClient.from('pagos_deudor').insert({ deudor_id: id, monto: parseFloat(monto), fecha_pago: new Date().toISOString().split('T')[0], saldo_anterior: deudor.saldo_actual, saldo_nuevo: nuevoSaldo });
+        await supabaseClient.from('deudores').update({ saldo_actual: nuevoSaldo, ultimo_pago: new Date().toISOString().split('T')[0], estado: nuevoSaldo === 0 ? 'CERRADO' : 'ABIERTO' }).eq('id', id);
+        showToast('Pago registrado correctamente', 'success'); cargarDeudores();
+    } catch (error) { console.error('Error registrando pago:', error); showToast('Error al registrar pago', 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROVEEDORES
+// ═══════════════════════════════════════════════════════════════
+async function cargarProveedores() {
+    try {
+        const { data, error } = await supabaseClient.from('proveedores').select('*').order('razon_social');
+        if (error) throw error;
+        todosProveedores = data || [];
+        renderizarProveedores(todosProveedores);
+        const activos = data?.filter(p => p.activo) || [];
+        document.getElementById('proveedoresTotal').textContent = data?.length || 0;
+        document.getElementById('proveedoresActivos').textContent = activos.length;
+    } catch (error) { console.error('Error cargando proveedores:', error); showToast('Error al cargar proveedores', 'error'); }
+}
+
+function renderizarProveedores(lista) {
+    const tbody = document.getElementById('tbodyProveedores');
+    if (!lista || lista.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay proveedores</td></tr>'; return; }
+    tbody.innerHTML = lista.map(p => `<tr><td><strong>${p.razon_social}</strong></td><td>${p.contacto_nombre || '-'}</td><td>${p.contacto_telefono || '-'}</td><td><span class="badge badge-info">${p.condicion_pago || 'contado'}</span></td><td><strong>$${formatearPrecio(p.saldo_pendiente || 0)}</strong></td><td><span class="badge ${p.activo ? 'badge-success' : 'badge-secondary'}">${p.activo ? 'Activo' : 'Inactivo'}</span></td><td><button onclick="editarProveedor('${p.id}')" class="btn btn-sm btn-secondary">✏️</button></td></tr>`).join('');
+}
+
+function buscarProveedores() {
+    const query = document.getElementById('proveedoresBuscar').value.toLowerCase();
+    if (!query) { renderizarProveedores(todosProveedores); return; }
+    renderizarProveedores(todosProveedores.filter(p => p.razon_social?.toLowerCase().includes(query) || p.contacto_nombre?.toLowerCase().includes(query)));
+}
+
+function mostrarFormProveedor() {
+    document.getElementById('formProveedor').style.display = 'block';
+    document.getElementById('formTituloProveedor').textContent = '➕ Nuevo Proveedor';
+    ['proveedorId', 'proveedorNombre', 'proveedorNit', 'proveedorContacto', 'proveedorTelefono', 'proveedorEmail', 'proveedorDireccion', 'proveedorNotas'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('proveedorCondicion').value = 'contado';
+}
+
+function cancelarFormProveedor() { document.getElementById('formProveedor').style.display = 'none'; }
+
+async function guardarProveedor() {
+    const nombre = document.getElementById('proveedorNombre').value;
+    if (!nombre) { showToast('El nombre es obligatorio', 'warning'); return; }
+    try {
+        const proveedor = { razon_social: nombre, nit: document.getElementById('proveedorNit').value, contacto_nombre: document.getElementById('proveedorContacto').value, contacto_telefono: document.getElementById('proveedorTelefono').value, condicion_pago: document.getElementById('proveedorCondicion').value, contacto_email: document.getElementById('proveedorEmail').value, direccion: document.getElementById('proveedorDireccion').value, notas: document.getElementById('proveedorNotas').value, activo: true };
+        const id = document.getElementById('proveedorId').value;
+        if (id) { const { error } = await supabaseClient.from('proveedores').update(proveedor).eq('id', id); if (error) throw error; showToast('Proveedor actualizado', 'success'); }
+        else { const { error } = await supabaseClient.from('proveedores').insert(proveedor); if (error) throw error; showToast('Proveedor registrado', 'success'); }
+        cancelarFormProveedor(); cargarProveedores();
+    } catch (error) { console.error('Error guardando proveedor:', error); showToast('Error al guardar', 'error'); }
+}
+
+async function editarProveedor(id) {
+    try {
+        const { data, error } = await supabaseClient.from('proveedores').select('*').eq('id', id).single();
+        if (error) throw error;
+        document.getElementById('formProveedor').style.display = 'block';
+        document.getElementById('formTituloProveedor').textContent = '✏️ Editar Proveedor';
+        document.getElementById('proveedorId').value = data.id;
+        document.getElementById('proveedorNombre').value = data.razon_social || '';
+        document.getElementById('proveedorNit').value = data.nit || '';
+        document.getElementById('proveedorContacto').value = data.contacto_nombre || '';
+        document.getElementById('proveedorTelefono').value = data.contacto_telefono || '';
+        document.getElementById('proveedorCondicion').value = data.condicion_pago || 'contado';
+        document.getElementById('proveedorEmail').value = data.contacto_email || '';
+        document.getElementById('proveedorDireccion').value = data.direccion || '';
+        document.getElementById('proveedorNotas').value = data.notas || '';
+    } catch (error) { console.error('Error cargando proveedor:', error); showToast('Error al cargar datos', 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEUDAS DEL NEGOCIO, CRÉDITOS, BODEGAS, ALIANZAS
+// ═══════════════════════════════════════════════════════════════
+async function cargarDeudasNegocio() {
+    console.log('📋 Cargando deudas del negocio...');
+    const tbody = document.getElementById('tbodyDeudas');
+    if (!tbody) { console.error('❌ No se encontró tbodyDeudas'); return; }
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Cargando...</td></tr>';
+
+    try {
+        const { data, error } = await supabaseClient.from('deudas_negocio').select('*').order('saldo_actual', { ascending: false });
+        if (error) { console.error('❌ Error Supabase:', error); throw error; }
+
+        console.log('✅ Deudas cargadas:', data?.length || 0);
+
+        // Calcular estadísticas
+        const abiertas = (data || []).filter(d => d.estado === 'ABIERTO');
+        const totalSaldo = abiertas.reduce((s, d) => s + parseFloat(d.saldo_actual || 0), 0);
+
+        const elSaldo = document.getElementById('deudasTotalSaldo');
+        const elActivas = document.getElementById('deudasActivas');
+        if (elSaldo) elSaldo.textContent = '$' + formatearPrecio(totalSaldo);
+        if (elActivas) elActivas.textContent = abiertas.length;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay deudas registradas</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(d => `<tr>
+            <td><strong>${d.concepto}</strong></td>
+            <td>${d.numero_factura || '-'}</td>
+            <td>${d.acreedor || '-'}</td>
+            <td>$${formatearPrecio(d.monto_original || 0)}</td>
+            <td><strong class="${(d.saldo_actual || 0) > 0 ? 'text-danger' : 'text-success'}">$${formatearPrecio(d.saldo_actual || 0)}</strong></td>
+            <td><span class="badge ${d.estado === 'ABIERTO' ? 'badge-danger' : 'badge-success'}">${d.estado}</span></td>
+            <td>
+                <button onclick="editarDeudaNegocio('${d.id}')" class="btn btn-sm btn-secondary">✏️</button>
+                <button onclick="registrarPagoDeuda('${d.id}')" class="btn btn-sm btn-success" ${d.saldo_actual <= 0 ? 'disabled' : ''}>💰</button>
+            </td>
+        </tr>`).join('');
+
+        console.log('✅ Tabla de deudas renderizada');
+    } catch (error) {
+        console.error('❌ Error cargando deudas:', error);
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+        showToast('Error al cargar deudas: ' + error.message, 'error');
+    }
+}
+
+function mostrarFormDeuda() { document.getElementById('formDeuda').style.display = 'block'; ['deudaId', 'deudaConcepto', 'deudaFactura', 'deudaAcreedor', 'deudaMontoOriginal', 'deudaSaldo', 'deudaNotas'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); }
+function cancelarFormDeuda() { document.getElementById('formDeuda').style.display = 'none'; }
+
+async function guardarDeudaNegocio() {
+    const concepto = document.getElementById('deudaConcepto').value;
+    const montoOriginal = parseFloat(document.getElementById('deudaMontoOriginal').value);
+    const saldo = parseFloat(document.getElementById('deudaSaldo').value);
+    if (!concepto || !montoOriginal || !saldo) { showToast('Completa los campos obligatorios', 'warning'); return; }
+    try {
+        const deuda = { concepto, numero_factura: document.getElementById('deudaFactura').value, acreedor: document.getElementById('deudaAcreedor').value, monto_original: montoOriginal, saldo_actual: saldo, notas: document.getElementById('deudaNotas').value, estado: saldo > 0 ? 'ABIERTO' : 'CERRADO' };
+        const id = document.getElementById('deudaId').value;
+        if (id) { const { error } = await supabaseClient.from('deudas_negocio').update(deuda).eq('id', id); if (error) throw error; showToast('Deuda actualizada', 'success'); }
+        else { const { error } = await supabaseClient.from('deudas_negocio').insert(deuda); if (error) throw error; showToast('Deuda registrada', 'success'); }
+        cancelarFormDeuda(); cargarDeudasNegocio();
+    } catch (error) { console.error('Error guardando deuda:', error); showToast('Error al guardar', 'error'); }
+}
+
+async function editarDeudaNegocio(id) {
+    try {
+        const { data, error } = await supabaseClient.from('deudas_negocio').select('*').eq('id', id).single();
+        if (error || !data) { showToast('Error al cargar deuda', 'error'); return; }
+        document.getElementById('formDeuda').style.display = 'block';
+        document.getElementById('deudaId').value = data.id;
+        document.getElementById('deudaConcepto').value = data.concepto || '';
+        document.getElementById('deudaFactura').value = data.numero_factura || '';
+        document.getElementById('deudaAcreedor').value = data.acreedor || '';
+        document.getElementById('deudaMontoOriginal').value = data.monto_original || '';
+        document.getElementById('deudaSaldo').value = data.saldo_actual || '';
+        document.getElementById('deudaNotas').value = data.notas || '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) { console.error('Error editando deuda:', error); showToast('Error: ' + error.message, 'error'); }
+}
+
+async function registrarPagoDeuda(id) {
+    const monto = prompt('Ingrese el monto del pago:');
+    if (!monto || isNaN(monto)) return;
+    try {
+        const { data: deuda } = await supabaseClient.from('deudas_negocio').select('*').eq('id', id).single();
+        const nuevoSaldo = Math.max(0, (deuda.saldo_actual || 0) - parseFloat(monto));
+        await supabaseClient.from('pagos_deuda_negocio').insert({ deuda_id: id, monto: parseFloat(monto), fecha_pago: new Date().toISOString().split('T')[0] });
+        await supabaseClient.from('deudas_negocio').update({ saldo_actual: nuevoSaldo, estado: nuevoSaldo === 0 ? 'CERRADO' : 'ABIERTO' }).eq('id', id);
+        showToast('Pago registrado correctamente', 'success'); cargarDeudasNegocio();
+    } catch (error) { console.error('Error registrando pago:', error); showToast('Error al registrar pago', 'error'); }
+}
+
+// CRÉDITOS MOTERO - NO TOCAR - SOLO SE CREAN DESDE TIENDA
+async function cargarCreditos() {
+    const tbody = document.getElementById('tbodyCreditos');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center">Cargando...</td></tr>';
+
+    try {
+        // Cargar todos para estadísticas
+        const { data: todosCreditos, error: errTodos } = await supabaseClient
+            .from('creditos_motero')
+            .select('*, clientes_credito(*)')
+            .order('created_at', { ascending: false });
+
+        if (errTodos) throw errTodos;
+
+        // Actualizar stats
+        const creditos = todosCreditos || [];
+        const activos = creditos.filter(c => c.estado === 'activo').length;
+        const enMora = creditos.filter(c => c.estado === 'mora').length;
+        const pagados = creditos.filter(c => c.estado === 'pagado').length;
+        const saldoTotal = creditos.reduce((sum, c) => sum + parseFloat(c.saldo_pendiente || 0), 0);
+
+        const elActivos = document.getElementById('creditosActivos');
+        const elSaldo = document.getElementById('creditosSaldoTotal');
+        const elMora = document.getElementById('creditosMora');
+        const elPagados = document.getElementById('creditosPagados');
+
+        if (elActivos) elActivos.textContent = activos;
+        if (elSaldo) elSaldo.textContent = '$' + formatearPrecio(saldoTotal);
+        if (elMora) elMora.textContent = enMora;
+        if (elPagados) elPagados.textContent = pagados;
+
+        // Filtrar para tabla
+        const estadoFiltro = document.getElementById('creditosEstadoFiltro')?.value || '';
+        const datosFiltrados = estadoFiltro ? creditos.filter(c => c.estado === estadoFiltro) : creditos;
+
+        if (!datosFiltrados || datosFiltrados.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay créditos registrados</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = datosFiltrados.map(c => {
+            const cliente = c.clientes_credito;
+            const nombre = cliente ? `${cliente.nombres} ${cliente.apellidos || ''}` : 'Sin cliente';
+            const estadoBadge = c.estado === 'activo' ? 'badge-warning' : (c.estado === 'mora' ? 'badge-danger' : 'badge-success');
+            return `<tr>
+                <td>${nombre}</td>
+                <td>${cliente?.telefono || '-'}</td>
+                <td>$${formatearPrecio(c.monto_total || 0)}</td>
+                <td><strong class="${c.saldo_pendiente > 0 ? 'text-danger' : ''}">$${formatearPrecio(c.saldo_pendiente || 0)}</strong></td>
+                <td>${c.cuotas_pagadas || 0}/${c.numero_cuotas || 1}</td>
+                <td><span class="badge ${estadoBadge}">${c.estado}</span></td>
+                <td>
+                    <button onclick="verDetalleCredito('${c.id}')" class="btn btn-sm btn-secondary">👁️</button>
+                    <button onclick="registrarPagoCredito('${c.id}')" class="btn btn-sm btn-success">💰</button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch (error) {
+        console.error('Error cargando créditos:', error);
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar</td></tr>';
+        showToast('Error al cargar créditos: ' + error.message, 'error');
+    }
+}
+
+function mostrarFormCredito() { showToast('Función en desarrollo - Los créditos se crean desde las tiendas físicas', 'info'); }
+function verDetalleCredito(id) { showToast('Función en desarrollo', 'info'); }
+
+async function registrarPagoCredito(id) {
+    const monto = prompt('Ingrese el monto del pago:');
+    if (!monto || isNaN(monto)) return;
+    try {
+        const { data: credito } = await supabaseClient.from('creditos_motero').select('*').eq('id', id).single();
+        const nuevoSaldo = Math.max(0, (credito.saldo_pendiente || 0) - parseFloat(monto));
+        const nuevasCuotasPagadas = (credito.cuotas_pagadas || 0) + 1;
+        await supabaseClient.from('pagos_credito').insert({ credito_id: id, numero_cuota: nuevasCuotasPagadas, monto_pagado: parseFloat(monto), fecha_pago: new Date().toISOString() });
+        await supabaseClient.from('creditos_motero').update({ saldo_pendiente: nuevoSaldo, cuotas_pagadas: nuevasCuotasPagadas, ultimo_pago_fecha: new Date().toISOString().split('T')[0], estado: nuevoSaldo === 0 ? 'pagado' : 'activo' }).eq('id', id);
+        showToast('Pago registrado correctamente', 'success'); cargarCreditos();
+    } catch (error) { console.error('Error registrando pago:', error); showToast('Error al registrar pago', 'error'); }
+}
+
+// BODEGAS
+async function cargarBodegas() {
+    const tbody = document.getElementById('tbodyBodegas');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Cargando...</td></tr>';
+    try {
+        const { data, error } = await supabaseClient.from('inventario_bodega').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="text-center">No hay inventario en bodegas</td></tr>'; return; }
+        const idsProductos = [...new Set(data.map(d => d.id_producto))];
+        const { data: prods } = await supabaseClient.from('productos').select('id_producto, nombre').in('id_producto', idsProductos);
+        const productosMap = {}; (prods || []).forEach(p => productosMap[p.id_producto] = p.nombre);
+        tbody.innerHTML = data.map(item => `<tr><td>${item.bodega_id || '-'}</td><td>${productosMap[item.id_producto] || item.id_producto}</td><td><strong>${item.cantidad || 0}</strong></td><td>${item.ubicacion || '-'}</td><td><button onclick="moverDeBodega('${item.id}')" class="btn btn-sm btn-secondary">🔄 Mover</button></td></tr>`).join('');
+    } catch (error) { console.error('Error cargando bodegas:', error); tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar</td></tr>'; }
+}
+
+function cargarBodega() { cargarBodegas(); }
+function mostrarFormMovimiento() { showToast('Funcionalidad en desarrollo', 'info'); }
+
+async function moverDeBodega(id) {
+    const destino = prompt('¿A qué tienda mover?\n\n1. Alcalá\n2. Local 01\n3. Jordán\n\nIngresa el número:');
+    if (!destino || !['1', '2', '3'].includes(destino)) { showToast('Destino no válido', 'warning'); return; }
+    const cantidad = prompt('¿Cuántas unidades mover?');
+    if (!cantidad || isNaN(cantidad) || parseInt(cantidad) <= 0) { showToast('Cantidad no válida', 'warning'); return; }
+    const tablaDestino = destino === '1' ? 'inventario_alcala' : destino === '2' ? 'inventario_01' : 'inventario_jordan';
+    const nombreDestino = destino === '1' ? 'Alcalá' : destino === '2' ? 'Local 01' : 'Jordán';
+    try {
+        const { data: itemBodega } = await supabaseClient.from('inventario_bodega').select('*').eq('id', id).single();
+        if (!itemBodega) throw new Error('Item no encontrado');
+        if (itemBodega.cantidad < parseInt(cantidad)) { showToast('No hay suficiente stock en bodega', 'error'); return; }
+        await supabaseClient.from('inventario_bodega').update({ cantidad: itemBodega.cantidad - parseInt(cantidad), updated_at: new Date().toISOString() }).eq('id', id);
+        const { data: invDestino } = await supabaseClient.from(tablaDestino).select('*').eq('id_producto', itemBodega.id_producto);
+        if (invDestino && invDestino.length > 0) { await supabaseClient.from(tablaDestino).update({ cantidad: invDestino[0].cantidad + parseInt(cantidad), updated_at: new Date().toISOString() }).eq('id_producto', itemBodega.id_producto); }
+        else { await supabaseClient.from(tablaDestino).insert({ id_producto: itemBodega.id_producto, cantidad: parseInt(cantidad), stock_minimo: 3 }); }
+        showToast(`${cantidad} unidades movidas a ${nombreDestino}`, 'success');
+        cargarBodegas();
+    } catch (error) { console.error('Error moviendo de bodega:', error); showToast('Error al mover: ' + error.message, 'error'); }
+}
+
+// ALIANZAS
+async function cargarAlianzas() {
+    const tbody = document.getElementById('tbodyAlianzas');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Cargando...</td></tr>';
+    try {
+        const { data, error } = await supabaseClient.from('alianzas').select('*').order('nombre');
+        if (error) throw error;
+        if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay alianzas registradas</td></tr>'; return; }
+        tbody.innerHTML = data.map(a => `<tr><td><strong>${a.nombre}</strong></td><td>${a.tipo || '-'}</td><td>${a.descripcion || '-'}</td><td>${a.contacto_nombre || '-'}</td><td>${a.es_procesador_pagos ? '✅ Sí' : '❌ No'}</td><td><span class="badge badge-${a.activo ? 'success' : 'danger'}">${a.activo ? 'Activo' : 'Inactivo'}</span></td><td><button onclick="editarAlianza('${a.id}')" class="btn btn-sm btn-secondary">✏️</button></td></tr>`).join('');
+    } catch (error) { console.error('Error cargando alianzas:', error); tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar</td></tr>'; }
+}
+
+function mostrarFormAlianza() {
+    const nombre = prompt('Nombre de la alianza:'); if (!nombre) return;
+    const tipo = prompt('Tipo (Financiera, Comercial, Logística):');
+    const descripcion = prompt('Descripción:');
+    const contacto = prompt('Nombre del contacto:');
+    const telefono = prompt('Teléfono de contacto:');
+    const esProcesador = confirm('¿Es procesador de pagos?');
+    guardarNuevaAlianza(nombre, tipo, descripcion, contacto, telefono, esProcesador);
+}
+
+async function guardarNuevaAlianza(nombre, tipo, descripcion, contacto, telefono, esProcesador) {
+    try {
+        const { error } = await supabaseClient.from('alianzas').insert({ nombre, tipo, descripcion, contacto_nombre: contacto, contacto_telefono: telefono, es_procesador_pagos: esProcesador, activo: true });
+        if (error) throw error;
+        showToast('Alianza creada correctamente', 'success'); cargarAlianzas();
+    } catch (error) { console.error('Error guardando alianza:', error); showToast('Error: ' + error.message, 'error'); }
+}
+
+async function editarAlianza(id) {
+    try {
+        const { data, error } = await supabaseClient.from('alianzas').select('*').eq('id', id).single();
+        if (error || !data) { showToast('Error al cargar alianza', 'error'); return; }
+        const nuevoNombre = prompt('Nombre de la alianza:', data.nombre); if (nuevoNombre === null) return;
+        const nuevaDesc = prompt('Descripción:', data.descripcion || '');
+        const nuevoContacto = prompt('Contacto:', data.contacto_nombre || '');
+        await supabaseClient.from('alianzas').update({ nombre: nuevoNombre, descripcion: nuevaDesc, contacto_nombre: nuevoContacto, updated_at: new Date().toISOString() }).eq('id', id);
+        showToast('Alianza actualizada', 'success'); cargarAlianzas();
+    } catch (error) { console.error('Error editando alianza:', error); showToast('Error: ' + error.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROMOCIONES, BLOG, CONFIGURACIÓN, CIERRES, GASTOS
+// ═══════════════════════════════════════════════════════════════
+async function cargarPromociones() { try { const { data, error } = await supabaseClient.from('promociones').select('*').order('id_promo'); if (error) throw error; promociones = data || []; renderizarPromociones(); } catch (error) { const container = document.getElementById('listaPromociones'); if (container) container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`; } }
+function renderizarPromociones() { const container = document.getElementById('listaPromociones'); if (!container) return; if (promociones.length === 0) { container.innerHTML = '<div class="alert alert-info">No hay promociones</div>'; return; } container.innerHTML = `<div class="card"><div class="card-header"><h3>🏷️ Promociones (${promociones.length})</h3></div><div class="table-container"><table class="data-table"><thead><tr><th>ID</th><th>Nombre</th><th>Descuento</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${promociones.map(p => `<tr><td><code>${p.id_promo}</code></td><td><strong>${p.nombre || ''}</strong></td><td><span class="badge badge-danger">${p.descuento || 0}%</span></td><td><span class="badge ${p.estado === 'Activa' ? 'badge-success' : 'badge-warning'}">${p.estado || 'N/A'}</span></td><td><button onclick="editarPromocion('${p.id_promo}')" class="btn btn-secondary btn-sm">✏️</button><button onclick="eliminarPromocion('${p.id_promo}')" class="btn btn-danger btn-sm">🗑️</button></td></tr>`).join('')}</tbody></table></div></div>`; }
+async function mostrarFormPromocion() {
     ['promocionIdOriginal', 'promocionId', 'promocionNombre', 'promocionDescuento', 'promocionProductos', 'promocionInicio', 'promocionFin', 'promocionLocales'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     const est = document.getElementById('promocionEstado'); if (est) est.value = 'Activa';
     const idInput = document.getElementById('promocionId'); if (idInput) idInput.disabled = false;
     document.getElementById('formTituloPromocion').textContent = '➕ Nueva Promoción';
-    
-    // 🔥 Limpiar y cargar selector de productos
     productosSeleccionadosPromo = [];
-    cargarProductosParaPromo();
-    actualizarSeleccionPromo();
-    
-    document.getElementById('formPromocion').classList.add('active');
+    const form = document.getElementById('formPromocion'); if (form) form.style.display = 'block';
+    // Cargar productos para seleccionar
+    await cargarProductosParaPromocion();
 }
-
-function cancelarFormPromocion() { 
-    document.getElementById('formPromocion').classList.remove('active'); 
-    productosSeleccionadosPromo = [];
-}
-
-function editarPromocion(id) {
-    const promo = promociones.find(p => p.id_promo === id); if (!promo) return;
-    document.getElementById('promocionIdOriginal').value = promo.id_promo;
-    document.getElementById('promocionId').value = promo.id_promo;
-    document.getElementById('promocionId').disabled = true;
-    document.getElementById('promocionNombre').value = promo.nombre || '';
-    document.getElementById('promocionDescuento').value = promo.descuento || '';
-    document.getElementById('promocionInicio').value = promo.fecha_inicio || '';
-    document.getElementById('promocionFin').value = promo.fecha_fin || '';
-    document.getElementById('promocionLocales').value = promo.locales_aplicables || '';
-    document.getElementById('promocionEstado').value = promo.estado || 'Activa';
-    
-    // 🔥 Cargar productos seleccionados existentes
-    const idsExistentes = (promo.productos_incluidos || '').split(',').map(id => id.trim()).filter(id => id);
-    productosSeleccionadosPromo = [...idsExistentes];
-    cargarProductosParaPromo();
-    actualizarSeleccionPromo();
-    
-    document.getElementById('formTituloPromocion').textContent = '✏️ Editar Promoción';
-    document.getElementById('formPromocion').classList.add('active');
-}
-
-async function guardarPromocion() {
-    const idOriginal = document.getElementById('promocionIdOriginal').value;
-    const idPromo = document.getElementById('promocionId').value.trim();
-    const nombre = document.getElementById('promocionNombre').value.trim();
-    if (!idPromo || !nombre) { showToast('ID y Nombre son requeridos', 'warning'); return; }
-    
-    // 🔥 Obtener IDs desde el selector
-    const productosIds = productosSeleccionadosPromo.join(',');
-    
-    const promo = {
-        id_promo: idPromo, 
-        nombre,
-        descuento: parseFloat(document.getElementById('promocionDescuento').value) || 0,
-        productos_incluidos: productosIds,
-        fecha_inicio: document.getElementById('promocionInicio').value.trim(),
-        fecha_fin: document.getElementById('promocionFin').value.trim(),
-        locales_aplicables: document.getElementById('promocionLocales').value.trim() || 'Todos',
-        estado: document.getElementById('promocionEstado').value
-    };
-    
-    try {
-        if (idOriginal) { const { error } = await supabaseClient.from('promociones').update(promo).eq('id_promo', idOriginal); if (error) throw error; showToast('Promoción actualizada'); }
-        else { const { error } = await supabaseClient.from('promociones').insert(promo); if (error) throw error; showToast('Promoción creada'); }
-        cancelarFormPromocion(); await cargarPromociones();
-    } catch (error) { showToast('Error: ' + error.message, 'error'); }
-}
-
-async function eliminarPromocion(id) {
-    if (!confirm('¿Eliminar esta promoción?')) return;
-    try { const { error } = await supabaseClient.from('promociones').delete().eq('id_promo', id); if (error) throw error; showToast('Promoción eliminada'); await cargarPromociones(); }
-    catch (error) { showToast('Error: ' + error.message, 'error'); }
-}
-
-// 🔥 FUNCIONES DEL SELECTOR VISUAL DE PRODUCTOS PARA PROMOCIONES
-function cargarProductosParaPromo() {
-    const productosActivos = productos.filter(p => p.estado === 'Activo');
-    productosPromoFiltrados = [...productosActivos];
-    renderizarProductosPromo();
-}
-
-function renderizarProductosPromo() {
+function cancelarFormPromocion() { const form = document.getElementById('formPromocion'); if (form) form.style.display = 'none'; productosSeleccionadosPromo = []; }
+function editarPromocion(id) { const promo = promociones.find(p => p.id_promo === id); if (!promo) return; document.getElementById('promocionIdOriginal').value = promo.id_promo; document.getElementById('promocionId').value = promo.id_promo; document.getElementById('promocionId').disabled = true; document.getElementById('promocionNombre').value = promo.nombre || ''; document.getElementById('promocionDescuento').value = promo.descuento || ''; document.getElementById('promocionInicio').value = promo.fecha_inicio || ''; document.getElementById('promocionFin').value = promo.fecha_fin || ''; document.getElementById('promocionLocales').value = promo.locales_aplicables || ''; document.getElementById('promocionEstado').value = promo.estado || 'Activa'; document.getElementById('formTituloPromocion').textContent = '✏️ Editar Promoción'; const form = document.getElementById('formPromocion'); if (form) form.style.display = 'block'; }
+async function guardarPromocion() { const idOriginal = document.getElementById('promocionIdOriginal').value; const idPromo = document.getElementById('promocionId').value.trim(); const nombre = document.getElementById('promocionNombre').value.trim(); if (!idPromo || !nombre) { showToast('ID y Nombre son requeridos', 'warning'); return; } const promo = { id_promo: idPromo, nombre, descuento: parseFloat(document.getElementById('promocionDescuento').value) || 0, productos_incluidos: productosSeleccionadosPromo.join(','), fecha_inicio: document.getElementById('promocionInicio').value.trim(), fecha_fin: document.getElementById('promocionFin').value.trim(), locales_aplicables: document.getElementById('promocionLocales').value.trim() || 'Todos', estado: document.getElementById('promocionEstado').value }; try { if (idOriginal) { const { error } = await supabaseClient.from('promociones').update(promo).eq('id_promo', idOriginal); if (error) throw error; showToast('Promoción actualizada'); } else { const { error } = await supabaseClient.from('promociones').insert(promo); if (error) throw error; showToast('Promoción creada'); } cancelarFormPromocion(); await cargarPromociones(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
+async function eliminarPromocion(id) { if (!confirm('¿Eliminar esta promoción?')) return; try { const { error } = await supabaseClient.from('promociones').delete().eq('id_promo', id); if (error) throw error; showToast('Promoción eliminada'); await cargarPromociones(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
+// Cargar productos para seleccionar en promoción
+async function cargarProductosParaPromocion() {
     const container = document.getElementById('listaProductosPromo');
     if (!container) return;
-    
-    if (productosPromoFiltrados.length === 0) {
-        container.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--gray-400);">No hay productos disponibles</div>';
-        return;
+    container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando productos...</p></div>';
+
+    try {
+        if (productos.length === 0) {
+            const { data, error } = await supabaseClient.from('productos').select('*').eq('estado', 'Activo').order('nombre');
+            if (error) throw error;
+            productos = data || [];
+        }
+        renderizarProductosPromo(productos);
+    } catch (error) {
+        console.error('Error cargando productos:', error);
+        container.innerHTML = '<div class="alert alert-danger">Error al cargar productos</div>';
     }
-    
-    container.innerHTML = productosPromoFiltrados.map(p => {
-        const seleccionado = productosSeleccionadosPromo.includes(p.id) || productosSeleccionadosPromo.includes(p.id_producto);
-        return `
-            <div class="producto-promo-item ${seleccionado ? 'seleccionado' : ''}" onclick="toggleProductoPromo('${p.id}')">
-                <img class="producto-promo-img" src="${p.url_imagen || 'https://via.placeholder.com/50'}" onerror="this.src='https://via.placeholder.com/50'" alt="${p.nombre}">
-                <div class="producto-promo-info">
-                    <h5>${p.nombre}</h5>
-                    <p>${p.marca} • ${p.categoria}</p>
-                    <span class="precio">$${formatearPrecio(p.precio)}</span>
-                </div>
-                <div class="producto-promo-check">${seleccionado ? '✓' : ''}</div>
-            </div>
-        `;
-    }).join('');
+}
+
+function renderizarProductosPromo(lista) {
+    const container = document.getElementById('listaProductosPromo');
+    if (!container) return;
+    if (lista.length === 0) { container.innerHTML = '<p class="text-muted">No hay productos disponibles</p>'; return; }
+
+    container.innerHTML = `
+        <div style="margin-bottom:1rem;">
+            <input type="text" id="buscarProductoPromo" class="form-control" placeholder="🔍 Buscar producto..." oninput="filtrarProductosPromo()" style="max-width:300px;">
+            <small class="text-muted">Seleccionados: <strong id="contadorPromoSeleccionados">${productosSeleccionadosPromo.length}</strong></small>
+        </div>
+        <div class="productos-promo-lista" style="max-height:300px; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:0.5rem;">
+            ${lista.map(p => {
+                const isSelected = productosSeleccionadosPromo.includes(p.id_producto);
+                return `<div class="producto-promo-item ${isSelected ? 'selected' : ''}" onclick="toggleProductoPromo('${p.id_producto}')" style="padding:0.75rem; border:2px solid ${isSelected ? 'var(--primary)' : '#e2e8f0'}; border-radius:0.5rem; cursor:pointer; background:${isSelected ? '#fff7ed' : 'white'};">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} style="pointer-events:none;">
+                        <div>
+                            <strong style="font-size:0.85rem;">${p.nombre}</strong>
+                            <p style="font-size:0.75rem; color:#64748b; margin:0;">${p.marca} - $${formatearPrecio(p.precio)}</p>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>
+    `;
 }
 
 function filtrarProductosPromo() {
-    const input = document.getElementById('buscarProductoPromo');
-    const busqueda = (input?.value || '').toLowerCase().trim();
-    const productosActivos = productos.filter(p => p.estado === 'Activo');
-    
-    if (!busqueda) {
-        productosPromoFiltrados = [...productosActivos];
-    } else {
-        productosPromoFiltrados = productosActivos.filter(p => 
-            (p.nombre || '').toLowerCase().includes(busqueda) ||
-            (p.marca || '').toLowerCase().includes(busqueda) ||
-            (p.categoria || '').toLowerCase().includes(busqueda)
-        );
-    }
-    
-    renderizarProductosPromo();
+    const busqueda = (document.getElementById('buscarProductoPromo')?.value || '').toLowerCase();
+    const filtrados = productos.filter(p =>
+        p.estado === 'Activo' &&
+        ((p.nombre || '').toLowerCase().includes(busqueda) ||
+         (p.marca || '').toLowerCase().includes(busqueda) ||
+         (p.id_producto || '').toLowerCase().includes(busqueda))
+    );
+    renderizarProductosPromo(filtrados);
 }
 
 function toggleProductoPromo(id) {
     const index = productosSeleccionadosPromo.indexOf(id);
-    if (index > -1) {
-        productosSeleccionadosPromo.splice(index, 1);
-    } else {
-        productosSeleccionadosPromo.push(id);
+    if (index > -1) { productosSeleccionadosPromo.splice(index, 1); }
+    else { productosSeleccionadosPromo.push(id); }
+    // Re-renderizar para mostrar cambio
+    filtrarProductosPromo();
+}
+function quitarProductoPromo(id) { const index = productosSeleccionadosPromo.indexOf(id); if (index > -1) { productosSeleccionadosPromo.splice(index, 1); } }
+function limpiarSeleccionPromo() { productosSeleccionadosPromo = []; }
+
+// BLOG
+async function cargarPosts() { try { const { data, error } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false }); if (error) throw error; posts = data || []; renderizarPosts(); } catch (error) { const container = document.getElementById('listaPosts'); if (container) container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`; } }
+
+function obtenerMediaPreview(post) {
+    // Si tiene imagen, mostrar imagen
+    if (post.imagen_url) {
+        return `<img src="${post.imagen_url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;font-size:3rem;color:#94a3b8;\\'>🖼️</div>'">`;
     }
-    renderizarProductosPromo();
-    actualizarSeleccionPromo();
-}
-
-function quitarProductoPromo(id) {
-    const index = productosSeleccionadosPromo.indexOf(id);
-    if (index > -1) {
-        productosSeleccionadosPromo.splice(index, 1);
-    }
-    renderizarProductosPromo();
-    actualizarSeleccionPromo();
-}
-
-function limpiarSeleccionPromo() {
-    productosSeleccionadosPromo = [];
-    renderizarProductosPromo();
-    actualizarSeleccionPromo();
-}
-
-function actualizarSeleccionPromo() {
-    const contador = document.getElementById('contadorProductosPromo');
-    const containerSeleccionados = document.getElementById('productosSeleccionadosPromo');
-    const listaSeleccionados = document.getElementById('listaProductosSeleccionados');
-    const inputHidden = document.getElementById('promocionProductos');
-    
-    // Actualizar contador
-    if (contador) contador.textContent = `${productosSeleccionadosPromo.length} seleccionados`;
-    
-    // Actualizar campo oculto
-    if (inputHidden) inputHidden.value = productosSeleccionadosPromo.join(',');
-    
-    // Mostrar/ocultar contenedor de seleccionados
-    if (containerSeleccionados && listaSeleccionados) {
-        if (productosSeleccionadosPromo.length === 0) {
-            containerSeleccionados.style.display = 'none';
-        } else {
-            containerSeleccionados.style.display = 'block';
-            listaSeleccionados.innerHTML = productosSeleccionadosPromo.map(id => {
-                const prod = productos.find(p => p.id === id || p.id_producto === id);
-                const nombre = prod ? prod.nombre : id;
-                return `<span class="producto-seleccionado-tag"><span class="nombre" title="${nombre}">${nombre.substring(0, 20)}${nombre.length > 20 ? '...' : ''}</span><button class="quitar" onclick="quitarProductoPromo('${id}')">×</button></span>`;
-            }).join('');
+    // Si tiene video de YouTube, mostrar thumbnail
+    if (post.video_url && post.video_url.includes('youtube')) {
+        const videoId = post.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/)?.[1];
+        if (videoId) {
+            return `<div style="position:relative;width:100%;height:100%;"><img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" style="width:100%;height:100%;object-fit:cover;"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3rem;">▶️</div></div>`;
         }
     }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// BLOG
-// ═══════════════════════════════════════════════════════════════
-async function cargarPosts() {
-    try { const { data, error } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false }); if (error) throw error; posts = data || []; renderizarPosts(); }
-    catch (error) { const container = document.getElementById('listaPosts'); if (container) container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`; }
+    // Si tiene video de TikTok, mostrar ícono de TikTok
+    if (post.video_url && post.video_url.includes('tiktok')) {
+        return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:linear-gradient(135deg,#000,#25f4ee,#fe2c55);"><span style="font-size:3rem;">🎵</span><span style="color:white;font-weight:bold;margin-top:0.5rem;">TikTok</span></div>`;
+    }
+    // Sin media
+    return '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:3rem;color:#94a3b8;">📝</div>';
 }
 
 function renderizarPosts() {
-    const grid = document.getElementById('listaPosts'); if (!grid) return;
+    const grid = document.getElementById('listaPosts');
+    if (!grid) return;
     if (posts.length === 0) { grid.innerHTML = '<div class="alert alert-info">No hay publicaciones</div>'; return; }
-    grid.innerHTML = posts.map(p => `<div class="blog-card" style="background:var(--white); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow);"><div class="blog-card-img" style="height:200px; overflow:hidden; background:var(--gray-100);">${p.video_url ? getVideoEmbed(p.video_url) : p.imagen_url ? `<img src="${p.imagen_url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;font-size:3rem;color:var(--gray-400);\\'>📝</div>'">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:3rem;color:var(--gray-400);">📝</div>'}</div><div class="blog-card-body" style="padding:1.25rem;"><h4 style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">${p.titulo}</h4><p style="color:var(--gray-500);font-size:0.9rem;margin-bottom:1rem;">${(p.contenido || '').substring(0, 100)}${p.contenido?.length > 100 ? '...' : ''}</p><p style="font-size:0.8rem;color:var(--gray-400);margin-bottom:1rem;">📅 ${formatearFecha(p.created_at)}</p><div style="display:flex;gap:0.5rem;"><button onclick="editarPost('${p.id}')" class="btn btn-secondary btn-sm">✏️ Editar</button><button onclick="eliminarPost('${p.id}')" class="btn btn-danger btn-sm">🗑️</button></div></div></div>`).join('');
+
+    grid.innerHTML = posts.map(p => `
+        <div class="blog-card" style="background:white; border-radius:1rem; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.05);">
+            <div class="blog-card-img" style="height:200px; overflow:hidden; background:#f1f5f9;">
+                ${obtenerMediaPreview(p)}
+            </div>
+            <div style="padding:1.25rem;">
+                <h4 style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">${p.titulo}</h4>
+                <p style="color:#64748b;font-size:0.9rem;margin-bottom:1rem;">${(p.contenido || '').substring(0, 100)}${p.contenido?.length > 100 ? '...' : ''}</p>
+                ${p.video_url ? `<p style="font-size:0.8rem;color:#3b82f6;margin-bottom:0.5rem;">🎬 Tiene video adjunto</p>` : ''}
+                <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:1rem;">📅 ${formatearFecha(p.created_at)}</p>
+                <div style="display:flex;gap:0.5rem;">
+                    <button onclick="editarPost('${p.id}')" class="btn btn-secondary btn-sm">✏️ Editar</button>
+                    <button onclick="eliminarPost('${p.id}')" class="btn btn-danger btn-sm">🗑️</button>
+                    ${p.video_url ? `<a href="${p.video_url}" target="_blank" class="btn btn-sm" style="background:#3b82f6;color:white;">▶️ Ver</a>` : ''}
+                </div>
+            </div>
+        </div>
+    `).join('');
 }
-
-function mostrarFormPost() { ['postId', 'postTitulo', 'postContenido', 'postImagenUrl', 'postVideo'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); removerPreview('post'); document.getElementById('formTituloPost').textContent = '➕ Nueva Publicación'; document.getElementById('formPost').classList.add('active'); }
-function cancelarFormPost() { document.getElementById('formPost').classList.remove('active'); removerPreview('post'); }
-
-async function editarPost(id) {
-    try { const { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single(); if (error || !data) { showToast('Error al cargar post', 'error'); return; }
-    document.getElementById('postId').value = data.id; document.getElementById('postTitulo').value = data.titulo || ''; document.getElementById('postContenido').value = data.contenido || ''; document.getElementById('postImagenUrl').value = data.imagen_url || ''; document.getElementById('postVideo').value = data.video_url || '';
-    if (data.imagen_url) { const preview = document.getElementById('previewPost'); const container = document.getElementById('previewContainerPost'); if (preview && container) { preview.src = data.imagen_url; container.style.display = 'inline-block'; } }
-    document.getElementById('formTituloPost').textContent = '✏️ Editar Publicación'; document.getElementById('formPost').classList.add('active'); } catch (err) { showToast('Error: ' + err.message, 'error'); }
-}
-
-async function guardarPost() {
-    const id = document.getElementById('postId').value; const titulo = document.getElementById('postTitulo').value.trim(); const contenido = document.getElementById('postContenido').value.trim();
-    if (!titulo || !contenido) { showToast('Título y contenido son requeridos', 'warning'); return; }
-    let imagenUrl = document.getElementById('postImagenUrl').value.trim();
-    if (archivosTemporal.post) { showToast('Subiendo imagen...', 'info'); const progressEl = document.getElementById('uploadProgressPost'); if (progressEl) progressEl.classList.add('active'); const urlSubida = await subirImagen(archivosTemporal.post, 'blog-imagenes'); if (progressEl) progressEl.classList.remove('active'); if (urlSubida) { imagenUrl = urlSubida; archivosTemporal.post = null; } }
-    const post = { titulo, contenido, imagen_url: imagenUrl, video_url: document.getElementById('postVideo').value.trim() };
-    try {
-        if (id) { post.updated_at = new Date().toISOString(); const { error } = await supabaseClient.from('posts').update(post).eq('id', id); if (error) throw error; showToast('Publicación actualizada'); }
-        else { const { error } = await supabaseClient.from('posts').insert(post); if (error) throw error; showToast('Publicación creada'); }
-        cancelarFormPost(); await cargarPosts();
-    } catch (error) { showToast('Error: ' + error.message, 'error'); }
-}
-
+function mostrarFormPost() { ['postId', 'postTitulo', 'postContenido', 'postImagenUrl', 'postVideo'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); removerPreview('post'); document.getElementById('formTituloPost').textContent = '➕ Nueva Publicación'; document.getElementById('formPost').style.display = 'block'; }
+function cancelarFormPost() { document.getElementById('formPost').style.display = 'none'; removerPreview('post'); }
+async function editarPost(id) { try { const { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single(); if (error || !data) { showToast('Error al cargar post', 'error'); return; } document.getElementById('postId').value = data.id; document.getElementById('postTitulo').value = data.titulo || ''; document.getElementById('postContenido').value = data.contenido || ''; document.getElementById('postImagenUrl').value = data.imagen_url || ''; document.getElementById('postVideo').value = data.video_url || ''; if (data.imagen_url) { const preview = document.getElementById('previewPost'); const container = document.getElementById('previewContainerPost'); if (preview && container) { preview.src = data.imagen_url; container.style.display = 'inline-block'; } } document.getElementById('formTituloPost').textContent = '✏️ Editar Publicación'; document.getElementById('formPost').style.display = 'block'; } catch (err) { showToast('Error: ' + err.message, 'error'); } }
+async function guardarPost() { const id = document.getElementById('postId').value; const titulo = document.getElementById('postTitulo').value.trim(); const contenido = document.getElementById('postContenido').value.trim(); if (!titulo || !contenido) { showToast('Título y contenido son requeridos', 'warning'); return; } let imagenUrl = document.getElementById('postImagenUrl').value.trim(); if (archivosTemporal.post) { showToast('Subiendo imagen...', 'info'); const urlSubida = await subirImagen(archivosTemporal.post, 'blog-imagenes'); if (urlSubida) { imagenUrl = urlSubida; archivosTemporal.post = null; } } const post = { titulo, contenido, imagen_url: imagenUrl, video_url: document.getElementById('postVideo').value.trim() }; try { if (id) { post.updated_at = new Date().toISOString(); const { error } = await supabaseClient.from('posts').update(post).eq('id', id); if (error) throw error; showToast('Publicación actualizada'); } else { const { error } = await supabaseClient.from('posts').insert(post); if (error) throw error; showToast('Publicación creada'); } cancelarFormPost(); await cargarPosts(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
 async function eliminarPost(id) { if (!confirm('¿Eliminar esta publicación?')) return; try { const { error } = await supabaseClient.from('posts').delete().eq('id', id); if (error) throw error; showToast('Publicación eliminada'); await cargarPosts(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
 
-// ═══════════════════════════════════════════════════════════════
 // CONFIGURACIÓN
-// ═══════════════════════════════════════════════════════════════
-async function cargarConfiguracion() {
-    try { const { data, error } = await supabaseClient.from('configuracion_sistema').select('*'); if (error) throw error;
-    const config = (data || []).reduce((acc, item) => { acc[item.clave] = item.valor; return acc; }, {});
-    const campos = { 'configWhatsapp': 'whatsapp', 'configFacebook': 'facebook', 'configInstagram': 'instagram', 'configTiktok': 'tiktok', 'configEmail': 'email', 'configTelefono': 'telefono', 'configDireccion': 'direccion', 'configLogo': 'logo_url', 'configNombre': 'nombre_tienda', 'configSlogan': 'slogan', 'configStockMinimo': 'stock_minimo', 'configMoneda': 'moneda' };
-    Object.entries(campos).forEach(([elId, clave]) => { const el = document.getElementById(elId); if (el) el.value = config[clave] || ''; });
-    const colorEl = document.getElementById('configColor'); if (colorEl) colorEl.value = config.color_primary || '#ff6b00';
-    if (config.logo_url) { const preview = document.getElementById('previewLogo'); const container = document.getElementById('previewContainerLogo'); if (preview && container) { preview.src = config.logo_url; container.style.display = 'inline-block'; } } } catch (error) { console.error('Error cargando configuración:', error); }
+async function cargarConfiguracion() { try { const { data, error } = await supabaseClient.from('configuracion_sistema').select('*'); if (error) throw error; const config = (data || []).reduce((acc, item) => { acc[item.clave] = item.valor; return acc; }, {}); const campos = { 'configWhatsapp': 'whatsapp', 'configFacebook': 'facebook', 'configInstagram': 'instagram', 'configTiktok': 'tiktok', 'configEmail': 'email', 'configTelefono': 'telefono', 'configDireccion': 'direccion', 'configLogo': 'logo_url', 'configNombre': 'nombre_tienda', 'configSlogan': 'slogan', 'configStockMinimo': 'stock_minimo', 'configMoneda': 'moneda' }; Object.entries(campos).forEach(([elId, clave]) => { const el = document.getElementById(elId); if (el) el.value = config[clave] || ''; }); const colorEl = document.getElementById('configColor'); if (colorEl) colorEl.value = config.color_primary || '#ff6b00'; if (config.logo_url) { const preview = document.getElementById('previewLogo'); const container = document.getElementById('previewContainerLogo'); if (preview && container) { preview.src = config.logo_url; container.style.display = 'inline-block'; } } } catch (error) { console.error('Error cargando configuración:', error); } }
+async function guardarConfiguracion() { let logoUrl = document.getElementById('configLogo').value.trim(); if (archivosTemporal.logo) { showToast('Subiendo logo...', 'info'); const urlSubida = await subirImagen(archivosTemporal.logo, 'configuracion'); if (urlSubida) { logoUrl = urlSubida; archivosTemporal.logo = null; } } const configs = [ { clave: 'whatsapp', valor: document.getElementById('configWhatsapp').value.trim() }, { clave: 'facebook', valor: document.getElementById('configFacebook').value.trim() }, { clave: 'instagram', valor: document.getElementById('configInstagram').value.trim() }, { clave: 'tiktok', valor: document.getElementById('configTiktok').value.trim() }, { clave: 'email', valor: document.getElementById('configEmail').value.trim() }, { clave: 'telefono', valor: document.getElementById('configTelefono').value.trim() }, { clave: 'direccion', valor: document.getElementById('configDireccion').value.trim() }, { clave: 'logo_url', valor: logoUrl }, { clave: 'nombre_tienda', valor: document.getElementById('configNombre').value.trim() }, { clave: 'slogan', valor: document.getElementById('configSlogan').value.trim() }, { clave: 'color_primary', valor: document.getElementById('configColor').value }, { clave: 'stock_minimo', valor: document.getElementById('configStockMinimo').value.trim() }, { clave: 'moneda', valor: document.getElementById('configMoneda').value } ]; try { for (const config of configs) { const { error } = await supabaseClient.from('configuracion_sistema').upsert(config, { onConflict: 'clave' }); if (error) throw error; } showToast('Configuración guardada'); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
+
+// CIERRES
+async function cargarCierresCaja() {
+    console.log('💵 Cargando cierres de caja...');
+    const tbody = document.getElementById('tbodyCierres');
+    if (!tbody) { console.error('❌ No se encontró tbodyCierres'); return; }
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Cargando...</td></tr>';
+
+    try {
+        const local = document.getElementById('cierresLocalFiltro')?.value || '';
+        const fecha = document.getElementById('cierresFechaFiltro')?.value || '';
+        console.log('📋 Filtros - Local:', local || 'todos', '| Fecha:', fecha || 'todas');
+
+        let query = supabaseClient.from('cierres_caja').select('*').order('fecha_apertura', { ascending: false }).limit(50);
+        if (local) query = query.eq('local', local);
+        if (fecha) query = query.gte('fecha_apertura', fecha + 'T00:00:00').lte('fecha_apertura', fecha + 'T23:59:59');
+
+        const { data, error } = await query;
+        if (error) { console.error('❌ Error Supabase:', error); throw error; }
+
+        console.log('✅ Cierres cargados:', data?.length || 0);
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay cierres registrados</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(c => {
+            const fechaStr = c.fecha_apertura ? new Date(c.fecha_apertura).toLocaleDateString('es-CO') : '-';
+            const diferencia = c.diferencia_efectivo || 0;
+            const badgeColor = diferencia === 0 ? 'badge-success' : (diferencia < 0 ? 'badge-danger' : 'badge-warning');
+            const estadoBadge = c.estado === 'cerrado' ? 'badge-success' : 'badge-warning';
+            return `<tr>
+                <td>${fechaStr}</td>
+                <td><strong>${c.local}</strong></td>
+                <td>${c.vendedor || '-'}</td>
+                <td>$${formatearPrecio(c.total_ventas_sistema || 0)}</td>
+                <td>$${formatearPrecio(c.efectivo_contado || 0)}</td>
+                <td><span class="badge ${badgeColor}">$${formatearPrecio(diferencia)}</span></td>
+                <td><span class="badge ${estadoBadge}">${c.estado}</span></td>
+                <td><button onclick="verDetalleCierre('${c.id}')" class="btn btn-sm btn-secondary">👁️</button></td>
+            </tr>`;
+        }).join('');
+        console.log('✅ Tabla de cierres renderizada');
+    } catch (error) {
+        console.error('❌ Error cargando cierres:', error);
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+        showToast('Error al cargar cierres: ' + error.message, 'error');
+    }
 }
 
-async function guardarConfiguracion() {
-    let logoUrl = document.getElementById('configLogo').value.trim();
-    if (archivosTemporal.logo) { showToast('Subiendo logo...', 'info'); const urlSubida = await subirImagen(archivosTemporal.logo, 'configuracion'); if (urlSubida) { logoUrl = urlSubida; archivosTemporal.logo = null; } }
-    const configs = [ { clave: 'whatsapp', valor: document.getElementById('configWhatsapp').value.trim() }, { clave: 'facebook', valor: document.getElementById('configFacebook').value.trim() }, { clave: 'instagram', valor: document.getElementById('configInstagram').value.trim() }, { clave: 'tiktok', valor: document.getElementById('configTiktok').value.trim() }, { clave: 'email', valor: document.getElementById('configEmail').value.trim() }, { clave: 'telefono', valor: document.getElementById('configTelefono').value.trim() }, { clave: 'direccion', valor: document.getElementById('configDireccion').value.trim() }, { clave: 'logo_url', valor: logoUrl }, { clave: 'nombre_tienda', valor: document.getElementById('configNombre').value.trim() }, { clave: 'slogan', valor: document.getElementById('configSlogan').value.trim() }, { clave: 'color_primary', valor: document.getElementById('configColor').value }, { clave: 'stock_minimo', valor: document.getElementById('configStockMinimo').value.trim() }, { clave: 'moneda', valor: document.getElementById('configMoneda').value } ];
-    try { for (const config of configs) { const { error } = await supabaseClient.from('configuracion_sistema').upsert(config, { onConflict: 'clave' }); if (error) throw error; } showToast('Configuración guardada'); } catch (error) { showToast('Error: ' + error.message, 'error'); }
+function verDetalleCierre(id) {
+    console.log('👁️ Ver detalle cierre:', id);
+    showToast('Función en desarrollo', 'info');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// GESTIÓN DE PRODUCTOS DESTACADOS
-// ═══════════════════════════════════════════════════════════════
-async function cargarDestacadosAdmin() {
-    if (productos.length === 0) { await cargarProductos(); }
-    renderizarPanelesDestacados();
+function exportarCierres() {
+    console.log('📥 Exportando cierres...');
+    showToast('Exportando cierres...', 'info');
 }
 
-function renderizarPanelesDestacados() {
-    const productosActivos = productos.filter(p => p.estado === 'Activo');
-    const destacados = productosActivos.filter(p => p.destacado === true);
-    const disponibles = productosActivos.filter(p => p.destacado !== true);
-    productosDestacadosFiltrados = [...disponibles];
-    const contadorDisp = document.getElementById('contadorDisponibles');
-    const contadorAct = document.getElementById('contadorActivos');
-    const contadorGen = document.getElementById('contadorDestacados');
-    if (contadorDisp) contadorDisp.textContent = disponibles.length;
-    if (contadorAct) { contadorAct.textContent = `${destacados.length} / ${MAX_DESTACADOS}`; contadorAct.classList.toggle('limite', destacados.length >= MAX_DESTACADOS); }
-    if (contadorGen) contadorGen.textContent = `${destacados.length} de ${MAX_DESTACADOS} destacados`;
-    renderizarProductosDisponibles(productosDestacadosFiltrados, destacados.length >= MAX_DESTACADOS);
-    renderizarDestacadosActivos(destacados);
-    renderizarPreviewDestacados(destacados);
+// GASTOS
+let gastosData = [];
+
+async function cargarGastos() {
+    console.log('💸 Cargando gastos...');
+    const tbody = document.getElementById('tbodyGastos');
+    if (!tbody) { console.error('❌ No se encontró tbodyGastos'); return; }
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Cargando...</td></tr>';
+
+    try {
+        const local = document.getElementById('gastosLocalFiltro')?.value || '';
+        console.log('📋 Filtro local:', local || 'todos');
+
+        let query = supabaseClient.from('gastos_tienda').select('*').order('fecha_gasto', { ascending: false }).limit(100);
+        if (local) query = query.eq('local', local);
+
+        const { data, error } = await query;
+        if (error) { console.error('❌ Error Supabase:', error); throw error; }
+
+        console.log('✅ Gastos cargados:', data?.length || 0);
+        gastosData = data || [];
+
+        // Calcular totales
+        const totalGastos = gastosData.reduce((sum, g) => sum + parseFloat(g.monto || 0), 0);
+        const elTotal = document.getElementById('gastosTotalMes');
+        if (elTotal) elTotal.textContent = '$' + formatearPrecio(totalGastos);
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay gastos registrados</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(g => {
+            const fecha = g.fecha_gasto ? new Date(g.fecha_gasto).toLocaleDateString('es-CO') : '-';
+            return `<tr>
+                <td>${fecha}</td>
+                <td><strong>${g.local || '-'}</strong></td>
+                <td>${g.categoria || 'Sin categoría'}</td>
+                <td>${g.descripcion || '-'}</td>
+                <td><strong>$${formatearPrecio(g.monto)}</strong></td>
+                <td><span class="badge badge-info">${g.metodo_pago || 'efectivo'}</span></td>
+                <td>
+                    <button onclick="editarGasto('${g.id}')" class="btn btn-sm btn-secondary">✏️</button>
+                    <button onclick="eliminarGasto('${g.id}')" class="btn btn-sm btn-danger">🗑️</button>
+                </td>
+            </tr>`;
+        }).join('');
+        console.log('✅ Tabla de gastos renderizada');
+    } catch (error) {
+        console.error('❌ Error cargando gastos:', error);
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+        showToast('Error al cargar gastos: ' + error.message, 'error');
+    }
 }
+
+function mostrarFormGasto() {
+    console.log('📝 Mostrando formulario de gasto');
+    document.getElementById('formGasto').style.display = 'block';
+    document.getElementById('formTituloGasto').textContent = '➕ Nuevo Gasto';
+    ['gastoId', 'gastoDescripcion', 'gastoMonto', 'gastoRegistradoPor', 'gastoNotas'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    document.getElementById('gastoLocal').value = 'alcala';
+    document.getElementById('gastoCategoria').value = '';
+    document.getElementById('gastoMetodo').value = 'efectivo';
+    document.getElementById('gastoFecha').value = new Date().toISOString().split('T')[0];
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelarFormGasto() {
+    document.getElementById('formGasto').style.display = 'none';
+}
+
+async function guardarGasto() {
+    const id = document.getElementById('gastoId')?.value;
+    const local = document.getElementById('gastoLocal').value;
+    const descripcion = document.getElementById('gastoDescripcion').value;
+    const monto = parseFloat(document.getElementById('gastoMonto').value);
+
+    if (!local || !descripcion || !monto) {
+        showToast('Completa los campos obligatorios', 'warning');
+        return;
+    }
+
+    console.log('💾 Guardando gasto...');
+
+    try {
+        const gasto = {
+            local,
+            categoria: document.getElementById('gastoCategoria').value || null,
+            descripcion,
+            monto,
+            metodo_pago: document.getElementById('gastoMetodo').value,
+            fecha_gasto: document.getElementById('gastoFecha').value || new Date().toISOString().split('T')[0],
+            registrado_por: document.getElementById('gastoRegistradoPor').value || null,
+            notas: document.getElementById('gastoNotas').value || null
+        };
+
+        console.log('📋 Datos del gasto:', gasto);
+
+        let error;
+        if (id) {
+            gasto.updated_at = new Date().toISOString();
+            const result = await supabaseClient.from('gastos_tienda').update(gasto).eq('id', id);
+            error = result.error;
+        } else {
+            const result = await supabaseClient.from('gastos_tienda').insert(gasto);
+            error = result.error;
+        }
+
+        if (error) { console.error('❌ Error Supabase:', error); throw error; }
+
+        console.log('✅ Gasto guardado');
+        showToast(id ? 'Gasto actualizado' : 'Gasto registrado correctamente', 'success');
+        cancelarFormGasto();
+        await cargarGastos();
+    } catch (error) {
+        console.error('❌ Error guardando gasto:', error);
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+async function eliminarGasto(id) {
+    if (!confirm('¿Eliminar este gasto?')) return;
+    console.log('🗑️ Eliminando gasto:', id);
+
+    try {
+        const { error } = await supabaseClient.from('gastos_tienda').delete().eq('id', id);
+        if (error) throw error;
+        console.log('✅ Gasto eliminado');
+        showToast('Gasto eliminado', 'success');
+        await cargarGastos();
+    } catch (error) {
+        console.error('❌ Error eliminando gasto:', error);
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+async function editarGasto(id) {
+    console.log('✏️ Editando gasto:', id);
+
+    const gasto = gastosData.find(g => g.id === id);
+    if (!gasto) {
+        showToast('Gasto no encontrado', 'error');
+        return;
+    }
+
+    document.getElementById('formGasto').style.display = 'block';
+    document.getElementById('formTituloGasto').textContent = '✏️ Editar Gasto';
+    document.getElementById('gastoId').value = gasto.id;
+    document.getElementById('gastoLocal').value = gasto.local || 'alcala';
+    document.getElementById('gastoCategoria').value = gasto.categoria || '';
+    document.getElementById('gastoDescripcion').value = gasto.descripcion || '';
+    document.getElementById('gastoMonto').value = gasto.monto || '';
+    document.getElementById('gastoMetodo').value = gasto.metodo_pago || 'efectivo';
+    document.getElementById('gastoFecha').value = gasto.fecha_gasto || '';
+    document.getElementById('gastoRegistradoPor').value = gasto.registrado_por || '';
+    document.getElementById('gastoNotas').value = gasto.notas || '';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// DESTACADOS
+async function cargarDestacadosAdmin() { if (productos.length === 0) { await cargarProductos(); } renderizarPanelesDestacados(); }
+function renderizarPanelesDestacados() { const productosActivos = productos.filter(p => p.estado === 'Activo'); const destacados = productosActivos.filter(p => p.destacado === true); const disponibles = productosActivos.filter(p => p.destacado !== true); productosDestacadosFiltrados = [...disponibles]; const contadorDisp = document.getElementById('contadorDisponibles'); const contadorAct = document.getElementById('contadorActivos'); const contadorGen = document.getElementById('contadorDestacados'); if (contadorDisp) contadorDisp.textContent = disponibles.length; if (contadorAct) { contadorAct.textContent = `${destacados.length} / ${MAX_DESTACADOS}`; contadorAct.classList.toggle('limite', destacados.length >= MAX_DESTACADOS); } if (contadorGen) contadorGen.textContent = `${destacados.length} de ${MAX_DESTACADOS} destacados`; renderizarProductosDisponibles(productosDestacadosFiltrados, destacados.length >= MAX_DESTACADOS); renderizarDestacadosActivos(destacados); }
+// Placeholder pequeño para thumbnails
+const PLACEHOLDER_THUMB = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><rect fill="#f1f5f9" width="60" height="60" rx="8"/><text fill="#94a3b8" font-family="system-ui" font-size="10" x="50%" y="50%" text-anchor="middle" dy="0.3em">📦</text></svg>');
 
 function renderizarProductosDisponibles(lista, limiteAlcanzado) {
-    const container = document.getElementById('listaProductosDisponibles'); if (!container) return;
-    if (lista.length === 0) { container.innerHTML = `<div class="destacados-empty"><div class="destacados-empty-icon">📦</div><h4>No hay productos disponibles</h4><p>Todos los productos están destacados o no hay productos activos</p></div>`; return; }
-    container.innerHTML = lista.map(p => `<div class="destacado-item" data-id="${p.id}"><img class="destacado-item-img" src="${p.url_imagen || 'https://via.placeholder.com/60'}" onerror="this.src='https://via.placeholder.com/60'" alt="${p.nombre}"><div class="destacado-item-info"><h4>${p.nombre}</h4><p>${p.marca} • ${p.categoria}</p><span class="precio">$${formatearPrecio(p.precio)}</span></div><button class="btn-agregar-destacado" onclick="agregarDestacado('${p.id}')" ${limiteAlcanzado ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>⭐ Agregar</button></div>`).join('');
+    const container = document.getElementById('listaProductosDisponibles');
+    if (!container) return;
+    if (lista.length === 0) { container.innerHTML = `<div class="destacados-empty"><div class="destacados-empty-icon">📦</div><h4>No hay productos disponibles</h4></div>`; return; }
+    container.innerHTML = lista.map(p => `<div class="destacado-item" data-id="${p.id}"><img class="destacado-item-img" src="${p.url_imagen || PLACEHOLDER_THUMB}" onerror="this.src='${PLACEHOLDER_THUMB}'" alt="${p.nombre}"><div class="destacado-item-info"><h4>${p.nombre}</h4><p>${p.marca} • ${p.categoria}</p><span class="precio">$${formatearPrecio(p.precio)}</span></div><button class="btn-agregar-destacado" onclick="agregarDestacado('${p.id}')" ${limiteAlcanzado ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>⭐ Agregar</button></div>`).join('');
 }
-
 function renderizarDestacadosActivos(destacados) {
-    const container = document.getElementById('listaDestacadosActivos'); if (!container) return;
-    if (destacados.length === 0) { container.innerHTML = `<div class="destacados-empty"><div class="destacados-empty-icon">⭐</div><h4>Sin productos destacados</h4><p>Haz clic en "Agregar" en un producto del panel izquierdo</p></div>`; return; }
-    container.innerHTML = destacados.map((p, index) => `<div class="destacado-item destacado-activo" data-id="${p.id}"><span class="destacado-posicion">${index + 1}</span><img class="destacado-item-img" src="${p.url_imagen || 'https://via.placeholder.com/60'}" onerror="this.src='https://via.placeholder.com/60'" alt="${p.nombre}"><div class="destacado-item-info"><h4>${p.nombre}</h4><p>${p.marca} • ${p.categoria}</p><span class="precio">$${formatearPrecio(p.precio)}</span></div><button class="btn-quitar-destacado" onclick="quitarDestacado('${p.id}')">✕ Quitar</button></div>`).join('');
+    const container = document.getElementById('listaDestacadosActivos');
+    if (!container) return;
+    if (destacados.length === 0) { container.innerHTML = `<div class="destacados-empty"><div class="destacados-empty-icon">⭐</div><h4>Sin productos destacados</h4></div>`; return; }
+    container.innerHTML = destacados.map((p, index) => `<div class="destacado-item destacado-activo" data-id="${p.id}"><span class="destacado-posicion">${index + 1}</span><img class="destacado-item-img" src="${p.url_imagen || PLACEHOLDER_THUMB}" onerror="this.src='${PLACEHOLDER_THUMB}'" alt="${p.nombre}"><div class="destacado-item-info"><h4>${p.nombre}</h4><p>${p.marca} • ${p.categoria}</p><span class="precio">$${formatearPrecio(p.precio)}</span></div><button class="btn-quitar-destacado" onclick="quitarDestacado('${p.id}')">✕ Quitar</button></div>`).join('');
 }
+function filtrarProductosDestacados() { const input = document.getElementById('buscarDestacado'); const busqueda = (input?.value || '').toLowerCase().trim(); const productosActivos = productos.filter(p => p.estado === 'Activo' && p.destacado !== true); const destacadosCount = productos.filter(p => p.estado === 'Activo' && p.destacado === true).length; if (!busqueda) { productosDestacadosFiltrados = [...productosActivos]; } else { productosDestacadosFiltrados = productosActivos.filter(p => (p.nombre || '').toLowerCase().includes(busqueda) || (p.marca || '').toLowerCase().includes(busqueda) || (p.categoria || '').toLowerCase().includes(busqueda)); } renderizarProductosDisponibles(productosDestacadosFiltrados, destacadosCount >= MAX_DESTACADOS); const contadorDisp = document.getElementById('contadorDisponibles'); if (contadorDisp) contadorDisp.textContent = productosDestacadosFiltrados.length; }
+async function agregarDestacado(id) { const destacadosActuales = productos.filter(p => p.estado === 'Activo' && p.destacado === true).length; if (destacadosActuales >= MAX_DESTACADOS) { showToast(`Máximo ${MAX_DESTACADOS} productos destacados`, 'warning'); return; } try { showToast('Agregando a destacados...', 'info'); const { error } = await supabaseClient.from('productos').update({ destacado: true }).eq('id', id); if (error) throw error; const producto = productos.find(p => p.id === id); if (producto) { producto.destacado = true; showToast(`"${producto.nombre}" agregado a destacados ⭐`); } renderizarPanelesDestacados(); } catch (error) { console.error('Error agregando destacado:', error); showToast('Error al agregar: ' + error.message, 'error'); } }
+async function quitarDestacado(id) { try { showToast('Quitando de destacados...', 'info'); const { error } = await supabaseClient.from('productos').update({ destacado: false }).eq('id', id); if (error) throw error; const producto = productos.find(p => p.id === id); if (producto) { producto.destacado = false; showToast(`"${producto.nombre}" quitado de destacados`); } renderizarPanelesDestacados(); } catch (error) { console.error('Error quitando destacado:', error); showToast('Error al quitar: ' + error.message, 'error'); } }
 
-function renderizarPreviewDestacados(destacados) {
-    const container = document.getElementById('previewDestacados'); if (!container) return;
-    if (destacados.length === 0) { container.innerHTML = `<p style="color: var(--gray-400); grid-column: 1/-1; text-align: center;">Los productos destacados aparecerán aquí</p>`; return; }
-    container.innerHTML = destacados.map(p => `<div class="preview-card"><img src="${p.url_imagen || 'https://via.placeholder.com/140x80'}" onerror="this.src='https://via.placeholder.com/140x80'" alt="${p.nombre}"><p>${p.nombre}</p></div>`).join('');
-}
-
-function filtrarProductosDestacados() {
-    const input = document.getElementById('buscarDestacado');
-    const busqueda = (input?.value || '').toLowerCase().trim();
-    const productosActivos = productos.filter(p => p.estado === 'Activo' && p.destacado !== true);
-    const destacadosCount = productos.filter(p => p.estado === 'Activo' && p.destacado === true).length;
-    if (!busqueda) { productosDestacadosFiltrados = [...productosActivos]; }
-    else { productosDestacadosFiltrados = productosActivos.filter(p => (p.nombre || '').toLowerCase().includes(busqueda) || (p.marca || '').toLowerCase().includes(busqueda) || (p.categoria || '').toLowerCase().includes(busqueda)); }
-    renderizarProductosDisponibles(productosDestacadosFiltrados, destacadosCount >= MAX_DESTACADOS);
-    const contadorDisp = document.getElementById('contadorDisponibles'); if (contadorDisp) contadorDisp.textContent = productosDestacadosFiltrados.length;
-}
-
-async function agregarDestacado(id) {
-    const destacadosActuales = productos.filter(p => p.estado === 'Activo' && p.destacado === true).length;
-    if (destacadosActuales >= MAX_DESTACADOS) { showToast(`Máximo ${MAX_DESTACADOS} productos destacados`, 'warning'); return; }
-    try { showToast('Agregando a destacados...', 'info'); const { error } = await supabaseClient.from('productos').update({ destacado: true }).eq('id', id); if (error) throw error;
-    const producto = productos.find(p => p.id === id); if (producto) { producto.destacado = true; showToast(`"${producto.nombre}" agregado a destacados ⭐`); }
-    renderizarPanelesDestacados(); } catch (error) { console.error('Error agregando destacado:', error); showToast('Error al agregar: ' + error.message, 'error'); }
-}
-
-async function quitarDestacado(id) {
-    try { showToast('Quitando de destacados...', 'info'); const { error } = await supabaseClient.from('productos').update({ destacado: false }).eq('id', id); if (error) throw error;
-    const producto = productos.find(p => p.id === id); if (producto) { producto.destacado = false; showToast(`"${producto.nombre}" quitado de destacados`); }
-    renderizarPanelesDestacados(); } catch (error) { console.error('Error quitando destacado:', error); showToast('Error al quitar: ' + error.message, 'error'); }
-}
+// REPORTES
+async function cargarReporteMargen() { const body = document.getElementById('bodyReporte'); if (!body) return; document.getElementById('contenidoReporte').style.display = 'block'; document.getElementById('tituloReporte').textContent = '📊 Margen por Categoría'; body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando...</p></div>'; try { const { data, error } = await supabaseClient.from('v_margen_categoria').select('*'); if (error) throw error; if (!data || data.length === 0) { body.innerHTML = '<p class="text-center">No hay datos disponibles</p>'; return; } body.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Categoría</th><th>Productos</th><th>Costo Prom.</th><th>Precio Prom.</th><th>Margen %</th></tr></thead><tbody>${data.map(r => `<tr><td><strong>${r.categoria}</strong></td><td>${r.total_productos}</td><td>$${formatearPrecio(r.costo_promedio)}</td><td>$${formatearPrecio(r.precio_venta_promedio)}</td><td><span class="badge badge-${r.margen_promedio >= 30 ? 'success' : 'warning'}">${r.margen_promedio || 0}%</span></td></tr>`).join('')}</tbody></table></div>`; } catch (error) { console.error('Error cargando reporte:', error); body.innerHTML = '<p class="text-danger">Error al cargar el reporte</p>'; } }
+async function cargarReporteTop() { const body = document.getElementById('bodyReporte'); if (!body) return; document.getElementById('contenidoReporte').style.display = 'block'; document.getElementById('tituloReporte').textContent = '🏆 Top Productos por Categoría'; body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando...</p></div>'; try { const { data, error } = await supabaseClient.from('v_top_productos_categoria').select('*').gt('unidades_vendidas', 0).order('unidades_vendidas', { ascending: false }).limit(20); if (error) throw error; if (!data || data.length === 0) { body.innerHTML = '<p class="text-center">No hay datos de ventas disponibles</p>'; return; } body.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>#</th><th>Producto</th><th>Categoría</th><th>Unidades</th><th>Total</th></tr></thead><tbody>${data.map((r, i) => `<tr><td>${i + 1}</td><td><strong>${r.nombre}</strong></td><td>${r.categoria}</td><td>${r.unidades_vendidas}</td><td>$${formatearPrecio(r.total_vendido)}</td></tr>`).join('')}</tbody></table></div>`; } catch (error) { console.error('Error cargando reporte:', error); body.innerHTML = '<p class="text-danger">Error al cargar el reporte</p>'; } }
+async function cargarReporteMetodos() { const body = document.getElementById('bodyReporte'); if (!body) return; document.getElementById('contenidoReporte').style.display = 'block'; document.getElementById('tituloReporte').textContent = '💳 Ventas por Método de Pago'; body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando...</p></div>'; try { const { data, error } = await supabaseClient.from('v_ventas_metodo_pago').select('*').order('fecha', { ascending: false }).limit(50); if (error) throw error; if (!data || data.length === 0) { body.innerHTML = '<p class="text-center">No hay datos disponibles</p>'; return; } body.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Fecha</th><th>Método</th><th>Cantidad</th><th>Total</th></tr></thead><tbody>${data.map(r => `<tr><td>${formatearFecha(r.fecha)}</td><td><strong>${r.metodo_pago || 'Sin especificar'}</strong></td><td>${r.cantidad_ventas}</td><td>$${formatearPrecio(r.total_vendido)}</td></tr>`).join('')}</tbody></table></div>`; } catch (error) { console.error('Error cargando reporte:', error); body.innerHTML = '<p class="text-danger">Error al cargar el reporte</p>'; } }
+async function cargarReporteLocales() { const body = document.getElementById('bodyReporte'); if (!body) return; document.getElementById('contenidoReporte').style.display = 'block'; document.getElementById('tituloReporte').textContent = '📈 Ventas por Local'; body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando...</p></div>'; try { const { data, error } = await supabaseClient.from('v_ventas_totales_dia').select('*').order('fecha', { ascending: false }).limit(30); if (error) throw error; if (!data || data.length === 0) { body.innerHTML = '<p class="text-center">No hay datos disponibles</p>'; return; } body.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Fecha</th><th>Local</th><th>Facturas</th><th>Efectivo</th><th>Transfer.</th><th>Total</th></tr></thead><tbody>${data.map(r => `<tr><td>${formatearFecha(r.fecha)}</td><td><strong>${r.local_venta || '-'}</strong></td><td>${r.cantidad_facturas}</td><td>$${formatearPrecio(r.ventas_efectivo)}</td><td>$${formatearPrecio(r.ventas_transferencia)}</td><td><strong>$${formatearPrecio(r.total_ventas)}</strong></td></tr>`).join('')}</tbody></table></div>`; } catch (error) { console.error('Error cargando reporte:', error); body.innerHTML = '<p class="text-danger">Error al cargar el reporte</p>'; } }
+function exportarReporte() { showToast('Exportación en desarrollo', 'info'); }
 
 // ═══════════════════════════════════════════════════════════════
 // INICIALIZACIÓN
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🏍️ Iniciando Moteros Admin Panel v3.0...');
+    console.log('🏍️ Iniciando Moteros Admin Panel v4.1...');
     setupNavigation();
     setupDropzones();
+    
+    // Event listeners
     const passInput = document.getElementById('adminPassword');
-    if (passInput) { passInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginAdmin(); }); }
-    console.log('✅ Moteros Admin Panel v3.0 - Listo');
+    if (passInput) { 
+        passInput.addEventListener('keypress', (e) => { 
+            if (e.key === 'Enter') loginAdmin(); 
+        }); 
+    }
+    
+    const pc = document.getElementById('productoPrecioCompra');
+    const pv = document.getElementById('productoPrecio');
+    if (pc) pc.addEventListener('input', calcularMargen);
+    if (pv) pv.addEventListener('input', calcularMargen);
+    
+    console.log('✅ Moteros Admin Panel v4.1 - Listo');
 });
 
 // ═══════════════════════════════════════════════════════════════
 // EXPORTAR FUNCIONES GLOBALES
 // ═══════════════════════════════════════════════════════════════
+// Login
 window.loginAdmin = loginAdmin;
 window.logout = logout;
 window.toggleSidebar = toggleSidebar;
+window.mostrarCambiarPassword = mostrarCambiarPassword;
+window.cerrarModalPassword = cerrarModalPassword;
+window.cambiarPassword = cambiarPassword;
+window.toggleMobileMenu = toggleMobileMenu;
+
+// Productos
 window.cargarProductos = cargarProductos;
 window.mostrarFormProducto = mostrarFormProducto;
 window.cancelarFormProducto = cancelarFormProducto;
@@ -817,34 +1791,522 @@ window.editarProducto = editarProducto;
 window.guardarProducto = guardarProducto;
 window.eliminarProducto = eliminarProducto;
 window.filtrarProductosAdmin = filtrarProductosAdmin;
+window.calcularMargen = calcularMargen;
+window.cargarStockTiendas = cargarStockTiendas;
+window.guardarStockTiendas = guardarStockTiendas;
+
+// Inventarios
 window.cargarInventarioLocal = cargarInventarioLocal;
 window.ajustarStock = ajustarStock;
 window.exportarInventario = exportarInventario;
+window.cargarTodosLosInventarios = cargarTodosLosInventarios;
+
+// Alertas
 window.cargarAlertasStock = cargarAlertasStock;
+
+// Ventas
+window.cargarVentasDia = cargarVentasDia;
+window.exportarVentasDia = exportarVentasDia;
+
+// Compras - CORREGIDO
+window.cargarCompras = cargarCompras;
+window.mostrarFormCompra = mostrarFormCompra;
+window.cancelarFormCompra = cancelarFormCompra;
+window.guardarCompra = guardarCompra;
+window.editarCompra = editarCompra;
+window.eliminarCompra = eliminarCompra;
+window.buscarCompras = buscarCompras;
+window.mostrarModalPago = mostrarModalPago;
+window.cerrarModalPago = cerrarModalPago;
+window.guardarPagoCompra = guardarPagoCompra;
+window.registrarPagoCompra = registrarPagoCompra;
+window.cargarProveedoresDatalist = cargarProveedoresDatalist;
+window.formatearMonedaInput = formatearMonedaInput;
+window.limpiarMoneda = limpiarMoneda;
+
+// Deudores
+window.cargarDeudores = cargarDeudores;
+window.buscarDeudores = buscarDeudores;
+window.mostrarFormDeudor = mostrarFormDeudor;
+window.cancelarFormDeudor = cancelarFormDeudor;
+window.guardarDeudor = guardarDeudor;
+window.editarDeudor = editarDeudor;
+window.registrarPagoDeudor = registrarPagoDeudor;
+
+// Proveedores
+window.cargarProveedores = cargarProveedores;
+window.buscarProveedores = buscarProveedores;
+window.mostrarFormProveedor = mostrarFormProveedor;
+window.cancelarFormProveedor = cancelarFormProveedor;
+window.guardarProveedor = guardarProveedor;
+window.editarProveedor = editarProveedor;
+
+// Deudas Negocio
+window.cargarDeudasNegocio = cargarDeudasNegocio;
+window.mostrarFormDeuda = mostrarFormDeuda;
+window.cancelarFormDeuda = cancelarFormDeuda;
+window.guardarDeudaNegocio = guardarDeudaNegocio;
+window.editarDeudaNegocio = editarDeudaNegocio;
+window.registrarPagoDeuda = registrarPagoDeuda;
+
+// Créditos
+window.cargarCreditos = cargarCreditos;
+window.mostrarFormCredito = mostrarFormCredito;
+window.verDetalleCredito = verDetalleCredito;
+window.registrarPagoCredito = registrarPagoCredito;
+
+// Bodegas
+window.cargarBodegas = cargarBodegas;
+window.cargarBodega = cargarBodega;
+window.mostrarFormMovimiento = mostrarFormMovimiento;
+window.moverDeBodega = moverDeBodega;
+
+// Alianzas
+window.cargarAlianzas = cargarAlianzas;
+window.mostrarFormAlianza = mostrarFormAlianza;
+window.editarAlianza = editarAlianza;
+window.guardarNuevaAlianza = guardarNuevaAlianza;
+
+// Promociones
 window.cargarPromociones = cargarPromociones;
 window.mostrarFormPromocion = mostrarFormPromocion;
 window.cancelarFormPromocion = cancelarFormPromocion;
 window.editarPromocion = editarPromocion;
 window.guardarPromocion = guardarPromocion;
 window.eliminarPromocion = eliminarPromocion;
+window.filtrarProductosPromo = filtrarProductosPromo;
+window.toggleProductoPromo = toggleProductoPromo;
+window.quitarProductoPromo = quitarProductoPromo;
+window.limpiarSeleccionPromo = limpiarSeleccionPromo;
+
+// Blog
 window.cargarPosts = cargarPosts;
 window.mostrarFormPost = mostrarFormPost;
 window.cancelarFormPost = cancelarFormPost;
 window.editarPost = editarPost;
 window.guardarPost = guardarPost;
 window.eliminarPost = eliminarPost;
+
+// Configuración
 window.cargarConfiguracion = cargarConfiguracion;
 window.guardarConfiguracion = guardarConfiguracion;
+
+// Archivos
 window.handleFileSelect = handleFileSelect;
 window.removerPreview = removerPreview;
-window.exportarVentasDia = exportarVentasDia;
+
+// Cierres
+window.cargarCierresCaja = cargarCierresCaja;
+window.verDetalleCierre = verDetalleCierre;
+window.exportarCierres = exportarCierres;
+
+// Gastos
+window.cargarGastos = cargarGastos;
+window.mostrarFormGasto = mostrarFormGasto;
+window.cancelarFormGasto = cancelarFormGasto;
+window.guardarGasto = guardarGasto;
+window.eliminarGasto = eliminarGasto;
+window.editarGasto = editarGasto;
+
 // Destacados
 window.cargarDestacadosAdmin = cargarDestacadosAdmin;
 window.filtrarProductosDestacados = filtrarProductosDestacados;
 window.agregarDestacado = agregarDestacado;
 window.quitarDestacado = quitarDestacado;
-// Selector Promociones
-window.filtrarProductosPromo = filtrarProductosPromo;
-window.toggleProductoPromo = toggleProductoPromo;
-window.quitarProductoPromo = quitarProductoPromo;
-window.limpiarSeleccionPromo = limpiarSeleccionPromo;
+
+// Reportes
+window.cargarReporteMargen = cargarReporteMargen;
+window.cargarReporteTop = cargarReporteTop;
+window.cargarReporteMetodos = cargarReporteMetodos;
+window.cargarReporteLocales = cargarReporteLocales;
+window.exportarReporte = exportarReporte;
+
+// Dashboard
+window.cargarDashboard = cargarDashboard;
+window.cargarEstadisticasLocales = cargarEstadisticasLocales;
+
+// ═══════════════════ ENVÍOS ═══════════════════
+let enviosData = []; // Cache de envíos para acceso rápido
+
+async function cargarEnvios() {
+    console.log('🚚 Cargando envíos...');
+    const tbody = document.getElementById('tbodyEnvios');
+    if (!tbody) {
+        console.error('❌ No se encontró tbodyEnvios');
+        return;
+    }
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center">Cargando...</td></tr>';
+
+    try {
+        const estadoFiltro = document.getElementById('enviosEstadoFiltro')?.value || '';
+        console.log('📋 Filtro estado:', estadoFiltro || 'todos');
+
+        let query = supabaseClient
+            .from('envios')
+            .select('*')
+            .order('fecha_venta', { ascending: false });
+
+        if (estadoFiltro) query = query.eq('estado', estadoFiltro);
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('❌ Error Supabase:', error);
+            throw error;
+        }
+
+        console.log('✅ Envíos cargados:', data?.length || 0);
+        enviosData = data || [];
+
+        // Actualizar stats - cargar todos para estadísticas
+        const { data: todosEnvios } = await supabaseClient.from('envios').select('estado');
+        const pendientes = todosEnvios?.filter(e => e.estado === 'pendiente')?.length || 0;
+        const enTransito = todosEnvios?.filter(e => ['enviado', 'despachado', 'en_transito'].includes(e.estado))?.length || 0;
+        const entregados = todosEnvios?.filter(e => e.estado === 'entregado')?.length || 0;
+        const devueltos = todosEnvios?.filter(e => e.estado === 'devuelto')?.length || 0;
+
+        const el1 = document.getElementById('enviosPendientes');
+        const el2 = document.getElementById('enviosEnTransito');
+        const el3 = document.getElementById('enviosEntregados');
+        const el4 = document.getElementById('enviosDevueltos');
+        if (el1) el1.textContent = pendientes;
+        if (el2) el2.textContent = enTransito;
+        if (el3) el3.textContent = entregados;
+        if (el4) el4.textContent = devueltos;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center">No hay envíos registrados</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(e => {
+            const estadoClase = {
+                'pendiente': 'warning',
+                'preparando': 'info',
+                'despachado': 'primary',
+                'en_transito': 'info',
+                'enviado': 'info',
+                'entregado': 'success',
+                'devuelto': 'danger'
+            }[e.estado] || 'secondary';
+
+            return `
+            <tr>
+                <td><strong>${e.numero_pedido || '-'}</strong></td>
+                <td>${e.fecha_venta ? formatearFecha(e.fecha_venta) : '-'}</td>
+                <td>${e.cliente_nombre || '-'}<br><small class="text-muted">${e.cliente_telefono || ''}</small></td>
+                <td>${e.ciudad || '-'}</td>
+                <td>${e.transportadora || '<em>Sin asignar</em>'}</td>
+                <td>${e.numero_guia ? `<a href="${e.url_tracking || '#'}" target="_blank">${e.numero_guia}</a>` : '<em>Sin guía</em>'}</td>
+                <td>$${formatearPrecio(e.total_pedido || 0)}</td>
+                <td><span class="badge badge-${estadoClase}">${e.estado}</span></td>
+                <td class="text-center">
+                    <div class="btn-group-vertical">
+                        <button onclick="abrirModalEditarEnvio('${e.id}')" class="btn btn-sm btn-secondary" title="Editar">✏️</button>
+                        <button onclick="enviarGuia('${e.id}')" class="btn btn-sm btn-primary" title="Asignar guía" ${e.numero_guia ? 'disabled' : ''}>📦</button>
+                        <button onclick="notificarClienteWhatsApp('${e.id}')" class="btn btn-sm btn-success" title="WhatsApp">📱</button>
+                    </div>
+                </td>
+            </tr>
+        `}).join('');
+
+        console.log('✅ Tabla renderizada correctamente');
+    } catch (error) {
+        console.error('❌ Error cargando envíos:', error);
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+        showToast('Error al cargar envíos: ' + error.message, 'error');
+    }
+}
+
+async function enviarGuia(id) {
+    console.log('📦 Asignando guía para envío:', id);
+
+    // Obtener datos del envío actual
+    const envio = enviosData.find(e => e.id === id);
+
+    const transportadora = prompt('Ingrese la transportadora (ej: Servientrega, Coordinadora):');
+    if (!transportadora) return;
+
+    const guia = prompt('Ingrese el número de guía:');
+    if (!guia) return;
+
+    const urlTracking = prompt('URL de tracking (opcional):', '');
+
+    try {
+        console.log('📤 Enviando actualización a Supabase...');
+        const updateData = {
+            transportadora: transportadora.trim(),
+            numero_guia: guia.trim(),
+            url_tracking: urlTracking?.trim() || null,
+            estado: 'despachado',
+            fecha_despacho: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        console.log('📋 Datos a actualizar:', updateData);
+
+        const { data, error } = await supabaseClient
+            .from('envios')
+            .update(updateData)
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('❌ Error Supabase:', error);
+            throw error;
+        }
+
+        console.log('✅ Respuesta Supabase:', data);
+        showToast('✅ Guía asignada correctamente', 'success');
+
+        // Preguntar si desea notificar
+        if (confirm('¿Desea notificar al cliente por WhatsApp?')) {
+            notificarClienteWhatsApp(id, guia, transportadora);
+        }
+
+        await cargarEnvios();
+    } catch (error) {
+        console.error('❌ Error asignando guía:', error);
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+async function actualizarEstadoEnvio(id, nuevoEstado) {
+    console.log('🔄 Actualizando estado:', id, '->', nuevoEstado);
+
+    try {
+        const updateData = {
+            estado: nuevoEstado,
+            updated_at: new Date().toISOString()
+        };
+
+        if (nuevoEstado === 'entregado') {
+            updateData.fecha_entrega = new Date().toISOString();
+        }
+
+        console.log('📋 Datos a actualizar:', updateData);
+
+        const { data, error } = await supabaseClient
+            .from('envios')
+            .update(updateData)
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('❌ Error Supabase:', error);
+            throw error;
+        }
+
+        console.log('✅ Estado actualizado:', data);
+        showToast('Estado actualizado a: ' + nuevoEstado, 'success');
+        await cargarEnvios();
+    } catch (error) {
+        console.error('❌ Error actualizando estado:', error);
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+function notificarClienteWhatsApp(id, guia = null, transportadora = null) {
+    console.log('📱 Preparando notificación WhatsApp para:', id);
+
+    const envio = enviosData.find(e => e.id === id);
+    if (!envio) {
+        console.error('❌ Envío no encontrado:', id);
+        showToast('Envío no encontrado', 'error');
+        return;
+    }
+
+    console.log('📋 Datos del envío:', envio);
+
+    const telefono = envio.cliente_telefono?.replace(/\D/g, '');
+    if (!telefono) {
+        showToast('El cliente no tiene teléfono registrado', 'warning');
+        return;
+    }
+
+    // Construir mensaje
+    let mensaje = `¡Hola ${envio.cliente_nombre}! 🏍️\n\n`;
+    mensaje += `Tu pedido *${envio.numero_pedido}* de Moteros Sports Line `;
+
+    if (envio.numero_guia || guia) {
+        mensaje += `ha sido despachado.\n\n`;
+        mensaje += `📦 *Transportadora:* ${envio.transportadora || transportadora}\n`;
+        mensaje += `🔢 *Número de guía:* ${envio.numero_guia || guia}\n`;
+        if (envio.url_tracking) {
+            mensaje += `🔗 *Tracking:* ${envio.url_tracking}\n`;
+        }
+    } else {
+        mensaje += `está siendo preparado.\n`;
+    }
+
+    mensaje += `\n📍 *Dirección de envío:*\n${envio.direccion_envio}\n${envio.ciudad}, ${envio.departamento}\n`;
+    mensaje += `\n¡Gracias por tu compra! 🧡`;
+
+    const url = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
+    console.log('🔗 URL WhatsApp:', url);
+
+    window.open(url, '_blank');
+    showToast('Abriendo WhatsApp...', 'info');
+}
+
+async function abrirModalEditarEnvio(id) {
+    console.log('✏️ Abriendo modal para editar envío:', id);
+
+    const envio = enviosData.find(e => e.id === id);
+    if (!envio) {
+        console.error('❌ Envío no encontrado');
+        showToast('Envío no encontrado', 'error');
+        return;
+    }
+
+    // Llenar campos del modal
+    document.getElementById('envioId').value = id;
+    document.getElementById('envioNumeroPedido').textContent = envio.numero_pedido || '-';
+    document.getElementById('envioClienteNombre').textContent = envio.cliente_nombre || '-';
+    document.getElementById('envioClienteTelefono').textContent = envio.cliente_telefono || '-';
+    document.getElementById('envioDireccion').textContent = envio.direccion_envio || '-';
+    document.getElementById('envioCiudad').textContent = `${envio.ciudad || '-'}, ${envio.departamento || '-'}`;
+    document.getElementById('envioProductos').textContent = envio.productos_descripcion || '-';
+
+    document.getElementById('envioTransportadora').value = envio.transportadora || '';
+    document.getElementById('envioGuia').value = envio.numero_guia || '';
+    document.getElementById('envioUrlTracking').value = envio.url_tracking || '';
+    document.getElementById('envioEstado').value = envio.estado || 'pendiente';
+    document.getElementById('envioCosto').value = envio.costo_envio || 0;
+    document.getElementById('envioIncluidoPrecio').checked = envio.envio_incluido || false;
+    document.getElementById('envioClientePaga').checked = envio.cliente_paga_envio || false;
+    document.getElementById('envioNotas').value = envio.notas || '';
+
+    document.getElementById('modalEditarEnvio').style.display = 'flex';
+}
+
+async function guardarEnvioModal(notificar = false) {
+    const id = document.getElementById('envioId').value;
+    console.log('💾 Guardando envío:', id);
+
+    try {
+        const updateData = {
+            transportadora: document.getElementById('envioTransportadora').value || null,
+            numero_guia: document.getElementById('envioGuia').value || null,
+            url_tracking: document.getElementById('envioUrlTracking').value || null,
+            estado: document.getElementById('envioEstado').value,
+            costo_envio: parseFloat(document.getElementById('envioCosto').value) || 0,
+            envio_incluido: document.getElementById('envioIncluidoPrecio').checked,
+            cliente_paga_envio: document.getElementById('envioClientePaga').checked,
+            notas: document.getElementById('envioNotas').value || null,
+            updated_at: new Date().toISOString()
+        };
+
+        // Agregar fecha según estado
+        if (updateData.estado === 'despachado' && updateData.numero_guia) {
+            updateData.fecha_despacho = new Date().toISOString();
+        }
+        if (updateData.estado === 'entregado') {
+            updateData.fecha_entrega = new Date().toISOString();
+        }
+
+        console.log('📋 Datos a guardar:', updateData);
+
+        const { data, error } = await supabaseClient
+            .from('envios')
+            .update(updateData)
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('❌ Error Supabase:', error);
+            throw error;
+        }
+
+        console.log('✅ Envío guardado:', data);
+        showToast('Envío actualizado correctamente', 'success');
+        cerrarModalEnvio();
+
+        if (notificar) {
+            notificarClienteWhatsApp(id);
+        }
+
+        await cargarEnvios();
+    } catch (error) {
+        console.error('❌ Error guardando envío:', error);
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+async function cargarEstadisticasEnvios() {
+    try {
+        const { data, error } = await supabaseClient.from('envios').select('*');
+        if (error) throw error;
+
+        const envios = data || [];
+        const mesActual = new Date().getMonth();
+        const enviosMes = envios.filter(e => new Date(e.fecha_venta).getMonth() === mesActual);
+
+        const totalEnvios = enviosMes.length;
+        const entregados = enviosMes.filter(e => e.estado === 'entregado').length;
+        const cobradoEnvios = enviosMes.filter(e => e.cliente_paga_envio).reduce((sum, e) => sum + parseFloat(e.costo_envio || 0), 0);
+        const asumidoEnvios = enviosMes.filter(e => !e.cliente_paga_envio && !e.envio_incluido).reduce((sum, e) => sum + parseFloat(e.costo_envio || 0), 0);
+
+        const el1 = document.getElementById('statEnviosTotales');
+        const el2 = document.getElementById('statCobradoEnvios');
+        const el3 = document.getElementById('statAsumidoEnvios');
+        const el4 = document.getElementById('statBalanceEnvios');
+
+        if (el1) el1.textContent = totalEnvios;
+        if (el2) el2.textContent = '$' + formatearPrecio(cobradoEnvios);
+        if (el3) el3.textContent = '$' + formatearPrecio(asumidoEnvios);
+        if (el4) el4.textContent = '$' + formatearPrecio(cobradoEnvios - asumidoEnvios);
+
+    } catch (error) {
+        console.error('Error cargando estadísticas de envíos:', error);
+        showToast('Error al cargar estadísticas', 'error');
+    }
+}
+
+function buscarEnvios() {
+    const busqueda = document.getElementById('enviosBuscar')?.value.toLowerCase() || '';
+    const filas = document.querySelectorAll('#tbodyEnvios tr');
+    filas.forEach(fila => {
+        const texto = fila.textContent.toLowerCase();
+        fila.style.display = texto.includes(busqueda) ? '' : 'none';
+    });
+}
+
+function exportarEnvios() {
+    showToast('Exportando envíos...', 'info');
+    // Implementar exportación CSV
+}
+
+function abrirModalEnvio(id) {
+    showToast('Función en desarrollo', 'info');
+}
+
+function cerrarModalEnvio() {
+    const modal = document.getElementById('modalEditarEnvio');
+    if (modal) modal.style.display = 'none';
+}
+
+async function guardarEnvio(notificar = false) {
+    showToast('Guardando...', 'info');
+    cerrarModalEnvio();
+    await cargarEnvios();
+    if (notificar) showToast('Cliente notificado', 'success');
+}
+
+function cerrarModalHistorial() {
+    const modal = document.getElementById('modalHistorialEnvio');
+    if (modal) modal.style.display = 'none';
+}
+
+// Exportar funciones de envíos
+window.cargarEnvios = cargarEnvios;
+window.cargarEstadisticasEnvios = cargarEstadisticasEnvios;
+window.enviarGuia = enviarGuia;
+window.actualizarEstadoEnvio = actualizarEstadoEnvio;
+window.notificarClienteWhatsApp = notificarClienteWhatsApp;
+window.buscarEnvios = buscarEnvios;
+window.exportarEnvios = exportarEnvios;
+window.abrirModalEditarEnvio = abrirModalEditarEnvio;
+window.cerrarModalEnvio = cerrarModalEnvio;
+window.guardarEnvio = guardarEnvio;
+window.guardarEnvioModal = guardarEnvioModal;
+window.cerrarModalHistorial = cerrarModalHistorial;

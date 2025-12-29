@@ -3,49 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moteros Sports Line | Inicio</title> 
+    <title>Moteros Sport Line | Contacto</title>
+    <link rel="icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- CSS externo -->
-    <link rel="stylesheet" href="css/styles.css">  
-    
-    <!-- SDK de Supabase -->
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .contacto-page { padding: 4rem 0; background: #f8fafc; min-height: 60vh; }
+        .contacto-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-top: 2rem; }
+        .contacto-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .contacto-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+        .contacto-card h3 { color: var(--primary); font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .contacto-card p { margin: 0.75rem 0; color: #334155; line-height: 1.6; }
+        .contacto-card a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .contacto-card a:hover { text-decoration: underline; }
+        .btn-maps { display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background: #4285f4; color: white !important; border-radius: 0.5rem; text-decoration: none !important; font-weight: 600; transition: background 0.3s; }
+        .btn-maps:hover { background: #3367d6; }
+        .redes-sociales { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
+        .red-social { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: #f1f5f9; border-radius: 0.5rem; color: #334155; text-decoration: none; font-weight: 600; transition: all 0.3s; }
+        .red-social:hover { background: var(--primary); color: white; }
+        .red-social.facebook { background: #1877f2; color: white; }
+        .red-social.instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white; }
+        .red-social.tiktok { background: #000; color: white; }
+        .red-social.whatsapp { background: #25D366; color: white; }
+        .contacto-info-general { background: linear-gradient(135deg, #ff6b00, #c45500); color: white; padding: 3rem; border-radius: 1rem; text-align: center; margin-bottom: 2rem; box-shadow: 0 10px 40px rgba(255, 107, 0, 0.3); }
+        .contacto-info-general h2 { font-size: 2rem; margin-bottom: 1rem; }
+        .contacto-info-general p { font-size: 1.1rem; opacity: 0.95; }
+        .telefono-grande { font-size: 2rem; font-weight: 700; display: block; margin: 1.5rem 0; }
+        .telefono-grande a { color: white; text-decoration: none; }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- Header -->
     <header class="header">
-    <div class="container">
-        <div class="logo">
-            <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line" style="height:50px;">
-            <h1 id="siteTitle">MOTEROS SPORTS LINE</h1>
-        </div>
-        <nav class="nav">
-            <a href="index.html">Inicio</a>
-            <a href="catalogo.html">Tienda</a>
-            <a href="blog.html">Blog</a>
-            <a href="contacto.html">Contacto</a>
-        </nav>
+        <div class="container">
+            <div class="logo">
+                <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line" style="height:50px;">
+                <h1 id="siteTitle">MOTEROS SPORT LINE</h1>
+            </div>
+            <nav class="nav">
+                <a href="index.html">Inicio</a>
+                <a href="catalogo.html">Tienda</a>
+                <a href="blog.html">Blog</a>
+                <a href="contacto.html" class="active">Contacto</a>
+            </nav>
         </div>
     </header>
 
-    <!-- Hero pequeño -->
-    <section class="hero" style="padding: 4rem 1rem; background: linear-gradient(135deg, var(--primary), var(--primary-dark));">
+    <!-- Hero -->
+    <section class="hero" style="padding: 5rem 1rem; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
         <div class="container" style="text-align: center; color: white;">
-            <h1 style="font-size: clamp(2.2rem, 5vw, 3.5rem); margin-bottom: 1rem;">
-                Nuestros Locales
-            </h1>
-            <p style="font-size: 1.3rem; opacity: 0.95; max-width: 700px; margin: 0 auto;">
-                Visítanos en cualquiera de nuestras tiendas físicas. ¡Te esperamos con los mejores accesorios para tu moto!
+            <h1 style="font-size: clamp(2.2rem, 5vw, 3.5rem); margin-bottom: 1rem; font-weight: 800;">Contáctanos</h1>
+            <p style="font-size: 1.3rem; opacity: 0.9; max-width: 700px; margin: 0 auto; color: #cbd5e1;">
+                Visítanos en cualquiera de nuestras tiendas o escríbenos por WhatsApp
             </p>
         </div>
     </section>
 
-    <!-- Locales -->
-    <section style="padding: 4rem 0; background: white;">
+    <!-- Contacto Principal -->
+    <section class="contacto-page">
         <div class="container">
-            <div class="locales-grid" id="localesGrid">
-                <!-- Se llenará con JavaScript -->
-                <div class="loading">Cargando locales...</div>
+            <!-- Info General -->
+            <div class="contacto-info-general">
+                <h2>📞 Línea Principal</h2>
+                <span class="telefono-grande"><a href="tel:+573113408416">311 340 8416</a></span>
+                <p>Escríbenos por WhatsApp para atención inmediata</p>
+                <a href="https://wa.me/573113408416" target="_blank" class="btn-whatsapp" style="display:inline-block; margin-top:1rem; padding:1rem 2rem; font-size:1.1rem;">
+                    💬 Escribir por WhatsApp
+                </a>
+            </div>
+
+            <!-- Redes Sociales -->
+            <div style="text-align:center; margin-bottom:3rem;">
+                <h3 style="margin-bottom:1rem; color:#334155;">Síguenos en Redes Sociales</h3>
+                <div class="redes-sociales" style="justify-content:center;">
+                    <a href="https://www.facebook.com/MoterosSportLine/" target="_blank" class="red-social facebook">📘 Facebook</a>
+                    <a href="https://www.instagram.com/moteros.sportline/" target="_blank" class="red-social instagram">📷 Instagram</a>
+                    <a href="https://www.tiktok.com/@moterossportline" target="_blank" class="red-social tiktok">🎵 TikTok</a>
+                    <a href="https://wa.me/573113408416" target="_blank" class="red-social whatsapp">💬 WhatsApp</a>
+                </div>
+            </div>
+
+            <!-- Locales -->
+            <h2 style="text-align:center; margin-bottom:2rem; color:#1e293b;">📍 Nuestros Locales</h2>
+            <div class="contacto-grid">
+                <div class="contacto-card">
+                    <h3>🏪 Alcalá</h3>
+                    <p><strong>Dirección:</strong> Centro Comercial Alcalá, Villavicencio</p>
+                    <p><strong>Teléfono:</strong> <a href="tel:+573113408416">311 340 8416</a></p>
+                    <p><strong>Horario:</strong> Lunes a Sábado 9AM - 7PM</p>
+                    <a href="https://maps.app.goo.gl/MitBYM19LbGGZ9kz8" target="_blank" class="btn-maps">📍 Ver en Google Maps</a>
+                </div>
+                <div class="contacto-card">
+                    <h3>🏬 Local 01</h3>
+                    <p><strong>Dirección:</strong> Local 01, Villavicencio</p>
+                    <p><strong>Teléfono:</strong> <a href="tel:+573113408416">311 340 8416</a></p>
+                    <p><strong>Horario:</strong> Lunes a Sábado 8AM - 6PM</p>
+                    <a href="https://maps.app.goo.gl/Z2pDJt11sAgE9WH97" target="_blank" class="btn-maps">📍 Ver en Google Maps</a>
+                </div>
+                <div class="contacto-card">
+                    <h3>🏢 Jordán</h3>
+                    <p><strong>Dirección:</strong> Sector Jordán, Villavicencio</p>
+                    <p><strong>Teléfono:</strong> <a href="tel:+573113408416">311 340 8416</a></p>
+                    <p><strong>Horario:</strong> Lunes a Domingo 10AM - 8PM</p>
+                    <a href="https://maps.app.goo.gl/xey3kPoAxGBKRLSL6" target="_blank" class="btn-maps">📍 Ver en Google Maps</a>
+                </div>
             </div>
         </div>
     </section>
@@ -56,82 +125,27 @@
             <div class="footer-content">
                 <div class="footer-section">
                     <h4>Moteros Sports Line</h4>
+                    <p>La Casa Oficial de los Moteros</p>
                     <p>Tu seguridad es nuestra prioridad</p>
-                    <p style="margin-top: 1rem; opacity: 0.8;">
-                        Especialistas en accesorios y protección para motociclistas
-                    </p>
                 </div>
                 <div class="footer-section">
                     <h4>Contacto General</h4>
-                    <p>📞 <a href="tel:+573101234567" style="color: white;">310 123 4567</a></p>
-                    <p>✉️ <a href="mailto:info@moterossl.com" style="color: white;">info@moterossl.com</a></p>
+                    <p>📞 <a href="tel:+573113408416" style="color: white;">311 340 8416</a></p>
+                    <p>✉️ <a href="mailto:moterossportline@gmail.com" style="color: white;">moterossportline@gmail.com</a></p>
                 </div>
                 <div class="footer-section">
                     <h4>Síguenos</h4>
-                    <p>📘 <a href="#" style="color: white;">Facebook</a></p>
-                    <p>📷 <a href="#" style="color: white;">Instagram</a></p>
-                    <p>🎵 <a href="#" style="color: white;">TikTok</a></p>
+                    <p>📘 <a href="https://www.facebook.com/MoterosSportLine/" target="_blank" style="color: white;">Facebook</a></p>
+                    <p>📷 <a href="https://www.instagram.com/moteros.sportline/" target="_blank" style="color: white;">Instagram</a></p>
+                    <p>🎵 <a href="https://www.tiktok.com/@moterossportline" target="_blank" style="color: white;">TikTok</a></p>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 Moteros Sports Line | Variedades JyM - Todos los derechos reservados</p>
+                <p>&copy; 2025 Moteros Sports Line | Variedades JyM</p>
             </div>
         </div>
     </footer>
 
-    <!-- Scripts -->
     <script src="js/config.js"></script>
-
-    <script>
-        function cargarLocales() {
-            const grid = document.getElementById('localesGrid');
-            
-            // Obtener locales desde CONFIG.TIENDAS
-            const locales = Object.values(CONFIG.TIENDAS);
-
-            if (locales.length === 0) {
-                grid.innerHTML = '<p style="text-align:center; padding:4rem; color:#999;">No hay locales disponibles</p>';
-                return;
-            }
-
-            grid.innerHTML = locales.map(local => `
-                <div class="local-card">
-                    <h3 style="color: var(--primary); font-size: 1.8rem; margin-bottom: 1rem;">
-                        📍 ${local.nombre}
-                    </h3>
-                    <p><strong>Dirección:</strong><br>${local.direccion}</p>
-                    <p style="margin: 1rem 0;">
-                        <strong>Teléfono:</strong><br>
-                        <a href="tel:+57${local.telefono}" style="color: var(--primary); font-weight: bold; text-decoration: none;">
-                            ${local.telefono}
-                        </a>
-                    </p>
-                    <p><strong>Horario:</strong><br>${local.horario}</p>
-                    ${local.email ? `
-                        <p style="margin: 1rem 0;">
-                            <strong>Email:</strong><br>
-                            <a href="mailto:${local.email}" style="color: var(--primary);">
-                                ${local.email}
-                            </a>
-                        </p>
-                    ` : ''}
-                    
-                    <div style="margin-top: 2rem; text-align: center;">
-                        <a href="https://wa.me/57${local.telefono}?text=${encodeURIComponent('¡Hola! Estoy interesado en visitar el local ' + local.nombre + ' y consultar sobre sus productos 🏍️')}"
-                           class="btn-whatsapp"
-                           target="_blank"
-                           style="padding: 1rem 2rem; font-size: 1.1rem;">
-                            💬 Contactar por WhatsApp
-                        </a>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Cargar al iniciar la página
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarLocales();
-        });
-    </script>
 </body>
 </html>

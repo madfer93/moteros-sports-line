@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>POS Alcalá - Test Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #ff6b00; --dark: #e55d00; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --light: #f1f5f9; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: system-ui, sans-serif; background:var(--light); color:#1e293b; }
+        .header { background:linear-gradient(135deg, var(--primary), var(--dark)); color:white; padding:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; }
+        .badge { padding:0.35rem 0.7rem; border-radius:999px; font-size:0.8rem; font-weight:600; }
+        .badge-open { background:#d1fae5; color:#065f46; }
+        .badge-closed { background:#fee2e2; color:#991b1b; }
+        .btn { padding:0.6rem 1.2rem; border:none; border-radius:6px; cursor:pointer; font-weight:600; transition:0.2s; }
+        .btn-success { background:var(--success); color:white; }
+        .btn-danger { background:var(--danger); color:white; }
+        .btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .container { display:grid; grid-template-columns:1fr 420px; gap:1rem; padding:1rem; max-width:1400px; margin:0 auto; }
+        @media (max-width:900px) { .container { grid-template-columns:1fr; } }
+        .panel { background:white; border-radius:12px; padding:1.2rem; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+        .search { width:100%; padding:0.8rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem; margin-bottom:1rem; }
+        .search:focus { outline:none; border-color:var(--primary); }
+        .productos { max-height:65vh; overflow-y:auto; display:grid; gap:0.6rem; }
+        .producto { display:flex; justify-content:space-between; align-items:center; padding:0.8rem; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; }
+        .producto:hover { border-color:var(--primary); background:#fff7ed; }
+        .producto.agotado { opacity:0.6; cursor:not-allowed; background:#f8fafc; }
+        .producto .info { flex:1; }
+        .producto .info h4 { font-size:0.95rem; margin-bottom:0.2rem; }
+        .producto .info small { color:#64748b; font-size:0.8rem; }
+        .producto .precio { color:var(--primary); font-weight:700; font-size:1.1rem; }
+        .stock { font-size:0.75rem; padding:0.2rem 0.5rem; border-radius:4px; margin-left:0.5rem; }
+        .stock-ok { background:#d1fae5; color:#065f46; }
+        .stock-bajo { background:#fef3c7; color:#92400e; }
+        .stock-no { background:#fee2e2; color:#991b1b; }
+        .carrito-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+        .carrito-count { background:var(--primary); color:white; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.8rem; }
+        .carrito-items { max-height:220px; overflow-y:auto; margin-bottom:1rem; }
+        .carrito-vacio { text-align:center; color:#94a3b8; padding:2rem 0; }
+        .carrito-item { display:flex; justify-content:space-between; align-items:center; padding:0.6rem; background:#f8fafc; border-radius:6px; margin-bottom:0.5rem; }
+        .carrito-item .nombre { flex:1; }
+        .carrito-item .acciones { display:flex; align-items:center; gap:0.4rem; }
+        .carrito-item input { width:50px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:0.3rem; }
+        .btn-mini { width:28px; height:28px; font-size:1rem; padding:0; }
+        .seccion { background:#f8fafc; padding:1rem; border-radius:8px; margin-bottom:1rem; }
+        .metodos { display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:0.5rem; }
+        .metodo { padding:0.6rem; border:2px solid #e2e8f0; border-radius:8px; text-align:center; cursor:pointer; background:white; transition:0.2s; font-size:0.85rem; }
+        .metodo:hover { border-color:var(--primary); }
+        .metodo.selected { border-color:var(--primary); background:#fff7ed; }
+        .total-box { background:linear-gradient(135deg, var(--primary), var(--dark)); color:white; padding:1.2rem; border-radius:12px; text-align:center; margin:1rem 0; }
+        .total-box .monto { font-size:2.2rem; font-weight:800; }
+        .btn-vender { width:100%; padding:1rem; font-size:1.2rem; font-weight:700; }
+        .alert { position:fixed; top:1rem; right:1rem; padding:1rem 1.5rem; border-radius:8px; color:white; z-index:1000; animation:slideIn 0.4s; }
+        @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+        .alert-success { background:var(--success); }
+        .alert-error { background:var(--danger); }
+        .alert-warning { background:var(--warning); color:#1e293b; }
+    </style>
+</head>
+<body>
+
+<div id="alertContainer"></div>
+
+<header class="header">
+    <h1>🏪 POS Alcalá - DEMO</h1>
+    <div>
+        <span id="cajaBadge" class="badge badge-closed">🔒 Cerrada</span>
+        <button class="btn btn-success" onclick="abrirCaja()">Abrir Caja</button>
+        <button class="btn btn-danger" onclick="cerrarCaja()" id="btnCerrarCaja" style="display:none;">Cerrar Caja</button>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Panel Izquierdo: Productos -->
+    <div class="panel">
+        <h3>📦 Productos</h3>
+        <input type="text" id="busqueda" class="search" placeholder="Buscar producto..." oninput="filtrar()"/>
+        <div id="listaProductos" class="productos"></div>
+    </div>
+
+    <!-- Panel Derecho: Carrito -->
+    <div class="panel">
+        <div class="carrito-header">
+            <h3>🛒 Carrito</h3>
+            <span id="count" class="carrito-count">0</span>
+        </div>
+
+        <div id="carritoItems" class="carrito-items">
+            <div class="carrito-vacio">Carrito vacío</div>
+        </div>
+
+        <!-- Destino -->
+        <div class="seccion">
+            <h4>Destino</h4>
+            <select id="destino">
+                <option value="tienda">Venta en Tienda</option>
+                <option value="digital">Transferir a Tienda Digital</option>
+            </select>
+        </div>
+
+        <!-- Métodos de Pago (múltiples) -->
+        <div class="seccion">
+            <h4>Métodos de Pago</h4>
+            <div class="metodos" id="metodosPago">
+                <!-- Se llenan dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Total -->
+        <div class="total-box">
+            <small>Total a pagar</small>
+            <div id="total" class="monto">$0</div>
+        </div>
+
+        <button class="btn btn-success btn-vender" onclick="procesarVenta()" id="btnVender" disabled>
+            Procesar Venta
+        </button>
+    </div>
+</div>
+
+<script>
+    // === CONFIG ===
+    const { createClient } = supabase;
+    const db = createClient('https://pbblthbrdkevuyjxyuar.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiYmx0aGJyZGtldnV5anh5dWFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxNjUwMzcsImV4cCI6MjA4MTc0MTAzN30.bNAcp186l7l9IRWdcwBxuSgvmRtRy-qPFhZ7HRvaBZE'); // ← Cambia por tu ANON KEY real
+
+    const TIENDA = 'Alcalá';
+    const TABLA_INVENTARIO = 'inventario_alcala';
+    const TABLA_DIGITAL = 'inventario_digital';
+
+    // === ESTADO ===
+    let productos = [];
+    let carrito = [];
+    let cajaAbierta = false;
+
+    // Métodos de pago disponibles
+    const metodosDisponibles = [
+        {nombre:'Efectivo', icono:'💵'},
+        {nombre:'Transferencia', icono:'🏦'},
+        {nombre:'Nequi', icono:'📱'},
+        {nombre:'Daviplata', icono:'📲'},
+        {nombre:'Datafono', icono:'💳'},
+        {nombre:'Addi', icono:'🅰️'},
+        {nombre:'Sistecredito', icono:'📋'},
+        {nombre:'Crédito Motero', icono:'🏍️'},
+        {nombre:'Fodegas', icono:'⛽'}
+    ];
+
+    // === INICIO ===
+    document.addEventListener('DOMContentLoaded', async () => {
+        mostrarAlerta('Cargando sistema...', 'success');
+        await cargarProductos();
+        renderMetodosPago();
+        verificarCajaLocal();
+    });
+
+    // === CARGAR PRODUCTOS ===
+    async function cargarProductos() {
+        try {
+            // Productos activos
+            const { data: prods } = await db
+                .from('productos')
+                .select('id_producto, nombre, marca, precio')
+                .eq('estado', 'Activo');
+
+            // Stock local
+            const { data: stockLocal } = await db
+                .from(TABLA_INVENTARIO)
+                .select('id_producto, cantidad');
+
+            const stockMap = Object.fromEntries(stockLocal?.map(s => [s.id_producto, s.cantidad || 0]) || []);
+
+            productos = prods?.map(p => ({
+                ...p,
+                stock: stockMap[p.id_producto] || 0
+            })) || [];
+
+            renderProductos();
+            mostrarAlerta(`Cargados ${productos.length} productos`, 'success');
+        } catch (e) {
+            console.error(e);
+            mostrarAlerta('Error cargando productos', 'error');
+        }
+    }
+
+    function renderProductos(filtro = '') {
+        const container = document.getElementById('listaProductos');
+        const busqueda = filtro.toLowerCase().trim();
+
+        const filtrados = productos.filter(p =>
+            !busqueda ||
+            p.nombre?.toLowerCase().includes(busqueda) ||
+            p.marca?.toLowerCase().includes(busqueda) ||
+            p.id_producto?.toLowerCase().includes(busqueda)
+        );
+
+        container.innerHTML = filtrados.length === 0
+            ? '<div class="carrito-vacio">No hay productos</div>'
+            : filtrados.map(p => {
+                const agotado = p.stock <= 0;
+                let stockClass = p.stock > 5 ? 'stock-ok' : p.stock > 0 ? 'stock-bajo' : 'stock-no';
+                return `
+                <div class="producto ${agotado ? 'agotado' : ''}" 
+                     onclick="${agotado ? '' : `agregar('${p.id_producto}')`}">
+                    <div class="info">
+                        <h4>${p.nombre}</h4>
+                        <small>${p.marca || ''} • ${p.id_producto}</small>
+                    </div>
+                    <div>
+                        <div class="precio">$${p.precio?.toLocaleString('es-CO') || 0}</div>
+                        <span class="stock ${stockClass}">${p.stock} disp</span>
+                    </div>
+                </div>`;
+            }).join('');
+    }
+
+    // === BUSQUEDA ===
+    document.getElementById('busqueda').addEventListener('input', e => renderProductos(e.target.value));
+
+    // === AGREGAR AL CARRITO ===
+    function agregar(idProducto) {
+        const prod = productos.find(p => p.id_producto === idProducto);
+        if (!prod || prod.stock <= 0) return;
+
+        const existe = carrito.find(i => i.id_producto === idProducto);
+        if (existe) {
+            if (existe.cantidad >= prod.stock) return alert('Stock máximo alcanzado');
+            existe.cantidad++;
+        } else {
+            carrito.push({ ...prod, cantidad:1 });
+        }
+        renderCarrito();
+    }
+
+    // === RENDER CARRITO ===
+    function renderCarrito() {
+        const container = document.getElementById('carritoItems');
+        const count = document.getElementById('count');
+        const totalEl = document.getElementById('total');
+        const btnVender = document.getElementById('btnVender');
+
+        count.textContent = carrito.reduce((a, i) => a + i.cantidad, 0);
+
+        if (carrito.length === 0) {
+            container.innerHTML = '<div class="carrito-vacio">Carrito vacío</div>';
+            totalEl.textContent = '$0';
+            btnVender.disabled = true;
+            return;
+        }
+
+        const total = carrito.reduce((a, i) => a + i.precio * i.cantidad, 0);
+        totalEl.textContent = '$' + total.toLocaleString('es-CO');
+
+        btnVender.disabled = !cajaAbierta;
+
+        container.innerHTML = carrito.map((item, idx) => `
+            <div class="carrito-item">
+                <div class="nombre">
+                    <strong>${item.nombre}</strong><br>
+                    <small>$${item.precio.toLocaleString('es-CO')} × ${item.cantidad}</small>
+                </div>
+                <div class="acciones">
+                    <button class="btn btn-danger btn-mini" onclick="quitar(${idx})">−</button>
+                    <span>${item.cantidad}</span>
+                    <button class="btn btn-success btn-mini" onclick="sumar(${idx})">+</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function sumar(idx) {
+        const item = carrito[idx];
+        const prod = productos.find(p => p.id_producto === item.id_producto);
+        if (item.cantidad < prod.stock) item.cantidad++;
+        renderCarrito();
+    }
+
+    function quitar(idx) {
+        if (carrito[idx].cantidad > 1) {
+            carrito[idx].cantidad--;
+        } else {
+            carrito.splice(idx, 1);
+        }
+        renderCarrito();
+    }
+
+    // === MÉTODOS DE PAGO ===
+    function renderMetodosPago() {
+        const container = document.getElementById('metodosPago');
+        container.innerHTML = metodosDisponibles.map(m => `
+            <div class="metodo" data-metodo="${m.nombre}" onclick="toggleMetodo(this)">
+                <div style="font-size:1.4rem;">${m.icono}</div>
+                ${m.nombre}
+            </div>
+        `).join('');
+    }
+
+    let metodosSeleccionados = new Set();
+    function toggleMetodo(el) {
+        const metodo = el.dataset.metodo;
+        if (metodosSeleccionados.has(metodo)) {
+            metodosSeleccionados.delete(metodo);
+            el.classList.remove('selected');
+        } else {
+            metodosSeleccionados.add(metodo);
+            el.classList.add('selected');
+        }
+    }
+
+    // === CAJA ===
+    function verificarCajaLocal() {
+        const guardada = localStorage.getItem('cajaAbierta');
+        if (guardada === 'true') {
+            cajaAbierta = true;
+        }
+        actualizarUIcaja();
+    }
+
+    function abrirCaja() {
+        if (confirm('¿Abrir caja ahora?')) {
+            cajaAbierta = true;
+            localStorage.setItem('cajaAbierta', 'true');
+            actualizarUIcaja();
+            mostrarAlerta('Caja abierta', 'success');
+        }
+    }
+
+    function cerrarCaja() {
+        if (confirm('¿Cerrar caja?')) {
+            cajaAbierta = false;
+            localStorage.removeItem('cajaAbierta');
+            actualizarUIcaja();
+            mostrarAlerta('Caja cerrada', 'success');
+        }
+    }
+
+    function actualizarUIcaja() {
+        const badge = document.getElementById('cajaBadge');
+        const btnAbrir = document.querySelector('.btn-success');
+        const btnCerrar = document.getElementById('btnCerrarCaja');
+        const btnVender = document.getElementById('btnVender');
+
+        if (cajaAbierta) {
+            badge.textContent = '🔓 Abierta';
+            badge.className = 'badge badge-open';
+            btnAbrir.style.display = 'none';
+            btnCerrar.style.display = 'inline-block';
+        } else {
+            badge.textContent = '🔒 Cerrada';
+            badge.className = 'badge badge-closed';
+            btnAbrir.style.display = 'inline-block';
+            btnCerrar.style.display = 'none';
+        }
+        btnVender.disabled = !cajaAbierta;
+    }
+
+    // === PROCESAR VENTA ===
+    async function procesarVenta() {
+        if (!cajaAbierta) return mostrarAlerta('¡Abre la caja primero!', 'error');
+        if (carrito.length === 0) return mostrarAlerta('Carrito vacío', 'error');
+        if (metodosSeleccionados.size === 0) return mostrarAlerta('Selecciona al menos un método de pago', 'error');
+
+        const destino = document.getElementById('destino').value;
+        const total = carrito.reduce((a, i) => a + i.precio * i.cantidad, 0);
+
+        try {
+            for (const item of carrito) {
+                // 1. Descontar stock local SIEMPRE
+                const { data: stockActual } = await db
+                    .from(TABLA_INVENTARIO)
+                    .select('cantidad')
+                    .eq('id_producto', item.id_producto)
+                    .single();
+
+                if (stockActual) {
+                    const nuevo = Math.max(0, stockActual.cantidad - item.cantidad);
+                    await db
+                        .from(TABLA_INVENTARIO)
+                        .update({ cantidad: nuevo, ultima_actualizacion: new Date().toISOString() })
+                        .eq('id_producto', item.id_producto);
+                }
+
+                // 2. Si destino = digital → sumar a inventario_digital (NO registrar venta)
+                if (destino === 'digital') {
+                    const { data: stockDig } = await db
+                        .from(TABLA_DIGITAL)
+                        .select('cantidad')
+                        .eq('id_producto', item.id_producto)
+                        .single();
+
+                    if (stockDig) {
+                        await db
+                            .from(TABLA_DIGITAL)
+                            .update({ cantidad: stockDig.cantidad + item.cantidad })
+                            .eq('id_producto', item.id_producto);
+                    } else {
+                        await db
+                            .from(TABLA_DIGITAL)
+                            .insert({
+                                id_producto: item.id_producto,
+                                cantidad: item.cantidad,
+                                stock_minimo: 0
+                            });
+                    }
+                }
+                // Si destino = tienda → aquí iría el insert en ventas (lo dejamos comentado para test)
+                // else { await db.from('ventas').insert({...}); }
+            }
+
+            mostrarAlerta(
+                destino === 'digital'
+                    ? `📦 Transferido a Digital: $${total.toLocaleString('es-CO')}`
+                    : `✅ Venta en tienda: $${total.toLocaleString('es-CO')} (${[...metodosSeleccionados].join(' + ')})`,
+                'success'
+            );
+
+            carrito = [];
+            metodosSeleccionados.clear();
+            document.querySelectorAll('.metodo').forEach(m => m.classList.remove('selected'));
+            renderCarrito();
+            await cargarProductos(); // Actualizar stock visual
+        } catch (e) {
+            console.error(e);
+            mostrarAlerta('Error en la operación: ' + e.message, 'error');
+        }
+    }
+
+    // === ALERTAS ===
+    function mostrarAlerta(msg, tipo = 'success') {
+        const div = document.createElement('div');
+        div.className = `alert alert-${tipo}`;
+        div.textContent = msg;
+        document.getElementById('alertContainer').appendChild(div);
+        setTimeout(() => div.remove(), 4000);
+    }
+</script>
+</body>
+</html>

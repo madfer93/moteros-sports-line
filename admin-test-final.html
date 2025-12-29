@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Admin Moteros - Test OK</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+    <style>
+        body { font-family: 'Inter', sans-serif; background:#f1f5f9; margin:0; padding:0; color:#0f172a; }
+        #loginScreen { height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#0f172a,#1e293b); }
+        .login-card { background:white; padding:3rem; border-radius:16px; box-shadow:0 20px 40px rgba(0,0,0,0.5); width:90%; max-width:400px; text-align:center; }
+        .btn { padding:1rem; border:none; border-radius:8px; cursor:pointer; font-size:1.1rem; font-weight:600; }
+        .btn-primary { background:#ff6b00; color:white; width:100%; }
+        #adminPanel { display:none; }
+        header { background:white; padding:1rem 2rem; display:flex; justify-content:space-between; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
+        nav a { margin:0 1rem; color:#0f172a; cursor:pointer; text-decoration:none; }
+        nav a:hover { color:#ff6b00; }
+        main { padding:2rem; max-width:1200px; margin:0 auto; }
+        .section { display:none; }
+        .section.active { display:block; }
+        .card { background:white; border-radius:12px; padding:1.5rem; margin:1rem 0; box-shadow:0 4px 15px rgba(0,0,0,0.08); }
+        .toast-container { position:fixed; bottom:20px; right:20px; z-index:999; }
+        .toast { padding:1rem 1.5rem; margin-bottom:1rem; border-radius:8px; color:white; box-shadow:0 4px 15px rgba(0,0,0,0.2); opacity:0; transform:translateY(20px); transition:all 0.4s; }
+        .toast.show { opacity:1; transform:translateY(0); }
+        .toast-success { background:#10b981; }
+        .toast-error { background:#ef4444; }
+    </style>
+</head>
+<body>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+    <div class="login-card">
+        <h1 style="font-size:3rem; margin-bottom:1rem;">🏍️</h1>
+        <h2>Admin Moteros Test</h2>
+        <p>Contraseña: moteros2025</p>
+        <input type="password" id="adminPassword" style="width:100%; padding:1rem; margin:1rem 0; border:2px solid #e2e8f0; border-radius:8px;" placeholder="Ingresa contraseña" />
+        <button onclick="loginAdmin()" class="btn btn-primary">Entrar</button>
+        <p id="loginError" style="color:#ef4444; margin-top:1rem;"></p>
+    </div>
+</div>
+
+<!-- PANEL -->
+<div id="adminPanel">
+    <header>
+        <h2>Admin Moteros - Test Final</h2>
+        <nav>
+            <a onclick="showSection('dashboard')">Dashboard</a>
+            <a onclick="showSection('compras')">Compras</a>
+            <a onclick="logout()">Salir</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="dashboard" class="section active">
+            <h2>Dashboard</h2>
+            <div class="card">
+                <p><strong>Productos activos:</strong> 248</p>
+                <p><strong>Stock total:</strong> 3.842 unidades</p>
+            </div>
+        </section>
+
+        <section id="compras" class="section">
+            <h2>Compras Manuales</h2>
+            <div class="card">
+                <button onclick="mostrarFormCompraRapida()" class="btn" style="background:#ff6b00;color:white;">➕ Nueva Compra Manual</button>
+                <button onclick="verificarVencimientos()" class="btn" style="background:#f59e0b;color:white;margin-left:1rem;">Alertas Vencimientos</button>
+            </div>
+
+            <div id="formCompraRapida" class="card" style="display:none;">
+                <h3>Nueva Compra Manual</h3>
+                <label>Proveedor:</label><br>
+                <select id="compraProveedor">
+                    <option>Seleccionar...</option>
+                    <option>YANIRA MT</option>
+                    <option>SURTICASCOS</option>
+                </select><br><br>
+
+                <label># Factura:</label><br>
+                <input type="text" id="compraFactura" placeholder="FAC-001"/><br><br>
+
+                <label>Valor:</label><br>
+                <input type="number" id="compraValor" placeholder="3850000"/><br><br>
+
+                <button onclick="guardarCompraRapida()" class="btn btn-primary">Guardar</button>
+                <button onclick="document.getElementById('formCompraRapida').style.display='none'" class="btn" style="background:#ef4444;color:white;">Cancelar</button>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+// Solo se declara UNA VEZ
+const supabase = createClient('https://pbblthbrdkevuyjxyuar.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiYmx0aGJyZGtldnV5anh5dWFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxNjUwMzcsImV4cCI6MjA4MTc0MTAzN30.bNAcp186l7l9IRWdcwBxuSgvmRtRy-qPFhZ7HRvaBZE');
+
+// Funciones (definidas antes de usarlas)
+function showToast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.className = `toast toast-${type} show`;
+    t.textContent = msg;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+}
+
+function loginAdmin() {
+    const pass = document.getElementById('adminPassword').value;
+    if (pass === 'moteros2025') {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        showToast('¡Entraste! Todo bien 🔥', 'success');
+    } else {
+        document.getElementById('loginError').textContent = 'Contraseña incorrecta';
+        showToast('Contraseña incorrecta', 'error');
+    }
+}
+
+function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function logout() {
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+}
+
+function mostrarFormCompraRapida() {
+    document.getElementById('formCompraRapida').style.display = 'block';
+}
+
+function guardarCompraRapida() {
+    showToast('Compra guardada (prueba OK) ✅', 'success');
+    document.getElementById('formCompraRapida').style.display = 'none';
+}
+
+function verificarVencimientos() {
+    showToast('⚠️ 3 facturas por vencer (prueba)', 'warning');
+}
+</script>
+</body>
+</html>
