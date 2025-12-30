@@ -38,6 +38,7 @@ let itemEditandoIdx = null;
 let datosCaja = null;
 let resumenVentas = null;
 let gastosDelDia = [];
+let empleadoLogueado = null; // Datos del empleado con sesión activa
 
 // ═══════════════════════════════════════════════════════════════
 // INICIALIZACIÓN
@@ -77,15 +78,191 @@ function verificarCaja() {
     actualizarUICaja();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// SISTEMA DE LOGIN DE EMPLEADOS
+// ═══════════════════════════════════════════════════════════════
+
+function mostrarLoginEmpleado() {
+    document.getElementById('loginUsuario').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('modalLoginEmpleado').classList.add('visible');
+}
+
+async function verificarLogin() {
+    const usuario = document.getElementById('loginUsuario').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorDiv = document.getElementById('loginError');
+
+    if (!usuario || !password) {
+        errorDiv.textContent = 'Por favor ingresa usuario y contraseña';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        // Buscar empleado por usuario o cédula
+        const { data: empleado, error } = await db
+            .from('empleados_tienda')
+            .select('*')
+            .or(`usuario.eq.${usuario},cedula.eq.${usuario}`)
+            .eq('activo', true)
+            .single();
+
+        if (error || !empleado) {
+            errorDiv.textContent = 'Usuario no encontrado o inactivo';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Verificar contraseña (simple hash comparison - en producción usar bcrypt)
+        if (empleado.password !== password) {
+            errorDiv.textContent = 'Contraseña incorrecta';
+            errorDiv.style.display = 'block';
+
+            // Registrar intento fallido
+            await db.from('sesiones_empleados').insert({
+                empleado_id: empleado.id,
+                local: TIENDA.nombre,
+                tipo: 'login_fallido',
+                fecha: new Date().toISOString()
+            });
+            return;
+        }
+
+        // Verificar si tiene permiso para esta tienda
+        const tiendasPermitidas = empleado.tiendas_permitidas || [];
+        if (tiendasPermitidas.length > 0 && !tiendasPermitidas.includes(TIENDA.nombre) && !tiendasPermitidas.includes('Todas')) {
+            errorDiv.textContent = `No tienes permiso para acceder a ${TIENDA.nombre}`;
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Login exitoso
+        empleadoLogueado = empleado;
+
+        // Guardar sesión en localStorage
+        localStorage.setItem('empleado_logueado_' + TIENDA.storageKey, JSON.stringify({
+            id: empleado.id,
+            nombre: empleado.nombre,
+            cargo: empleado.cargo,
+            fecha: new Date().toISOString()
+        }));
+
+        // Registrar sesión en Supabase
+        await db.from('sesiones_empleados').insert({
+            empleado_id: empleado.id,
+            local: TIENDA.nombre,
+            tipo: 'login',
+            fecha: new Date().toISOString()
+        });
+
+        // Cerrar modal login y abrir modal caja
+        document.getElementById('modalLoginEmpleado').classList.remove('visible');
+        abrirModalCajaConEmpleado();
+
+    } catch (e) {
+        console.error('Error en login:', e);
+        // Si la tabla no existe, permitir login sin verificación (modo legacy)
+        if (e.message && e.message.includes('does not exist')) {
+            console.warn('Tabla empleados_tienda no existe, usando modo legacy');
+            abrirModalCajaLegacy();
+        } else {
+            errorDiv.textContent = 'Error de conexión. Intenta de nuevo.';
+            errorDiv.style.display = 'block';
+        }
+    }
+}
+
+function abrirModalCajaConEmpleado() {
+    if (!empleadoLogueado) {
+        mostrarLoginEmpleado();
+        return;
+    }
+
+    // Mostrar datos del empleado
+    document.getElementById('nombreEmpleadoLogueado').textContent = empleadoLogueado.nombre;
+    document.getElementById('cargoEmpleadoLogueado').textContent = empleadoLogueado.cargo || 'Vendedor';
+    document.getElementById('vendedorNombre').value = empleadoLogueado.nombre;
+
+    // Configurar base de caja
+    document.getElementById('montoInicial').value = TIENDA.esDigital ? '0' : '100000';
+
+    document.getElementById('modalAbrirCaja').classList.add('visible');
+}
+
+function abrirModalCajaLegacy() {
+    // Modo legacy - sin verificación de empleados (para compatibilidad)
+    const nombre = prompt('👤 Ingresa tu nombre completo:');
+    if (!nombre || !nombre.trim()) {
+        mostrarAlerta('Debes ingresar tu nombre', 'warning');
+        return;
+    }
+
+    empleadoLogueado = { id: 0, nombre: nombre.trim(), cargo: 'Vendedor' };
+    document.getElementById('nombreEmpleadoLogueado').textContent = nombre.trim();
+    document.getElementById('cargoEmpleadoLogueado').textContent = 'Vendedor';
+    document.getElementById('vendedorNombre').value = nombre.trim();
+    document.getElementById('montoInicial').value = TIENDA.esDigital ? '0' : '100000';
+
+    document.getElementById('modalAbrirCaja').classList.add('visible');
+}
+
+async function cerrarSesionEmpleado() {
+    if (empleadoLogueado && empleadoLogueado.id) {
+        try {
+            await db.from('sesiones_empleados').insert({
+                empleado_id: empleadoLogueado.id,
+                local: TIENDA.nombre,
+                tipo: 'logout',
+                fecha: new Date().toISOString()
+            });
+        } catch (e) {
+            console.warn('No se pudo registrar logout:', e);
+        }
+    }
+
+    empleadoLogueado = null;
+    localStorage.removeItem('empleado_logueado_' + TIENDA.storageKey);
+    cerrarModal();
+    mostrarAlerta('Sesión cerrada correctamente', 'info');
+}
+
+function verificarSesionExistente() {
+    const sesionGuardada = localStorage.getItem('empleado_logueado_' + TIENDA.storageKey);
+    if (sesionGuardada) {
+        try {
+            const datos = JSON.parse(sesionGuardada);
+            const hoy = new Date().toISOString().split('T')[0];
+            const fechaSesion = datos.fecha.split('T')[0];
+
+            // Si la sesión es de hoy, restaurarla
+            if (fechaSesion === hoy) {
+                empleadoLogueado = datos;
+                return true;
+            } else {
+                localStorage.removeItem('empleado_logueado_' + TIENDA.storageKey);
+            }
+        } catch (e) {
+            localStorage.removeItem('empleado_logueado_' + TIENDA.storageKey);
+        }
+    }
+    return false;
+}
+
 function abrirModalCaja() {
     if (cajaAbierta) {
         mostrarAlerta('La caja ya está abierta', 'warning');
         return;
     }
-    // Base diferente para digital vs física
-    document.getElementById('montoInicial').value = TIENDA.esDigital ? '0' : '100000';
-    document.getElementById('vendedorNombre').value = '';
-    document.getElementById('modalAbrirCaja').classList.add('visible');
+
+    // Verificar si hay sesión existente
+    if (verificarSesionExistente()) {
+        abrirModalCajaConEmpleado();
+    } else {
+        // Mostrar login de empleado
+        mostrarLoginEmpleado();
+    }
 }
 
 async function confirmarAbrirCaja() {

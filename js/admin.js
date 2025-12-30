@@ -60,30 +60,58 @@ function limpiarMoneda(valor) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// LOGIN / LOGOUT
+// LOGIN / LOGOUT CON PERSISTENCIA
 // ═══════════════════════════════════════════════════════════════
+const SESSION_KEY = 'moteros_admin_session';
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 horas
+
+function checkSession() {
+    const session = localStorage.getItem(SESSION_KEY);
+    if (session) {
+        try {
+            const { timestamp } = JSON.parse(session);
+            if (Date.now() - timestamp < SESSION_DURATION) {
+                return true;
+            }
+            localStorage.removeItem(SESSION_KEY);
+        } catch (e) {
+            localStorage.removeItem(SESSION_KEY);
+        }
+    }
+    return false;
+}
+
+function saveSession() {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ timestamp: Date.now() }));
+}
+
+function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+}
+
 async function loginAdmin() {
     const password = document.getElementById('adminPassword').value;
     const loginBtn = document.querySelector('.login-btn');
-    
+
     if (!password) {
         document.getElementById('loginError').textContent = '❌ Ingresa la contraseña';
         return;
     }
-    
+
     if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = 'Verificando...'; }
-    
+
     try {
         const { data, error } = await supabaseClient
             .from('configuracion_sistema')
             .select('valor')
             .eq('clave', 'admin_password')
             .single();
-        
+
         if (error) throw error;
         const passwordCorrecta = data?.valor || 'moteros2025';
-        
+
         if (password === passwordCorrecta) {
+            saveSession();
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             inicializarAdmin();
@@ -95,6 +123,7 @@ async function loginAdmin() {
     } catch (err) {
         console.error('Error verificando contraseña:', err);
         if (password === 'moteros2025') {
+            saveSession();
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             inicializarAdmin();
@@ -109,6 +138,7 @@ async function loginAdmin() {
 
 function logout() {
     if (confirm('¿Cerrar sesión?')) {
+        clearSession();
         document.getElementById('adminPanel').style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('adminPassword').value = '';
@@ -653,14 +683,93 @@ async function cargarInventarioLocal() {
 }
 
 async function ajustarStock(tabla, id, actual) {
-    const nueva = prompt(`Stock actual: ${actual}\n\nNueva cantidad:`, actual);
-    if (nueva === null || isNaN(parseInt(nueva))) return;
-    try {
-        const { error } = await supabaseClient.from(tabla).update({ cantidad: parseInt(nueva), ultima_actualizacion: new Date().toISOString() }).eq('id', id);
-        if (error) throw error;
-        showToast('Stock actualizado'); cargarInventarioLocal(); await cargarTodosLosInventarios();
-    } catch (error) { showToast('Error: ' + error.message, 'error'); }
+    // Buscar información del producto
+    const inventario = tabla === 'inventario_alcala' ? inventarios.alcala
+                     : tabla === 'inventario_01' ? inventarios.local01
+                     : inventarios.jordan;
+    const invItem = inventario?.find(i => i.id === id);
+    const producto = productos.find(p => p.id_producto === invItem?.id_producto);
+    const nombreProducto = producto?.nombre || 'Producto';
+    const nombreLocal = tabla.replace('inventario_', '').toUpperCase();
+
+    // Crear modal profesional
+    const modal = document.createElement('div');
+    modal.id = 'modalAjustarStock';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+    modal.onclick = function(e) { if (e.target === this) this.remove(); };
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:16px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;padding:1.25rem 1.5rem;">
+                <h3 style="margin:0;font-size:1.2rem;">📦 Ajustar Stock</h3>
+            </div>
+            <div style="padding:1.5rem;">
+                <div style="background:#f1f5f9;padding:1rem;border-radius:10px;margin-bottom:1.5rem;">
+                    <div style="font-weight:700;color:#1e293b;font-size:1.1rem;">${nombreProducto}</div>
+                    <div style="color:#64748b;font-size:0.9rem;margin-top:0.25rem;">Local: ${nombreLocal}</div>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+                    <div style="flex:1;text-align:center;padding:1rem;background:#fef3c7;border-radius:10px;">
+                        <div style="font-size:0.8rem;color:#92400e;font-weight:600;">STOCK ACTUAL</div>
+                        <div style="font-size:2rem;font-weight:800;color:#d97706;">${actual}</div>
+                    </div>
+                    <div style="font-size:1.5rem;color:#94a3b8;">→</div>
+                    <div style="flex:1;text-align:center;padding:1rem;background:#dcfce7;border-radius:10px;">
+                        <div style="font-size:0.8rem;color:#166534;font-weight:600;">NUEVO STOCK</div>
+                        <input type="number" id="nuevoStockCantidad" value="${actual}" min="0"
+                               style="width:100%;font-size:2rem;font-weight:800;color:#16a34a;text-align:center;border:none;background:transparent;outline:none;">
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:0.75rem;">
+                    <button onclick="document.getElementById('modalAjustarStock').remove()"
+                            style="flex:1;padding:0.875rem;border:2px solid #e2e8f0;background:white;border-radius:10px;font-weight:600;cursor:pointer;color:#64748b;">
+                        Cancelar
+                    </button>
+                    <button onclick="confirmarAjusteStock('${tabla}','${id}')"
+                            style="flex:1;padding:0.875rem;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;border-radius:10px;font-weight:700;cursor:pointer;">
+                        ✅ Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    document.getElementById('nuevoStockCantidad').focus();
+    document.getElementById('nuevoStockCantidad').select();
 }
+
+async function confirmarAjusteStock(tabla, id) {
+    const nuevaCantidad = parseInt(document.getElementById('nuevoStockCantidad')?.value);
+
+    if (isNaN(nuevaCantidad) || nuevaCantidad < 0) {
+        showToast('Ingresa una cantidad válida', 'warning');
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from(tabla)
+            .update({
+                cantidad: nuevaCantidad,
+                ultima_actualizacion: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        document.getElementById('modalAjustarStock')?.remove();
+        showToast('✅ Stock actualizado correctamente', 'success');
+        cargarInventarioLocal();
+        await cargarTodosLosInventarios();
+    } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+window.confirmarAjusteStock = confirmarAjusteStock;
 
 function exportarInventario() {
     const tabla = document.getElementById('inventarioLocal').value;
@@ -692,6 +801,61 @@ async function cargarEstadisticasLocales() {
     const localesData = [{ nombre: 'Alcalá', icono: '🏪', data: inventarios.alcala }, { nombre: 'Local 01', icono: '🏬', data: inventarios.local01 }, { nombre: 'Jordán', icono: '🏢', data: inventarios.jordan }];
     const grid = document.getElementById('localesStatsGrid');
     if (grid) { grid.innerHTML = localesData.map(local => { const stats = calcularEstadisticasLocal(local.data); return `<div class="local-card"><div class="local-card-header"><h4>${local.icono} ${local.nombre}</h4><span class="badge badge-success">Activo</span></div><div class="local-card-body"><div class="local-stat-row"><span class="label">Stock Total</span><span class="value">${stats.stockTotal.toLocaleString('es-CO')}</span></div><div class="local-stat-row"><span class="label">Productos</span><span class="value">${stats.productos}</span></div><div class="local-stat-row"><span class="label">Stock Bajo</span><span class="value" style="color:${stats.stockBajo > 0 ? '#f59e0b' : '#10b981'}">${stats.stockBajo}</span></div><div class="local-stat-row"><span class="label">Agotados</span><span class="value" style="color:${stats.agotados > 0 ? '#ef4444' : '#10b981'}">${stats.agotados}</span></div><div class="local-stat-row"><span class="label">Valor Est.</span><span class="value">$${Math.round(stats.valor/1000000)}M</span></div></div></div>`; }).join(''); }
+
+    // Llenar resumen de rendimiento
+    const resumenEl = document.getElementById('resumenRendimiento');
+    if (resumenEl) {
+        const statsLocales = localesData.map(l => ({ ...l, stats: calcularEstadisticasLocal(l.data) }));
+        const mejorLocal = statsLocales.reduce((a, b) => a.stats.valor > b.stats.valor ? a : b);
+        const peorSalud = statsLocales.reduce((a, b) => (a.stats.stockBajo + a.stats.agotados) > (b.stats.stockBajo + b.stats.agotados) ? a : b);
+        const totalStock = statsLocales.reduce((sum, l) => sum + l.stats.stockTotal, 0);
+
+        resumenEl.innerHTML = `
+            <div style="background:linear-gradient(135deg,#10b981,#059669);color:white;padding:1.5rem;border-radius:1rem;">
+                <h4 style="margin:0 0 0.5rem 0;opacity:0.9;">🏆 Mayor Valor en Inventario</h4>
+                <p style="font-size:1.8rem;font-weight:700;margin:0;">${mejorLocal.icono} ${mejorLocal.nombre}</p>
+                <p style="margin:0.5rem 0 0 0;opacity:0.9;">$${formatearPrecio(mejorLocal.stats.valor)} en productos</p>
+            </div>
+            <div style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:1.5rem;border-radius:1rem;">
+                <h4 style="margin:0 0 0.5rem 0;opacity:0.9;">⚠️ Requiere Atención</h4>
+                <p style="font-size:1.8rem;font-weight:700;margin:0;">${peorSalud.icono} ${peorSalud.nombre}</p>
+                <p style="margin:0.5rem 0 0 0;opacity:0.9;">${peorSalud.stats.stockBajo} bajo stock + ${peorSalud.stats.agotados} agotados</p>
+            </div>
+            <div style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;padding:1.5rem;border-radius:1rem;">
+                <h4 style="margin:0 0 0.5rem 0;opacity:0.9;">📊 Participación del Stock</h4>
+                ${statsLocales.map(l => {
+                    const pct = totalStock > 0 ? Math.round((l.stats.stockTotal / totalStock) * 100) : 0;
+                    return `<div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;"><span>${l.icono} ${l.nombre}</span><strong>${pct}%</strong></div>`;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    // Llenar distribución por categoría
+    const tbodyCat = document.getElementById('tbodyDistribucionCategorias');
+    if (tbodyCat) {
+        const categorias = [...new Set(productos.filter(p => p.estado === 'Activo').map(p => p.categoria))].filter(Boolean);
+        const getCantidadCategoria = (inv, cat) => {
+            return inv.reduce((sum, item) => {
+                const prod = productos.find(p => p.id_producto === item.id_producto);
+                return sum + (prod && prod.categoria === cat ? (item.cantidad || 0) : 0);
+            }, 0);
+        };
+
+        tbodyCat.innerHTML = categorias.map(cat => {
+            const alcala = getCantidadCategoria(inventarios.alcala, cat);
+            const local01 = getCantidadCategoria(inventarios.local01, cat);
+            const jordan = getCantidadCategoria(inventarios.jordan, cat);
+            const total = alcala + local01 + jordan;
+            return `<tr>
+                <td><strong>${cat}</strong></td>
+                <td>${alcala.toLocaleString('es-CO')}</td>
+                <td>${local01.toLocaleString('es-CO')}</td>
+                <td>${jordan.toLocaleString('es-CO')}</td>
+                <td><strong style="color:var(--primary);">${total.toLocaleString('es-CO')}</strong></td>
+            </tr>`;
+        }).join('');
+    }
 }
 
 function calcularEstadisticasLocal(inventario) {
@@ -1179,16 +1343,125 @@ async function editarDeudaNegocio(id) {
 }
 
 async function registrarPagoDeuda(id) {
-    const monto = prompt('Ingrese el monto del pago:');
-    if (!monto || isNaN(monto)) return;
     try {
-        const { data: deuda } = await supabaseClient.from('deudas_negocio').select('*').eq('id', id).single();
-        const nuevoSaldo = Math.max(0, (deuda.saldo_actual || 0) - parseFloat(monto));
-        await supabaseClient.from('pagos_deuda_negocio').insert({ deuda_id: id, monto: parseFloat(monto), fecha_pago: new Date().toISOString().split('T')[0] });
-        await supabaseClient.from('deudas_negocio').update({ saldo_actual: nuevoSaldo, estado: nuevoSaldo === 0 ? 'CERRADO' : 'ABIERTO' }).eq('id', id);
-        showToast('Pago registrado correctamente', 'success'); cargarDeudasNegocio();
-    } catch (error) { console.error('Error registrando pago:', error); showToast('Error al registrar pago', 'error'); }
+        const { data: deuda, error } = await supabaseClient
+            .from('deudas_negocio')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        const saldoPendiente = deuda.saldo_actual || 0;
+
+        // Crear modal profesional
+        const modal = document.createElement('div');
+        modal.id = 'modalPagoDeuda';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+        modal.onclick = function(e) { if (e.target === this) this.remove(); };
+
+        modal.innerHTML = `
+            <div style="background:white;border-radius:16px;max-width:450px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;">
+                <div style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;padding:1.25rem 1.5rem;">
+                    <h3 style="margin:0;font-size:1.2rem;">💰 Registrar Pago de Deuda</h3>
+                </div>
+                <div style="padding:1.5rem;">
+                    <div style="background:#fef2f2;border:1px solid #fecaca;padding:1rem;border-radius:10px;margin-bottom:1.5rem;">
+                        <div style="font-weight:700;color:#991b1b;font-size:1rem;">${deuda.concepto || 'Deuda'}</div>
+                        <div style="color:#b91c1c;font-size:0.9rem;margin-top:0.25rem;">Acreedor: ${deuda.acreedor || 'N/A'}</div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+                        <div style="text-align:center;padding:1rem;background:#f8fafc;border-radius:10px;">
+                            <div style="font-size:0.75rem;color:#64748b;font-weight:600;">MONTO ORIGINAL</div>
+                            <div style="font-size:1.3rem;font-weight:700;color:#475569;">$${formatearPrecio(deuda.monto_original || 0)}</div>
+                        </div>
+                        <div style="text-align:center;padding:1rem;background:#fef2f2;border-radius:10px;">
+                            <div style="font-size:0.75rem;color:#991b1b;font-weight:600;">SALDO PENDIENTE</div>
+                            <div style="font-size:1.3rem;font-weight:800;color:#dc2626;">$${formatearPrecio(saldoPendiente)}</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:1.5rem;">
+                        <label style="display:block;font-weight:600;color:#374151;margin-bottom:0.5rem;">Monto a Pagar *</label>
+                        <input type="number" id="montoPagoDeuda" value="${saldoPendiente}"
+                               style="width:100%;padding:1rem;font-size:1.5rem;font-weight:700;text-align:center;border:2px solid #e5e7eb;border-radius:10px;color:#16a34a;"
+                               min="0" max="${saldoPendiente}" step="1000">
+                        <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+                            <button onclick="document.getElementById('montoPagoDeuda').value=${Math.round(saldoPendiente/2)}"
+                                    style="flex:1;padding:0.5rem;border:1px solid #e5e7eb;background:#f9fafb;border-radius:6px;cursor:pointer;font-size:0.8rem;">
+                                50% ($${formatearPrecio(Math.round(saldoPendiente/2))})
+                            </button>
+                            <button onclick="document.getElementById('montoPagoDeuda').value=${saldoPendiente}"
+                                    style="flex:1;padding:0.5rem;border:1px solid #e5e7eb;background:#f9fafb;border-radius:6px;cursor:pointer;font-size:0.8rem;">
+                                Total ($${formatearPrecio(saldoPendiente)})
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:0.75rem;">
+                        <button onclick="document.getElementById('modalPagoDeuda').remove()"
+                                style="flex:1;padding:0.875rem;border:2px solid #e2e8f0;background:white;border-radius:10px;font-weight:600;cursor:pointer;color:#64748b;">
+                            Cancelar
+                        </button>
+                        <button onclick="confirmarPagoDeuda('${id}')"
+                                style="flex:1;padding:0.875rem;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;border-radius:10px;font-weight:700;cursor:pointer;">
+                            ✅ Registrar Pago
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        document.getElementById('montoPagoDeuda').focus();
+        document.getElementById('montoPagoDeuda').select();
+
+    } catch (error) {
+        console.error('Error cargando deuda:', error);
+        showToast('Error al cargar deuda', 'error');
+    }
 }
+
+async function confirmarPagoDeuda(id) {
+    const monto = parseFloat(document.getElementById('montoPagoDeuda')?.value);
+
+    if (!monto || isNaN(monto) || monto <= 0) {
+        showToast('Ingresa un monto válido', 'warning');
+        return;
+    }
+
+    try {
+        const { data: deuda } = await supabaseClient
+            .from('deudas_negocio')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        const nuevoSaldo = Math.max(0, (deuda.saldo_actual || 0) - monto);
+
+        await supabaseClient.from('pagos_deuda_negocio').insert({
+            deuda_id: id,
+            monto: monto,
+            fecha_pago: new Date().toISOString().split('T')[0]
+        });
+
+        await supabaseClient.from('deudas_negocio').update({
+            saldo_actual: nuevoSaldo,
+            estado: nuevoSaldo === 0 ? 'CERRADO' : 'ABIERTO'
+        }).eq('id', id);
+
+        document.getElementById('modalPagoDeuda')?.remove();
+        showToast('✅ Pago registrado correctamente', 'success');
+        cargarDeudasNegocio();
+
+    } catch (error) {
+        console.error('Error registrando pago:', error);
+        showToast('Error al registrar pago: ' + error.message, 'error');
+    }
+}
+
+window.confirmarPagoDeuda = confirmarPagoDeuda;
 
 // CRÉDITOS MOTERO - NO TOCAR - SOLO SE CREAN DESDE TIENDA
 async function cargarCreditos() {
@@ -1204,12 +1477,16 @@ async function cargarCreditos() {
 
         if (errTodos) throw errTodos;
 
-        // Actualizar stats
+        // Actualizar stats - soporta ambos formatos: activo/abierto, pagado/cerrado
         const creditos = todosCreditos || [];
-        const activos = creditos.filter(c => c.estado === 'activo').length;
-        const enMora = creditos.filter(c => c.estado === 'mora').length;
-        const pagados = creditos.filter(c => c.estado === 'pagado').length;
-        const saldoTotal = creditos.reduce((sum, c) => sum + parseFloat(c.saldo_pendiente || 0), 0);
+        const esActivo = (estado) => estado === 'activo' || estado === 'abierto';
+        const esMora = (estado) => estado === 'mora';
+        const esPagado = (estado) => estado === 'pagado' || estado === 'cerrado';
+
+        const activos = creditos.filter(c => esActivo(c.estado)).length;
+        const enMora = creditos.filter(c => esMora(c.estado)).length;
+        const pagados = creditos.filter(c => esPagado(c.estado)).length;
+        const saldoTotal = creditos.filter(c => !esPagado(c.estado)).reduce((sum, c) => sum + parseFloat(c.saldo_pendiente || 0), 0);
 
         const elActivos = document.getElementById('creditosActivos');
         const elSaldo = document.getElementById('creditosSaldoTotal');
@@ -1221,9 +1498,20 @@ async function cargarCreditos() {
         if (elMora) elMora.textContent = enMora;
         if (elPagados) elPagados.textContent = pagados;
 
-        // Filtrar para tabla
-        const estadoFiltro = document.getElementById('creditosEstadoFiltro')?.value || '';
-        const datosFiltrados = estadoFiltro ? creditos.filter(c => c.estado === estadoFiltro) : creditos;
+        // Filtrar para tabla - soporta ambos formatos
+        let estadoFiltro = document.getElementById('creditosEstadoFiltro')?.value || '';
+        let datosFiltrados;
+        if (!estadoFiltro) {
+            datosFiltrados = creditos;
+        } else if (estadoFiltro === 'activo') {
+            datosFiltrados = creditos.filter(c => esActivo(c.estado));
+        } else if (estadoFiltro === 'mora') {
+            datosFiltrados = creditos.filter(c => esMora(c.estado));
+        } else if (estadoFiltro === 'pagado') {
+            datosFiltrados = creditos.filter(c => esPagado(c.estado));
+        } else {
+            datosFiltrados = creditos.filter(c => c.estado === estadoFiltro);
+        }
 
         if (!datosFiltrados || datosFiltrados.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay créditos registrados</td></tr>';
@@ -1233,17 +1521,48 @@ async function cargarCreditos() {
         tbody.innerHTML = datosFiltrados.map(c => {
             const cliente = c.clientes_credito;
             const nombre = cliente ? `${cliente.nombres} ${cliente.apellidos || ''}` : 'Sin cliente';
-            const estadoBadge = c.estado === 'activo' ? 'badge-warning' : (c.estado === 'mora' ? 'badge-danger' : 'badge-success');
-            return `<tr>
-                <td>${nombre}</td>
+            const telefono = cliente?.telefono?.replace(/\D/g, '') || '';
+
+            // Colores mejorados por estado (soporta ambos formatos)
+            let estadoBadge, estadoTexto, rowBg;
+            if (esPagado(c.estado)) {
+                estadoBadge = 'background:#10b981;color:white;';
+                estadoTexto = '✅ PAGADO';
+                rowBg = 'background:#f0fdf4;';
+            } else if (esMora(c.estado)) {
+                estadoBadge = 'background:#ef4444;color:white;';
+                estadoTexto = '🔴 EN MORA';
+                rowBg = 'background:#fef2f2;';
+            } else {
+                estadoBadge = 'background:#f59e0b;color:white;';
+                estadoTexto = '🟡 ACTIVO';
+                rowBg = 'background:#fffbeb;';
+            }
+
+            // Mensaje de WhatsApp según estado
+            let whatsappMsg, whatsappTip;
+            if (esMora(c.estado)) {
+                whatsappMsg = `Hola ${nombre.split(' ')[0]}! 👋 Te recordamos que tu crédito en Moteros Sport Line tiene un saldo pendiente de $${formatearPrecio(c.saldo_pendiente)}. Por favor acércate a realizar tu pago. ¡Gracias!`;
+                whatsappTip = 'Enviar recordatorio de mora';
+            } else if (esPagado(c.estado)) {
+                whatsappMsg = `Hola ${nombre.split(' ')[0]}! 🎉 En Moteros Sport Line te agradecemos por ser un excelente cliente. Por tu buen historial de pagos, tienes disponible un nuevo crédito. ¡Visítanos!`;
+                whatsappTip = 'Ofrecer nuevo crédito';
+            } else {
+                whatsappMsg = `Hola ${nombre.split(' ')[0]}! 👋 Te recordamos que tu próxima cuota del crédito en Moteros Sport Line es de $${formatearPrecio(Math.round((c.saldo_pendiente || 0) / Math.max(1, (c.numero_cuotas || 1) - (c.cuotas_pagadas || 0))))}. ¡Te esperamos!`;
+                whatsappTip = 'Enviar recordatorio de pago';
+            }
+
+            return `<tr style="${rowBg}">
+                <td><strong>${nombre}</strong></td>
                 <td>${cliente?.telefono || '-'}</td>
                 <td>$${formatearPrecio(c.monto_total || 0)}</td>
-                <td><strong class="${c.saldo_pendiente > 0 ? 'text-danger' : ''}">$${formatearPrecio(c.saldo_pendiente || 0)}</strong></td>
-                <td>${c.cuotas_pagadas || 0}/${c.numero_cuotas || 1}</td>
-                <td><span class="badge ${estadoBadge}">${c.estado}</span></td>
-                <td>
-                    <button onclick="verDetalleCredito('${c.id}')" class="btn btn-sm btn-secondary">👁️</button>
-                    <button onclick="registrarPagoCredito('${c.id}')" class="btn btn-sm btn-success">💰</button>
+                <td><strong style="color:${c.saldo_pendiente > 0 ? '#ef4444' : '#10b981'}; font-size:1.1em;">$${formatearPrecio(c.saldo_pendiente || 0)}</strong></td>
+                <td><span style="background:#e2e8f0;padding:0.25rem 0.5rem;border-radius:0.5rem;">${c.cuotas_pagadas || 0}/${c.numero_cuotas || 1}</span></td>
+                <td><span style="${estadoBadge}padding:0.35rem 0.75rem;border-radius:1rem;font-size:0.8rem;font-weight:600;">${estadoTexto}</span></td>
+                <td style="white-space:nowrap;">
+                    <button onclick="verDetalleCredito('${c.id}')" class="btn btn-sm btn-secondary" title="Ver detalle">👁️</button>
+                    ${!esPagado(c.estado) ? `<button onclick="registrarPagoCredito('${c.id}')" class="btn btn-sm btn-success" title="Registrar pago">💰</button>` : ''}
+                    ${telefono ? `<a href="https://wa.me/57${telefono}?text=${encodeURIComponent(whatsappMsg)}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;" title="${whatsappTip}">📱</a>` : ''}
                 </td>
             </tr>`;
         }).join('');
@@ -1254,20 +1573,175 @@ async function cargarCreditos() {
     }
 }
 
-function mostrarFormCredito() { showToast('Función en desarrollo - Los créditos se crean desde las tiendas físicas', 'info'); }
-function verDetalleCredito(id) { showToast('Función en desarrollo', 'info'); }
+function mostrarFormCredito() { showToast('Los créditos se crean desde las tiendas físicas', 'info'); }
+
+async function verDetalleCredito(id) {
+    try {
+        const { data, error } = await supabaseClient.from('creditos_motero').select('*, clientes_credito(*)').eq('id', id).single();
+        if (error) throw error;
+
+        const cliente = data.clientes_credito;
+        const nombreCliente = cliente ? `${cliente.nombres} ${cliente.apellidos || ''}` : 'Sin cliente';
+        const fechaCreacion = data.created_at ? new Date(data.created_at).toLocaleDateString('es-CO') : '-';
+        const ultimoPago = data.ultimo_pago_fecha ? new Date(data.ultimo_pago_fecha).toLocaleDateString('es-CO') : 'Sin pagos';
+        const estadoColor = data.estado === 'activo' ? '#f59e0b' : (data.estado === 'mora' ? '#ef4444' : '#10b981');
+
+        const modalContent = `
+            <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)this.remove()">
+                <div style="background:white;border-radius:1rem;max-width:650px;width:90%;max-height:90vh;overflow-y:auto;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;border-bottom:2px solid #f1f5f9;padding-bottom:1rem;">
+                        <h3 style="margin:0;color:#1e293b;">💳 Detalle del Crédito</h3>
+                        <button onclick="this.closest('div[style*=\"position:fixed\"]').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;">&times;</button>
+                    </div>
+
+                    <div style="background:#f8fafc;padding:1.5rem;border-radius:0.75rem;margin-bottom:1.5rem;">
+                        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+                            <div style="width:50px;height:50px;background:#ff6b00;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:1.5rem;font-weight:700;">${nombreCliente.charAt(0)}</div>
+                            <div>
+                                <h4 style="margin:0;color:#1e293b;">${nombreCliente}</h4>
+                                <p style="margin:0;color:#64748b;font-size:0.9rem;">${cliente?.telefono || 'Sin teléfono'}</p>
+                            </div>
+                            <span style="margin-left:auto;background:${estadoColor};color:white;padding:0.25rem 0.75rem;border-radius:1rem;font-size:0.85rem;font-weight:600;text-transform:uppercase;">${data.estado}</span>
+                        </div>
+                        ${cliente?.direccion ? `<p style="margin:0;color:#64748b;font-size:0.85rem;">📍 ${cliente.direccion}</p>` : ''}
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+                        <div style="background:#fff7ed;padding:1rem;border-radius:0.5rem;text-align:center;border:1px solid #fed7aa;">
+                            <small style="color:#9a3412;">Monto Total</small>
+                            <p style="margin:0;font-weight:700;font-size:1.4rem;color:#ea580c;">$${formatearPrecio(data.monto_total || 0)}</p>
+                        </div>
+                        <div style="background:${data.saldo_pendiente > 0 ? '#fef2f2' : '#dcfce7'};padding:1rem;border-radius:0.5rem;text-align:center;border:1px solid ${data.saldo_pendiente > 0 ? '#fecaca' : '#bbf7d0'};">
+                            <small style="color:${data.saldo_pendiente > 0 ? '#991b1b' : '#166534'};">Saldo Pendiente</small>
+                            <p style="margin:0;font-weight:700;font-size:1.4rem;color:${data.saldo_pendiente > 0 ? '#dc2626' : '#16a34a'};">$${formatearPrecio(data.saldo_pendiente || 0)}</p>
+                        </div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-bottom:1.5rem;">
+                        <div style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;text-align:center;">
+                            <small style="color:#64748b;">Cuotas</small>
+                            <p style="margin:0;font-weight:600;color:#1e293b;">${data.cuotas_pagadas || 0} / ${data.numero_cuotas || 1}</p>
+                        </div>
+                        <div style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;text-align:center;">
+                            <small style="color:#64748b;">Fecha Inicio</small>
+                            <p style="margin:0;font-weight:600;color:#1e293b;">${fechaCreacion}</p>
+                        </div>
+                        <div style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;text-align:center;">
+                            <small style="color:#64748b;">Último Pago</small>
+                            <p style="margin:0;font-weight:600;color:#1e293b;">${ultimoPago}</p>
+                        </div>
+                    </div>
+
+                    ${data.saldo_pendiente > 0 ? `
+                    <button onclick="this.closest('div[style*=\"position:fixed\"]').remove(); registrarPagoCredito('${id}')" style="width:100%;padding:1rem;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:0.5rem;font-weight:600;font-size:1rem;cursor:pointer;">
+                        💰 Registrar Pago
+                    </button>
+                    ` : `<div style="background:#dcfce7;padding:1rem;border-radius:0.5rem;text-align:center;color:#166534;font-weight:600;">✅ Crédito Completamente Pagado</div>`}
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalContent);
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error al cargar detalle del crédito', 'error');
+    }
+}
 
 async function registrarPagoCredito(id) {
-    const monto = prompt('Ingrese el monto del pago:');
-    if (!monto || isNaN(monto)) return;
+    try {
+        const { data: credito } = await supabaseClient.from('creditos_motero').select('*, clientes_credito(*)').eq('id', id).single();
+        if (!credito) { showToast('Crédito no encontrado', 'error'); return; }
+
+        const cliente = credito.clientes_credito;
+        const nombreCliente = cliente ? `${cliente.nombres} ${cliente.apellidos || ''}` : 'Cliente';
+        const cuotaSugerida = credito.numero_cuotas > 0 ? Math.ceil(credito.saldo_pendiente / (credito.numero_cuotas - credito.cuotas_pagadas)) : credito.saldo_pendiente;
+
+        const modal = document.createElement('div');
+        modal.id = 'modalPagoCredito';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+        modal.onclick = function(e) { if (e.target === this) this.remove(); };
+
+        modal.innerHTML = `
+            <div style="background:white;border-radius:1rem;max-width:450px;width:90%;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+                    <h3 style="margin:0;color:#1e293b;">💰 Registrar Pago</h3>
+                    <button onclick="document.getElementById('modalPagoCredito').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;">&times;</button>
+                </div>
+
+                <div style="background:#f8fafc;padding:1rem;border-radius:0.5rem;margin-bottom:1.5rem;">
+                    <p style="margin:0 0 0.5rem;color:#64748b;font-size:0.9rem;">Cliente</p>
+                    <p style="margin:0;font-weight:600;color:#1e293b;">${nombreCliente}</p>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+                    <div style="background:#fef2f2;padding:1rem;border-radius:0.5rem;text-align:center;">
+                        <small style="color:#991b1b;">Saldo Pendiente</small>
+                        <p style="margin:0;font-weight:700;font-size:1.2rem;color:#dc2626;">$${formatearPrecio(credito.saldo_pendiente || 0)}</p>
+                    </div>
+                    <div style="background:#f0fdf4;padding:1rem;border-radius:0.5rem;text-align:center;">
+                        <small style="color:#166534;">Cuota Sugerida</small>
+                        <p style="margin:0;font-weight:700;font-size:1.2rem;color:#16a34a;">$${formatearPrecio(cuotaSugerida)}</p>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:1.5rem;">
+                    <label style="display:block;font-weight:600;margin-bottom:0.5rem;color:#374151;">Monto a Pagar *</label>
+                    <input type="number" id="montoPagoCredito" value="${cuotaSugerida}" min="1" max="${credito.saldo_pendiente}" style="width:100%;padding:1rem;border:2px solid #e5e7eb;border-radius:0.5rem;font-size:1.2rem;font-weight:600;" placeholder="Ingrese el monto">
+                </div>
+
+                <div style="display:flex;gap:1rem;">
+                    <button onclick="confirmarPagoCredito('${id}')" style="flex:1;padding:1rem;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:0.5rem;font-weight:600;font-size:1rem;cursor:pointer;">
+                        ✓ Confirmar Pago
+                    </button>
+                    <button onclick="document.getElementById('modalPagoCredito').remove()" style="padding:1rem 1.5rem;background:#f1f5f9;color:#374151;border:none;border-radius:0.5rem;font-weight:600;cursor:pointer;">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('montoPagoCredito').focus();
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error al cargar datos del crédito', 'error');
+    }
+}
+
+async function confirmarPagoCredito(id) {
+    const montoInput = document.getElementById('montoPagoCredito');
+    const monto = parseFloat(montoInput?.value);
+
+    if (!monto || isNaN(monto) || monto <= 0) {
+        showToast('Ingrese un monto válido', 'warning');
+        return;
+    }
+
     try {
         const { data: credito } = await supabaseClient.from('creditos_motero').select('*').eq('id', id).single();
-        const nuevoSaldo = Math.max(0, (credito.saldo_pendiente || 0) - parseFloat(monto));
+        const nuevoSaldo = Math.max(0, (credito.saldo_pendiente || 0) - monto);
         const nuevasCuotasPagadas = (credito.cuotas_pagadas || 0) + 1;
-        await supabaseClient.from('pagos_credito').insert({ credito_id: id, numero_cuota: nuevasCuotasPagadas, monto_pagado: parseFloat(monto), fecha_pago: new Date().toISOString() });
-        await supabaseClient.from('creditos_motero').update({ saldo_pendiente: nuevoSaldo, cuotas_pagadas: nuevasCuotasPagadas, ultimo_pago_fecha: new Date().toISOString().split('T')[0], estado: nuevoSaldo === 0 ? 'pagado' : 'activo' }).eq('id', id);
-        showToast('Pago registrado correctamente', 'success'); cargarCreditos();
-    } catch (error) { console.error('Error registrando pago:', error); showToast('Error al registrar pago', 'error'); }
+
+        await supabaseClient.from('pagos_credito').insert({
+            credito_id: id,
+            numero_cuota: nuevasCuotasPagadas,
+            monto_pagado: monto,
+            fecha_pago: new Date().toISOString()
+        });
+
+        await supabaseClient.from('creditos_motero').update({
+            saldo_pendiente: nuevoSaldo,
+            cuotas_pagadas: nuevasCuotasPagadas,
+            ultimo_pago_fecha: new Date().toISOString().split('T')[0],
+            estado: nuevoSaldo === 0 ? 'pagado' : 'activo'
+        }).eq('id', id);
+
+        document.getElementById('modalPagoCredito').remove();
+        showToast(`Pago de $${formatearPrecio(monto)} registrado correctamente`, 'success');
+        cargarCreditos();
+    } catch (error) {
+        console.error('Error registrando pago:', error);
+        showToast('Error al registrar pago', 'error');
+    }
 }
 
 // BODEGAS
@@ -1344,33 +1818,214 @@ async function editarAlianza(id) {
     try {
         const { data, error } = await supabaseClient.from('alianzas').select('*').eq('id', id).single();
         if (error || !data) { showToast('Error al cargar alianza', 'error'); return; }
-        const nuevoNombre = prompt('Nombre de la alianza:', data.nombre); if (nuevoNombre === null) return;
-        const nuevaDesc = prompt('Descripción:', data.descripcion || '');
-        const nuevoContacto = prompt('Contacto:', data.contacto_nombre || '');
-        await supabaseClient.from('alianzas').update({ nombre: nuevoNombre, descripcion: nuevaDesc, contacto_nombre: nuevoContacto, updated_at: new Date().toISOString() }).eq('id', id);
-        showToast('Alianza actualizada', 'success'); cargarAlianzas();
+
+        const modalContent = `
+            <div id="modalEditarAlianza" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)this.remove()">
+                <div style="background:white;border-radius:1rem;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;border-bottom:2px solid #f1f5f9;padding-bottom:1rem;">
+                        <h3 style="margin:0;color:#1e293b;">✏️ Editar Alianza</h3>
+                        <button onclick="document.getElementById('modalEditarAlianza').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;">&times;</button>
+                    </div>
+                    <div style="display:grid;gap:1rem;">
+                        <div>
+                            <label style="display:block;font-weight:600;margin-bottom:0.5rem;color:#374151;">Nombre *</label>
+                            <input type="text" id="editAlianzaNombre" value="${data.nombre || ''}" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:0.5rem;font-size:1rem;" required>
+                        </div>
+                        <div>
+                            <label style="display:block;font-weight:600;margin-bottom:0.5rem;color:#374151;">Tipo</label>
+                            <select id="editAlianzaTipo" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:0.5rem;font-size:1rem;">
+                                <option value="proveedor" ${data.tipo === 'proveedor' ? 'selected' : ''}>Proveedor</option>
+                                <option value="financiero" ${data.tipo === 'financiero' ? 'selected' : ''}>Financiero</option>
+                                <option value="marketing" ${data.tipo === 'marketing' ? 'selected' : ''}>Marketing</option>
+                                <option value="otro" ${data.tipo === 'otro' ? 'selected' : ''}>Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block;font-weight:600;margin-bottom:0.5rem;color:#374151;">Descripción</label>
+                            <textarea id="editAlianzaDesc" rows="3" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:0.5rem;font-size:1rem;resize:vertical;">${data.descripcion || ''}</textarea>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                            <div>
+                                <label style="display:block;font-weight:600;margin-bottom:0.5rem;color:#374151;">Contacto</label>
+                                <input type="text" id="editAlianzaContacto" value="${data.contacto_nombre || ''}" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:0.5rem;font-size:1rem;">
+                            </div>
+                            <div>
+                                <label style="display:block;font-weight:600;margin-bottom:0.5rem;color:#374151;">Teléfono</label>
+                                <input type="text" id="editAlianzaTelefono" value="${data.contacto_telefono || ''}" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:0.5rem;font-size:1rem;">
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:1rem;align-items:center;">
+                            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                <input type="checkbox" id="editAlianzaProcesador" ${data.es_procesador_pagos ? 'checked' : ''}>
+                                <span style="color:#374151;">Es procesador de pagos</span>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                <input type="checkbox" id="editAlianzaActivo" ${data.activo ? 'checked' : ''}>
+                                <span style="color:#374151;">Activo</span>
+                            </label>
+                        </div>
+                        <div style="display:flex;gap:1rem;margin-top:1rem;">
+                            <button onclick="guardarEdicionAlianza('${id}')" style="flex:1;padding:0.875rem;background:linear-gradient(135deg,#ff6b00,#ff8533);color:white;border:none;border-radius:0.5rem;font-weight:600;cursor:pointer;">
+                                💾 Guardar Cambios
+                            </button>
+                            <button onclick="document.getElementById('modalEditarAlianza').remove()" style="padding:0.875rem 1.5rem;background:#f1f5f9;color:#374151;border:none;border-radius:0.5rem;font-weight:600;cursor:pointer;">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalContent);
     } catch (error) { console.error('Error editando alianza:', error); showToast('Error: ' + error.message, 'error'); }
+}
+
+async function guardarEdicionAlianza(id) {
+    try {
+        const nombre = document.getElementById('editAlianzaNombre').value.trim();
+        if (!nombre) { showToast('El nombre es requerido', 'warning'); return; }
+
+        const alianzaData = {
+            nombre,
+            tipo: document.getElementById('editAlianzaTipo').value,
+            descripcion: document.getElementById('editAlianzaDesc').value.trim(),
+            contacto_nombre: document.getElementById('editAlianzaContacto').value.trim(),
+            contacto_telefono: document.getElementById('editAlianzaTelefono').value.trim(),
+            es_procesador_pagos: document.getElementById('editAlianzaProcesador').checked,
+            activo: document.getElementById('editAlianzaActivo').checked,
+            updated_at: new Date().toISOString()
+        };
+
+        const { error } = await supabaseClient.from('alianzas').update(alianzaData).eq('id', id);
+        if (error) throw error;
+
+        document.getElementById('modalEditarAlianza').remove();
+        showToast('Alianza actualizada correctamente', 'success');
+        cargarAlianzas();
+    } catch (error) {
+        console.error('Error guardando alianza:', error);
+        showToast('Error: ' + error.message, 'error');
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
 // PROMOCIONES, BLOG, CONFIGURACIÓN, CIERRES, GASTOS
 // ═══════════════════════════════════════════════════════════════
 async function cargarPromociones() { try { const { data, error } = await supabaseClient.from('promociones').select('*').order('id_promo'); if (error) throw error; promociones = data || []; renderizarPromociones(); } catch (error) { const container = document.getElementById('listaPromociones'); if (container) container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`; } }
-function renderizarPromociones() { const container = document.getElementById('listaPromociones'); if (!container) return; if (promociones.length === 0) { container.innerHTML = '<div class="alert alert-info">No hay promociones</div>'; return; } container.innerHTML = `<div class="card"><div class="card-header"><h3>🏷️ Promociones (${promociones.length})</h3></div><div class="table-container"><table class="data-table"><thead><tr><th>ID</th><th>Nombre</th><th>Descuento</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${promociones.map(p => `<tr><td><code>${p.id_promo}</code></td><td><strong>${p.nombre || ''}</strong></td><td><span class="badge badge-danger">${p.descuento || 0}%</span></td><td><span class="badge ${p.estado === 'Activa' ? 'badge-success' : 'badge-warning'}">${p.estado || 'N/A'}</span></td><td><button onclick="editarPromocion('${p.id_promo}')" class="btn btn-secondary btn-sm">✏️</button><button onclick="eliminarPromocion('${p.id_promo}')" class="btn btn-danger btn-sm">🗑️</button></td></tr>`).join('')}</tbody></table></div></div>`; }
+function renderizarPromociones() {
+    const container = document.getElementById('listaPromociones');
+    if (!container) return;
+    if (promociones.length === 0) { container.innerHTML = '<div class="alert alert-info">No hay promociones</div>'; return; }
+
+    container.innerHTML = `
+        <div class="card">
+            <div class="card-header"><h3>🏷️ Promociones (${promociones.length})</h3></div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>ID</th><th>Nombre</th><th>Descuento</th><th>Productos</th><th>Estado</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody>
+                        ${promociones.map(p => {
+                            const numProductos = p.productos_incluidos ? p.productos_incluidos.split(',').filter(x => x.trim()).length : 0;
+                            return `<tr>
+                                <td><code>${p.id_promo}</code></td>
+                                <td><strong>${p.nombre || ''}</strong></td>
+                                <td><span class="badge badge-danger" style="font-size:1rem;">-${p.descuento || 0}%</span></td>
+                                <td><span class="badge badge-primary">${numProductos} productos</span></td>
+                                <td><span class="badge ${p.estado === 'Activa' ? 'badge-success' : 'badge-warning'}">${p.estado || 'N/A'}</span></td>
+                                <td style="white-space:nowrap;">
+                                    <button onclick="editarPromocion('${p.id_promo}')" class="btn btn-secondary btn-sm" title="Editar">✏️</button>
+                                    <button onclick="duplicarPromocion('${p.id_promo}')" class="btn btn-primary btn-sm" title="Duplicar">📋</button>
+                                    <button onclick="eliminarPromocion('${p.id_promo}')" class="btn btn-danger btn-sm" title="Eliminar">🗑️</button>
+                                </td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
 async function mostrarFormPromocion() {
     ['promocionIdOriginal', 'promocionId', 'promocionNombre', 'promocionDescuento', 'promocionProductos', 'promocionInicio', 'promocionFin', 'promocionLocales'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     const est = document.getElementById('promocionEstado'); if (est) est.value = 'Activa';
     const idInput = document.getElementById('promocionId'); if (idInput) idInput.disabled = false;
     document.getElementById('formTituloPromocion').textContent = '➕ Nueva Promoción';
     productosSeleccionadosPromo = [];
-    const form = document.getElementById('formPromocion'); if (form) form.style.display = 'block';
+    const form = document.getElementById('formPromocion'); if (form) form.style.display = 'flex';
+
+    // Event listeners para actualizar preview en tiempo real
+    const nombreInput = document.getElementById('promocionNombre');
+    const descuentoInput = document.getElementById('promocionDescuento');
+    if (nombreInput) nombreInput.oninput = actualizarPreviewPromo;
+    if (descuentoInput) descuentoInput.oninput = actualizarPreviewPromo;
+
     // Cargar productos para seleccionar
     await cargarProductosParaPromocion();
 }
 function cancelarFormPromocion() { const form = document.getElementById('formPromocion'); if (form) form.style.display = 'none'; productosSeleccionadosPromo = []; }
-function editarPromocion(id) { const promo = promociones.find(p => p.id_promo === id); if (!promo) return; document.getElementById('promocionIdOriginal').value = promo.id_promo; document.getElementById('promocionId').value = promo.id_promo; document.getElementById('promocionId').disabled = true; document.getElementById('promocionNombre').value = promo.nombre || ''; document.getElementById('promocionDescuento').value = promo.descuento || ''; document.getElementById('promocionInicio').value = promo.fecha_inicio || ''; document.getElementById('promocionFin').value = promo.fecha_fin || ''; document.getElementById('promocionLocales').value = promo.locales_aplicables || ''; document.getElementById('promocionEstado').value = promo.estado || 'Activa'; document.getElementById('formTituloPromocion').textContent = '✏️ Editar Promoción'; const form = document.getElementById('formPromocion'); if (form) form.style.display = 'block'; }
+async function editarPromocion(id) {
+    const promo = promociones.find(p => p.id_promo === id);
+    if (!promo) return;
+    document.getElementById('promocionIdOriginal').value = promo.id_promo;
+    document.getElementById('promocionId').value = promo.id_promo;
+    document.getElementById('promocionId').disabled = true;
+    document.getElementById('promocionNombre').value = promo.nombre || '';
+    document.getElementById('promocionDescuento').value = promo.descuento || '';
+    document.getElementById('promocionInicio').value = promo.fecha_inicio || '';
+    document.getElementById('promocionFin').value = promo.fecha_fin || '';
+    document.getElementById('promocionLocales').value = promo.locales_aplicables || '';
+    document.getElementById('promocionEstado').value = promo.estado || 'Activa';
+    document.getElementById('formTituloPromocion').textContent = '✏️ Editar Promoción';
+    // Cargar productos seleccionados de la promoción
+    productosSeleccionadosPromo = promo.productos_incluidos ? promo.productos_incluidos.split(',').filter(p => p.trim()) : [];
+    const form = document.getElementById('formPromocion');
+    if (form) form.style.display = 'flex';
+
+    // Event listeners para actualizar preview en tiempo real
+    const nombreInput = document.getElementById('promocionNombre');
+    const descuentoInput = document.getElementById('promocionDescuento');
+    if (nombreInput) nombreInput.oninput = actualizarPreviewPromo;
+    if (descuentoInput) descuentoInput.oninput = actualizarPreviewPromo;
+
+    // Cargar lista de productos con los seleccionados marcados
+    await cargarProductosParaPromocion();
+}
 async function guardarPromocion() { const idOriginal = document.getElementById('promocionIdOriginal').value; const idPromo = document.getElementById('promocionId').value.trim(); const nombre = document.getElementById('promocionNombre').value.trim(); if (!idPromo || !nombre) { showToast('ID y Nombre son requeridos', 'warning'); return; } const promo = { id_promo: idPromo, nombre, descuento: parseFloat(document.getElementById('promocionDescuento').value) || 0, productos_incluidos: productosSeleccionadosPromo.join(','), fecha_inicio: document.getElementById('promocionInicio').value.trim(), fecha_fin: document.getElementById('promocionFin').value.trim(), locales_aplicables: document.getElementById('promocionLocales').value.trim() || 'Todos', estado: document.getElementById('promocionEstado').value }; try { if (idOriginal) { const { error } = await supabaseClient.from('promociones').update(promo).eq('id_promo', idOriginal); if (error) throw error; showToast('Promoción actualizada'); } else { const { error } = await supabaseClient.from('promociones').insert(promo); if (error) throw error; showToast('Promoción creada'); } cancelarFormPromocion(); await cargarPromociones(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
 async function eliminarPromocion(id) { if (!confirm('¿Eliminar esta promoción?')) return; try { const { error } = await supabaseClient.from('promociones').delete().eq('id_promo', id); if (error) throw error; showToast('Promoción eliminada'); await cargarPromociones(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
+
+async function duplicarPromocion(id) {
+    const promo = promociones.find(p => p.id_promo === id);
+    if (!promo) { showToast('Promoción no encontrada', 'error'); return; }
+
+    // Generar nuevo ID
+    const nuevoId = `${promo.id_promo}_COPIA_${Date.now().toString().slice(-4)}`;
+    const nuevoNombre = `${promo.nombre} (Copia)`;
+
+    const nuevaPromo = {
+        id_promo: nuevoId,
+        nombre: nuevoNombre,
+        descuento: promo.descuento,
+        productos_incluidos: promo.productos_incluidos,
+        fecha_inicio: '',
+        fecha_fin: '',
+        locales_aplicables: promo.locales_aplicables,
+        estado: 'Inactiva'
+    };
+
+    try {
+        const { error } = await supabaseClient.from('promociones').insert(nuevaPromo);
+        if (error) throw error;
+        showToast(`Promoción duplicada: ${nuevoNombre}`, 'success');
+        await cargarPromociones();
+        // Abrir para editar
+        setTimeout(() => editarPromocion(nuevoId), 500);
+    } catch (error) {
+        showToast('Error al duplicar: ' + error.message, 'error');
+    }
+}
+
 // Cargar productos para seleccionar en promoción
 async function cargarProductosParaPromocion() {
     const container = document.getElementById('listaProductosPromo');
@@ -1393,34 +2048,116 @@ async function cargarProductosParaPromocion() {
 function renderizarProductosPromo(lista) {
     const container = document.getElementById('listaProductosPromo');
     if (!container) return;
-    if (lista.length === 0) { container.innerHTML = '<p class="text-muted">No hay productos disponibles</p>'; return; }
+    if (lista.length === 0) { container.innerHTML = '<p style="padding:2rem;text-align:center;color:#64748b;">No hay productos disponibles</p>'; return; }
+
+    const seleccionados = productos.filter(p => productosSeleccionadosPromo.includes(p.id_producto));
+    const valorBusqueda = document.getElementById('buscarProductoPromo')?.value || '';
+
+    // Obtener categorías únicas
+    const categorias = [...new Set(productos.filter(p => p.estado === 'Activo').map(p => p.categoria))].filter(Boolean).sort();
+    const categoriaActual = document.getElementById('filtroCategoria')?.value || '';
 
     container.innerHTML = `
-        <div style="margin-bottom:1rem;">
-            <input type="text" id="buscarProductoPromo" class="form-control" placeholder="🔍 Buscar producto..." oninput="filtrarProductosPromo()" style="max-width:300px;">
-            <small class="text-muted">Seleccionados: <strong id="contadorPromoSeleccionados">${productosSeleccionadosPromo.length}</strong></small>
-        </div>
-        <div class="productos-promo-lista" style="max-height:300px; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:0.5rem;">
-            ${lista.map(p => {
-                const isSelected = productosSeleccionadosPromo.includes(p.id_producto);
-                return `<div class="producto-promo-item ${isSelected ? 'selected' : ''}" onclick="toggleProductoPromo('${p.id_producto}')" style="padding:0.75rem; border:2px solid ${isSelected ? 'var(--primary)' : '#e2e8f0'}; border-radius:0.5rem; cursor:pointer; background:${isSelected ? '#fff7ed' : 'white'};">
-                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                        <input type="checkbox" ${isSelected ? 'checked' : ''} style="pointer-events:none;">
-                        <div>
-                            <strong style="font-size:0.85rem;">${p.nombre}</strong>
-                            <p style="font-size:0.75rem; color:#64748b; margin:0;">${p.marca} - $${formatearPrecio(p.precio)}</p>
+        <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+            <!-- Barra de búsqueda y filtros -->
+            <div style="padding:1rem;border-bottom:1px solid #e2e8f0;background:white;">
+                <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                    <input type="text" id="buscarProductoPromo" class="form-control" placeholder="🔍 Buscar..." oninput="filtrarProductosPromo()" value="${valorBusqueda}" style="flex:1;min-width:150px;max-width:250px;">
+                    <select id="filtroCategoria" class="form-control" onchange="filtrarProductosPromo()" style="min-width:140px;max-width:180px;">
+                        <option value="">📁 Todas las categorías</option>
+                        ${categorias.map(c => `<option value="${c}" ${c === categoriaActual ? 'selected' : ''}>${c}</option>`).join('')}
+                    </select>
+                    <span style="background:${seleccionados.length > 0 ? '#10b981' : '#94a3b8'};color:white;padding:0.5rem 1rem;border-radius:2rem;font-size:0.9rem;font-weight:600;">✅ ${seleccionados.length}</span>
+                    ${seleccionados.length > 0 ? `<button onclick="limpiarSeleccionPromo();filtrarProductosPromo();" style="background:#ef4444;color:white;border:none;padding:0.5rem 0.75rem;border-radius:0.5rem;cursor:pointer;font-size:0.85rem;">🗑️</button>` : ''}
+                </div>
+            </div>
+
+            <!-- Chips de seleccionados -->
+            ${seleccionados.length > 0 ? `
+            <div style="padding:0.75rem 1rem;background:#fff7ed;border-bottom:1px solid #fed7aa;max-height:90px;overflow-y:auto;">
+                <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+                    ${seleccionados.map(p => `
+                        <div style="display:inline-flex;align-items:center;gap:0.4rem;background:white;padding:0.3rem 0.6rem;border-radius:2rem;font-size:0.8rem;border:1px solid #fb923c;">
+                            <img src="${p.url_imagen || ''}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">
+                            <span style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.nombre}</span>
+                            <button onclick="event.stopPropagation();toggleProductoPromo('${p.id_producto}');" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:1rem;line-height:1;">×</button>
                         </div>
-                    </div>
-                </div>`;
-            }).join('')}
+                    `).join('')}
+                </div>
+            </div>` : ''}
+
+            <!-- Grid de productos (usa todo el espacio) -->
+            <div style="flex:1;overflow-y:auto;padding:1rem;display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:0.75rem;align-content:start;">
+                ${lista.map(p => {
+                    const isSelected = productosSeleccionadosPromo.includes(p.id_producto);
+                    const imgSrc = p.url_imagen || '';
+                    return `<div onclick="toggleProductoPromo('${p.id_producto}')" style="padding:0.75rem;border:2px solid ${isSelected ? '#ff6b00' : '#e2e8f0'};border-radius:0.75rem;cursor:pointer;background:${isSelected ? '#fff7ed' : 'white'};transition:all 0.15s ease;display:flex;align-items:center;gap:0.75rem;">
+                        <div style="width:50px;height:50px;flex-shrink:0;border-radius:0.5rem;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">
+                            ${imgSrc ? `<img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<span style=\\'font-size:1.5rem;\\'>🏍️</span>'">` : '<span style="font-size:1.5rem;">🏍️</span>'}
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="display:flex;align-items:center;gap:0.4rem;">
+                                <input type="checkbox" ${isSelected ? 'checked' : ''} style="pointer-events:none;width:16px;height:16px;accent-color:#ff6b00;">
+                                <strong style="font-size:0.85rem;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">${p.nombre}</strong>
+                            </div>
+                            <p style="font-size:0.75rem;color:#64748b;margin:0.15rem 0 0 0;">${p.marca || '-'}</p>
+                            <p style="font-size:0.9rem;color:#ff6b00;margin:0.15rem 0 0 0;font-weight:700;">$${formatearPrecio(p.precio)}</p>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:0.75rem 1rem;background:#f1f5f9;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;">
+                <span style="color:#64748b;">Mostrando ${lista.length} productos</span>
+                <span style="color:#1e293b;font-weight:600;">Total en promoción: ${seleccionados.length}</span>
+            </div>
+        </div>
+    `;
+    actualizarPreviewPromo();
+}
+
+function actualizarPreviewPromo() {
+    const previewEl = document.getElementById('previewPromo');
+    if (!previewEl) return;
+
+    const nombre = document.getElementById('promocionNombre')?.value || '';
+    const descuento = document.getElementById('promocionDescuento')?.value || '';
+    const seleccionados = productos.filter(p => productosSeleccionadosPromo.includes(p.id_producto));
+
+    if (!nombre && !descuento && seleccionados.length === 0) {
+        previewEl.innerHTML = '<p style="font-size:0.9rem;color:#64748b;">Completa los datos para ver la vista previa</p>';
+        return;
+    }
+
+    const primerProducto = seleccionados[0];
+    const precioOriginal = primerProducto ? primerProducto.precio : 100000;
+    const precioConDescuento = descuento ? Math.round(precioOriginal * (1 - descuento/100)) : precioOriginal;
+
+    previewEl.innerHTML = `
+        <div style="text-align:center;">
+            ${nombre ? `<p style="font-weight:700;color:#1e293b;margin-bottom:0.5rem;">${nombre}</p>` : ''}
+            ${descuento ? `<span style="background:#ef4444;color:white;padding:0.25rem 0.75rem;border-radius:1rem;font-size:1.1rem;font-weight:700;">-${descuento}%</span>` : ''}
+            ${primerProducto ? `
+                <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px dashed #e2e8f0;">
+                    <p style="font-size:0.8rem;color:#64748b;margin-bottom:0.25rem;">${primerProducto.nombre}</p>
+                    <p style="margin:0;">
+                        <span style="text-decoration:line-through;color:#94a3b8;font-size:0.9rem;">$${formatearPrecio(precioOriginal)}</span>
+                        <span style="color:#10b981;font-weight:700;font-size:1.1rem;margin-left:0.5rem;">$${formatearPrecio(precioConDescuento)}</span>
+                    </p>
+                </div>
+            ` : ''}
+            ${seleccionados.length > 1 ? `<p style="font-size:0.75rem;color:#64748b;margin-top:0.5rem;">+${seleccionados.length - 1} productos más</p>` : ''}
         </div>
     `;
 }
 
 function filtrarProductosPromo() {
     const busqueda = (document.getElementById('buscarProductoPromo')?.value || '').toLowerCase();
+    const categoriaFiltro = document.getElementById('filtroCategoria')?.value || '';
     const filtrados = productos.filter(p =>
         p.estado === 'Activo' &&
+        (categoriaFiltro === '' || p.categoria === categoriaFiltro) &&
         ((p.nombre || '').toLowerCase().includes(busqueda) ||
          (p.marca || '').toLowerCase().includes(busqueda) ||
          (p.id_producto || '').toLowerCase().includes(busqueda))
@@ -1492,7 +2229,7 @@ async function guardarPost() { const id = document.getElementById('postId').valu
 async function eliminarPost(id) { if (!confirm('¿Eliminar esta publicación?')) return; try { const { error } = await supabaseClient.from('posts').delete().eq('id', id); if (error) throw error; showToast('Publicación eliminada'); await cargarPosts(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
 
 // CONFIGURACIÓN
-async function cargarConfiguracion() { try { const { data, error } = await supabaseClient.from('configuracion_sistema').select('*'); if (error) throw error; const config = (data || []).reduce((acc, item) => { acc[item.clave] = item.valor; return acc; }, {}); const campos = { 'configWhatsapp': 'whatsapp', 'configFacebook': 'facebook', 'configInstagram': 'instagram', 'configTiktok': 'tiktok', 'configEmail': 'email', 'configTelefono': 'telefono', 'configDireccion': 'direccion', 'configLogo': 'logo_url', 'configNombre': 'nombre_tienda', 'configSlogan': 'slogan', 'configStockMinimo': 'stock_minimo', 'configMoneda': 'moneda' }; Object.entries(campos).forEach(([elId, clave]) => { const el = document.getElementById(elId); if (el) el.value = config[clave] || ''; }); const colorEl = document.getElementById('configColor'); if (colorEl) colorEl.value = config.color_primary || '#ff6b00'; if (config.logo_url) { const preview = document.getElementById('previewLogo'); const container = document.getElementById('previewContainerLogo'); if (preview && container) { preview.src = config.logo_url; container.style.display = 'inline-block'; } } } catch (error) { console.error('Error cargando configuración:', error); } }
+async function cargarConfiguracion() { try { const { data, error } = await supabaseClient.from('configuracion_sistema').select('*'); if (error) throw error; const config = (data || []).reduce((acc, item) => { acc[item.clave] = item.valor; return acc; }, {}); const campos = { 'configWhatsapp': 'whatsapp', 'configFacebook': 'facebook', 'configInstagram': 'instagram', 'configTiktok': 'tiktok', 'configEmail': 'email', 'configTelefono': 'telefono', 'configDireccion': 'direccion', 'configLogo': 'logo_url', 'configNombre': 'nombre_tienda', 'configSlogan': 'slogan', 'configStockMinimo': 'stock_minimo', 'configMoneda': 'moneda' }; Object.entries(campos).forEach(([elId, clave]) => { const el = document.getElementById(elId); if (el) el.value = config[clave] || ''; }); const colorEl = document.getElementById('configColor'); if (colorEl) colorEl.value = config.color_primary || '#ff6b00'; if (config.logo_url) { const preview = document.getElementById('previewLogo'); const container = document.getElementById('previewContainerLogo'); if (preview && container) { preview.src = config.logo_url; container.style.display = 'inline-block'; } } cargarEmpleados(); cargarMetodosPagoConfig(); } catch (error) { console.error('Error cargando configuración:', error); } }
 async function guardarConfiguracion() { let logoUrl = document.getElementById('configLogo').value.trim(); if (archivosTemporal.logo) { showToast('Subiendo logo...', 'info'); const urlSubida = await subirImagen(archivosTemporal.logo, 'configuracion'); if (urlSubida) { logoUrl = urlSubida; archivosTemporal.logo = null; } } const configs = [ { clave: 'whatsapp', valor: document.getElementById('configWhatsapp').value.trim() }, { clave: 'facebook', valor: document.getElementById('configFacebook').value.trim() }, { clave: 'instagram', valor: document.getElementById('configInstagram').value.trim() }, { clave: 'tiktok', valor: document.getElementById('configTiktok').value.trim() }, { clave: 'email', valor: document.getElementById('configEmail').value.trim() }, { clave: 'telefono', valor: document.getElementById('configTelefono').value.trim() }, { clave: 'direccion', valor: document.getElementById('configDireccion').value.trim() }, { clave: 'logo_url', valor: logoUrl }, { clave: 'nombre_tienda', valor: document.getElementById('configNombre').value.trim() }, { clave: 'slogan', valor: document.getElementById('configSlogan').value.trim() }, { clave: 'color_primary', valor: document.getElementById('configColor').value }, { clave: 'stock_minimo', valor: document.getElementById('configStockMinimo').value.trim() }, { clave: 'moneda', valor: document.getElementById('configMoneda').value } ]; try { for (const config of configs) { const { error } = await supabaseClient.from('configuracion_sistema').upsert(config, { onConflict: 'clave' }); if (error) throw error; } showToast('Configuración guardada'); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
 
 // CIERRES
@@ -1545,9 +2282,64 @@ async function cargarCierresCaja() {
     }
 }
 
-function verDetalleCierre(id) {
+async function verDetalleCierre(id) {
     console.log('👁️ Ver detalle cierre:', id);
-    showToast('Función en desarrollo', 'info');
+    try {
+        const { data, error } = await supabaseClient.from('cierres_caja').select('*').eq('id', id).single();
+        if (error) throw error;
+
+        const fecha = data.fecha ? new Date(data.fecha).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+
+        // Crear modal
+        const modal = document.createElement('div');
+        modal.id = 'modalDetalleCierre';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+        modal.onclick = function(e) { if (e.target === this) this.remove(); };
+
+        modal.innerHTML = `
+            <div style="background:white;border-radius:1rem;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;border-bottom:2px solid #f1f5f9;padding-bottom:1rem;">
+                    <h3 style="margin:0;color:#1e293b;">📊 Detalle de Cierre</h3>
+                    <button onclick="document.getElementById('modalDetalleCierre').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;">&times;</button>
+                </div>
+                <div style="display:grid;gap:1rem;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                        <div style="background:#f8fafc;padding:1rem;border-radius:0.5rem;">
+                            <small style="color:#64748b;">Local</small>
+                            <p style="margin:0;font-weight:600;font-size:1.2rem;color:#1e293b;">${data.local || '-'}</p>
+                        </div>
+                        <div style="background:#f8fafc;padding:1rem;border-radius:0.5rem;">
+                            <small style="color:#64748b;">Fecha</small>
+                            <p style="margin:0;font-weight:600;color:#1e293b;">${fecha}</p>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+                        <div style="background:#dcfce7;padding:1rem;border-radius:0.5rem;text-align:center;">
+                            <small style="color:#166534;">Efectivo</small>
+                            <p style="margin:0;font-weight:700;font-size:1.3rem;color:#166534;">$${formatearPrecio(data.efectivo || 0)}</p>
+                        </div>
+                        <div style="background:#dbeafe;padding:1rem;border-radius:0.5rem;text-align:center;">
+                            <small style="color:#1e40af;">Transferencias</small>
+                            <p style="margin:0;font-weight:700;font-size:1.3rem;color:#1e40af;">$${formatearPrecio(data.transferencias || 0)}</p>
+                        </div>
+                        <div style="background:#fef3c7;padding:1rem;border-radius:0.5rem;text-align:center;">
+                            <small style="color:#92400e;">Tarjeta</small>
+                            <p style="margin:0;font-weight:700;font-size:1.3rem;color:#92400e;">$${formatearPrecio(data.tarjeta || 0)}</p>
+                        </div>
+                    </div>
+                    <div style="background:linear-gradient(135deg,#ff6b00,#ff8533);padding:1.5rem;border-radius:0.75rem;text-align:center;">
+                        <small style="color:rgba(255,255,255,0.9);">Total del Día</small>
+                        <p style="margin:0;font-weight:800;font-size:2rem;color:white;">$${formatearPrecio(data.total || 0)}</p>
+                    </div>
+                    ${data.notas ? `<div style="background:#f1f5f9;padding:1rem;border-radius:0.5rem;"><small style="color:#64748b;">Notas</small><p style="margin:0.5rem 0 0;color:#334155;">${data.notas}</p></div>` : ''}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error al cargar detalle', 'error');
+    }
 }
 
 function exportarCierres() {
@@ -1745,7 +2537,197 @@ async function cargarReporteMargen() { const body = document.getElementById('bod
 async function cargarReporteTop() { const body = document.getElementById('bodyReporte'); if (!body) return; document.getElementById('contenidoReporte').style.display = 'block'; document.getElementById('tituloReporte').textContent = '🏆 Top Productos por Categoría'; body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando...</p></div>'; try { const { data, error } = await supabaseClient.from('v_top_productos_categoria').select('*').gt('unidades_vendidas', 0).order('unidades_vendidas', { ascending: false }).limit(20); if (error) throw error; if (!data || data.length === 0) { body.innerHTML = '<p class="text-center">No hay datos de ventas disponibles</p>'; return; } body.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>#</th><th>Producto</th><th>Categoría</th><th>Unidades</th><th>Total</th></tr></thead><tbody>${data.map((r, i) => `<tr><td>${i + 1}</td><td><strong>${r.nombre}</strong></td><td>${r.categoria}</td><td>${r.unidades_vendidas}</td><td>$${formatearPrecio(r.total_vendido)}</td></tr>`).join('')}</tbody></table></div>`; } catch (error) { console.error('Error cargando reporte:', error); body.innerHTML = '<p class="text-danger">Error al cargar el reporte</p>'; } }
 async function cargarReporteMetodos() { const body = document.getElementById('bodyReporte'); if (!body) return; document.getElementById('contenidoReporte').style.display = 'block'; document.getElementById('tituloReporte').textContent = '💳 Ventas por Método de Pago'; body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando...</p></div>'; try { const { data, error } = await supabaseClient.from('v_ventas_metodo_pago').select('*').order('fecha', { ascending: false }).limit(50); if (error) throw error; if (!data || data.length === 0) { body.innerHTML = '<p class="text-center">No hay datos disponibles</p>'; return; } body.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Fecha</th><th>Método</th><th>Cantidad</th><th>Total</th></tr></thead><tbody>${data.map(r => `<tr><td>${formatearFecha(r.fecha)}</td><td><strong>${r.metodo_pago || 'Sin especificar'}</strong></td><td>${r.cantidad_ventas}</td><td>$${formatearPrecio(r.total_vendido)}</td></tr>`).join('')}</tbody></table></div>`; } catch (error) { console.error('Error cargando reporte:', error); body.innerHTML = '<p class="text-danger">Error al cargar el reporte</p>'; } }
 async function cargarReporteLocales() { const body = document.getElementById('bodyReporte'); if (!body) return; document.getElementById('contenidoReporte').style.display = 'block'; document.getElementById('tituloReporte').textContent = '📈 Ventas por Local'; body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando...</p></div>'; try { const { data, error } = await supabaseClient.from('v_ventas_totales_dia').select('*').order('fecha', { ascending: false }).limit(30); if (error) throw error; if (!data || data.length === 0) { body.innerHTML = '<p class="text-center">No hay datos disponibles</p>'; return; } body.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Fecha</th><th>Local</th><th>Facturas</th><th>Efectivo</th><th>Transfer.</th><th>Total</th></tr></thead><tbody>${data.map(r => `<tr><td>${formatearFecha(r.fecha)}</td><td><strong>${r.local_venta || '-'}</strong></td><td>${r.cantidad_facturas}</td><td>$${formatearPrecio(r.ventas_efectivo)}</td><td>$${formatearPrecio(r.ventas_transferencia)}</td><td><strong>$${formatearPrecio(r.total_ventas)}</strong></td></tr>`).join('')}</tbody></table></div>`; } catch (error) { console.error('Error cargando reporte:', error); body.innerHTML = '<p class="text-danger">Error al cargar el reporte</p>'; } }
-function exportarReporte() { showToast('Exportación en desarrollo', 'info'); }
+function exportarReporte() {
+    // Exportar el reporte actual a CSV/Excel
+    const contenido = document.getElementById('contenidoReporte');
+    if (!contenido || contenido.style.display === 'none') {
+        showToast('Primero genera un reporte', 'warning');
+        return;
+    }
+
+    const tabla = contenido.querySelector('table');
+    if (!tabla) {
+        showToast('No hay datos para exportar', 'warning');
+        return;
+    }
+
+    exportarTablaCSV(tabla, 'reporte_moteros');
+}
+
+function exportarTablaCSV(tabla, nombreArchivo) {
+    const filas = tabla.querySelectorAll('tr');
+    let csv = '';
+
+    filas.forEach(fila => {
+        const celdas = fila.querySelectorAll('th, td');
+        const valores = [];
+        celdas.forEach(celda => {
+            let valor = celda.innerText.replace(/"/g, '""');
+            valores.push(`"${valor}"`);
+        });
+        csv += valores.join(',') + '\n';
+    });
+
+    // Agregar BOM para Excel
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${nombreArchivo}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast('Archivo exportado correctamente', 'success');
+}
+
+function exportarProductosExcel() {
+    if (productos.length === 0) {
+        showToast('No hay productos para exportar', 'warning');
+        return;
+    }
+
+    let csv = '"ID","Nombre","Marca","Categoría","Precio Compra","Precio Venta","Estado"\n';
+    productos.forEach(p => {
+        csv += `"${p.id_producto}","${p.nombre}","${p.marca}","${p.categoria}","${p.precio_compra || 0}","${p.precio}","${p.estado}"\n`;
+    });
+
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `productos_moteros_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(`${productos.length} productos exportados`, 'success');
+}
+
+function exportarVentasExcel() {
+    if (ventas.length === 0) {
+        showToast('No hay ventas para exportar', 'warning');
+        return;
+    }
+
+    let csv = '"ID","Fecha","Cliente","Local","Subtotal","Descuento","Total","Método Pago","Estado"\n';
+    ventas.forEach(v => {
+        const fecha = v.created_at ? new Date(v.created_at).toLocaleDateString('es-CO') : '';
+        csv += `"${v.id}","${fecha}","${v.cliente_nombre || ''}","${v.local_venta || ''}","${v.subtotal || 0}","${v.descuento || 0}","${v.total}","${v.metodo_pago || ''}","${v.estado || ''}"\n`;
+    });
+
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `ventas_moteros_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(`${ventas.length} ventas exportadas`, 'success');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BÚSQUEDA GLOBAL
+// ═══════════════════════════════════════════════════════════════
+let resultadosBusquedaGlobal = [];
+
+function busquedaGlobalAdmin(termino) {
+    const container = document.getElementById('resultadosBusqueda');
+    if (!container) return;
+
+    if (!termino || termino.length < 2) {
+        container.style.display = 'none';
+        return;
+    }
+
+    const term = termino.toLowerCase();
+    resultadosBusquedaGlobal = [];
+
+    // Buscar en productos
+    const prodEncontrados = productos.filter(p =>
+        (p.nombre || '').toLowerCase().includes(term) ||
+        (p.marca || '').toLowerCase().includes(term) ||
+        (p.id_producto || '').toLowerCase().includes(term)
+    ).slice(0, 5);
+
+    prodEncontrados.forEach(p => resultadosBusquedaGlobal.push({
+        tipo: '📦 Producto',
+        titulo: p.nombre,
+        subtitulo: `${p.marca} - $${formatearPrecio(p.precio)}`,
+        accion: () => { mostrarSeccion('productos'); setTimeout(() => { const input = document.getElementById('busquedaProducto'); if (input) { input.value = p.nombre; filtrarProductosAdmin(); } }, 300); }
+    }));
+
+    // Buscar en ventas
+    const ventasEncontradas = ventas.filter(v =>
+        (v.id || '').toString().includes(term) ||
+        (v.cliente_nombre || '').toLowerCase().includes(term)
+    ).slice(0, 3);
+
+    ventasEncontradas.forEach(v => resultadosBusquedaGlobal.push({
+        tipo: '💰 Venta',
+        titulo: `Venta #${v.id}`,
+        subtitulo: `${v.cliente_nombre || 'Sin cliente'} - $${formatearPrecio(v.total)}`,
+        accion: () => { mostrarSeccion('ventas'); }
+    }));
+
+    // Buscar en promociones
+    const promosEncontradas = promociones.filter(p =>
+        (p.nombre || '').toLowerCase().includes(term) ||
+        (p.id_promo || '').toLowerCase().includes(term)
+    ).slice(0, 3);
+
+    promosEncontradas.forEach(p => resultadosBusquedaGlobal.push({
+        tipo: '🏷️ Promoción',
+        titulo: p.nombre,
+        subtitulo: `${p.descuento}% descuento - ${p.estado}`,
+        accion: () => { mostrarSeccion('promociones'); setTimeout(() => editarPromocion(p.id_promo), 300); }
+    }));
+
+    // Renderizar resultados
+    if (resultadosBusquedaGlobal.length === 0) {
+        container.innerHTML = '<div style="padding:1.5rem;text-align:center;color:#64748b;">No se encontraron resultados</div>';
+    } else {
+        container.innerHTML = resultadosBusquedaGlobal.map((r, i) => `
+            <div onclick="ejecutarResultadoBusqueda(${i})" style="padding:1rem;border-bottom:1px solid #f1f5f9;cursor:pointer;display:flex;align-items:center;gap:1rem;transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                <span style="font-size:1.5rem;">${r.tipo.split(' ')[0]}</span>
+                <div style="flex:1;">
+                    <p style="margin:0;font-weight:600;color:#1e293b;">${r.titulo}</p>
+                    <p style="margin:0;font-size:0.85rem;color:#64748b;">${r.subtitulo}</p>
+                </div>
+                <span style="font-size:0.75rem;background:#f1f5f9;padding:0.25rem 0.5rem;border-radius:0.25rem;color:#64748b;">${r.tipo.split(' ')[1]}</span>
+            </div>
+        `).join('');
+    }
+
+    container.style.display = 'block';
+}
+
+function ejecutarResultadoBusqueda(index) {
+    if (resultadosBusquedaGlobal[index]) {
+        resultadosBusquedaGlobal[index].accion();
+        ocultarResultadosBusqueda();
+        document.getElementById('busquedaGlobal').value = '';
+    }
+}
+
+function mostrarResultadosBusqueda() {
+    const container = document.getElementById('resultadosBusqueda');
+    const input = document.getElementById('busquedaGlobal');
+    if (container && input && input.value.length >= 2) {
+        container.style.display = 'block';
+    }
+}
+
+function ocultarResultadosBusqueda() {
+    const container = document.getElementById('resultadosBusqueda');
+    if (container) container.style.display = 'none';
+}
 
 // ═══════════════════════════════════════════════════════════════
 // INICIALIZACIÓN
@@ -1754,20 +2736,29 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🏍️ Iniciando Moteros Admin Panel v4.1...');
     setupNavigation();
     setupDropzones();
-    
+
+    // Auto-login si hay sesión activa
+    if (checkSession()) {
+        console.log('🔐 Sesión activa detectada - iniciando automáticamente...');
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        inicializarAdmin();
+        showToast('¡Sesión restaurada!', 'success');
+    }
+
     // Event listeners
     const passInput = document.getElementById('adminPassword');
-    if (passInput) { 
-        passInput.addEventListener('keypress', (e) => { 
-            if (e.key === 'Enter') loginAdmin(); 
-        }); 
+    if (passInput) {
+        passInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loginAdmin();
+        });
     }
-    
+
     const pc = document.getElementById('productoPrecioCompra');
     const pv = document.getElementById('productoPrecio');
     if (pc) pc.addEventListener('input', calcularMargen);
     if (pv) pv.addEventListener('input', calcularMargen);
-    
+
     console.log('✅ Moteros Admin Panel v4.1 - Listo');
 });
 
@@ -1854,6 +2845,7 @@ window.cargarCreditos = cargarCreditos;
 window.mostrarFormCredito = mostrarFormCredito;
 window.verDetalleCredito = verDetalleCredito;
 window.registrarPagoCredito = registrarPagoCredito;
+window.confirmarPagoCredito = confirmarPagoCredito;
 
 // Bodegas
 window.cargarBodegas = cargarBodegas;
@@ -1865,6 +2857,7 @@ window.moverDeBodega = moverDeBodega;
 window.cargarAlianzas = cargarAlianzas;
 window.mostrarFormAlianza = mostrarFormAlianza;
 window.editarAlianza = editarAlianza;
+window.guardarEdicionAlianza = guardarEdicionAlianza;
 window.guardarNuevaAlianza = guardarNuevaAlianza;
 
 // Promociones
@@ -1874,10 +2867,24 @@ window.cancelarFormPromocion = cancelarFormPromocion;
 window.editarPromocion = editarPromocion;
 window.guardarPromocion = guardarPromocion;
 window.eliminarPromocion = eliminarPromocion;
+window.duplicarPromocion = duplicarPromocion;
 window.filtrarProductosPromo = filtrarProductosPromo;
 window.toggleProductoPromo = toggleProductoPromo;
 window.quitarProductoPromo = quitarProductoPromo;
 window.limpiarSeleccionPromo = limpiarSeleccionPromo;
+window.actualizarPreviewPromo = actualizarPreviewPromo;
+
+// Búsqueda Global
+window.busquedaGlobalAdmin = busquedaGlobalAdmin;
+window.ejecutarResultadoBusqueda = ejecutarResultadoBusqueda;
+window.mostrarResultadosBusqueda = mostrarResultadosBusqueda;
+window.ocultarResultadosBusqueda = ocultarResultadosBusqueda;
+
+// Exportar Excel
+window.exportarReporte = exportarReporte;
+window.exportarTablaCSV = exportarTablaCSV;
+window.exportarProductosExcel = exportarProductosExcel;
+window.exportarVentasExcel = exportarVentasExcel;
 
 // Blog
 window.cargarPosts = cargarPosts;
@@ -2310,3 +3317,293 @@ window.cerrarModalEnvio = cerrarModalEnvio;
 window.guardarEnvio = guardarEnvio;
 window.guardarEnvioModal = guardarEnvioModal;
 window.cerrarModalHistorial = cerrarModalHistorial;
+
+// ═══════════════════════════════════════════════════════════════
+// GESTIÓN DE EMPLEADOS
+// ═══════════════════════════════════════════════════════════════
+
+let empleados = [];
+let empleadosTablaExiste = true; // Flag para evitar reintentos innecesarios
+
+async function cargarEmpleados() {
+    const tbody = document.getElementById('tablaEmpleados');
+    if (!tbody) return;
+
+    // Si ya sabemos que la tabla no existe, mostrar mensaje sin hacer query
+    if (!empleadosTablaExiste) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#f59e0b;">⚠️ Tabla de empleados no configurada. Contacta al administrador para crearla en Supabase.</td></tr>';
+        return;
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('empleados_tienda')
+            .select('*')
+            .order('nombre');
+
+        if (error) {
+            // Si es error de tabla no existente, marcar flag
+            if (error.code === '42P01' || error.message?.includes('does not exist')) {
+                empleadosTablaExiste = false;
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#f59e0b;">⚠️ Tabla de empleados no configurada. Contacta al administrador para crearla en Supabase.</td></tr>';
+            } else {
+                throw error;
+            }
+            return;
+        }
+        empleados = data || [];
+        renderizarEmpleados();
+    } catch (e) {
+        // Solo loguear una vez, no flood de errores
+        if (empleadosTablaExiste) {
+            console.warn('Empleados: No se pudo cargar la tabla empleados_tienda');
+            empleadosTablaExiste = false;
+        }
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#f59e0b;">⚠️ Error al cargar empleados. La tabla puede no existir.</td></tr>';
+    }
+}
+
+function renderizarEmpleados() {
+    const tbody = document.getElementById('tablaEmpleados');
+    if (!tbody) return;
+
+    if (empleados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#94a3b8;">No hay empleados registrados</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = empleados.map(emp => {
+        const tiendas = emp.tiendas_permitidas?.join(', ') || 'Ninguna';
+        const estado = emp.activo
+            ? '<span style="color:#10b981;font-weight:600;">Activo</span>'
+            : '<span style="color:#f87171;font-weight:600;">Inactivo</span>';
+
+        return `
+            <tr>
+                <td><strong>${emp.nombre}</strong></td>
+                <td>${emp.usuario || '-'}</td>
+                <td>${emp.cedula || '-'}</td>
+                <td>${emp.cargo || 'Vendedor'}</td>
+                <td style="font-size:0.85rem;">${tiendas}</td>
+                <td>${estado}</td>
+                <td>
+                    <button onclick="editarEmpleado(${emp.id})" class="btn btn-sm btn-primary" title="Editar">✏️</button>
+                    <button onclick="eliminarEmpleado(${emp.id})" class="btn btn-sm btn-danger" title="Eliminar">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function mostrarModalEmpleado() {
+    if (!empleadosTablaExiste) {
+        alert('⚠️ La tabla de empleados no está configurada en la base de datos.\n\nContacta al administrador para crear la tabla "empleados_tienda" en Supabase.');
+        return;
+    }
+    document.getElementById('tituloModalEmpleado').textContent = '➕ Nuevo Empleado';
+    document.getElementById('empleadoEditId').value = '';
+    document.getElementById('empleadoNombre').value = '';
+    document.getElementById('empleadoUsuario').value = '';
+    document.getElementById('empleadoCedula').value = '';
+    document.getElementById('empleadoPassword').value = '';
+    document.getElementById('empleadoCargo').value = 'Vendedor';
+    document.getElementById('empleadoActivo').checked = true;
+    document.getElementById('tiendaTodas').checked = false;
+    document.querySelectorAll('.tienda-checkbox').forEach(cb => cb.checked = false);
+
+    document.getElementById('modalEmpleado').style.display = 'flex';
+}
+
+function cerrarModalEmpleado() {
+    document.getElementById('modalEmpleado').style.display = 'none';
+}
+
+function toggleTodasTiendas(checkbox) {
+    const checkboxes = document.querySelectorAll('.tienda-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+        cb.disabled = checkbox.checked;
+    });
+}
+
+async function guardarEmpleado() {
+    const id = document.getElementById('empleadoEditId').value;
+    const nombre = document.getElementById('empleadoNombre').value.trim();
+    const usuario = document.getElementById('empleadoUsuario').value.trim();
+    const cedula = document.getElementById('empleadoCedula').value.trim();
+    const password = document.getElementById('empleadoPassword').value;
+    const cargo = document.getElementById('empleadoCargo').value;
+    const activo = document.getElementById('empleadoActivo').checked;
+
+    let tiendas = [];
+    if (document.getElementById('tiendaTodas').checked) {
+        tiendas = ['Todas'];
+    } else {
+        document.querySelectorAll('.tienda-checkbox:checked').forEach(cb => {
+            tiendas.push(cb.value);
+        });
+    }
+
+    if (!nombre) {
+        alert('El nombre es obligatorio');
+        return;
+    }
+    if (!usuario && !cedula) {
+        alert('Ingresa al menos usuario o cédula');
+        return;
+    }
+    if (!id && (!password || password.length < 4)) {
+        alert('La contraseña debe tener mínimo 4 caracteres');
+        return;
+    }
+
+    const datos = {
+        nombre,
+        usuario: usuario || null,
+        cedula: cedula || null,
+        cargo,
+        activo,
+        tiendas_permitidas: tiendas
+    };
+
+    if (password) {
+        datos.password = password;
+    }
+
+    try {
+        if (id) {
+            const { error } = await supabaseClient
+                .from('empleados_tienda')
+                .update(datos)
+                .eq('id', id);
+            if (error) throw error;
+            alert('✅ Empleado actualizado correctamente');
+        } else {
+            const { error } = await supabaseClient
+                .from('empleados_tienda')
+                .insert(datos);
+            if (error) throw error;
+            alert('✅ Empleado creado correctamente');
+        }
+
+        cerrarModalEmpleado();
+        cargarEmpleados();
+    } catch (e) {
+        console.error('Error guardando empleado:', e);
+        alert('Error al guardar: ' + (e.message || 'desconocido'));
+    }
+}
+
+async function editarEmpleado(id) {
+    const emp = empleados.find(e => e.id === id);
+    if (!emp) return;
+
+    document.getElementById('tituloModalEmpleado').textContent = '✏️ Editar Empleado';
+    document.getElementById('empleadoEditId').value = id;
+    document.getElementById('empleadoNombre').value = emp.nombre || '';
+    document.getElementById('empleadoUsuario').value = emp.usuario || '';
+    document.getElementById('empleadoCedula').value = emp.cedula || '';
+    document.getElementById('empleadoPassword').value = '';
+    document.getElementById('empleadoCargo').value = emp.cargo || 'Vendedor';
+    document.getElementById('empleadoActivo').checked = emp.activo;
+
+    const tiendas = emp.tiendas_permitidas || [];
+    if (tiendas.includes('Todas')) {
+        document.getElementById('tiendaTodas').checked = true;
+        document.querySelectorAll('.tienda-checkbox').forEach(cb => {
+            cb.checked = false;
+            cb.disabled = true;
+        });
+    } else {
+        document.getElementById('tiendaTodas').checked = false;
+        document.querySelectorAll('.tienda-checkbox').forEach(cb => {
+            cb.disabled = false;
+            cb.checked = tiendas.includes(cb.value);
+        });
+    }
+
+    document.getElementById('modalEmpleado').style.display = 'flex';
+}
+
+async function eliminarEmpleado(id) {
+    const emp = empleados.find(e => e.id === id);
+    if (!emp) return;
+
+    if (!confirm(`¿Eliminar al empleado "${emp.nombre}"?\n\nEsta acción no se puede deshacer.`)) {
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('empleados_tienda')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        alert('✅ Empleado eliminado');
+        cargarEmpleados();
+    } catch (e) {
+        console.error('Error eliminando empleado:', e);
+        alert('Error al eliminar: ' + (e.message || 'desconocido'));
+    }
+}
+
+// Exports para empleados
+window.cargarEmpleados = cargarEmpleados;
+window.mostrarModalEmpleado = mostrarModalEmpleado;
+window.cerrarModalEmpleado = cerrarModalEmpleado;
+window.toggleTodasTiendas = toggleTodasTiendas;
+window.guardarEmpleado = guardarEmpleado;
+window.editarEmpleado = editarEmpleado;
+window.eliminarEmpleado = eliminarEmpleado;
+
+// ═══════════════════════════════════════════════════════════════
+// MÉTODOS DE PAGO (CONFIGURACIÓN WEB)
+// ═══════════════════════════════════════════════════════════════
+
+function cargarMetodosPagoConfig() {
+    try {
+        const stored = localStorage.getItem('metodos_pago_config');
+        if (stored) {
+            const metodos = JSON.parse(stored);
+            if (document.getElementById('metodoPagoNequi')) document.getElementById('metodoPagoNequi').checked = metodos.nequi !== false;
+            if (document.getElementById('metodoPagoDaviplata')) document.getElementById('metodoPagoDaviplata').checked = metodos.daviplata !== false;
+            if (document.getElementById('metodoPagoAddi')) document.getElementById('metodoPagoAddi').checked = metodos.addi !== false;
+            if (document.getElementById('metodoPagoSistecredito')) document.getElementById('metodoPagoSistecredito').checked = metodos.sistecredito !== false;
+            if (document.getElementById('metodoPagoFodegas')) document.getElementById('metodoPagoFodegas').checked = metodos.fodegas !== false;
+        }
+    } catch (e) {
+        console.warn('Error cargando métodos de pago:', e);
+    }
+}
+
+async function guardarMetodosPago() {
+    const metodos = {
+        nequi: document.getElementById('metodoPagoNequi')?.checked ?? true,
+        daviplata: document.getElementById('metodoPagoDaviplata')?.checked ?? true,
+        addi: document.getElementById('metodoPagoAddi')?.checked ?? true,
+        sistecredito: document.getElementById('metodoPagoSistecredito')?.checked ?? true,
+        fodegas: document.getElementById('metodoPagoFodegas')?.checked ?? true
+    };
+
+    try {
+        // Guardar en localStorage (para uso en la página principal)
+        localStorage.setItem('metodos_pago_config', JSON.stringify(metodos));
+
+        // También intentar guardar en Supabase si existe la tabla
+        try {
+            await supabaseClient
+                .from('configuracion')
+                .upsert({ clave: 'metodos_pago', valor: JSON.stringify(metodos) }, { onConflict: 'clave' });
+        } catch (e) {
+            console.warn('No se pudo guardar en Supabase:', e);
+        }
+
+        alert('✅ Métodos de pago guardados correctamente');
+    } catch (e) {
+        console.error('Error guardando métodos de pago:', e);
+        alert('Error al guardar: ' + (e.message || 'desconocido'));
+    }
+}
+
+window.guardarMetodosPago = guardarMetodosPago;

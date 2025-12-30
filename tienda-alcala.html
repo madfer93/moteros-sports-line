@@ -161,21 +161,50 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
+     MODAL: LOGIN EMPLEADO
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="modalLoginEmpleado" class="modal-overlay">
+    <div class="modal">
+        <h3>🔐 Iniciar Sesión</h3>
+        <p style="color:#64748b;font-size:0.9rem;margin-bottom:1.5rem;">Ingresa tus credenciales para acceder al POS</p>
+        <div class="form-group">
+            <label>👤 Usuario o Cédula</label>
+            <input type="text" id="loginUsuario" placeholder="Tu usuario o número de cédula" autocomplete="username">
+        </div>
+        <div class="form-group">
+            <label>🔑 Contraseña</label>
+            <input type="password" id="loginPassword" placeholder="Tu contraseña" autocomplete="current-password">
+        </div>
+        <div id="loginError" class="alert alert-danger" style="display:none;margin-bottom:1rem;"></div>
+        <div class="modal-botones">
+            <button class="btn btn-success btn-full" onclick="verificarLogin()">🔓 Iniciar Sesión</button>
+        </div>
+        <p style="color:#94a3b8;font-size:0.8rem;margin-top:1rem;text-align:center;">
+            ¿Olvidaste tu contraseña? Contacta al administrador
+        </p>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
      MODAL: ABRIR CAJA
      ═══════════════════════════════════════════════════════════════ -->
 <div id="modalAbrirCaja" class="modal-overlay">
     <div class="modal">
         <h3>📂 Abrir Caja</h3>
+        <div id="empleadoLogueado" style="background:linear-gradient(135deg,#10b981,#059669);color:white;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+            <span style="font-size:1.5rem;">👤</span>
+            <div>
+                <div style="font-weight:700;" id="nombreEmpleadoLogueado">Empleado</div>
+                <div style="font-size:0.8rem;opacity:0.9;" id="cargoEmpleadoLogueado">Cargo</div>
+            </div>
+        </div>
         <div class="form-group">
             <label>💵 Base de caja (dinero inicial)</label>
             <input type="number" id="montoInicial" value="100000" min="0" placeholder="100000">
         </div>
-        <div class="form-group">
-            <label>👤 Nombre del vendedor</label>
-            <input type="text" id="vendedorNombre" placeholder="Tu nombre completo">
-        </div>
+        <input type="hidden" id="vendedorNombre">
         <div class="modal-botones">
-            <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn btn-danger" onclick="cerrarSesionEmpleado()">🚪 Cerrar Sesión</button>
             <button class="btn btn-success" onclick="confirmarAbrirCaja()">✅ Abrir Caja</button>
         </div>
     </div>

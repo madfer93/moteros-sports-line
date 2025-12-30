@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel | Moteros Sports Line</title>
+    <link rel="icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -46,8 +47,9 @@
 
     <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="login-wrapper">
-        <div class="login-card">
-            <div class="login-logo">🏍️</div>
+        <div id="pantallaAbrirCaja">
+            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
+                 alt="Moteros Sports Line" class="locked-logo logo-img">
             <h1>Admin Panel</h1>
             <p class="subtitle">Moteros Sports Line</p>
             <input type="password" id="adminPassword" class="login-input" placeholder="Ingresa la contraseña" onkeypress="if(event.key==='Enter')loginAdmin()">
@@ -62,7 +64,7 @@
         <!-- ═══════════════ HEADER CON MENÚ HORIZONTAL ═══════════════ -->
         <header class="top-header">
             <div class="header-brand">
-                <span class="brand-icon">🏍️</span>
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Logo" style="height:40px;width:40px;border-radius:50%;object-fit:cover;margin-right:0.75rem;">
                 <span class="brand-name">Moteros Admin</span>
             </div>
             
@@ -144,6 +146,16 @@
                     </div>
                 </div>
             </nav>
+
+            <!-- Búsqueda Global -->
+            <div class="header-search" style="position:relative;">
+                <input type="text" id="busquedaGlobal" class="form-control" placeholder="Buscar..."
+                       style="width:280px;padding-left:2.5rem;border-radius:2rem;border:2px solid #e2e8f0;font-size:0.9rem;"
+                       oninput="busquedaGlobalAdmin(this.value)" onfocus="mostrarResultadosBusqueda()" onblur="setTimeout(()=>ocultarResultadosBusqueda(),200)">
+                <span style="position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:#94a3b8;">🔍</span>
+                <div id="resultadosBusqueda" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border-radius:0.75rem;box-shadow:0 10px 40px rgba(0,0,0,0.15);max-height:400px;overflow-y:auto;z-index:9999;margin-top:0.5rem;">
+                </div>
+            </div>
 
             <div class="header-user">
                 <span class="user-greeting">👤 Admin</span>
@@ -322,12 +334,21 @@
                 </div>
 
                 <div class="card" style="margin-top:2rem;">
-                    <div class="card-header"><h3>📊 Tabla Comparativa</h3></div>
+                    <div class="card-header"><h3>📈 Resumen de Rendimiento por Local</h3></div>
+                    <div class="card-body">
+                        <div id="resumenRendimiento" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:1.5rem;">
+                    <div class="card-header"><h3>🏷️ Distribución por Categoría</h3></div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
-                                <thead><tr><th>Local</th><th>Stock Total</th><th>Productos</th><th>Stock Bajo</th><th>Agotados</th><th>Valor Est.</th></tr></thead>
-                                <tbody id="tbodyComparativa"></tbody>
+                                <thead><tr><th>Categoría</th><th>🏪 Alcalá</th><th>🏬 Local 01</th><th>🏢 Jordán</th><th>Total Unidades</th></tr></thead>
+                                <tbody id="tbodyDistribucionCategorias"></tbody>
                             </table>
                         </div>
                     </div>
@@ -387,6 +408,7 @@
                 <div class="actions-bar">
                     <button onclick="mostrarFormProducto()" class="btn btn-primary">➕ Nuevo Producto</button>
                     <button onclick="cargarProductos()" class="btn btn-secondary">🔄 Recargar</button>
+                    <button onclick="exportarProductosExcel()" class="btn btn-success" title="Exportar a Excel">📥 Exportar</button>
                     <div class="search-input">
                         <input type="text" id="buscarProductoAdmin" placeholder="Buscar producto..." oninput="filtrarProductosAdmin()">
                     </div>
@@ -1506,10 +1528,10 @@
                 <div class="actions-bar">
                     <button onclick="mostrarFormCredito()" class="btn btn-primary">➕ Nuevo Crédito</button>
                     <select id="creditosEstadoFiltro" class="form-control" style="max-width:180px;" onchange="cargarCreditos()">
+                        <option value="" selected>📋 Todos</option>
                         <option value="activo">🟡 Activos</option>
                         <option value="mora">🔴 En Mora</option>
                         <option value="pagado">🟢 Pagados</option>
-                        <option value="">Todos</option>
                     </select>
                     <button onclick="cargarCreditos()" class="btn btn-secondary">🔄 Actualizar</button>
                 </div>
@@ -1547,40 +1569,82 @@
                     <button onclick="cargarPromociones()" class="btn btn-secondary">🔄 Recargar</button>
                 </div>
 
-                <div id="formPromocion" class="form-modal" style="display:none;">
-                    <h3 id="formTituloPromocion">➕ Nueva Promoción</h3>
-                    <input type="hidden" id="promocionIdOriginal">
-                    
-                    <div class="form-row">
-                        <div class="form-group"><label>ID Promoción <span class="required">*</span></label><input type="text" id="promocionId" class="form-control" placeholder="PROMO06"></div>
-                        <div class="form-group"><label>Nombre <span class="required">*</span></label><input type="text" id="promocionNombre" class="form-control" placeholder="Nombre de la promoción"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label>Descuento (%) <span class="required">*</span></label><input type="number" id="promocionDescuento" class="form-control" placeholder="20" min="1" max="100"></div>
-                        <div class="form-group"><label>Locales Aplicables</label><input type="text" id="promocionLocales" class="form-control" placeholder="Todos"></div>
-                    </div>
+                <!-- Modal de Promoción a Pantalla Completa -->
+                <div id="formPromocion" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9999; overflow-y:auto; padding:1rem;">
+                    <div style="background:white; border-radius:1rem; max-width:1400px; margin:0 auto; min-height:calc(100vh - 2rem); display:flex; flex-direction:column;">
+                        <!-- Header del Modal -->
+                        <div style="background:linear-gradient(135deg,#ff6b00,#ff8533); color:white; padding:1.25rem 2rem; border-radius:1rem 1rem 0 0; display:flex; justify-content:space-between; align-items:center;">
+                            <h3 id="formTituloPromocion" style="margin:0; font-size:1.5rem;">➕ Nueva Promoción</h3>
+                            <button onclick="cancelarFormPromocion()" style="background:rgba(255,255,255,0.2); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer;">&times;</button>
+                        </div>
+                        <input type="hidden" id="promocionIdOriginal">
 
-                    <div class="form-group">
-                        <label>Productos Incluidos <span class="required">*</span></label>
-                        <div id="listaProductosPromo" class="productos-promo-grid"><div class="loading"><div class="spinner"></div><p>Cargando...</p></div></div>
-                        <input type="hidden" id="promocionProductos">
-                    </div>
+                        <!-- Contenido en 2 columnas -->
+                        <div style="display:grid; grid-template-columns:380px 1fr; flex:1; overflow:hidden;">
 
-                    <div class="form-row">
-                        <div class="form-group"><label>Fecha Inicio</label><input type="text" id="promocionInicio" class="form-control" placeholder="DD/MM/AAAA"></div>
-                        <div class="form-group"><label>Fecha Fin</label><input type="text" id="promocionFin" class="form-control" placeholder="DD/MM/AAAA"></div>
-                    </div>
-                    <div class="form-group">
-                        <label>Estado</label>
-                        <select id="promocionEstado" class="form-control">
-                            <option value="Activa">Activa</option>
-                            <option value="Inactiva">Inactiva</option>
-                            <option value="Finalizada">Finalizada</option>
-                        </select>
-                    </div>
-                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
-                        <button onclick="guardarPromocion()" class="btn btn-success">💾 Guardar</button>
-                        <button onclick="cancelarFormPromocion()" class="btn btn-secondary">Cancelar</button>
+                            <!-- Columna Izquierda: Datos de la Promo -->
+                            <div style="padding:1.5rem; border-right:1px solid #e2e8f0; overflow-y:auto; background:#f8fafc;">
+                                <h4 style="color:#1e293b; margin-bottom:1.25rem; font-size:1.1rem;">📋 Datos de la Promoción</h4>
+
+                                <div class="form-group" style="margin-bottom:1rem;">
+                                    <label style="font-weight:600; color:#374151; font-size:0.9rem;">ID Promoción <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" id="promocionId" class="form-control" placeholder="PROMO06" style="margin-top:0.25rem;">
+                                </div>
+                                <div class="form-group" style="margin-bottom:1rem;">
+                                    <label style="font-weight:600; color:#374151; font-size:0.9rem;">Nombre <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" id="promocionNombre" class="form-control" placeholder="Ej: Cascos al 20%" style="margin-top:0.25rem;">
+                                </div>
+                                <div class="form-group" style="margin-bottom:1rem;">
+                                    <label style="font-weight:600; color:#374151; font-size:0.9rem;">Descuento (%) <span style="color:#ef4444;">*</span></label>
+                                    <input type="number" id="promocionDescuento" class="form-control" placeholder="20" min="1" max="100" style="margin-top:0.25rem; font-size:1.25rem; font-weight:700; color:#ff6b00;">
+                                </div>
+                                <div class="form-group" style="margin-bottom:1rem;">
+                                    <label style="font-weight:600; color:#374151; font-size:0.9rem;">Locales Aplicables</label>
+                                    <input type="text" id="promocionLocales" class="form-control" placeholder="Todos" style="margin-top:0.25rem;">
+                                </div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+                                    <div class="form-group">
+                                        <label style="font-weight:600; color:#374151; font-size:0.9rem;">Fecha Inicio</label>
+                                        <input type="date" id="promocionInicio" class="form-control" style="margin-top:0.25rem;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="font-weight:600; color:#374151; font-size:0.9rem;">Fecha Fin</label>
+                                        <input type="date" id="promocionFin" class="form-control" style="margin-top:0.25rem;">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom:1.5rem;">
+                                    <label style="font-weight:600; color:#374151; font-size:0.9rem;">Estado</label>
+                                    <select id="promocionEstado" class="form-control" style="margin-top:0.25rem;">
+                                        <option value="Activa">🟢 Activa</option>
+                                        <option value="Inactiva">🟡 Inactiva</option>
+                                        <option value="Finalizada">🔴 Finalizada</option>
+                                    </select>
+                                </div>
+
+                                <!-- Vista Previa -->
+                                <div style="background:linear-gradient(135deg,#fff7ed,#ffedd5); border:2px dashed #fb923c; border-radius:0.75rem; padding:1rem; margin-bottom:1rem;">
+                                    <p style="font-size:0.8rem; color:#9a3412; margin-bottom:0.5rem; font-weight:600;">👁️ Vista Previa</p>
+                                    <div id="previewPromo" style="background:white; padding:1rem; border-radius:0.5rem; text-align:center;">
+                                        <p style="font-size:0.9rem; color:#64748b;">Completa los datos para ver la vista previa</p>
+                                    </div>
+                                </div>
+
+                                <!-- Botones -->
+                                <div style="display:flex; gap:0.75rem;">
+                                    <button onclick="guardarPromocion()" class="btn btn-success" style="flex:1; padding:0.875rem; font-size:1rem;">💾 Guardar Promoción</button>
+                                    <button onclick="cancelarFormPromocion()" class="btn btn-secondary" style="padding:0.875rem;">Cancelar</button>
+                                </div>
+                            </div>
+
+                            <!-- Columna Derecha: Selección de Productos -->
+                            <div style="padding:1.5rem; display:flex; flex-direction:column; overflow:hidden;">
+                                <h4 style="color:#1e293b; margin-bottom:1rem; font-size:1.1rem;">🛒 Seleccionar Productos <span style="color:#ef4444;">*</span></h4>
+                                <div id="listaProductosPromo" style="flex:1; overflow:hidden; border:1px solid #e2e8f0; border-radius:0.75rem; background:#fafafa;">
+                                    <div class="loading"><div class="spinner"></div><p>Cargando productos...</p></div>
+                                </div>
+                                <input type="hidden" id="promocionProductos">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1688,6 +1752,66 @@
                     </div>
                 </div>
                 <div style="margin-top:2rem;"><button onclick="guardarConfiguracion()" class="btn btn-success btn-lg">💾 Guardar Configuración</button></div>
+
+                <!-- Gestión de Empleados -->
+                <div class="card" style="margin-top:2rem;">
+                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3>👥 Gestión de Empleados</h3>
+                        <button onclick="mostrarModalEmpleado()" class="btn btn-primary">➕ Nuevo Empleado</button>
+                    </div>
+                    <div class="card-body">
+                        <p style="color:#64748b;margin-bottom:1rem;">Administra los empleados que pueden acceder al POS de cada tienda.</p>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Usuario</th>
+                                        <th>Cédula</th>
+                                        <th>Cargo</th>
+                                        <th>Tiendas</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaEmpleados">
+                                    <tr><td colspan="7" style="text-align:center;padding:2rem;color:#94a3b8;">Cargando empleados...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métodos de Pago -->
+                <div class="card" style="margin-top:2rem;">
+                    <div class="card-header">
+                        <h3>💳 Métodos de Pago (Página Web)</h3>
+                    </div>
+                    <div class="card-body">
+                        <p style="color:#64748b;margin-bottom:1rem;">Configura los métodos de pago que se muestran en la página principal.</p>
+                        <div class="form-group">
+                            <label>Métodos de Pago Activos</label>
+                            <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.5rem;">
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                    <input type="checkbox" id="metodoPagoNequi" checked> Nequi
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                    <input type="checkbox" id="metodoPagoDaviplata" checked> Daviplata
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                    <input type="checkbox" id="metodoPagoAddi" checked> Addi
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                    <input type="checkbox" id="metodoPagoSistecredito" checked> Sistecredito
+                                </label>
+                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                    <input type="checkbox" id="metodoPagoFodegas" checked> Fodegas
+                                </label>
+                            </div>
+                        </div>
+                        <button onclick="guardarMetodosPago()" class="btn btn-success" style="margin-top:1rem;">💾 Guardar Métodos de Pago</button>
+                    </div>
+                </div>
             </section>
 
             <!-- ═══════════════ SECCIÓN ENVÍOS ═══════════════ -->
@@ -2027,6 +2151,76 @@
             </section>
 
         </main>
+    </div>
+
+    <!-- Modal Empleado -->
+    <div id="modalEmpleado" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h2 id="tituloModalEmpleado">➕ Nuevo Empleado</h2>
+                <button class="modal-close" onclick="cerrarModalEmpleado()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="empleadoEditId">
+                <div class="form-group">
+                    <label>Nombre Completo *</label>
+                    <input type="text" id="empleadoNombre" class="form-control" placeholder="Nombre del empleado" required>
+                </div>
+                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div class="form-group">
+                        <label>Usuario *</label>
+                        <input type="text" id="empleadoUsuario" class="form-control" placeholder="usuario123">
+                    </div>
+                    <div class="form-group">
+                        <label>Cédula *</label>
+                        <input type="text" id="empleadoCedula" class="form-control" placeholder="1234567890">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña *</label>
+                    <input type="password" id="empleadoPassword" class="form-control" placeholder="Contraseña segura">
+                    <small style="color:#94a3b8;">Mínimo 4 caracteres</small>
+                </div>
+                <div class="form-group">
+                    <label>Cargo</label>
+                    <select id="empleadoCargo" class="form-control">
+                        <option value="Vendedor">Vendedor</option>
+                        <option value="Administrador">Administrador</option>
+                        <option value="Jefe de Tienda">Jefe de Tienda</option>
+                        <option value="Cajero">Cajero</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tiendas Permitidas</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.5rem;">
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                            <input type="checkbox" id="tiendaTodas" onchange="toggleTodasTiendas(this)"> Todas
+                        </label>
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                            <input type="checkbox" class="tienda-checkbox" value="Alcalá"> Alcalá
+                        </label>
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                            <input type="checkbox" class="tienda-checkbox" value="01"> Local 01
+                        </label>
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                            <input type="checkbox" class="tienda-checkbox" value="Jordán"> Jordán
+                        </label>
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                            <input type="checkbox" class="tienda-checkbox" value="Digital"> Digital
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                        <input type="checkbox" id="empleadoActivo" checked> Empleado Activo
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer" style="display:flex;gap:1rem;justify-content:flex-end;">
+                <button onclick="cerrarModalEmpleado()" class="btn btn-secondary">Cancelar</button>
+                <button onclick="guardarEmpleado()" class="btn btn-success">💾 Guardar</button>
+            </div>
+        </div>
     </div>
 
     <script src="js/config.js"></script>

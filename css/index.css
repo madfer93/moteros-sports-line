@@ -694,41 +694,126 @@
     .promo-carousel-container {
         padding: 0 20px;
     }
-    
+
     .promo-card {
         min-width: 260px;
         max-width: 260px;
     }
-    
+
     .promo-nav-btn {
         width: 40px;
         height: 40px;
         font-size: 1.2rem;
     }
-    
+
     .cart-floating {
         bottom: 20px;
         right: 20px;
         width: 55px;
         height: 55px;
     }
-    
+
     .modal-content {
         margin: 10px;
         max-width: 100% !important;
     }
-    
+
     .cart-actions {
         flex-direction: column;
     }
-    
+
     .toast-container {
         bottom: 80px;
         right: 15px;
         left: 15px;
     }
-    
+
     .toast {
         max-width: 100%;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MÉTODOS DE PAGO - HERO SECTION
+   ═══════════════════════════════════════════════════════════════ */
+
+.metodos-pago-hero {
+    margin-top: 2.5rem;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 1.25rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeInUp 0.8s ease 0.5s forwards;
+    opacity: 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.metodos-pago-titulo {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.metodos-pago-logos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.metodos-pago-logos img {
+    height: 45px;
+    width: auto;
+    max-width: 90px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: white;
+    padding: 6px 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.metodos-pago-logos img:hover {
+    transform: translateY(-3px) scale(1.1);
+    box-shadow: 0 8px 25px rgba(255, 107, 0, 0.4);
+}
+
+/* Responsive - Métodos de Pago */
+@media (max-width: 768px) {
+    .metodos-pago-hero {
+        padding: 1rem 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .metodos-pago-titulo {
+        font-size: 0.95rem;
+    }
+
+    .metodos-pago-logos {
+        gap: 1rem;
+    }
+
+    .metodos-pago-logos img {
+        height: 35px;
+        max-width: 70px;
+        padding: 4px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .metodos-pago-hero {
+        padding: 0.75rem 1rem;
+    }
+
+    .metodos-pago-logos img {
+        height: 30px;
+        max-width: 60px;
     }
 }
