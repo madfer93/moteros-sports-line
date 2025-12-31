@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contacto y Ubicación | Moteros Sport Line Villavicencio</title>
+    <title>Contacto y Ubicacion | Moteros Sport Line Villavicencio</title>
     <link rel="icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
-    <meta name="description" content="Contáctanos en nuestros 3 locales en Villavicencio: Alcalá, Jordán y Local 01. WhatsApp 311 340 8416. Horarios y direcciones de Moteros Sport Line.">
+    <meta name="description" content="Contactanos en nuestros 3 locales en Villavicencio: Alcala, Jordan y Local 01. WhatsApp 311 340 8416. Horarios y direcciones de Moteros Sport Line.">
 
     <!-- SEO Meta Tags -->
     <meta name="keywords" content="contacto moteros sport line, tienda motos villavicencio direccion, telefono moteros, ubicacion tienda motos meta, whatsapp moteros">
@@ -14,68 +14,300 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="Contacto - Moteros Sport Line">
-    <meta property="og:description" content="Visítanos en nuestros 3 locales en Villavicencio o escríbenos por WhatsApp 311 340 8416.">
+    <meta property="og:description" content="Visitanos en nuestros 3 locales en Villavicencio o escribenos por WhatsApp 311 340 8416.">
     <meta property="og:image" content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
 
-    <link rel="canonical" href="https://moterossportline.com/contacto.html">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+    <link rel="canonical" href="https://moterossportline.store/contacto.html">
     <link rel="stylesheet" href="css/styles.css">
+
     <style>
+        :root {
+            --primary: #ff6b00;
+            --primary-hover: #e55d00;
+        }
+
         .contacto-page { padding: 4rem 0; background: #f8fafc; min-height: 60vh; }
-        .contacto-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-top: 2rem; }
-        .contacto-card {
+
+        /* Info General */
+        .contacto-info-general {
+            background: linear-gradient(135deg, #ff6b00, #c45500);
+            color: white;
+            padding: 3rem;
+            border-radius: 1.5rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 40px rgba(255, 107, 0, 0.3);
+        }
+        .contacto-info-general h2 { font-size: 2rem; margin-bottom: 1rem; }
+        .telefono-grande { font-size: 2.5rem; font-weight: 800; display: block; margin: 1.5rem 0; }
+        .telefono-grande a { color: white; text-decoration: none; }
+        .telefono-grande a:hover { text-decoration: underline; }
+
+        /* Redes Sociales */
+        .redes-section { text-align: center; margin-bottom: 3rem; }
+        .redes-section h3 { margin-bottom: 1.5rem; color: #334155; font-size: 1.5rem; }
+        .redes-sociales { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+        .red-social {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .red-social:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .red-social.facebook { background: #1877f2; }
+        .red-social.instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+        .red-social.tiktok { background: #000; }
+        .red-social.whatsapp { background: #25D366; }
+
+        /* Tabs de Locales */
+        .locales-section { margin-top: 3rem; }
+        .locales-section h2 { text-align: center; margin-bottom: 2rem; color: #1e293b; font-size: 2rem; }
+
+        .tabs-container {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 1rem 2rem;
+            border: none;
             background: white;
             border-radius: 1rem;
-            padding: 2rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            transition: transform 0.3s, box-shadow 0.3s;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        .contacto-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
-        .contacto-card h3 { color: var(--primary); font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
-        .contacto-card p { margin: 0.75rem 0; color: #334155; line-height: 1.6; }
-        .contacto-card a { color: var(--primary); text-decoration: none; font-weight: 600; }
-        .contacto-card a:hover { text-decoration: underline; }
-        .btn-maps { display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background: #4285f4; color: white !important; border-radius: 0.5rem; text-decoration: none !important; font-weight: 600; transition: background 0.3s; }
-        .btn-maps:hover { background: #3367d6; }
-        .redes-sociales { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
-        .red-social { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: #f1f5f9; border-radius: 0.5rem; color: #334155; text-decoration: none; font-weight: 600; transition: all 0.3s; }
-        .red-social:hover { background: var(--primary); color: white; }
-        .red-social.facebook { background: #1877f2; color: white; }
-        .red-social.instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white; }
-        .red-social.tiktok { background: #000; color: white; }
-        .red-social.whatsapp { background: #25D366; color: white; }
-        .contacto-info-general { background: linear-gradient(135deg, #ff6b00, #c45500); color: white; padding: 3rem; border-radius: 1rem; text-align: center; margin-bottom: 2rem; box-shadow: 0 10px 40px rgba(255, 107, 0, 0.3); }
-        .contacto-info-general h2 { font-size: 2rem; margin-bottom: 1rem; }
-        .contacto-info-general p { font-size: 1.1rem; opacity: 0.95; }
-        .telefono-grande { font-size: 2rem; font-weight: 700; display: block; margin: 1.5rem 0; }
-        .telefono-grande a { color: white; text-decoration: none; }
+        .tab-btn:hover { background: #f1f5f9; }
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 20px rgba(255, 107, 0, 0.3);
+        }
+        .tab-btn .estado {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            margin-left: 0.5rem;
+        }
+        .tab-btn .estado.abierto { background: #10b981; color: white; }
+        .tab-btn .estado.cerrado { background: #ef4444; color: white; }
+        .tab-btn.active .estado.abierto { background: white; color: #10b981; }
+        .tab-btn.active .estado.cerrado { background: white; color: #ef4444; }
+
+        /* Contenido del Local */
+        .local-content {
+            display: none;
+            background: white;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .local-content.active { display: block; }
+
+        .local-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            min-height: 450px;
+        }
+
+        .local-info {
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .local-info h3 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .local-info .estado-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        .estado-badge.abierto { background: #d1fae5; color: #059669; }
+        .estado-badge.cerrado { background: #fee2e2; color: #dc2626; }
+        .estado-badge .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .estado-badge.abierto .dot { background: #10b981; }
+        .estado-badge.cerrado .dot { background: #ef4444; animation: none; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .local-detail {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 0.75rem;
+        }
+        .local-detail-icon {
+            font-size: 1.5rem;
+            width: 40px;
+            text-align: center;
+        }
+        .local-detail-text { flex: 1; }
+        .local-detail-text strong { display: block; color: #1e293b; margin-bottom: 0.25rem; }
+        .local-detail-text span { color: #64748b; }
+        .local-detail-text a { color: var(--primary); font-weight: 600; text-decoration: none; }
+        .local-detail-text a:hover { text-decoration: underline; }
+
+        .local-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .btn-local {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .btn-local.maps { background: #4285f4; color: white; }
+        .btn-local.maps:hover { background: #3367d6; transform: translateY(-2px); }
+        .btn-local.whatsapp { background: #25D366; color: white; }
+        .btn-local.whatsapp:hover { background: #128C7E; transform: translateY(-2px); }
+
+        /* Mapa */
+        .local-map {
+            background: #e2e8f0;
+            min-height: 450px;
+        }
+        .local-map iframe {
+            width: 100%;
+            height: 100%;
+            min-height: 450px;
+            border: none;
+        }
+
+        /* WhatsApp Flotante */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 65px;
+            height: 65px;
+            background: #25D366;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+            z-index: 999;
+            transition: all 0.3s;
+            animation: bounce 2s infinite;
+        }
+        .whatsapp-float:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 30px rgba(37, 211, 102, 0.5);
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .whatsapp-float:hover { animation: none; transform: scale(1.1); }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .local-grid {
+                grid-template-columns: 1fr;
+            }
+            .local-map {
+                min-height: 350px;
+                order: -1;
+            }
+            .local-map iframe { min-height: 350px; }
+            .local-info { padding: 2rem; }
+        }
+
+        @media (max-width: 600px) {
+            .contacto-info-general { padding: 2rem 1.5rem; }
+            .telefono-grande { font-size: 1.8rem; }
+            .tab-btn { padding: 0.75rem 1rem; font-size: 0.95rem; }
+            .tab-btn .estado { display: none; }
+            .local-info h3 { font-size: 1.5rem; }
+            .local-buttons { flex-direction: column; }
+            .btn-local { justify-content: center; }
+            .whatsapp-float { width: 55px; height: 55px; font-size: 1.5rem; bottom: 1.5rem; right: 1.5rem; }
+        }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+    <!-- Menu Movil -->
+    <div class="mobile-nav" id="mobileNav">
+        <a href="index.html">Inicio</a>
+        <a href="catalogo.html">Tienda</a>
+        <a href="blog.html">Blog</a>
+        <a href="contacto.html">Contacto</a>
+    </div>
+
     <!-- Header -->
     <header class="header">
         <div class="container">
-            <div class="logo">
+            <a href="index.html" class="logo" style="text-decoration:none;">
                 <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line" style="height:50px;">
                 <h1 id="siteTitle">MOTEROS SPORT LINE</h1>
-            </div>
+            </a>
             <nav class="nav">
                 <a href="index.html">Inicio</a>
                 <a href="catalogo.html">Tienda</a>
                 <a href="blog.html">Blog</a>
                 <a href="contacto.html" class="active">Contacto</a>
             </nav>
+            <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
     </header>
 
     <!-- Hero -->
     <section class="hero" style="padding: 5rem 1rem; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
         <div class="container" style="text-align: center; color: white;">
-            <h1 style="font-size: clamp(2.2rem, 5vw, 3.5rem); margin-bottom: 1rem; font-weight: 800;">Contáctanos</h1>
+            <h1 style="font-size: clamp(2.2rem, 5vw, 3.5rem); margin-bottom: 1rem; font-weight: 800;">Contactanos</h1>
             <p style="font-size: 1.3rem; opacity: 0.9; max-width: 700px; margin: 0 auto; color: #cbd5e1;">
-                Visítanos en cualquiera de nuestras tiendas o escríbenos por WhatsApp
+                Visitanos en cualquiera de nuestras 3 tiendas en Villavicencio
             </p>
         </div>
     </section>
@@ -85,48 +317,177 @@
         <div class="container">
             <!-- Info General -->
             <div class="contacto-info-general">
-                <h2>📞 Línea Principal</h2>
+                <h2>Linea Principal</h2>
                 <span class="telefono-grande"><a href="tel:+573113408416">311 340 8416</a></span>
-                <p>Escríbenos por WhatsApp para atención inmediata</p>
-                <a href="https://wa.me/573113408416" target="_blank" class="btn-whatsapp" style="display:inline-block; margin-top:1rem; padding:1rem 2rem; font-size:1.1rem;">
-                    💬 Escribir por WhatsApp
+                <p style="font-size:1.2rem; opacity:0.95;">Atencion inmediata por WhatsApp</p>
+                <a href="https://wa.me/573113408416?text=Hola!%20Me%20interesa%20informacion%20sobre%20sus%20productos" target="_blank" class="btn-whatsapp" style="display:inline-block; margin-top:1.5rem; padding:1rem 2.5rem; font-size:1.2rem; border-radius:2rem;">
+                    Escribir por WhatsApp
                 </a>
             </div>
 
             <!-- Redes Sociales -->
-            <div style="text-align:center; margin-bottom:3rem;">
-                <h3 style="margin-bottom:1rem; color:#334155;">Síguenos en Redes Sociales</h3>
-                <div class="redes-sociales" style="justify-content:center;">
-                    <a href="https://www.facebook.com/MoterosSportLine/" target="_blank" class="red-social facebook">📘 Facebook</a>
-                    <a href="https://www.instagram.com/moteros.sportline/" target="_blank" class="red-social instagram">📷 Instagram</a>
-                    <a href="https://www.tiktok.com/@moterossportline" target="_blank" class="red-social tiktok">🎵 TikTok</a>
-                    <a href="https://wa.me/573113408416" target="_blank" class="red-social whatsapp">💬 WhatsApp</a>
+            <div class="redes-section">
+                <h3>Siguenos en Redes Sociales</h3>
+                <div class="redes-sociales">
+                    <a href="https://www.facebook.com/MoterosSportLine/" target="_blank" class="red-social facebook">Facebook</a>
+                    <a href="https://www.instagram.com/moteros.sportline/" target="_blank" class="red-social instagram">Instagram</a>
+                    <a href="https://www.tiktok.com/@moterossportline" target="_blank" class="red-social tiktok">TikTok</a>
                 </div>
             </div>
 
-            <!-- Locales -->
-            <h2 style="text-align:center; margin-bottom:2rem; color:#1e293b;">📍 Nuestros Locales</h2>
-            <div class="contacto-grid">
-                <div class="contacto-card">
-                    <h3>🏪 Alcalá</h3>
-                    <p><strong>Dirección:</strong> Centro Comercial Alcalá, Villavicencio</p>
-                    <p><strong>Teléfono:</strong> <a href="tel:+573113408416">311 340 8416</a></p>
-                    <p><strong>Horario:</strong> Lunes a Sábado 9AM - 7PM</p>
-                    <a href="https://maps.app.goo.gl/MitBYM19LbGGZ9kz8" target="_blank" class="btn-maps">📍 Ver en Google Maps</a>
+            <!-- Locales con Tabs -->
+            <div class="locales-section">
+                <h2>Nuestros Locales</h2>
+
+                <!-- Tabs -->
+                <div class="tabs-container">
+                    <button class="tab-btn active" onclick="mostrarLocal('alcala')">
+                        Alcala
+                        <span class="estado" id="estado-tab-alcala"></span>
+                    </button>
+                    <button class="tab-btn" onclick="mostrarLocal('local01')">
+                        Local 01
+                        <span class="estado" id="estado-tab-local01"></span>
+                    </button>
+                    <button class="tab-btn" onclick="mostrarLocal('jordan')">
+                        Jordan
+                        <span class="estado" id="estado-tab-jordan"></span>
+                    </button>
                 </div>
-                <div class="contacto-card">
-                    <h3>🏬 Local 01</h3>
-                    <p><strong>Dirección:</strong> Local 01, Villavicencio</p>
-                    <p><strong>Teléfono:</strong> <a href="tel:+573113408416">311 340 8416</a></p>
-                    <p><strong>Horario:</strong> Lunes a Sábado 8AM - 6PM</p>
-                    <a href="https://maps.app.goo.gl/Z2pDJt11sAgE9WH97" target="_blank" class="btn-maps">📍 Ver en Google Maps</a>
+
+                <!-- Contenido Alcala -->
+                <div class="local-content active" id="local-alcala">
+                    <div class="local-grid">
+                        <div class="local-info">
+                            <h3>Alcala</h3>
+                            <div class="estado-badge" id="estado-alcala">
+                                <span class="dot"></span>
+                                <span class="texto">Verificando...</span>
+                            </div>
+                            <div class="local-detail">
+                                <span class="local-detail-icon">📍</span>
+                                <div class="local-detail-text">
+                                    <strong>Direccion</strong>
+                                    <span>Barrio Alcala, Calle Principal<br>Villavicencio, Meta</span>
+                                </div>
+                            </div>
+                            <div class="local-detail">
+                                <span class="local-detail-icon">📞</span>
+                                <div class="local-detail-text">
+                                    <strong>Telefono</strong>
+                                    <a href="tel:+573113408416">311 340 8416</a>
+                                </div>
+                            </div>
+                            <div class="local-detail">
+                                <span class="local-detail-icon">🕐</span>
+                                <div class="local-detail-text">
+                                    <strong>Horario</strong>
+                                    <span>Lunes a Sabado: 9:00 AM - 7:00 PM<br>Domingo: Cerrado</span>
+                                </div>
+                            </div>
+                            <div class="local-buttons">
+                                <a href="https://maps.app.goo.gl/MitBYM19LbGGZ9kz8" target="_blank" class="btn-local maps">
+                                    Abrir en Maps
+                                </a>
+                                <a href="https://wa.me/573113408416?text=Hola!%20Quiero%20info%20del%20local%20Alcala" target="_blank" class="btn-local whatsapp">
+                                    WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                        <div class="local-map">
+                            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1563.2543014895753!2d-73.61996662018426!3d4.147477936650474!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e3e2dda6fc55e0f%3A0x8dae331fe351f0bd!2sMoteros%20sport%20line!5e0!3m2!1ses-419!2sco!4v1767146373178!5m2!1ses-419!2sco" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        </div>
+                    </div>
                 </div>
-                <div class="contacto-card">
-                    <h3>🏢 Jordán</h3>
-                    <p><strong>Dirección:</strong> Sector Jordán, Villavicencio</p>
-                    <p><strong>Teléfono:</strong> <a href="tel:+573113408416">311 340 8416</a></p>
-                    <p><strong>Horario:</strong> Lunes a Domingo 10AM - 8PM</p>
-                    <a href="https://maps.app.goo.gl/xey3kPoAxGBKRLSL6" target="_blank" class="btn-maps">📍 Ver en Google Maps</a>
+
+                <!-- Contenido Local 01 -->
+                <div class="local-content" id="local-local01">
+                    <div class="local-grid">
+                        <div class="local-info">
+                            <h3>Local 01</h3>
+                            <div class="estado-badge" id="estado-local01">
+                                <span class="dot"></span>
+                                <span class="texto">Verificando...</span>
+                            </div>
+                            <div class="local-detail">
+                                <span class="local-detail-icon">📍</span>
+                                <div class="local-detail-text">
+                                    <strong>Direccion</strong>
+                                    <span>Barrio 01<br>Villavicencio, Meta</span>
+                                </div>
+                            </div>
+                            <div class="local-detail">
+                                <span class="local-detail-icon">📞</span>
+                                <div class="local-detail-text">
+                                    <strong>Telefono</strong>
+                                    <a href="tel:+573113408416">311 340 8416</a>
+                                </div>
+                            </div>
+                            <div class="local-detail">
+                                <span class="local-detail-icon">🕐</span>
+                                <div class="local-detail-text">
+                                    <strong>Horario</strong>
+                                    <span>Lunes a Sabado: 8:00 AM - 6:00 PM<br>Domingo: Cerrado</span>
+                                </div>
+                            </div>
+                            <div class="local-buttons">
+                                <a href="https://maps.app.goo.gl/Z2pDJt11sAgE9WH97" target="_blank" class="btn-local maps">
+                                    Abrir en Maps
+                                </a>
+                                <a href="https://wa.me/573113408416?text=Hola!%20Quiero%20info%20del%20Local%2001" target="_blank" class="btn-local whatsapp">
+                                    WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                        <div class="local-map">
+                            <iframe src="https://www.google.com/maps/embed?pb=!3m2!1ses-419!2sco!4v1767146541047!5m2!1ses-419!2sco!6m8!1m7!1sK5hWXPjLklDIqW284eeZKg!2m2!1d4.147842310880927!2d-73.63211067068535!3f223.73771040744856!4f2.8018147527757407!5f0.7820865974627469" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenido Jordan -->
+                <div class="local-content" id="local-jordan">
+                    <div class="local-grid">
+                        <div class="local-info">
+                            <h3>Jordan</h3>
+                            <div class="estado-badge" id="estado-jordan">
+                                <span class="dot"></span>
+                                <span class="texto">Verificando...</span>
+                            </div>
+                            <div class="local-detail">
+                                <span class="local-detail-icon">📍</span>
+                                <div class="local-detail-text">
+                                    <strong>Direccion</strong>
+                                    <span>Sector Jordan<br>Villavicencio, Meta</span>
+                                </div>
+                            </div>
+                            <div class="local-detail">
+                                <span class="local-detail-icon">📞</span>
+                                <div class="local-detail-text">
+                                    <strong>Telefono</strong>
+                                    <a href="tel:+573113408416">311 340 8416</a>
+                                </div>
+                            </div>
+                            <div class="local-detail">
+                                <span class="local-detail-icon">🕐</span>
+                                <div class="local-detail-text">
+                                    <strong>Horario</strong>
+                                    <span>Lunes a Domingo: 10:00 AM - 8:00 PM</span>
+                                </div>
+                            </div>
+                            <div class="local-buttons">
+                                <a href="https://maps.app.goo.gl/xey3kPoAxGBKRLSL6" target="_blank" class="btn-local maps">
+                                    Abrir en Maps
+                                </a>
+                                <a href="https://wa.me/573113408416?text=Hola!%20Quiero%20info%20del%20local%20Jordan" target="_blank" class="btn-local whatsapp">
+                                    WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                        <div class="local-map">
+                            <iframe src="https://www.google.com/maps/embed?pb=!3m2!1ses-419!2sco!4v1767146482438!5m2!1ses-419!2sco!6m8!1m7!1swkNYxyusd9n1NnVw4BN7vg!2m2!1d4.148323309652049!2d-73.623960435254!3f42.20731289351911!4f8.338184291131014!5f0.7820865974627469" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -143,22 +504,101 @@
                 </div>
                 <div class="footer-section">
                     <h4>Contacto General</h4>
-                    <p>📞 <a href="tel:+573113408416" style="color: white;">311 340 8416</a></p>
-                    <p>✉️ <a href="mailto:moterossportline@gmail.com" style="color: white;">moterossportline@gmail.com</a></p>
+                    <p><a href="tel:+573113408416" style="color: white;">311 340 8416</a></p>
+                    <p><a href="mailto:moterossportline@gmail.com" style="color: white;">moterossportline@gmail.com</a></p>
                 </div>
                 <div class="footer-section">
-                    <h4>Síguenos</h4>
-                    <p>📘 <a href="https://www.facebook.com/MoterosSportLine/" target="_blank" style="color: white;">Facebook</a></p>
-                    <p>📷 <a href="https://www.instagram.com/moteros.sportline/" target="_blank" style="color: white;">Instagram</a></p>
-                    <p>🎵 <a href="https://www.tiktok.com/@moterossportline" target="_blank" style="color: white;">TikTok</a></p>
+                    <h4>Siguenos</h4>
+                    <p><a href="https://www.facebook.com/MoterosSportLine/" target="_blank" style="color: white;">Facebook</a></p>
+                    <p><a href="https://www.instagram.com/moteros.sportline/" target="_blank" style="color: white;">Instagram</a></p>
+                    <p><a href="https://www.tiktok.com/@moterossportline" target="_blank" style="color: white;">TikTok</a></p>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 Moteros Sports Line | Variedades JyM</p>
+                <p>&copy; 2025 Moteros Sports Line | Variedades JyM - Todos los derechos reservados</p>
             </div>
         </div>
     </footer>
 
+    <!-- WhatsApp Flotante -->
+    <a href="https://wa.me/573113408416?text=Hola!%20Necesito%20informacion" target="_blank" class="whatsapp-float" title="Escribenos por WhatsApp">
+        💬
+    </a>
+
     <script src="js/config.js"></script>
+    <script>
+        // Menu movil
+        function toggleMobileMenu() {
+            document.getElementById('mobileNav').classList.toggle('active');
+            document.getElementById('menuToggle').classList.toggle('active');
+        }
+
+        // Horarios de cada local
+        const horarios = {
+            alcala: {
+                dias: [1, 2, 3, 4, 5, 6], // Lun-Sab
+                apertura: 9,
+                cierre: 19
+            },
+            local01: {
+                dias: [1, 2, 3, 4, 5, 6], // Lun-Sab
+                apertura: 8,
+                cierre: 18
+            },
+            jordan: {
+                dias: [0, 1, 2, 3, 4, 5, 6], // Todos los dias
+                apertura: 10,
+                cierre: 20
+            }
+        };
+
+        // Verificar si esta abierto
+        function estaAbierto(local) {
+            const ahora = new Date();
+            const dia = ahora.getDay(); // 0=Dom, 1=Lun...
+            const hora = ahora.getHours();
+            const config = horarios[local];
+
+            if (!config.dias.includes(dia)) return false;
+            return hora >= config.apertura && hora < config.cierre;
+        }
+
+        // Actualizar estados
+        function actualizarEstados() {
+            ['alcala', 'local01', 'jordan'].forEach(local => {
+                const abierto = estaAbierto(local);
+                const badge = document.getElementById(`estado-${local}`);
+                const tabEstado = document.getElementById(`estado-tab-${local}`);
+
+                if (badge) {
+                    badge.className = `estado-badge ${abierto ? 'abierto' : 'cerrado'}`;
+                    badge.querySelector('.texto').textContent = abierto ? 'Abierto ahora' : 'Cerrado';
+                }
+
+                if (tabEstado) {
+                    tabEstado.className = `estado ${abierto ? 'abierto' : 'cerrado'}`;
+                    tabEstado.textContent = abierto ? 'Abierto' : 'Cerrado';
+                }
+            });
+        }
+
+        // Cambiar entre tabs
+        function mostrarLocal(local) {
+            // Ocultar todos
+            document.querySelectorAll('.local-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Mostrar seleccionado
+            document.getElementById(`local-${local}`).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // Inicializar al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            actualizarEstados();
+            // Actualizar cada minuto
+            setInterval(actualizarEstados, 60000);
+        });
+    </script>
 </body>
 </html>

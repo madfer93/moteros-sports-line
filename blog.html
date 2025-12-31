@@ -27,19 +27,32 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+    <!-- Menu Movil -->
+    <div class="mobile-nav" id="mobileNav">
+        <a href="index.html">Inicio</a>
+        <a href="catalogo.html">Tienda</a>
+        <a href="blog.html">Blog</a>
+        <a href="contacto.html">Contacto</a>
+    </div>
+
     <!-- Header -->
     <header class="header">
         <div class="container">
-            <div class="logo">
+            <a href="index.html" class="logo" style="text-decoration:none;">
                 <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line" style="height:50px;">
                 <h1 id="siteTitle">MOTEROS SPORTS LINE</h1>
-            </div>
+            </a>
             <nav class="nav">
                 <a href="index.html">Inicio</a>
                 <a href="catalogo.html">Tienda</a>
                 <a href="blog.html" class="active">Blog</a>
                 <a href="contacto.html">Contacto</a>
             </nav>
+            <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
     </header>
 
@@ -94,5 +107,11 @@
     <!-- Nuestros scripts -->
     <script src="js/config.js"></script>
     <script src="js/blog.js"></script>
+    <script>
+        function toggleMobileMenu() {
+            document.getElementById('mobileNav').classList.toggle('active');
+            document.getElementById('menuToggle').classList.toggle('active');
+        }
+    </script>
 </body>
 </html>

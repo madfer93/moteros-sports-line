@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-site-verification" content="_JVyhCOFLSXI4bt0PVr3q6W-3d2KDqECW9P62Iej198" />
     <title>Moteros Sport Line | Accesorios para Motociclistas en Villavicencio</title>
     <link rel="icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <meta name="description" content="Moteros Sport Line - La Casa Oficial de los Moteros en Villavicencio, Meta. Cascos, guantes, chaquetas, botas, intercomunicadores y accesorios de calidad para motociclistas. 3 locales: Alcalá, Jordán y Local 01.">
@@ -47,19 +48,32 @@
         <span class="cart-floating-count" id="cartFloatingCount">0</span>
     </button>
 
+    <!-- Menu Movil -->
+    <div class="mobile-nav" id="mobileNav">
+        <a href="index.html">Inicio</a>
+        <a href="catalogo.html">Tienda</a>
+        <a href="blog.html">Blog</a>
+        <a href="contacto.html">Contacto</a>
+    </div>
+
     <!-- Header -->
     <header class="header">
         <div class="container">
-            <div class="logo">
+            <a href="index.html" class="logo" style="text-decoration:none;">
                 <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line">
                 <h1 id="siteTitle">MOTEROS SPORT LINE</h1>
-            </div>
+            </a>
             <nav class="nav">
                 <a href="index.html" class="active">Inicio</a>
                 <a href="catalogo.html">Tienda</a>
                 <a href="blog.html">Blog</a>
                 <a href="contacto.html">Contacto</a>
             </nav>
+            <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
     </header>
 
@@ -246,5 +260,11 @@
     <!-- Scripts -->
     <script src="js/config.js"></script>
     <script src="js/index.js"></script>
+    <script>
+        function toggleMobileMenu() {
+            document.getElementById('mobileNav').classList.toggle('active');
+            document.getElementById('menuToggle').classList.toggle('active');
+        }
+    </script>
 </body>
 </html>

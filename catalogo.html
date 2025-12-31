@@ -423,9 +423,68 @@
         }
         
         /* Responsive */
+        /* Menu Hamburguesa */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            z-index: 1001;
+        }
+        .menu-toggle span {
+            display: block;
+            width: 28px;
+            height: 3px;
+            background: white;
+            margin: 6px 0;
+            border-radius: 3px;
+            transition: 0.3s;
+        }
+        .menu-toggle.active span:nth-child(1) {
+            transform: rotate(45deg) translate(6px, 6px);
+        }
+        .menu-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .menu-toggle.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 26, 0.98);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .mobile-nav.active {
+            display: flex;
+        }
+        .mobile-nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .mobile-nav a:hover {
+            background: var(--primary);
+        }
+
         @media (max-width: 768px) {
             .nav { display: none; }
-            .header .container { justify-content: center; }
+            .menu-toggle { display: block; }
+            .header .container { justify-content: space-between; }
             .filtros-container { flex-direction: column; width: 100%; }
             .filtros-container select,
             .filtros-container input,
@@ -441,18 +500,31 @@
 </head>
 <body>
     <!-- Header -->
+    <!-- Menu Movil -->
+    <div class="mobile-nav" id="mobileNav">
+        <a href="index.html">Inicio</a>
+        <a href="catalogo.html">Catálogo</a>
+        <a href="blog.html">Blog</a>
+        <a href="contacto.html">Contacto</a>
+    </div>
+
     <header class="header">
         <div class="container">
-            <div class="logo">
+            <a href="index.html" class="logo" style="text-decoration:none;">
                 <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line">
                 <h1 id="siteTitle">MOTEROS SPORT LINE</h1>
-            </div>
+            </a>
             <nav class="nav">
                 <a href="index.html">Inicio</a>
                 <a href="catalogo.html">Catálogo</a>
                 <a href="blog.html">Blog</a>
                 <a href="contacto.html">Contacto</a>
             </nav>
+            <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
             <button class="cart-btn" onclick="abrirCarrito()">
                 <span>🛒</span>
                 <span><strong id="cartCount">0</strong> items</span>
@@ -550,6 +622,14 @@
         let productosFiltrados = [];
         let carrito = JSON.parse(localStorage.getItem('carrito_moteros') || '[]');
         let productoActual = null;
+
+        // Menu movil
+        function toggleMobileMenu() {
+            const nav = document.getElementById('mobileNav');
+            const btn = document.getElementById('menuToggle');
+            nav.classList.toggle('active');
+            btn.classList.toggle('active');
+        }
 
         // Actualizar contador del carrito
         function actualizarContadorCarrito() {
