@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contacto y Ubicacion | Moteros Sport Line Villavicencio</title>
     <link rel="icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff6b00">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <meta name="description" content="Contactanos en nuestros 3 locales en Villavicencio: Alcala, Jordan y Local 01. WhatsApp 311 340 8416. Horarios y direcciones de Moteros Sport Line.">
 
     <!-- SEO Meta Tags -->
@@ -13,6 +17,7 @@
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
+    <meta property="og:url" content="https://moterossportline.store/contacto.html">
     <meta property="og:title" content="Contacto - Moteros Sport Line">
     <meta property="og:description" content="Visitanos en nuestros 3 locales en Villavicencio o escribenos por WhatsApp 311 340 8416.">
     <meta property="og:image" content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
@@ -270,9 +275,40 @@
             .btn-local { justify-content: center; }
             .whatsapp-float { width: 55px; height: 55px; font-size: 1.5rem; bottom: 1.5rem; right: 1.5rem; }
         }
+        /* Preloader */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s;
+        }
+        .preloader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
+    <!-- Preloader -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-spinner"></div>
+    </div>
+
     <!-- Menu Movil -->
     <div class="mobile-nav" id="mobileNav">
         <a href="index.html">Inicio</a>
@@ -598,6 +634,20 @@
             actualizarEstados();
             // Actualizar cada minuto
             setInterval(actualizarEstados, 60000);
+        });
+
+        // Ocultar preloader
+        window.addEventListener('load', function() {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                preloader.style.opacity = '0';
+                setTimeout(() => preloader.style.display = 'none', 300);
+            }
+        });
+
+        // Bloquear selección de texto
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
         });
     </script>
 </body>

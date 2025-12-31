@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de Productos | Moteros Sport Line Villavicencio</title>
     <link rel="icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff6b00">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <meta name="description" content="Explora nuestro catálogo de cascos, guantes, chaquetas, botas, intercomunicadores y accesorios para motociclistas. Los mejores precios en Villavicencio, Meta.">
 
     <!-- SEO Meta Tags -->
@@ -13,11 +17,12 @@
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
+    <meta property="og:url" content="https://moterossportline.store/catalogo.html">
     <meta property="og:title" content="Catálogo - Moteros Sport Line">
     <meta property="og:description" content="Encuentra cascos, guantes, chaquetas y más para tu moto. Precios competitivos en Villavicencio.">
     <meta property="og:image" content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
 
-    <link rel="canonical" href="https://moterossportline.com/catalogo.html">
+    <link rel="canonical" href="https://moterossportline.store/catalogo.html">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -497,9 +502,66 @@
             .producto-precio { font-size: 1.5rem; }
         }
     </style>
+    <style>
+        /* Preloader */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s;
+        }
+        .preloader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* WhatsApp Flotante */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            background: #25D366;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+            z-index: 999;
+            transition: all 0.3s;
+            animation: wabounce 2s infinite;
+        }
+        .whatsapp-float:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5);
+        }
+        @keyframes wabounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+    </style>
 </head>
-<body>
-    <!-- Header -->
+<body oncontextmenu="return false;">
+    <!-- Preloader -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-spinner"></div>
+    </div>
+
     <!-- Menu Movil -->
     <div class="mobile-nav" id="mobileNav">
         <a href="index.html">Inicio</a>
@@ -919,6 +981,27 @@
             console.log('🚀 Iniciando Moteros Sports Line...');
             cargarProductos();
         });
+
+        // Ocultar preloader
+        window.addEventListener('load', function() {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                preloader.style.opacity = '0';
+                setTimeout(() => preloader.style.display = 'none', 300);
+            }
+        });
+
+        // Bloquear selección de texto
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+        });
     </script>
+
+    <!-- WhatsApp Flotante -->
+    <a href="https://wa.me/573113408416?text=Hola!%20Vi%20el%20catalogo%20y%20quiero%20info" target="_blank" class="whatsapp-float" aria-label="WhatsApp">
+        <svg viewBox="0 0 32 32" width="32" height="32" fill="white">
+            <path d="M16 0C7.163 0 0 7.163 0 16c0 2.837.736 5.496 2.021 7.805L0 32l8.469-2.012A15.94 15.94 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm8.176 22.648c-.346.971-2.024 1.855-2.782 1.971-.704.108-1.596.154-2.573-.161-.593-.192-1.356-.449-2.332-.877-4.099-1.798-6.776-5.978-6.978-6.254-.201-.275-1.648-2.188-1.648-4.175 0-1.986 1.043-2.963 1.413-3.369.371-.406.808-.508 1.078-.508.27 0 .539.003.775.014.248.012.581-.094.909.694.346.831 1.177 2.871 1.28 3.078.104.207.173.449.035.724-.139.275-.207.449-.415.69-.207.242-.437.539-.624.724-.207.207-.424.432-.183.848.242.415 1.072 1.77 2.303 2.865 1.582 1.409 2.917 1.848 3.331 2.054.415.207.656.173.898-.104.242-.276 1.043-1.219 1.321-1.636.277-.415.553-.346.932-.207.38.138 2.399 1.132 2.813 1.337.415.207.69.311.794.483.103.173.103.986-.243 1.957z"/>
+        </svg>
+    </a>
 </body>
 </html>

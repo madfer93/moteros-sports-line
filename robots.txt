@@ -1,0 +1,16 @@
+# Moteros Sport Line - robots.txt
+# https://moterossportline.store
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://moterossportline.store/sitemap.xml
+
+# Bloquear archivos innecesarios
+Disallow: /js/config.js
+Disallow: /admin.html
+
+# Permitir rastreo de imagenes
+User-agent: Googlebot-Image
+Allow: /
