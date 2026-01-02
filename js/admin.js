@@ -1477,11 +1477,12 @@ async function cargarCreditos() {
 
         if (errTodos) throw errTodos;
 
-        // Actualizar stats - soporta ambos formatos: activo/abierto, pagado/cerrado
+        // Actualizar stats - soporta ambos formatos: activo/abierto, pagado/cerrado (case insensitive)
         const creditos = todosCreditos || [];
-        const esActivo = (estado) => estado === 'activo' || estado === 'abierto';
-        const esMora = (estado) => estado === 'mora';
-        const esPagado = (estado) => estado === 'pagado' || estado === 'cerrado';
+        const normalizar = (estado) => (estado || '').toLowerCase().trim();
+        const esActivo = (estado) => ['activo', 'abierto'].includes(normalizar(estado));
+        const esMora = (estado) => normalizar(estado) === 'mora';
+        const esPagado = (estado) => ['pagado', 'cerrado'].includes(normalizar(estado));
 
         const activos = creditos.filter(c => esActivo(c.estado)).length;
         const enMora = creditos.filter(c => esMora(c.estado)).length;
@@ -1520,8 +1521,43 @@ async function cargarCreditos() {
 
         tbody.innerHTML = datosFiltrados.map(c => {
             const cliente = c.clientes_credito;
-            const nombre = cliente ? `${cliente.nombres} ${cliente.apellidos || ''}` : 'Sin cliente';
-            const telefono = cliente?.telefono?.replace(/\D/g, '') || '';
+            // Extraer nombre: primero de cliente vinculado, luego de notas, luego de numero_credito
+            let nombre = 'Sin cliente';
+            let telefono = '';
+
+            if (cliente) {
+                nombre = cliente.nombres ? `${cliente.nombres} ${cliente.apellidos || ''}` : (cliente.nombre || 'Sin nombre');
+                telefono = cliente.telefono || '';
+            } else if (c.notas) {
+                // Extraer info de notas (formato nuevo: "Crédito: NOMBRE | CC: xxx | Tel: xxx")
+                const matchNuevoFormato = c.notas.match(/Crédito:\s*([^|]+)/i);
+                const matchTel = c.notas.match(/Tel:\s*(\d+)/i);
+
+                if (matchNuevoFormato) {
+                    // Nuevo formato: usar nombre del campo Crédito:
+                    nombre = matchNuevoFormato[1].trim().substring(0, 30);
+                } else if (c.numero_credito) {
+                    // Formato viejo: extraer nombre del numero_credito (ej: CRED-20241220-MANITAS -> MANITAS)
+                    const partes = c.numero_credito.split('-');
+                    if (partes.length > 2) {
+                        nombre = partes[partes.length - 1];
+                    } else {
+                        // Fallback: usar primera parte de notas antes del pipe
+                        const matchFallback = c.notas.match(/^([^|]+)/);
+                        if (matchFallback) nombre = matchFallback[1].trim().substring(0, 25);
+                    }
+                }
+
+                if (matchTel) telefono = matchTel[1];
+            }
+
+            // Si aún no hay nombre, usar parte del numero_credito
+            if (nombre === 'Sin cliente' && c.numero_credito) {
+                const partes = c.numero_credito.split('-');
+                if (partes.length > 2) nombre = partes[partes.length - 1];
+            }
+
+            telefono = telefono.replace(/\D/g, '');
 
             // Colores mejorados por estado (soporta ambos formatos)
             let estadoBadge, estadoTexto, rowBg;

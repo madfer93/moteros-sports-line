@@ -208,7 +208,7 @@ button { font-family: inherit; cursor: pointer; }
 .whatsapp-float {
     position: fixed;
     bottom: 2rem;
-    right: 2rem;
+    left: 2rem;
     width: 60px;
     height: 60px;
     background: #25D366;
@@ -234,7 +234,7 @@ button { font-family: inherit; cursor: pointer; }
     50% { transform: translateY(-8px); }
 }
 @media (max-width: 600px) {
-    .whatsapp-float { width: 55px; height: 55px; font-size: 1.5rem; bottom: 1.5rem; right: 1.5rem; }
+    .whatsapp-float { width: 55px; height: 55px; font-size: 1.5rem; bottom: 1.5rem; left: 1.5rem; }
 }
 
 /* BLOQUEO CLICK DERECHO */

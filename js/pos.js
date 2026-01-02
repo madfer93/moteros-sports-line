@@ -1016,10 +1016,56 @@ async function procesarVenta() {
         }
         
         const total = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
-        const msg = destino === 'digital' 
+
+        // Si es Crédito Motero, registrar en tabla creditos_motero
+        if (destino === 'tienda' && metodosSeleccionados.has('Credito Motero')) {
+            const nombre = document.getElementById('creditoNombre')?.value.trim() || 'Sin nombre';
+            const telefono = document.getElementById('creditoTelefono')?.value.trim() || '';
+            const cedula = document.getElementById('creditoCedula')?.value.trim() || '';
+            const direccion = document.getElementById('creditoDireccion')?.value.trim() || '';
+            const autoriza = document.getElementById('creditoAutoriza')?.value || 'No especificado';
+            const cuotas = parseInt(document.getElementById('creditoCuotas')?.value) || 1;
+
+            // Generar número de crédito único con nombre
+            const nombreCorto = nombre.split(' ')[0].toUpperCase().substring(0, 10);
+            const numeroCredito = 'CM-' + Date.now().toString(36).toUpperCase() + '-' + nombreCorto;
+
+            // Calcular fecha de vencimiento (cuotas * 30 días)
+            const fechaVencimiento = new Date();
+            fechaVencimiento.setDate(fechaVencimiento.getDate() + (cuotas * 30));
+
+            const valorCuota = Math.ceil(total / cuotas);
+
+            // Formato de notas parseable: Crédito: NOMBRE | CC: xxx | Tel: xxx | Dir: xxx
+            const productosLista = carrito.map(i => `${i.nombre} x${i.cantidad}`).join(', ');
+            const notasCredito = `Crédito: ${nombre} | CC: ${cedula} | Tel: ${telefono} | Dir: ${direccion} | Autoriza: ${autoriza} | Productos: ${productosLista}`;
+
+            // Insertar el crédito (sin vincular a clientes_credito ya que no existe la tabla)
+            const { error: errorCredito } = await db.from('creditos_motero').insert({
+                numero_credito: numeroCredito,
+                cliente_id: null,
+                local_origen: TIENDA.nombre,
+                monto_total: total,
+                numero_cuotas: cuotas,
+                valor_cuota: valorCuota,
+                fecha_vencimiento: fechaVencimiento.toISOString().split('T')[0],
+                saldo_pendiente: total,
+                estado: 'activo',
+                notas: notasCredito
+            });
+
+            if (errorCredito) {
+                console.error('Error registrando crédito:', errorCredito);
+                mostrarAlerta('⚠️ Venta ok, pero error al registrar crédito: ' + errorCredito.message, 'warning');
+            } else {
+                console.log('✅ Crédito Motero registrado:', numeroCredito);
+            }
+        }
+
+        const msg = destino === 'digital'
             ? `📦 Transferido a Digital: $${total.toLocaleString('es-CO')}`
             : `✅ Venta exitosa: $${total.toLocaleString('es-CO')}`;
-        
+
         mostrarAlerta(msg, 'success');
         limpiarDespuesVenta();
         await cargarProductos();

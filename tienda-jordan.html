@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS Alcalá | Moteros Sports Line</title>
+    <title>POS Jordan | Moteros Sports Line</title>
     <link rel="icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="css/pos.css">
@@ -144,6 +144,14 @@
                 <option value="Gerencia">Gerencia</option>
                 <option value="Administrador">Administrador</option>
                 <option value="Jefe de Tienda">Jefe de Tienda</option>
+            </select>
+            <select id="creditoCuotas">
+                <option value="1">1 Cuota (pago único)</option>
+                <option value="2">2 Cuotas</option>
+                <option value="3">3 Cuotas</option>
+                <option value="4">4 Cuotas</option>
+                <option value="6">6 Cuotas</option>
+                <option value="12">12 Cuotas</option>
             </select>
         </div>
         
@@ -315,17 +323,16 @@
      SCRIPTS
      ═══════════════════════════════════════════════════════════════ -->
 <script src="js/config.js"></script>
-<script src="js/pos.js"></script>
 <script>
     // ═══════════════════════════════════════════════════════════════
     // CONFIGURACIÓN DE ESTA TIENDA
     // Cambiar estos valores para cada tienda
     // ═══════════════════════════════════════════════════════════════
     const TIENDA = {
-    nombre: 'Jordán',
-    tablaInventario: 'inventario_jordan',
-    storageKey: 'pos_caja_jordan'
-};
+        nombre: 'Jordán',
+        tablaInventario: 'inventario_jordan',
+        storageKey: 'pos_caja_jordan'
+    };
 </script>
 <script src="js/pos.js"></script>
 
