@@ -734,11 +734,20 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MÉTODOS DE PAGO - HERO SECTION
+   MÉTODOS DE PAGO Y DOMICILIOS - HERO SECTION
    ═══════════════════════════════════════════════════════════════ */
 
-.metodos-pago-hero {
+.info-boxes-container {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
     margin-top: 2.5rem;
+    flex-wrap: wrap;
+    animation: fadeInUp 0.8s ease 0.5s forwards;
+    opacity: 0;
+}
+
+.metodos-pago-hero {
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(10px);
     border-radius: 20px;
@@ -747,9 +756,44 @@
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    animation: fadeInUp 0.8s ease 0.5s forwards;
-    opacity: 0;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    flex: 1;
+    max-width: 450px;
+}
+
+.domicilios-info-hero {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 1.25rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    flex: 1;
+    max-width: 320px;
+}
+
+.domicilios-titulo {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.domicilios-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: white;
+    font-size: 0.95rem;
+    line-height: 1.8;
+}
+
+.domicilios-lista li {
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .metodos-pago-titulo {
@@ -785,14 +829,24 @@
     box-shadow: 0 8px 25px rgba(255, 107, 0, 0.4);
 }
 
-/* Responsive - Métodos de Pago */
+/* Responsive - Métodos de Pago y Domicilios */
 @media (max-width: 768px) {
-    .metodos-pago-hero {
-        padding: 1rem 1.5rem;
+    .info-boxes-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
         margin-top: 2rem;
     }
 
-    .metodos-pago-titulo {
+    .metodos-pago-hero,
+    .domicilios-info-hero {
+        padding: 1rem 1.5rem;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .metodos-pago-titulo,
+    .domicilios-titulo {
         font-size: 0.95rem;
     }
 
@@ -805,15 +859,25 @@
         max-width: 70px;
         padding: 4px 8px;
     }
+
+    .domicilios-lista {
+        font-size: 0.9rem;
+    }
 }
 
 @media (max-width: 480px) {
-    .metodos-pago-hero {
+    .metodos-pago-hero,
+    .domicilios-info-hero {
         padding: 0.75rem 1rem;
     }
 
     .metodos-pago-logos img {
         height: 30px;
         max-width: 60px;
+    }
+
+    .domicilios-lista {
+        font-size: 0.85rem;
+        line-height: 1.6;
     }
 }
