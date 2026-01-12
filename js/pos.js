@@ -46,17 +46,17 @@ let empleadoLogueado = null; // Datos del empleado con sesión activa
 document.addEventListener('DOMContentLoaded', async () => {
     const tipoTienda = TIENDA.esDigital ? '📦 Digital' : `🏪 ${TIENDA.nombre}`;
     console.log(`${tipoTienda} POS iniciando...`);
-    
+
     // Cargar logos
     document.querySelectorAll('.logo-img').forEach(img => img.src = LOGO_URL);
     document.querySelectorAll('.tienda-nombre-display').forEach(el => el.textContent = TIENDA.nombre);
-    
+
     // Verificar estado de caja
     verificarCaja();
-    
+
     // Cargar productos
     await cargarProductos();
-    
+
     console.log('✅ POS listo');
 });
 
@@ -268,15 +268,15 @@ function abrirModalCaja() {
 async function confirmarAbrirCaja() {
     const monto = parseFloat(document.getElementById('montoInicial').value) || 0;
     const vendedor = document.getElementById('vendedorNombre').value.trim();
-    
+
     if (!vendedor) {
         mostrarAlerta('Ingresa el nombre del vendedor', 'warning');
         return;
     }
-    
-    const prefijo = TIENDA.esDigital ? 'DIG' : TIENDA.nombre.substring(0,3).toUpperCase();
+
+    const prefijo = TIENDA.esDigital ? 'DIG' : TIENDA.nombre.substring(0, 3).toUpperCase();
     const numeroCierre = `C-${prefijo}-${Date.now()}`;
-    
+
     try {
         const { error } = await db.from('cierres_caja').insert({
             numero_cierre: numeroCierre,
@@ -286,9 +286,9 @@ async function confirmarAbrirCaja() {
             base_caja: monto,
             estado: 'abierto'
         });
-        
+
         if (error) throw error;
-        
+
         datosCaja = {
             fecha: new Date().toISOString().split('T')[0],
             horaApertura: new Date().toISOString(),
@@ -297,14 +297,14 @@ async function confirmarAbrirCaja() {
             numeroCierre: numeroCierre,
             estado: 'abierta'
         };
-        
+
         localStorage.setItem(TIENDA.storageKey, JSON.stringify(datosCaja));
         cajaAbierta = true;
-        
+
         cerrarModal();
         actualizarUICaja();
         mostrarAlerta(`✅ Caja abierta - Base: $${monto.toLocaleString('es-CO')}`, 'success');
-        
+
     } catch (e) {
         console.error('Error abriendo caja:', e);
         mostrarAlerta('Error al abrir caja: ' + (e.message || 'desconocido'), 'error');
@@ -317,14 +317,14 @@ function actualizarUICaja() {
     const btnCerrar = document.getElementById('btnCerrarCaja');
     const locked = document.getElementById('lockedScreen');
     const vendedorBadge = document.getElementById('vendedorBadge');
-    
+
     if (cajaAbierta) {
         badge.innerHTML = '✅ Abierta';
         badge.className = 'badge badge-abierta';
         btnAbrir.classList.add('hidden');
         btnCerrar.classList.remove('hidden');
         locked.classList.add('hidden');
-        
+
         if (vendedorBadge && datosCaja?.vendedor) {
             vendedorBadge.textContent = datosCaja.vendedor;
             vendedorBadge.classList.remove('hidden');
@@ -335,7 +335,7 @@ function actualizarUICaja() {
         btnAbrir.classList.remove('hidden');
         btnCerrar.classList.add('hidden');
         locked.classList.remove('hidden');
-        
+
         if (vendedorBadge) {
             vendedorBadge.classList.add('hidden');
         }
@@ -348,13 +348,13 @@ function actualizarUICaja() {
 // ═══════════════════════════════════════════════════════════════
 async function mostrarModalCerrarCaja() {
     const hoy = new Date().toISOString().split('T')[0];
-    
+
     try {
         const { data: ventas } = await db.from('ventas')
             .select('*')
             .eq('local', TIENDA.nombre)
             .gte('created_at', hoy + 'T00:00:00');
-        
+
         // Estructura de totales según tipo de tienda
         const totales = TIENDA.esDigital ? {
             transferencia: 0, nequi: 0, daviplata: 0, tarjeta: 0,
@@ -364,19 +364,19 @@ async function mostrarModalCerrarCaja() {
             nequi: 0, addi: 0, datafono: 0, sistecredito: 0,
             credito_motero: 0, fodegas: 0
         };
-        
+
         let totalGeneral = 0;
         let totalUnidades = 0;
-        
+
         (ventas || []).forEach(v => {
             const monto = v.total || 0;
             totalGeneral += monto;
             totalUnidades += v.cantidad || 0;
-            
+
             const metodos = (v.metodo_pago || '').toLowerCase();
             const numMetodos = (metodos.match(/\+/g) || []).length + 1;
             const montoPorMetodo = monto / numMetodos;
-            
+
             if (metodos.includes('efectivo') && !TIENDA.esDigital) totales.efectivo += montoPorMetodo;
             if (metodos.includes('transferencia')) totales.transferencia += montoPorMetodo;
             if (metodos.includes('tarjeta')) totales.tarjeta += montoPorMetodo;
@@ -389,10 +389,11 @@ async function mostrarModalCerrarCaja() {
             if (metodos.includes('fodegas')) totales.fodegas += montoPorMetodo;
             if (metodos.includes('contraentrega')) totales.contraentrega = (totales.contraentrega || 0) + montoPorMetodo;
         });
-        
+
         const base = datosCaja?.montoInicial || 0;
-        const efectivoEsperado = base + (totales.efectivo || 0);
-        
+        const totalGastos = gastosDelDia.reduce((sum, g) => sum + (g.monto || 0), 0);
+        const efectivoEsperado = base + (totales.efectivo || 0) - totalGastos;
+
         resumenVentas = {
             totales,
             totalGeneral,
@@ -401,7 +402,7 @@ async function mostrarModalCerrarCaja() {
             base,
             efectivoEsperado
         };
-        
+
         // Renderizar resumen según tipo de tienda
         const resumenHTML = TIENDA.esDigital ? `
             <div class="resumen-cierre">
@@ -421,32 +422,32 @@ async function mostrarModalCerrarCaja() {
                 <div class="resumen-row total"><span class="label">💰 TOTAL VENTAS</span><span class="value">$${totalGeneral.toLocaleString('es-CO')}</span></div>
             </div>
         `;
-        
+
         document.getElementById('resumenCierreModal').innerHTML = resumenHTML;
-        
+
         // Limpiar campos de conteo
-        const camposConteo = TIENDA.esDigital 
-            ? ['transferenciaContado', 'nequiContado', 'daviplataContado', 'tarjetaContado', 
-               'contraentregaContado', 'addiContado', 'sistecreditoContado', 'fodegasContado']
-            : ['efectivoContado', 'transferenciaContado', 'tarjetaContado', 'daviplataContado', 
-               'nequiContado', 'addiContado', 'datafonoContado', 'sistecreditoContado', 'fodegasContado'];
-        
+        const camposConteo = TIENDA.esDigital
+            ? ['transferenciaContado', 'nequiContado', 'daviplataContado', 'tarjetaContado',
+                'contraentregaContado', 'addiContado', 'sistecreditoContado', 'fodegasContado']
+            : ['efectivoContado', 'transferenciaContado', 'tarjetaContado', 'daviplataContado',
+                'nequiContado', 'addiContado', 'datafonoContado', 'sistecreditoContado', 'fodegasContado'];
+
         camposConteo.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
-        
+
         const obsEl = document.getElementById('observacionesCierre');
         if (obsEl) obsEl.value = '';
-        
+
         // Gastos solo para tiendas físicas
         if (!TIENDA.esDigital) {
             gastosDelDia = [];
             renderizarGastos();
         }
-        
+
         document.getElementById('modalCerrarCaja').classList.add('visible');
-        
+
     } catch (e) {
         console.error('Error cargando resumen:', e);
         mostrarAlerta('Error al cargar datos', 'error');
@@ -467,27 +468,27 @@ async function confirmarCerrarCaja() {
     const sistecreditoContado = parseFloat(document.getElementById('sistecreditoContado')?.value) || 0;
     const fodegasContado = parseFloat(document.getElementById('fodegasContado')?.value) || 0;
     const observaciones = document.getElementById('observacionesCierre')?.value.trim() || '';
-    
+
     // Validar efectivo si hubo ventas en efectivo
     if ((resumenVentas?.totales?.efectivo || 0) > 0 && efectivoContado <= 0) {
         mostrarAlerta('Debes contar el efectivo', 'warning');
         return;
     }
-    
+
     const base = datosCaja?.montoInicial || 0;
     const totalGastos = gastosDelDia.reduce((sum, g) => sum + (g.monto || 0), 0);
     const gastosDetalle = gastosDelDia.filter(g => g.descripcion && g.monto > 0)
         .map(g => `${g.descripcion}: $${g.monto.toLocaleString('es-CO')}`).join(' | ');
-    
+
     const diferenciaEfectivo = efectivoContado - (base + (resumenVentas?.totales?.efectivo || 0));
-    
-    const totalContado = efectivoContado + transferenciaContado + tarjetaContado + 
-        daviplataContado + nequiContado + addiContado + datafonoContado + 
+
+    const totalContado = efectivoContado + transferenciaContado + tarjetaContado +
+        daviplataContado + nequiContado + addiContado + datafonoContado +
         sistecreditoContado + fodegasContado;
-    
+
     const diferenciaTotal = totalContado - (base + (resumenVentas?.totalGeneral || 0));
     const observacionesFinal = [observaciones, gastosDetalle].filter(Boolean).join(' || Gastos: ');
-    
+
     try {
         const { error } = await db.from('cierres_caja')
             .update({
@@ -519,19 +520,26 @@ async function confirmarCerrarCaja() {
                 estado: 'cerrado'
             })
             .eq('numero_cierre', datosCaja?.numeroCierre);
-        
+
         if (error) throw error;
-        
+
         cerrarModal();
+        if (window.moterosIA) {
+            window.moterosIA.aprenderEvento('Cierre de caja realizado', {
+                tienda: TIENDA.nombre,
+                total_venta: resumenVentas?.totalGeneral,
+                diferencia: diferenciaTotal
+            });
+        }
         mostrarResumenFinal(efectivoContado, diferenciaEfectivo, diferenciaTotal, totalGastos);
-        
+
         localStorage.removeItem(TIENDA.storageKey);
         cajaAbierta = false;
         datosCaja = null;
         actualizarUICaja();
-        
+
         mostrarAlerta('📊 Cierre guardado correctamente', 'success');
-        
+
     } catch (e) {
         console.error('Error cerrando caja:', e);
         mostrarAlerta('Error al guardar: ' + (e.message || 'desconocido'), 'error');
@@ -551,11 +559,11 @@ async function confirmarCerrarCajaDigital() {
     const sistecreditoContado = parseFloat(document.getElementById('sistecreditoContado')?.value) || 0;
     const fodegasContado = parseFloat(document.getElementById('fodegasContado')?.value) || 0;
     const observaciones = document.getElementById('observacionesCierre')?.value.trim() || '';
-    
-    const totalContado = transferenciaContado + nequiContado + daviplataContado + 
+
+    const totalContado = transferenciaContado + nequiContado + daviplataContado +
         tarjetaContado + contraentregaContado + addiContado + sistecreditoContado + fodegasContado;
     const diferenciaTotal = totalContado - (resumenVentas?.totalGeneral || 0);
-    
+
     try {
         const { error } = await db.from('cierres_caja')
             .update({
@@ -577,18 +585,24 @@ async function confirmarCerrarCajaDigital() {
                 estado: 'cerrado'
             })
             .eq('numero_cierre', datosCaja?.numeroCierre);
-        
+
         if (error) throw error;
-        
+
         cerrarModal();
+        if (window.moterosIA) {
+            window.moterosIA.aprenderEvento('Cierre digital realizado', {
+                total_venta: resumenVentas?.totalGeneral,
+                diferencia: diferenciaTotal
+            });
+        }
         mostrarResumenFinalDigital(totalContado, diferenciaTotal);
-        
+
         localStorage.removeItem(TIENDA.storageKey);
         cajaAbierta = false;
         actualizarUICaja();
-        
+
         mostrarAlerta('📊 Cierre guardado', 'success');
-        
+
     } catch (e) {
         console.error('Error:', e);
         mostrarAlerta('Error al cerrar: ' + e.message, 'error');
@@ -601,7 +615,7 @@ async function confirmarCerrarCajaDigital() {
 function mostrarResumenFinal(efectivoContado, diferenciaEfectivo, diferenciaTotal, totalGastos) {
     const difEfClass = diferenciaEfectivo >= 0 ? 'diferencia-positiva' : 'diferencia-negativa';
     const difTotClass = diferenciaTotal >= 0 ? 'diferencia-positiva' : 'diferencia-negativa';
-    
+
     document.getElementById('pantallaAbrirCaja').classList.add('hidden');
     document.getElementById('resumenCierreCompleto').classList.remove('hidden');
     document.getElementById('resumenCierreCompleto').innerHTML = `
@@ -630,7 +644,7 @@ function mostrarResumenFinal(efectivoContado, diferenciaEfectivo, diferenciaTota
 // ═══════════════════════════════════════════════════════════════
 function mostrarResumenFinalDigital(totalContado, diferenciaTotal) {
     const difTotClass = diferenciaTotal >= 0 ? 'diferencia-positiva' : 'diferencia-negativa';
-    
+
     document.getElementById('pantallaAbrirCaja').classList.add('hidden');
     document.getElementById('resumenCierreCompleto').classList.remove('hidden');
     document.getElementById('resumenCierreCompleto').innerHTML = `
@@ -675,19 +689,64 @@ function actualizarGasto(idx, campo, valor) {
 function renderizarGastos() {
     const container = document.getElementById('gastosLista');
     if (!container) return;
-    
+
     const totalGastos = gastosDelDia.reduce((sum, g) => sum + (g.monto || 0), 0);
-    
+
     container.innerHTML = gastosDelDia.map((g, idx) => `
-        <div class="gasto-item">
+        <div class="gasto-item" style="display:flex; gap:5px; align-items:center; margin-bottom:5px;">
             <input type="text" placeholder="Descripción" value="${g.descripcion}" 
-                   onchange="actualizarGasto(${idx}, 'descripcion', this.value)">
+                   onchange="actualizarGasto(${idx}, 'descripcion', this.value)" style="flex:2">
             <input type="number" placeholder="$0" value="${g.monto || ''}" 
-                   onchange="actualizarGasto(${idx}, 'monto', this.value)">
-            <button onclick="eliminarGasto(${idx})">✕</button>
+                   onchange="actualizarGasto(${idx}, 'monto', this.value)" style="flex:1">
+            
+            <div style="position:relative; width:30px; overflow:hidden;">
+               <label for="file-${idx}" style="cursor:pointer; font-size:1.2em;" title="Adjuntar Foto">📎</label>
+               <input type="file" id="file-${idx}" accept="image/*" 
+                      onchange="subirEvidenciaGasto(${idx}, this)" 
+                      style="position:absolute; left:0; top:0; opacity:0; width:100%;">
+            </div>
+            
+            ${g.evidenciaUrl ? `<a href="${g.evidenciaUrl}" target="_blank" title="Ver evidencia">📄</a>` : ''}
+            
+            <button onclick="eliminarGasto(${idx})" style="padding:0 8px;">✕</button>
         </div>
     `).join('');
-    
+
+    const totalEl = document.getElementById('totalGastos');
+    if (totalEl) totalEl.textContent = `$${totalGastos.toLocaleString('es-CO')}`;
+}
+
+async function subirEvidenciaGasto(idx, input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Validar tamaño (max 5MB)
+    if (file.size > 5 * 1024 * 1024) return mostrarAlerta('Imagen muy grande (Max 5MB)', 'warning');
+
+    try {
+        mostrarAlerta('⏳ Subiendo evidencia...', 'info');
+        const ext = file.name.split('.').pop();
+        const fileName = `gasto_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${ext}`;
+
+        const { error } = await db.storage
+            .from('gastos-evidencia')
+            .upload(fileName, file);
+
+        if (error) throw error;
+
+        const { data } = db.storage
+            .from('gastos-evidencia')
+            .getPublicUrl(fileName);
+
+        gastosDelDia[idx].evidenciaUrl = data.publicUrl;
+        renderizarGastos();
+        mostrarAlerta('✅ Evidencia guardada', 'success');
+
+    } catch (e) {
+        console.error('Error subiendo:', e);
+        mostrarAlerta('Error al subir: ' + e.message, 'error');
+    }
+
     const totalEl = document.getElementById('totalGastos');
     if (totalEl) totalEl.textContent = `$${totalGastos.toLocaleString('es-CO')}`;
 }
@@ -700,18 +759,46 @@ async function cargarProductos() {
         const { data: prods } = await db.from('productos')
             .select('id_producto, nombre, marca, precio')
             .eq('estado', 'Activo');
-        
-        const { data: stock } = await db.from(TIENDA.tablaInventario)
-            .select('id_producto, cantidad');
-        
-        const stockMap = {};
-        (stock || []).forEach(s => stockMap[s.id_producto] = s.cantidad || 0);
-        
-        productos = (prods || []).map(p => ({
-            ...p,
-            stock: stockMap[p.id_producto] || 0
-        }));
-        
+
+        if (TIENDA.esDigital) {
+            // Cargar inventarios de todas las tiendas físicas
+            const [alcala, local01, jordan] = await Promise.all([
+                db.from('inventario_alcala').select('id_producto, cantidad'),
+                db.from('inventario_01').select('id_producto, cantidad'),
+                db.from('inventario_jordan').select('id_producto, cantidad')
+            ]);
+
+            // Mapear productos con stocks detallados
+            productos = (prods || []).map(p => {
+                const stockAlcala = alcala.data?.find(i => i.id_producto === p.id_producto)?.cantidad || 0;
+                const stock01 = local01.data?.find(i => i.id_producto === p.id_producto)?.cantidad || 0;
+                const stockJordan = jordan.data?.find(i => i.id_producto === p.id_producto)?.cantidad || 0;
+                const total = stockAlcala + stock01 + stockJordan;
+
+                return {
+                    ...p,
+                    stock: total,
+                    stocks: {
+                        'Alcalá': stockAlcala,
+                        'Local 01': stock01,
+                        'Jordán': stockJordan
+                    }
+                };
+            });
+        } else {
+            // Lógica normal para tiendas físicas
+            const { data: stock } = await db.from(TIENDA.tablaInventario)
+                .select('id_producto, cantidad');
+
+            const stockMap = {};
+            (stock || []).forEach(s => stockMap[s.id_producto] = s.cantidad || 0);
+
+            productos = (prods || []).map(p => ({
+                ...p,
+                stock: stockMap[p.id_producto] || 0
+            }));
+        }
+
         console.log(`📦 ${productos.length} productos cargados`);
         renderizarProductos();
     } catch (e) {
@@ -723,35 +810,60 @@ async function cargarProductos() {
 function renderizarProductos() {
     const container = document.getElementById('listaProductos');
     const busqueda = document.getElementById('inputBuscar')?.value.toLowerCase().trim() || '';
-    
-    const filtrados = productos.filter(p => 
+
+    const filtrados = productos.filter(p =>
         !busqueda ||
         p.nombre?.toLowerCase().includes(busqueda) ||
         p.marca?.toLowerCase().includes(busqueda) ||
         p.id_producto?.toString().toLowerCase().includes(busqueda)
     );
-    
+
     if (filtrados.length === 0) {
         container.innerHTML = '<div class="carrito-vacio">No se encontraron productos</div>';
         return;
     }
-    
+
     container.innerHTML = filtrados.map(p => {
         const agotado = p.stock <= 0;
-        const stockClass = p.stock > 5 ? 'stock-ok' : p.stock > 0 ? 'stock-bajo' : 'stock-no';
-        return `
-            <div class="producto ${agotado ? 'agotado' : ''}" 
-                 onclick="${agotado ? '' : `agregarAlCarrito('${p.id_producto}')`}">
+
+        if (TIENDA.esDigital) {
+            // Renderizado especial para Digital con botones por tienda
+            return `
+            <div class="producto digital ${agotado ? 'agotado' : ''}">
                 <div class="producto-info">
                     <h4>${p.nombre}</h4>
-                    <small>${p.marca || 'Sin marca'} • ${p.id_producto}</small><br>
-                    <span class="stock-badge ${stockClass}">${p.stock} disp</span>
+                    <small>${p.marca || 'Sin marca'} • ${p.id_producto}</small>
+                    <div class="stock-breakdown">
+                        ${Object.entries(p.stocks).map(([tienda, cant]) => `
+                            <button class="btn-stock-tienda ${cant > 0 ? 'activo' : 'disabled'}"
+                                onclick="${cant > 0 ? `agregarAlCarrito('${p.id_producto}', '${tienda}')` : ''}"
+                                title="${cant > 0 ? 'Vender de ' + tienda : 'Sin stock'}">
+                                ${tienda.substring(0, 3)}: ${cant}
+                            </button>
+                        `).join('')}
+                    </div>
                 </div>
                 <div class="producto-precio">
                     <span class="precio">$${(p.precio || 0).toLocaleString('es-CO')}</span>
                 </div>
-            </div>
-        `;
+            </div>`;
+        } else {
+            // Renderizado normal para Física
+            const stockClass = p.stock > 5 ? 'stock-ok' : p.stock > 0 ? 'stock-bajo' : 'stock-no';
+            return `
+                <div class="producto ${agotado ? 'agotado' : ''}" 
+                     onclick="${agotado ? '' : `agregarAlCarrito('${p.id_producto}')`}">
+                    <div class="producto-info">
+                        <h4>${p.nombre}</h4>
+                        <small>${p.marca || 'Sin marca'} • ${p.id_producto}</small><br>
+                        <span class="stock-badge ${stockClass}">${p.stock} disp</span>
+                    </div>
+                    <div class="producto-precio">
+                        <span class="precio">$${(p.precio || 0).toLocaleString('es-CO')}</span>
+                    </div>
+                </div>
+            `;
+        }
     }).join('');
 }
 
@@ -760,51 +872,107 @@ function filtrarProductos() { renderizarProductos(); }
 // ═══════════════════════════════════════════════════════════════
 // CARRITO
 // ═══════════════════════════════════════════════════════════════
-function agregarAlCarrito(idProducto) {
+function agregarAlCarrito(idProducto, tiendaOrigen = null) {
     const prod = productos.find(p => p.id_producto == idProducto);
-    if (!prod || prod.stock <= 0) return;
-    
-    const existe = carrito.find(i => i.id_producto == idProducto);
-    if (existe) {
-        if (existe.cantidad >= prod.stock) {
-            mostrarAlerta('Stock máximo alcanzado', 'warning');
-            return;
+    // Validación general de stock
+    if (!prod) return;
+
+    // Calcular precio y promociones
+    let precioFinal = prod.precio;
+    let motivo = '';
+
+    // Usar PromocionesManager si está disponible
+    if (window.PromocionesManager && window.PromocionesManager.cargado) {
+        // En POS físico, intentamos usar la tienda actual como "local" para validar si aplica
+        // En POS digital (TIENDA.esDigital), enviamos null o 'Digital'
+        const local = TIENDA.nombre || null;
+        const calc = window.PromocionesManager.calcularPrecio(prod.precio, prod.id_producto, local);
+
+        if (calc && calc.tienePromo) {
+            precioFinal = calc.precioFinal;
+            motivo = `Promo: ${calc.promocion.nombre} (-${calc.descuento}%)`;
         }
-        existe.cantidad++;
-    } else {
-        carrito.push({
-            id_producto: prod.id_producto,
-            nombre: prod.nombre,
-            marca: prod.marca,
-            precioOriginal: prod.precio,
-            precio: prod.precio,
-            cantidad: 1,
-            stockMax: prod.stock,
-            motivo: ''
-        });
     }
+
+    // Validar tienda origen si es digital
+    if (TIENDA.esDigital) {
+        if (!tiendaOrigen) return mostrarAlerta('Error: tienda origen no definida', 'error');
+        const stockDisp = prod.stocks[tiendaOrigen];
+        if (stockDisp <= 0) return mostrarAlerta(`Sin stock en ${tiendaOrigen}`, 'error');
+
+        // Buscar si ya existe este producto DE ESTA TIENDA en el carrito
+        const existe = carrito.find(i => i.id_producto == idProducto && i.tiendaOrigen === tiendaOrigen);
+        if (existe) {
+            if (existe.cantidad >= stockDisp) {
+                mostrarAlerta(`Stock máximo de ${tiendaOrigen} alcanzado`, 'warning');
+                return;
+            }
+            existe.cantidad++;
+        } else {
+            carrito.push({
+                id_producto: prod.id_producto,
+                nombre: `${prod.nombre} (${tiendaOrigen})`, // Diferenciar visualmente
+                nombreBase: prod.nombre,
+                marca: prod.marca,
+                precioOriginal: prod.precio,
+                precio: precioFinal,
+                cantidad: 1,
+                stockMax: stockDisp,
+                tiendaOrigen: tiendaOrigen,
+                motivo: motivo
+            });
+        }
+    } else {
+        // Lógica física normal
+        if (prod.stock <= 0) return;
+        const existe = carrito.find(i => i.id_producto == idProducto);
+        if (existe) {
+            if (existe.cantidad >= prod.stock) {
+                mostrarAlerta('Stock máximo alcanzado', 'warning');
+                return;
+            }
+            existe.cantidad++;
+        } else {
+            carrito.push({
+                id_producto: prod.id_producto,
+                nombre: prod.nombre,
+                marca: prod.marca,
+                precioOriginal: prod.precio,
+                precio: precioFinal,
+                cantidad: 1,
+                stockMax: prod.stock,
+                motivo: motivo
+            });
+        }
+    }
+
     renderizarCarrito();
-    mostrarAlerta(`➕ ${prod.nombre}`, 'success');
+
+    if (precioFinal < prod.precio) {
+        mostrarAlerta(`➕ ${prod.nombre} (con descuento)`, 'success');
+    } else {
+        mostrarAlerta(`➕ ${prod.nombre}`, 'success');
+    }
 }
 
 function renderizarCarrito() {
     const container = document.getElementById('carritoItems');
     const countEl = document.getElementById('carritoCount');
     const totalEl = document.getElementById('totalMonto');
-    
+
     const totalItems = carrito.reduce((sum, i) => sum + i.cantidad, 0);
     countEl.textContent = totalItems;
-    
+
     if (carrito.length === 0) {
         container.innerHTML = `<div class="carrito-vacio">🛒 ${TIENDA.esDigital ? 'El pedido está vacío' : 'El carrito está vacío'}</div>`;
         totalEl.textContent = '$0';
         actualizarBotonVender();
         return;
     }
-    
+
     const total = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
     totalEl.textContent = '$' + total.toLocaleString('es-CO');
-    
+
     container.innerHTML = carrito.map((item, idx) => {
         const tieneDescuento = item.precio < item.precioOriginal;
         return `
@@ -827,14 +995,14 @@ function renderizarCarrito() {
             </div>
         `;
     }).join('');
-    
+
     actualizarBotonVender();
 }
 
 function cambiarCantidad(idx, delta) {
     const item = carrito[idx];
     const nuevaCant = item.cantidad + delta;
-    
+
     if (nuevaCant <= 0) quitarDelCarrito(idx);
     else if (nuevaCant > item.stockMax) mostrarAlerta('Stock máximo alcanzado', 'warning');
     else { item.cantidad = nuevaCant; renderizarCarrito(); }
@@ -861,20 +1029,20 @@ function abrirEditarPrecio(idx) {
 function aplicarDescuento() {
     const nuevo = parseFloat(document.getElementById('precioNuevo').value) || 0;
     const motivo = document.getElementById('motivoDescuento').value.trim();
-    
+
     if (nuevo <= 0) {
         mostrarAlerta('El precio debe ser mayor a 0', 'error');
         return;
     }
-    
+
     if (nuevo < carrito[itemEditandoIdx].precioOriginal && !motivo) {
         mostrarAlerta('Debes ingresar el motivo del descuento', 'error');
         return;
     }
-    
+
     carrito[itemEditandoIdx].precio = nuevo;
     carrito[itemEditandoIdx].motivo = motivo;
-    
+
     cerrarModal();
     renderizarCarrito();
     mostrarAlerta('✅ Precio actualizado', 'success');
@@ -885,7 +1053,7 @@ function aplicarDescuento() {
 // ═══════════════════════════════════════════════════════════════
 function toggleMetodo(el) {
     const metodo = el.dataset.metodo;
-    
+
     if (metodosSeleccionados.has(metodo)) {
         metodosSeleccionados.delete(metodo);
         el.classList.remove('selected');
@@ -893,7 +1061,7 @@ function toggleMetodo(el) {
         metodosSeleccionados.add(metodo);
         el.classList.add('selected');
     }
-    
+
     const infoEl = document.getElementById('metodosSeleccionados');
     if (metodosSeleccionados.size > 0) {
         infoEl.textContent = '✅ ' + [...metodosSeleccionados].join(' + ');
@@ -901,7 +1069,7 @@ function toggleMetodo(el) {
     } else {
         infoEl.classList.remove('visible');
     }
-    
+
     actualizarCredito();
     actualizarBotonVender();
 }
@@ -914,7 +1082,7 @@ function toggleMetodoDigital(el) {
 function actualizarCredito() {
     const tieneCredito = [...metodosSeleccionados].some(m => METODOS_CREDITO.includes(m));
     const datosCredito = document.getElementById('datosCredito');
-    
+
     if (datosCredito) {
         // En tienda física, verificar destino
         const destino = document.getElementById('selectDestino')?.value || 'tienda';
@@ -940,10 +1108,10 @@ async function procesarVenta() {
     if (!cajaAbierta) return mostrarAlerta('❌ Primero abre la caja', 'error');
     if (carrito.length === 0) return mostrarAlerta('❌ El carrito está vacío', 'error');
     if (metodosSeleccionados.size === 0) return mostrarAlerta('❌ Selecciona al menos un método de pago', 'error');
-    
+
     const destino = document.getElementById('selectDestino')?.value || 'tienda';
     const tieneCredito = [...metodosSeleccionados].some(m => METODOS_CREDITO.includes(m));
-    
+
     // Validar datos de crédito
     if (destino === 'tienda' && tieneCredito) {
         const nombre = document.getElementById('creditoNombre')?.value.trim();
@@ -951,23 +1119,23 @@ async function procesarVenta() {
         const cedula = document.getElementById('creditoCedula')?.value.trim();
         const direccion = document.getElementById('creditoDireccion')?.value.trim();
         const autoriza = document.getElementById('creditoAutoriza')?.value;
-        
+
         if (!nombre || !telefono || !cedula || !direccion || !autoriza) {
             return mostrarAlerta('❌ Completa todos los datos del crédito', 'error');
         }
     }
-    
+
     const btnVender = document.getElementById('btnVender');
     btnVender.disabled = true;
     btnVender.innerHTML = '⏳ Procesando...';
-    
+
     const localRegistro = destino === 'digital' ? `Digital (${TIENDA.nombre})` : TIENDA.nombre;
     const metodoPagoStr = [...metodosSeleccionados].join(' + ');
-    
+
     try {
         for (const item of carrito) {
             const id_venta = 'V' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
-            
+
             const { error: errorVenta } = await db.from('ventas').insert({
                 id_venta: id_venta,
                 local: localRegistro,
@@ -979,23 +1147,23 @@ async function procesarVenta() {
                 metodo_pago: metodoPagoStr,
                 usuario: `POS ${TIENDA.nombre}`
             });
-            
+
             if (errorVenta) throw new Error(errorVenta.message);
-            
+
             // Descontar stock
             const { data: stockActual } = await db
                 .from(TIENDA.tablaInventario)
                 .select('cantidad')
                 .eq('id_producto', item.id_producto)
                 .single();
-            
+
             if (stockActual) {
                 const nuevoStock = Math.max(0, stockActual.cantidad - item.cantidad);
                 await db.from(TIENDA.tablaInventario)
                     .update({ cantidad: nuevoStock })
                     .eq('id_producto', item.id_producto);
             }
-            
+
             // Si es digital, agregar al inventario digital
             if (destino === 'digital') {
                 const { data: stockDig } = await db
@@ -1003,7 +1171,7 @@ async function procesarVenta() {
                     .select('cantidad')
                     .eq('id_producto', item.id_producto)
                     .single();
-                
+
                 if (stockDig) {
                     await db.from('inventario_digital')
                         .update({ cantidad: stockDig.cantidad + item.cantidad })
@@ -1014,7 +1182,7 @@ async function procesarVenta() {
                 }
             }
         }
-        
+
         const total = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
 
         // Si es Crédito Motero, registrar en tabla creditos_motero
@@ -1066,15 +1234,23 @@ async function procesarVenta() {
             ? `📦 Transferido a Digital: $${total.toLocaleString('es-CO')}`
             : `✅ Venta exitosa: $${total.toLocaleString('es-CO')}`;
 
+        if (window.moterosIA) {
+            window.moterosIA.aprenderEvento('Venta realizada en tienda', {
+                tienda: TIENDA.nombre,
+                total: total,
+                items: carrito.length
+            });
+        }
+
         mostrarAlerta(msg, 'success');
         limpiarDespuesVenta();
         await cargarProductos();
-        
+
     } catch (error) {
         console.error('Error procesando venta:', error);
         mostrarAlerta('❌ ' + error.message, 'error');
     }
-    
+
     btnVender.innerHTML = '✅ Procesar Venta';
     actualizarBotonVender();
 }
@@ -1086,7 +1262,7 @@ async function procesarVentaDigital() {
     if (!cajaAbierta) return mostrarAlerta('❌ Abre la caja', 'error');
     if (carrito.length === 0) return mostrarAlerta('❌ Pedido vacío', 'error');
     if (metodosSeleccionados.size === 0) return mostrarAlerta('❌ Selecciona método de pago', 'error');
-    
+
     // Validar datos de envío (obligatorios para digital)
     const clienteNombre = document.getElementById('clienteNombre').value.trim();
     const clienteTelefono = document.getElementById('clienteTelefono').value.trim();
@@ -1095,37 +1271,37 @@ async function procesarVentaDigital() {
     const ciudadEnvio = document.getElementById('ciudadEnvio').value.trim();
     const departamentoEnvio = document.getElementById('departamentoEnvio').value;
     const notasEnvio = document.getElementById('notasEnvio').value.trim();
-    
+
     if (!clienteNombre || !clienteTelefono || !clienteCedula || !direccionEnvio || !ciudadEnvio || !departamentoEnvio) {
         return mostrarAlerta('❌ Completa todos los datos de envío', 'error');
     }
-    
+
     // Validar crédito
     const tieneCredito = [...metodosSeleccionados].some(m => METODOS_CREDITO.includes(m));
     let creditoAutoriza = '';
     let creditoCuotas = 1;
-    
+
     if (tieneCredito) {
         creditoAutoriza = document.getElementById('creditoAutoriza').value;
         creditoCuotas = parseInt(document.getElementById('creditoCuotas').value) || 1;
         if (!creditoAutoriza) return mostrarAlerta('❌ Selecciona quién autoriza el crédito', 'error');
     }
-    
+
     const btnVender = document.getElementById('btnVender');
     btnVender.disabled = true;
     btnVender.innerHTML = '⏳ Procesando...';
-    
+
     const metodoPagoStr = [...metodosSeleccionados].join(' + ');
     const pedidoTimestamp = Date.now();
     let primerIdVenta = null;
-    
+
     try {
         for (const item of carrito) {
             const id_venta = 'VD' + pedidoTimestamp + Math.random().toString(36).substr(2, 5).toUpperCase();
             if (!primerIdVenta) primerIdVenta = id_venta;
-            
+
             const tieneDescuento = item.precio < item.precioOriginal;
-            
+
             const ventaData = {
                 id_venta: id_venta,
                 local: 'Digital',
@@ -1155,30 +1331,40 @@ async function procesarVentaDigital() {
                 credito_cuotas: tieneCredito ? creditoCuotas : 0,
                 credito_estado: tieneCredito ? 'Pendiente' : null
             };
-            
+
             const { error } = await db.from('ventas').insert(ventaData);
             if (error) throw new Error(error.message);
-            
-            // Descontar stock
-            const { data: stockActual } = await db
-                .from(TIENDA.tablaInventario)
-                .select('cantidad')
-                .eq('id_producto', item.id_producto)
-                .single();
-            
-            if (stockActual) {
-                await db.from(TIENDA.tablaInventario)
-                    .update({ cantidad: Math.max(0, stockActual.cantidad - item.cantidad) })
-                    .eq('id_producto', item.id_producto);
+
+            // Descontar stock de la tienda de origen
+            if (item.tiendaOrigen) {
+                const tablaDestino =
+                    item.tiendaOrigen === 'Alcalá' ? 'inventario_alcala' :
+                        item.tiendaOrigen === 'Local 01' ? 'inventario_01' :
+                            'inventario_jordan';
+
+                const { data: stockActual } = await db
+                    .from(tablaDestino)
+                    .select('cantidad')
+                    .eq('id_producto', item.id_producto)
+                    .single();
+
+                if (stockActual) {
+                    await db.from(tablaDestino)
+                        .update({ cantidad: Math.max(0, stockActual.cantidad - item.cantidad) })
+                        .eq('id_producto', item.id_producto);
+                }
+            } else {
+                // Fallback por si acaso (no debería ocurrir en nueva logica)
+                console.warn('Item digital sin tienda origen:', item);
             }
         }
-        
+
         // ═══════════════════════════════════════════════════════════════
         // CREAR ENVÍO AUTOMÁTICO EN TABLA envios
         // ═══════════════════════════════════════════════════════════════
         const totalPedido = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
         const productosDescripcion = carrito.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
-        
+
         const envioData = {
             venta_id: primerIdVenta,
             cliente_nombre: clienteNombre,
@@ -1200,25 +1386,34 @@ async function procesarVentaDigital() {
             envio_incluido: false,
             cliente_paga_envio: true
         };
-        
+
         const { error: errorEnvio } = await db.from('envios').insert(envioData);
         if (errorEnvio) {
             console.error('Error creando envío:', errorEnvio);
             // No interrumpir - la venta ya se registró
         }
         // ═══════════════════════════════════════════════════════════════
-        
+
         const total = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
+
+        if (window.moterosIA) {
+            window.moterosIA.aprenderEvento('Pedido digital registrado', {
+                cliente: clienteNombre,
+                total: total,
+                items: carrito.length
+            });
+        }
+
         mostrarAlerta(`✅ Pedido registrado: $${total.toLocaleString('es-CO')}`, 'success');
-        
+
         limpiarDespuesVentaDigital();
         await cargarProductos();
-        
+
     } catch (error) {
         console.error('Error:', error);
         mostrarAlerta('❌ ' + error.message, 'error');
     }
-    
+
     btnVender.innerHTML = '📦 Registrar Pedido';
     actualizarBotonVender();
 }
@@ -1241,22 +1436,22 @@ function limpiarDespuesVentaDigital() {
     document.querySelectorAll('.metodo-btn').forEach(m => m.classList.remove('selected'));
     document.getElementById('metodosSeleccionados')?.classList.remove('visible');
     document.getElementById('datosCredito')?.classList.remove('visible');
-    
+
     // Limpiar formulario envío
     ['clienteNombre', 'clienteTelefono', 'clienteCedula', 'direccionEnvio', 'ciudadEnvio', 'notasEnvio'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    
+
     const depEl = document.getElementById('departamentoEnvio');
     if (depEl) depEl.selectedIndex = 0;
-    
+
     const credAutEl = document.getElementById('creditoAutoriza');
     if (credAutEl) credAutEl.selectedIndex = 0;
-    
+
     const credCuotEl = document.getElementById('creditoCuotas');
     if (credCuotEl) credCuotEl.selectedIndex = 0;
-    
+
     renderizarCarrito();
 }
 
@@ -1266,10 +1461,10 @@ function limpiarFormCredito() {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    
+
     const autoriza = document.getElementById('creditoAutoriza');
     if (autoriza) autoriza.selectedIndex = 0;
-    
+
     const datosCredito = document.getElementById('datosCredito');
     if (datosCredito) datosCredito.classList.remove('visible');
 }
@@ -1284,12 +1479,12 @@ function cerrarModal() {
 function mostrarAlerta(mensaje, tipo = 'success') {
     const container = document.getElementById('alertas');
     if (!container) return;
-    
+
     const alerta = document.createElement('div');
     alerta.className = `alerta alerta-${tipo}`;
     alerta.innerHTML = mensaje;
     container.appendChild(alerta);
-    
+
     setTimeout(() => {
         alerta.style.opacity = '0';
         alerta.style.transform = 'translateX(100%)';

@@ -7,8 +7,11 @@
 // CONFIGURACIÓN E INICIALIZACIÓN
 // ═══════════════════════════════════════════════════════════════
 
-const { createClient } = supabase;
-const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+// El cliente de Supabase ahora viene globalmente desde config.js
+// No asignar a constante de nivel superior para evitar fallos si config.js tarda un poco
+function getSupabase() {
+    return window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+}
 
 // Estado global
 let promocionesActivas = [];
@@ -26,21 +29,28 @@ function formatearPrecio(precio) {
     return parseInt(precio).toLocaleString('es-CO');
 }
 
-function mostrarToast(titulo, mensaje, esPromo = false) {
+function mostrarToast(titulo, mensaje, tipo = 'success') {
     const container = document.getElementById('toastContainer');
     if (!container) return;
-    
+
+    const iconos = {
+        success: '✅',
+        promo: '🎉',
+        warning: '⚠️',
+        error: '❌'
+    };
+
     const toast = document.createElement('div');
-    toast.className = `toast ${esPromo ? 'promo' : ''}`;
+    toast.className = `toast ${tipo}`;
     toast.innerHTML = `
-        <span class="toast-icon">${esPromo ? '🎉' : '✅'}</span>
+        <span class="toast-icon">${iconos[tipo] || '✅'}</span>
         <div class="toast-content">
             <div class="toast-title">${titulo}</div>
             <div class="toast-message">${mensaje || ''}</div>
         </div>
     `;
     container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => toast.remove(), tipo === 'warning' || tipo === 'error' ? 4000 : 3000);
 }
 
 function actualizarContadorCarrito() {
@@ -58,10 +68,10 @@ function actualizarContadorCarrito() {
 // ═══════════════════════════════════════════════════════════════
 
 function agregarAlCarritoPromo(productoId, precioOriginal, precioFinal, descuento, nombrePromo) {
-    const producto = productosPromo.find(p => p.id === productoId);
+    const producto = productosPromo.find(p => String(p.id) === String(productoId));
     if (!producto) return;
-    
-    const existente = carrito.find(item => item.id === productoId);
+
+    const existente = carrito.find(item => String(item.id) === String(productoId));
     if (existente) {
         existente.cantidad += 1;
     } else {
@@ -80,10 +90,62 @@ function agregarAlCarritoPromo(productoId, precioOriginal, precioFinal, descuent
     }
     guardarCarrito();
     const ahorro = precioOriginal - precioFinal;
-    mostrarToast('¡Agregado con descuento!', `${producto.nombre} (-${descuento}%) Ahorras $${formatearPrecio(ahorro)}`, true);
+    mostrarToast('¡Agregado con descuento!', `${producto.nombre} (-${descuento}%) Ahorras $${formatearPrecio(ahorro)}`, 'promo');
 }
 
-function agregarAlCarritoNormal(productoId, nombre, marca, precio, urlImagen) {
+function agregarComboAlCarrito(idPromo, precioOriginalTotal, precioFinalTotal, descuento, productosJson) {
+    try {
+        const productos = JSON.parse(productosJson.replace(/&quot;/g, '"'));
+
+        productos.forEach(p => {
+            const precioOrig = parseFloat(p.precio) || 0;
+            const precioFin = Math.round(precioOrig * (1 - (descuento / 100)));
+
+            const existente = carrito.find(item => String(item.id) === String(p.id));
+            if (existente) {
+                existente.cantidad += 1;
+            } else {
+                carrito.push({
+                    id: p.id,
+                    id_producto: p.id_producto,
+                    nombre: p.nombre,
+                    marca: p.marca,
+                    url_imagen: p.url_imagen,
+                    precioOriginal: precioOrig,
+                    precioFinal: precioFin,
+                    descuento,
+                    promocion: `Combo: ${idPromo}`,
+                    cantidad: 1
+                });
+            }
+        });
+
+        guardarCarrito();
+        const ahorro = precioOriginalTotal - precioFinalTotal;
+        mostrarToast('¡Combo agregado!', `Ahorras $${formatearPrecio(ahorro)} con esta oferta`, 'promo');
+
+    } catch (e) {
+        console.error('Error al agregar combo:', e);
+    }
+}
+
+function agregarAlCarritoNormal(productoId, nombre, marca, precio, urlImagen, id_producto = null) {
+    // Verificar si hay promoción activa mediante el Manager
+    let precioFinal = precio;
+    let descuento = 0;
+    let promocionNombre = null;
+
+    if (window.PromocionesManager && window.PromocionesManager.cargado) {
+        // Pasar ambos IDs para máxima compatibilidad
+        const ids = [productoId, id_producto].filter(i => i);
+        const promoInfo = window.PromocionesManager.calcularPrecio(precio, ids);
+        if (promoInfo && promoInfo.tienePromo) {
+            precioFinal = promoInfo.precioFinal;
+            descuento = promoInfo.descuento;
+            promocionNombre = promoInfo.promocion.nombre;
+        }
+    }
+
     const existente = carrito.find(item => item.id === productoId);
     if (existente) {
         existente.cantidad += 1;
@@ -94,35 +156,23 @@ function agregarAlCarritoNormal(productoId, nombre, marca, precio, urlImagen) {
             marca,
             url_imagen: urlImagen,
             precioOriginal: precio,
-            precioFinal: precio,
-            descuento: 0,
-            promocion: null,
+            precioFinal: precioFinal,
+            descuento: descuento,
+            promocion: promocionNombre,
             cantidad: 1
         });
     }
     guardarCarrito();
-    mostrarToast('¡Agregado!', nombre);
+    if (descuento > 0) {
+        mostrarToast('¡Agregado con descuento!', `${nombre} (-${descuento}%)`, 'promo');
+    } else {
+        mostrarToast('¡Agregado!', nombre);
+    }
 }
 
 function agregarAlCarritoRapido(productoId, nombre, marca, precio, urlImagen) {
-    const existente = carrito.find(item => item.id === productoId);
-    if (existente) {
-        existente.cantidad += 1;
-    } else {
-        carrito.push({
-            id: productoId,
-            nombre,
-            marca,
-            url_imagen: urlImagen,
-            precioOriginal: precio,
-            precioFinal: precio,
-            descuento: 0,
-            promocion: null,
-            cantidad: 1
-        });
-    }
-    guardarCarrito();
-    mostrarToast('¡Agregado al carrito!', nombre);
+    // Usar la misma lógica unificada
+    agregarAlCarritoNormal(productoId, nombre, marca, precio, urlImagen);
 }
 
 function cambiarCantidad(index, delta) {
@@ -164,9 +214,9 @@ function cerrarCarrito() {
 function renderizarCarrito() {
     const body = document.getElementById('carritoBody');
     const footer = document.getElementById('carritoFooter');
-    
+
     if (!body || !footer) return;
-    
+
     if (carrito.length === 0) {
         body.innerHTML = `
             <div class="cart-empty">
@@ -178,7 +228,7 @@ function renderizarCarrito() {
         footer.innerHTML = '';
         return;
     }
-    
+
     body.innerHTML = carrito.map((item, index) => `
         <div class="cart-item">
             <img class="cart-item-img" src="${item.url_imagen || 'https://picsum.photos/400/300'}" onerror="this.src='https://picsum.photos/400/300'">
@@ -226,6 +276,12 @@ function renderizarCarrito() {
                 <span>$${formatearPrecio(totalFinal)}</span>
             </div>
         </div>
+        <div class="habeas-data-check" style="margin: 1rem 0; padding: 1rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 0.9rem; color: #475569;">
+                <input type="checkbox" id="aceptaHabeasData" style="margin-top: 3px; width: 18px; height: 18px; accent-color: #ff6b00;">
+                <span>Acepto el tratamiento de mis datos personales conforme a la <a href="habeas-data.html" target="_blank" style="color: #ff6b00; font-weight: 600;">Politica de Habeas Data</a> y los <a href="terminos.html" target="_blank" style="color: #ff6b00; font-weight: 600;">Terminos y Condiciones</a></span>
+            </label>
+        </div>
         <div class="cart-actions">
             <button class="btn-whatsapp-cart" onclick="enviarPedidoWhatsApp()">💬 Enviar Pedido</button>
             <button class="btn-vaciar" onclick="vaciarCarrito()">🗑️</button>
@@ -234,47 +290,70 @@ function renderizarCarrito() {
 }
 
 function enviarPedidoWhatsApp() {
-    if (carrito.length === 0) return alert('El carrito está vacío');
-    
+    if (carrito.length === 0) {
+        mostrarToast('Carrito vacio', 'Agrega productos antes de continuar', 'warning');
+        return;
+    }
+
+    // Verificar checkbox de Habeas Data
+    const checkHabeas = document.getElementById('aceptaHabeasData');
+    if (!checkHabeas || !checkHabeas.checked) {
+        mostrarToast('Acepta las politicas', 'Debes aceptar el Habeas Data y Terminos para continuar', 'warning');
+        // Resaltar el checkbox
+        const checkContainer = checkHabeas?.closest('.habeas-data-check');
+        if (checkContainer) {
+            checkContainer.style.animation = 'shake 0.5s ease';
+            checkContainer.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.5)';
+            setTimeout(() => {
+                checkContainer.style.animation = '';
+                checkContainer.style.boxShadow = '';
+            }, 2000);
+        }
+        return;
+    }
+
     let mensaje = `🏍️ *PEDIDO - MOTEROS SPORTS LINE*\n`;
     mensaje += `📅 ${new Date().toLocaleDateString('es-CO')}\n`;
     mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    
+
     let subtotal = 0, totalDescuentos = 0, totalFinal = 0;
-    
+
     carrito.forEach((item, i) => {
         const subOrig = item.precioOriginal * item.cantidad;
         const subFinal = item.precioFinal * item.cantidad;
         subtotal += subOrig;
         totalFinal += subFinal;
         totalDescuentos += (subOrig - subFinal);
-        
+
+        const esCombo = item.promocion && item.promocion.includes('Combo');
+        const iconEtiqueta = esCombo ? '🎁' : '🏷️';
+
         mensaje += `*${i + 1}. ${item.nombre}*\n`;
         mensaje += `   Marca: ${item.marca}\n`;
         mensaje += `   Cant: ${item.cantidad}\n`;
-        
-        if (item.descuento > 0) {
+
+        if (item.descuento > 0 || esCombo) {
             mensaje += `   P.Original: ~$${formatearPrecio(item.precioOriginal)}~\n`;
-            mensaje += `   🏷️ *${item.promocion}* (-${item.descuento}%)\n`;
+            mensaje += `   ${iconEtiqueta} *${item.promocion}* (-${item.descuento}%)\n`;
             mensaje += `   *P.Final: $${formatearPrecio(item.precioFinal)}*\n`;
         } else {
             mensaje += `   Precio: $${formatearPrecio(item.precioFinal)}\n`;
         }
         mensaje += `   Subtotal: *$${formatearPrecio(subFinal)}*\n\n`;
     });
-    
+
     mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
     mensaje += `📋 *RESUMEN*\n\n`;
     mensaje += `   Subtotal: $${formatearPrecio(subtotal)}\n`;
-    
+
     if (totalDescuentos > 0) {
         mensaje += `   🎉 Descuentos: -$${formatearPrecio(totalDescuentos)}\n`;
     }
-    
+
     mensaje += `\n   💰 *TOTAL: $${formatearPrecio(totalFinal)}*\n`;
     mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
     mensaje += `¡Gracias! 🙌`;
-    
+
     const numero = CONFIG.WHATSAPP?.numero || '573113408416';
     window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, '_blank');
 }
@@ -284,35 +363,63 @@ function enviarPedidoWhatsApp() {
 // ═══════════════════════════════════════════════════════════════
 
 async function cargarPromociones() {
+    const client = getSupabase();
+    if (!client) {
+        console.warn('⚠️ Supabase no listo en index.js. Reintentando...');
+        setTimeout(cargarPromociones, 1000);
+        return;
+    }
+
     try {
-        const { data: promos, error: errorPromos } = await supabaseClient
+        if (window.PromocionesManager) {
+            await window.PromocionesManager.cargar();
+        }
+
+        const { data: promos, error: errorPromos } = await client
             .from('promociones')
             .select('*')
             .eq('estado', 'Activa');
-        
+
         if (errorPromos) throw errorPromos;
-        
+
+        console.log('🔍 Promociones Activas encontradas:', promos?.length, promos);
+
         if (!promos || promos.length === 0) {
             const seccion = document.getElementById('seccionPromociones');
             if (seccion) seccion.style.display = 'none';
             return;
         }
-        
+
         promocionesActivas = promos;
-        
-        const { data: productos, error: errorProd } = await supabaseClient
+
+        const { data: productos, error: errorProd } = await client
             .from('productos')
             .select('*')
             .eq('estado', 'Activo');
-        
+
         if (errorProd) throw errorProd;
-        
+
         productosPromo = productos || [];
+        console.log('🔍 Productos Activos para promo:', productosPromo.length);
+
         renderizarCarruselPromo();
         iniciarAutoPlayPromo();
-        
+        cargarCategoriasDinamicas();
+
+        // IA Learning: Enseñar promociones REALMENTE vigentes (considerando fechas)
+        if (window.moterosIA && promocionesActivas.length > 0) {
+            const listadoPromos = promocionesActivas
+                .filter(p => PromocionesManager.estaVigente(p))
+                .map(p => p.nombre)
+                .join(', ');
+
+            if (listadoPromos) {
+                window.moterosIA.aprenderEvento(`Cargó promociones del día (Verificadas): ${listadoPromos}`);
+            }
+        }
+
     } catch (error) {
-        console.error('Error cargando promociones:', error);
+        console.error('❌ Error cargando promociones:', error);
         const seccion = document.getElementById('seccionPromociones');
         if (seccion) seccion.style.display = 'none';
     }
@@ -321,94 +428,116 @@ async function cargarPromociones() {
 function renderizarCarruselPromo() {
     const track = document.getElementById('promoCarouselTrack');
     const indicators = document.getElementById('promoIndicators');
-    
+
     if (!track) return;
-    
+
     let cards = [];
-    
+
+    // Ahora iteramos sobre las promociones, no sobre productos individuales
     promocionesActivas.forEach(promo => {
-        const idsProductos = promo.productos_incluidos 
-            ? promo.productos_incluidos.split(',').map(id => id.trim()).filter(id => id && id !== '000') 
-            : [];
-        
-        idsProductos.forEach(idProd => {
-            const producto = productosPromo.find(p => 
-                p.id_producto === idProd || 
-                p.id_producto === `PROD${idProd}` || 
-                String(p.id).includes(idProd)
-            );
-            
-            if (producto) {
-                const descuento = parseFloat(promo.descuento) || 0;
-                const precioOriginal = producto.precio;
-                const precioConDescuento = Math.round(precioOriginal * (1 - descuento / 100));
-                cards.push({ producto, promo, precioOriginal, precioConDescuento, descuento });
-            }
+        // Verificar vigencia antes de procesar
+        if (!PromocionesManager.estaVigente(promo)) return;
+
+        // Obtener IDs de los productos de esta promo
+        const idsIncluidosStr = promo.productos_incluidos || '';
+        const idsIncluidos = idsIncluidosStr.split(',').map(id => id.trim()).filter(id => id && id !== '000');
+
+        // Buscar los datos de los productos que pertenecen a la promo
+        const productosDeLaPromo = productosPromo.filter(p =>
+            idsIncluidos.some(idIncl =>
+                String(p.id).toLowerCase() === idIncl.toLowerCase() ||
+                String(p.id_producto).toLowerCase() === idIncl.toLowerCase() ||
+                String(p.id_producto).toLowerCase() === `prod${idIncl.toLowerCase()}`
+            )
+        );
+
+        if (productosDeLaPromo.length === 0) return;
+
+        // Calcular precios
+        let precioOriginalTotal = 0;
+        productosDeLaPromo.forEach(p => precioOriginalTotal += parseFloat(p.precio) || 0);
+
+        const porcentajeDescuento = parseFloat(promo.descuento) || 0;
+        const precioConDescuentoTotal = Math.round(precioOriginalTotal * (1 - (porcentajeDescuento / 100)));
+
+        // Preparar nombres e imagen
+        const esCombo = productosDeLaPromo.length > 1;
+        const nombreTarjeta = esCombo ? (promo.nombre || 'Combo Especial') : productosDeLaPromo[0].nombre;
+        const subtitulo = esCombo ? productosDeLaPromo.map(p => p.nombre).join(' + ') : (promo.nombre || 'Oferta');
+        const imagenUrl = productosDeLaPromo[0].url_imagen;
+
+        cards.push({
+            id_promo: promo.id_promo,
+            nombre: nombreTarjeta,
+            subtitulo,
+            precioOriginal: precioOriginalTotal,
+            precioConDescuento: precioConDescuentoTotal,
+            descuento: porcentajeDescuento,
+            productos: productosDeLaPromo,
+            imagenUrl,
+            fechaFin: promo.fecha_fin
         });
     });
-    
-    // Fallback si no hay productos vinculados
-    if (cards.length === 0 && productosPromo.length > 0) {
-        promocionesActivas.forEach((promo, i) => {
-            const producto = productosPromo[i % productosPromo.length];
-            const descuento = parseFloat(promo.descuento) || 0;
-            cards.push({
-                producto,
-                promo,
-                precioOriginal: producto.precio,
-                precioConDescuento: Math.round(producto.precio * (1 - descuento / 100)),
-                descuento
-            });
-        });
-    }
-    
-    cards = cards.slice(0, 12);
-    
+
+    console.log('📋 Tarjetas de Combo a renderizar:', cards.length);
+
     if (cards.length === 0) {
+        console.warn('⚠️ No hay promociones vigentes con productos válidos');
         const seccion = document.getElementById('seccionPromociones');
         if (seccion) seccion.style.display = 'none';
         return;
     }
-    
-    track.innerHTML = cards.map((item, index) => `
+
+    // Asegurar que la sección sea visible si hay tarjetas
+    const seccion = document.getElementById('seccionPromociones');
+    if (seccion) seccion.style.display = 'block';
+
+    track.innerHTML = cards.map((item, index) => {
+        // Crear string de productos para la función onclick
+        const prodsJson = JSON.stringify(item.productos).replace(/"/g, '&quot;');
+
+        return `
         <div class="promo-card" data-index="${index}">
-            <span class="promo-badge">-${item.descuento}%</span>
+            <span class="promo-badge">${item.descuento > 0 ? `-${item.descuento}%` : 'OFERTA'}</span>
             <div class="promo-card-image">
-                <img src="${item.producto.url_imagen || 'https://picsum.photos/400/300'}" 
-                     alt="${item.producto.nombre}" 
-                     onerror="this.src='https://picsum.photos/400/300'">
+                <img src="${item.imagenUrl || 'https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg'}" 
+                     alt="${item.nombre}" 
+                     onerror="this.src='https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg'">
             </div>
             <div class="promo-card-info">
-                <div class="promo-name">${item.promo.nombre}</div>
-                <h3 title="${item.producto.nombre}">${item.producto.nombre}</h3>
+                <div class="promo-name">${item.nombre}</div>
+                <h3 title="${item.subtitulo}">${item.subtitulo}</h3>
                 <div class="promo-prices">
                     <span class="precio-original">$${formatearPrecio(item.precioOriginal)}</span>
                     <span class="precio-promo">$${formatearPrecio(item.precioConDescuento)}</span>
                 </div>
-                <div class="promo-vigencia">
-                    ⏰ ${item.promo.fecha_inicio || 'Hoy'} al ${item.promo.fecha_fin || 'Agotar stock'}
-                </div>
-                <button class="promo-btn-agregar" onclick="agregarAlCarritoPromo('${item.producto.id}', ${item.precioOriginal}, ${item.precioConDescuento}, ${item.descuento}, '${item.promo.nombre.replace(/'/g, "\\'")}')">
-                    🛒 Agregar al Carrito
+                ${item.fechaFin ? `<div class="promo-expiry" style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.75rem;">⏳ Válido hasta: ${new Date(item.fechaFin).toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}</div>` : ''}
+                <button class="promo-btn-agregar" onclick="agregarComboAlCarrito('${item.id_promo}', ${item.precioOriginal}, ${item.precioConDescuento}, ${item.descuento}, '${prodsJson}')">
+                    🛒 Agregar Combo
                 </button>
             </div>
         </div>
-    `).join('');
-    
+    `;
+    }).join('');
+
     // Indicadores
     if (indicators) {
         const numIndicadores = Math.ceil(cards.length / getCardsVisibles());
-        indicators.innerHTML = Array(numIndicadores).fill(0).map((_, i) => 
+        indicators.innerHTML = Array(numIndicadores).fill(0).map((_, i) =>
             `<div class="promo-indicator ${i === 0 ? 'active' : ''}" onclick="irASlidePromo(${i})"></div>`
         ).join('');
     }
+
+    // Resetear posición
+    posicionCarruselPromo = 0;
+    track.style.transform = 'translateX(0)';
 }
 
 function getCardsVisibles() {
     const width = window.innerWidth;
     if (width < 600) return 1;
-    if (width < 900) return 2;
-    if (width < 1200) return 3;
+    if (width < 1024) return 2;
+    if (width < 1400) return 3;
     return 4;
 }
 
@@ -416,40 +545,55 @@ function moverCarruselPromo(direccion) {
     const track = document.getElementById('promoCarouselTrack');
     const cards = track?.querySelectorAll('.promo-card');
     if (!cards || !cards.length) return;
-    
-    const cardWidth = cards[0].offsetWidth + 24;
+
+    // Calcular ancho dinámicamente para que sea preciso
     const visibles = getCardsVisibles();
+    const gap = 24; // Gap definido en CSS
+    const contenedorWidth = track.parentElement.offsetWidth;
+    const cardWidth = (contenedorWidth - (gap * (visibles - 1))) / visibles;
+
     const maxPosicion = Math.max(0, cards.length - visibles);
-    
+
     posicionCarruselPromo += direccion;
     if (posicionCarruselPromo < 0) posicionCarruselPromo = maxPosicion;
     if (posicionCarruselPromo > maxPosicion) posicionCarruselPromo = 0;
-    
-    track.style.transform = `translateX(-${posicionCarruselPromo * cardWidth}px)`;
+
+    const offset = posicionCarruselPromo * (cardWidth + gap);
+    track.style.transform = `translateX(-${offset}px)`;
     actualizarIndicadoresPromo();
     reiniciarAutoPlayPromo();
 }
 
 function irASlidePromo(index) {
-    posicionCarruselPromo = index * getCardsVisibles();
     const track = document.getElementById('promoCarouselTrack');
     const cards = track?.querySelectorAll('.promo-card');
     if (!cards || !cards.length) return;
-    
-    const cardWidth = cards[0].offsetWidth + 24;
-    track.style.transform = `translateX(-${posicionCarruselPromo * cardWidth}px)`;
+
+    const visibles = getCardsVisibles();
+    const gap = 24;
+    const contenedorWidth = track.parentElement.offsetWidth;
+    const cardWidth = (contenedorWidth - (gap * (visibles - 1))) / visibles;
+
+    posicionCarruselPromo = index * visibles;
+    const maxPosicion = Math.max(0, cards.length - visibles);
+    if (posicionCarruselPromo > maxPosicion) posicionCarruselPromo = maxPosicion;
+
+    const offset = posicionCarruselPromo * (cardWidth + gap);
+    track.style.transform = `translateX(-${offset}px)`;
     actualizarIndicadoresPromo();
     reiniciarAutoPlayPromo();
 }
 
 function actualizarIndicadoresPromo() {
     const indicators = document.querySelectorAll('.promo-indicator');
+    if (!indicators.length) return;
     const visibles = getCardsVisibles();
-    const activeIndex = Math.floor(posicionCarruselPromo / visibles);
+    const activeIndex = Math.min(indicators.length - 1, Math.floor(posicionCarruselPromo / visibles));
     indicators.forEach((ind, i) => ind.classList.toggle('active', i === activeIndex));
 }
 
 function iniciarAutoPlayPromo() {
+    if (autoPlayPromo) clearInterval(autoPlayPromo);
     autoPlayPromo = setInterval(() => moverCarruselPromo(1), INTERVALO_AUTO);
 }
 
@@ -464,18 +608,21 @@ function reiniciarAutoPlayPromo() {
 
 async function cargarDestacados() {
     try {
-        const { data: productos, error } = await supabaseClient
+        const client = getSupabase();
+        if (!client) return;
+
+        const { data: productos, error } = await client
             .from('productos')
             .select('*')
             .eq('estado', 'Activo')
             .eq('destacado', true)
             .limit(6);
-        
+
         if (error) throw error;
-        
+
         const grid = document.getElementById('productosDestacados');
         if (!grid) return;
-        
+
         if (!productos || productos.length === 0) {
             grid.innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #666;">
@@ -490,7 +637,7 @@ async function cargarDestacados() {
             `;
             return;
         }
-        
+
         grid.innerHTML = productos.map(p => `
             <div class="producto-card">
                 <div class="producto-imagen" style="position:relative;">
@@ -513,42 +660,72 @@ async function cargarDestacados() {
                 </div>
             </div>
         `).join('');
-        
+
         // Actualizar contador total
-        const { count } = await supabaseClient
+        const { count } = await client
             .from('productos')
             .select('*', { count: 'exact', head: true })
             .eq('estado', 'Activo');
-        
+
         const totalEl = document.getElementById('totalProductos');
         if (totalEl) totalEl.textContent = count || 0;
-        
+
         await contarCategorias();
-        
+
     } catch (error) {
         console.error('Error cargando destacados:', error);
     }
 }
 
 async function contarCategorias() {
-    const cats = {
-        'Cascos': 'cascos',
-        'Guantes': 'guantes',
-        'Chaquetas': 'chaquetas',
-        'Botas': 'botas',
-        'Intercomunicadores': 'intercomunicadores',
-        'Camaras': 'camaras'
-    };
-    
-    for (const [cat, id] of Object.entries(cats)) {
-        const { count } = await supabaseClient
-            .from('productos')
-            .select('*', { count: 'exact', head: true })
-            .eq('estado', 'Activo')
-            .eq('categoria', cat);
-        
-        const elem = document.getElementById('count-' + id);
-        if (elem) elem.textContent = (count || 0) + ' productos';
+    // Esta función ahora es obsoleta por cargarCategoriasDinamicas, 
+    // pero la mantenemos mínima por si hay refs perdidas.
+}
+
+async function cargarCategoriasDinamicas() {
+    const grid = document.getElementById('categoriasGrid');
+    if (!grid) return;
+
+    const client = getSupabase();
+    if (!client) return;
+
+    try {
+        const { data: categorias, error } = await client
+            .from('categorias')
+            .select('*')
+            .order('nombre');
+
+        if (error) throw error;
+
+        if (!categorias || categorias.length === 0) {
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Próximamente nuevas categorías</p>';
+            return;
+        }
+
+        // Obtener cuentas para todas las categorías en paralelo
+        const categoriasConCuenta = await Promise.all(categorias.map(async (cat) => {
+            const { count } = await client
+                .from('productos')
+                .select('*', { count: 'exact', head: true })
+                .eq('estado', 'Activo')
+                .eq('categoria', cat.nombre);
+            return { ...cat, count: count || 0 };
+        }));
+
+        // Ordenar por cantidad descendente
+        categoriasConCuenta.sort((a, b) => b.count - a.count);
+
+        grid.innerHTML = categoriasConCuenta.map(cat => `
+            <div class="categoria-card" onclick="irATienda('${cat.nombre}')">
+                <div class="categoria-icon">${cat.icono || '📁'}</div>
+                <h3>${cat.nombre}</h3>
+                <p>${cat.count} productos</p>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error cargando categorías dinámicas:', error);
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Error al cargar categorías</p>';
     }
 }
 
@@ -561,27 +738,52 @@ function irATienda(categoria) {
 // ═══════════════════════════════════════════════════════════════
 
 async function cargarConfiguracion() {
+    const client = getSupabase();
+    if (!client) {
+        setTimeout(cargarConfiguracion, 1000);
+        return;
+    }
+
     try {
-        const { data: config, error } = await supabaseClient
+        const { data, error } = await client
             .from('configuracion_sistema')
-            .select('*')
-            .single();
-        
-        if (error || !config) return;
-        
+            .select('*');
+
+        if (error) throw error;
+
+        // Convertir de formato KV a Objeto
+        const config = (data || []).reduce((acc, item) => {
+            acc[item.clave] = item.valor;
+            return acc;
+        }, {});
+
         // Logo
         if (config.logo_url) {
             const logoEl = document.getElementById('siteLogo');
             if (logoEl) logoEl.src = config.logo_url;
         }
-        
+
         // Título
         if (config.nombre_tienda) {
             const titleEl = document.getElementById('siteTitle');
             if (titleEl) titleEl.textContent = config.nombre_tienda;
             document.title = config.nombre_tienda + ' | Inicio';
         }
-        
+
+        // Horarios
+        if (config.horario_alcala) {
+            const el = document.getElementById('horarioAlcala');
+            if (el) el.textContent = config.horario_alcala;
+        }
+        if (config.horario_local01) {
+            const el = document.getElementById('horarioLocal01');
+            if (el) el.textContent = config.horario_local01;
+        }
+        if (config.horario_jordan) {
+            const el = document.getElementById('horarioJordan');
+            if (el) el.textContent = config.horario_jordan;
+        }
+
     } catch (error) {
         console.error('Error cargando configuración:', error);
     }
@@ -593,12 +795,12 @@ async function cargarConfiguracion() {
 
 window.addEventListener('DOMContentLoaded', () => {
     console.log('🏍️ Moteros Sports Line - Iniciando...');
-    
+
     actualizarContadorCarrito();
     cargarConfiguracion();
     cargarPromociones();
     cargarDestacados();
-    
+
     // Event listeners para carrusel
     const track = document.getElementById('promoCarouselTrack');
     if (track) {
@@ -631,6 +833,7 @@ window.addEventListener('resize', () => {
 // ═══════════════════════════════════════════════════════════════
 
 window.agregarAlCarritoPromo = agregarAlCarritoPromo;
+window.agregarComboAlCarrito = agregarComboAlCarrito;
 window.agregarAlCarritoNormal = agregarAlCarritoNormal;
 window.agregarAlCarritoRapido = agregarAlCarritoRapido;
 window.cambiarCantidad = cambiarCantidad;

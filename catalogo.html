@@ -1,29 +1,40 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de Productos | Moteros Sport Line Villavicencio</title>
-    <link rel="icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="icon"
+        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff6b00">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
-    <meta name="description" content="Explora nuestro catálogo de cascos, guantes, chaquetas, botas, intercomunicadores y accesorios para motociclistas. Los mejores precios en Villavicencio, Meta.">
+    <link rel="apple-touch-icon"
+        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <meta name="description"
+        content="Explora nuestro catálogo de cascos, guantes, chaquetas, botas, intercomunicadores y accesorios para motociclistas. Los mejores precios en Villavicencio, Meta.">
 
     <!-- SEO Meta Tags -->
-    <meta name="keywords" content="catalogo motos, cascos villavicencio, guantes motociclista, chaquetas moto colombia, botas motero, intercomunicadores moto, precios accesorios moto">
+    <meta name="keywords"
+        content="catalogo motos, cascos villavicencio, guantes motociclista, chaquetas moto colombia, botas motero, intercomunicadores moto, precios accesorios moto">
     <meta name="robots" content="index, follow">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://moterossportline.store/catalogo.html">
     <meta property="og:title" content="Catálogo - Moteros Sport Line">
-    <meta property="og:description" content="Encuentra cascos, guantes, chaquetas y más para tu moto. Precios competitivos en Villavicencio.">
-    <meta property="og:image" content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <meta property="og:description"
+        content="Encuentra cascos, guantes, chaquetas y más para tu moto. Precios competitivos en Villavicencio.">
+    <meta property="og:image"
+        content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
 
     <link rel="canonical" href="https://moterossportline.store/catalogo.html">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- CSS externo -->
+    <link rel="stylesheet" href="css/premium.css">
+
+    <link rel="stylesheet" href="css/styles.css">
 
     <style>
         :root {
@@ -34,36 +45,36 @@
             --gray-light: #f5f5f5;
             --gray-dark: #666;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             background: var(--gray-light);
             line-height: 1.6;
         }
-        
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 0 20px;
         }
-        
+
         /* Header */
         .header {
             background: white;
             color: #1a1a1a;
             padding: 1.5rem 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             position: sticky;
             top: 0;
             z-index: 100;
         }
-        
+
         .header .container {
             display: flex;
             justify-content: space-between;
@@ -71,7 +82,7 @@
             flex-wrap: wrap;
             gap: 1rem;
         }
-        
+
         .logo {
             display: flex;
             align-items: center;
@@ -112,7 +123,7 @@
         .nav a.active {
             color: var(--primary);
         }
-        
+
         .cart-btn {
             display: flex;
             align-items: center;
@@ -126,27 +137,27 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        
+
         .cart-btn:hover {
             background: var(--primary-hover);
             transform: translateY(-2px);
         }
-        
+
         /* Sección Filtros */
         .filtros-section {
             background: white;
             padding: 2.5rem 0;
             margin: 2rem 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
-        
+
         .filtros-title {
             text-align: center;
             font-size: 1.8rem;
             margin-bottom: 2rem;
             color: var(--secondary);
         }
-        
+
         .filtros-container {
             display: flex;
             flex-wrap: wrap;
@@ -154,7 +165,7 @@
             justify-content: center;
             align-items: center;
         }
-        
+
         .filtros-container select,
         .filtros-container input {
             padding: 0.9rem 1.2rem;
@@ -164,18 +175,18 @@
             transition: all 0.3s;
             background: white;
         }
-        
+
         .filtros-container select:focus,
         .filtros-container input:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
         }
-        
+
         .filtros-container input {
             min-width: 280px;
         }
-        
+
         .btn-limpiar {
             background: var(--gray-dark);
             color: white;
@@ -186,17 +197,17 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        
+
         .btn-limpiar:hover {
             background: #888;
         }
-        
+
         /* Productos */
         .productos-section {
             padding: 3rem 0;
             min-height: 60vh;
         }
-        
+
         .contador {
             text-align: center;
             font-size: 1.1rem;
@@ -204,39 +215,40 @@
             margin-bottom: 2rem;
             font-weight: 500;
         }
-        
+
         .productos-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 2.5rem;
             margin-bottom: 3rem;
         }
-        
+
         .producto-card {
             background: white;
             border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             height: 100%;
             display: flex;
             flex-direction: column;
         }
-        
+
         .producto-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
         }
-        
+
         .producto-imagen-wrapper {
             position: relative;
             width: 100%;
-            padding-top: 75%; /* Aspect ratio 4:3 */
+            padding-top: 75%;
+            /* Aspect ratio 4:3 */
             overflow: hidden;
             background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
         }
-        
+
         .producto-imagen {
             position: absolute;
             top: 0;
@@ -246,11 +258,11 @@
             object-fit: cover;
             transition: transform 0.6s ease;
         }
-        
+
         .producto-card:hover .producto-imagen {
             transform: scale(1.1);
         }
-        
+
         .badge-categoria {
             position: absolute;
             top: 1rem;
@@ -266,14 +278,14 @@
             z-index: 2;
             box-shadow: 0 2px 10px rgba(255, 107, 0, 0.3);
         }
-        
+
         .producto-info {
             padding: 1.8rem;
             flex: 1;
             display: flex;
             flex-direction: column;
         }
-        
+
         .producto-nombre {
             font-size: 1.25rem;
             font-weight: 700;
@@ -281,14 +293,14 @@
             margin-bottom: 0.5rem;
             line-height: 1.3;
         }
-        
+
         .producto-marca {
             color: var(--primary);
             font-weight: 600;
             font-size: 0.95rem;
             margin-bottom: 0.8rem;
         }
-        
+
         .producto-descripcion {
             color: #888;
             font-size: 0.9rem;
@@ -297,10 +309,11 @@
             flex: 1;
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        
+
         .producto-footer {
             display: flex;
             justify-content: space-between;
@@ -308,13 +321,13 @@
             padding-top: 1rem;
             border-top: 1px solid #f0f0f0;
         }
-        
+
         .producto-precio {
             font-size: 1.8rem;
             font-weight: 800;
             color: var(--primary);
         }
-        
+
         .btn-ver-mas {
             background: var(--primary);
             color: white;
@@ -326,13 +339,13 @@
             transition: all 0.3s;
             font-size: 0.95rem;
         }
-        
+
         .btn-ver-mas:hover {
             background: var(--primary-hover);
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
         }
-        
+
         /* Modal */
         .modal {
             display: none;
@@ -343,16 +356,16 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0,0,0,0.7);
+            background-color: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(5px);
         }
-        
+
         .modal.active {
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        
+
         .modal-content {
             background: white;
             margin: 2rem;
@@ -363,21 +376,22 @@
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             animation: modalSlideIn 0.3s ease-out;
         }
-        
+
         @keyframes modalSlideIn {
             from {
                 opacity: 0;
                 transform: translateY(-50px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .modal-close {
             position: absolute;
             top: 1.5rem;
@@ -393,32 +407,32 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             transition: all 0.3s;
         }
-        
+
         .modal-close:hover {
             background: #f5f5f5;
             transform: rotate(90deg);
         }
-        
+
         /* Loading/Empty states */
         .empty-state {
             text-align: center;
             padding: 6rem 2rem;
             color: #999;
         }
-        
+
         .empty-state-icon {
             font-size: 4rem;
             margin-bottom: 1rem;
         }
-        
+
         .empty-state-text {
             font-size: 1.3rem;
             color: #666;
         }
-        
+
         /* Footer */
         .footer {
             background: var(--secondary);
@@ -426,11 +440,11 @@
             padding: 3rem 0 1.5rem;
             margin-top: 5rem;
         }
-        
+
         .footer-content {
             text-align: center;
         }
-        
+
         /* Responsive */
         /* Menu Hamburguesa */
         .menu-toggle {
@@ -441,6 +455,7 @@
             padding: 0.5rem;
             z-index: 1001;
         }
+
         .menu-toggle span {
             display: block;
             width: 28px;
@@ -450,12 +465,15 @@
             border-radius: 3px;
             transition: 0.3s;
         }
+
         .menu-toggle.active span:nth-child(1) {
             transform: rotate(45deg) translate(6px, 6px);
         }
+
         .menu-toggle.active span:nth-child(2) {
             opacity: 0;
         }
+
         .menu-toggle.active span:nth-child(3) {
             transform: rotate(-45deg) translate(6px, -6px);
         }
@@ -474,9 +492,11 @@
             align-items: center;
             gap: 1.5rem;
         }
+
         .mobile-nav.active {
             display: flex;
         }
+
         .mobile-nav a {
             color: white;
             text-decoration: none;
@@ -486,24 +506,47 @@
             border-radius: 8px;
             transition: all 0.3s;
         }
+
         .mobile-nav a:hover {
             background: var(--primary);
         }
 
         @media (max-width: 768px) {
-            .nav { display: none; }
-            .menu-toggle { display: block; }
-            .header .container { justify-content: space-between; }
-            .filtros-container { flex-direction: column; width: 100%; }
+            .nav {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .header .container {
+                justify-content: space-between;
+            }
+
+            .filtros-container {
+                flex-direction: column;
+                width: 100%;
+            }
+
             .filtros-container select,
             .filtros-container input,
-            .btn-limpiar { width: 100%; }
+            .btn-limpiar {
+                width: 100%;
+            }
+
             .productos-grid {
                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
                 gap: 1.5rem;
             }
-            .producto-nombre { font-size: 1.1rem; }
-            .producto-precio { font-size: 1.5rem; }
+
+            .producto-nombre {
+                font-size: 1.1rem;
+            }
+
+            .producto-precio {
+                font-size: 1.5rem;
+            }
         }
     </style>
     <style>
@@ -521,6 +564,7 @@
             z-index: 9999;
             transition: opacity 0.3s;
         }
+
         .preloader-spinner {
             width: 50px;
             height: 50px;
@@ -529,10 +573,17 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
+
         /* WhatsApp Flotante */
         .whatsapp-float {
             position: fixed;
@@ -550,16 +601,99 @@
             transition: all 0.3s;
             animation: wabounce 2s infinite;
         }
+
         .whatsapp-float:hover {
             transform: scale(1.1);
             box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5);
         }
+
         @keyframes wabounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        /* Toast notifications */
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            animation: slideInRight 0.4s ease, fadeOut 0.4s ease 3.6s forwards;
+            max-width: 320px;
+        }
+
+        .toast.warning {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+        }
+
+        .toast-icon {
+            font-size: 1.4rem;
+        }
+
+        .toast-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .toast-message {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+            }
         }
     </style>
 </head>
+
 <body oncontextmenu="return false;">
     <!-- Preloader -->
     <div class="preloader" id="preloader">
@@ -569,7 +703,8 @@
     <!-- Menu Movil -->
     <div class="mobile-nav" id="mobileNav">
         <a href="index.html">Inicio</a>
-        <a href="catalogo.html">Catálogo</a>
+        <a href="catalogo.html">Tienda</a>
+        <a href="nosotros.html">Nosotros</a>
         <a href="blog.html">Blog</a>
         <a href="contacto.html">Contacto</a>
     </div>
@@ -577,12 +712,15 @@
     <header class="header">
         <div class="container">
             <a href="index.html" class="logo" style="text-decoration:none;">
-                <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line">
+                <img id="siteLogo"
+                    src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
+                    alt="Moteros Sports Line">
                 <h1 id="siteTitle">MOTEROS SPORT LINE</h1>
             </a>
             <nav class="nav">
                 <a href="index.html">Inicio</a>
-                <a href="catalogo.html">Tienda</a>
+                <a href="catalogo.html" class="active">Tienda</a>
+                <a href="nosotros.html">Nosotros</a>
                 <a href="blog.html">Blog</a>
                 <a href="contacto.html">Contacto</a>
             </nav>
@@ -620,7 +758,8 @@
                     <option value="500000-1000000">$500.000 - $1.000.000</option>
                     <option value="1000000-99999999">Más de $1.000.000</option>
                 </select>
-                <input type="text" id="buscarProducto" placeholder="🔍 Buscar por nombre o marca..." onkeyup="aplicarFiltros()">
+                <input type="text" id="buscarProducto" placeholder="🔍 Buscar por nombre o marca..."
+                    onkeyup="aplicarFiltros()">
                 <button class="btn-limpiar" onclick="limpiarFiltros()">Limpiar filtros</button>
             </div>
         </div>
@@ -638,7 +777,7 @@
     <div id="modalDetalle" class="modal">
         <div class="modal-content">
             <button class="modal-close" onclick="cerrarModalDetalle()">×</button>
-            <div id="contenidoDetalle" style="padding: 3rem;"></div>
+            <div id="contenidoDetalle"></div>
         </div>
     </div>
 
@@ -647,13 +786,28 @@
         <div class="modal-content">
             <button class="modal-close" onclick="cerrarModalCarrito()">×</button>
             <div style="padding: 3rem;">
-                <h2 style="text-align:center; color: var(--primary); margin-bottom: 2rem; font-size: 2rem;">🛒 Mi Carrito</h2>
+                <h2 style="text-align:center; color: var(--primary); margin-bottom: 2rem; font-size: 2rem;">🛒 Mi
+                    Carrito</h2>
                 <div id="listaCarrito" style="max-height:400px; overflow-y:auto; margin:2rem 0;"></div>
                 <div style="text-align:center; padding:2rem; background:#f8f9fa; border-radius:15px; margin:2rem 0;">
                     <strong style="font-size:2rem;">Total: $<span id="totalCarrito">0</span></strong>
                 </div>
+                <!-- Checkbox Habeas Data -->
+                <div
+                    style="margin: 1.5rem 0; padding: 1rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <label
+                        style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 0.9rem; color: #475569;">
+                        <input type="checkbox" id="aceptaHabeasData"
+                            style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--primary);">
+                        <span>Acepto el tratamiento de mis datos personales conforme a la <a href="habeas-data.html"
+                                target="_blank" style="color: var(--primary); font-weight: 600;">Politica de Habeas
+                                Data</a> y los <a href="terminos.html" target="_blank"
+                                style="color: var(--primary); font-weight: 600;">Terminos y Condiciones</a></span>
+                    </label>
+                </div>
                 <div style="text-align:center; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <button onclick="enviarPedidoWhatsApp()" class="btn-ver-mas" style="padding:1.2rem 2.5rem; font-size: 1.1rem;">
+                    <button onclick="enviarPedidoWhatsApp()" class="btn-ver-mas"
+                        style="padding:1.2rem 2.5rem; font-size: 1.1rem;">
                         💬 Enviar por WhatsApp
                     </button>
                     <button onclick="vaciarCarrito()" class="btn-limpiar" style="padding:1.2rem 2rem;">
@@ -664,348 +818,69 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"
+        style="position: fixed; top: 1rem; right: 1rem; z-index: 10000; display: flex; flex-direction: column; gap: 0.5rem;">
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">&copy; 2025 Moteros Sports Line</p>
-                <p style="opacity: 0.7;">La Casa Oficial de los Moteros</p>
-                <p style="opacity: 0.7;">en Villavicencio el Meta y Colombia</p>
+                <div class="footer-section">
+                    <h4>Moteros Sports Line</h4>
+                    <p>La Casa Oficial de los Moteros</p>
+                    <p>en Villavicencio el Meta y Colombia</p>
+                    <p style="margin-top:1rem;">
+                        <a href="https://wa.me/573113408416" target="_blank" class="btn-whatsapp"
+                            style="padding:0.5rem 1rem;">WhatsApp</a>
+                    </p>
+                </div>
+                <div class="footer-section">
+                    <h4>Contacto General</h4>
+                    <p>📞 <a href="tel:+573113408416" style="color:white;">311 340 8416</a></p>
+                    <p>✉️ <a href="mailto:moterossportline@gmail.com"
+                            style="color:white;">moterossportline@gmail.com</a></p>
+                </div>
+                <div class="footer-section">
+                    <h4>Siguenos</h4>
+                    <p>📘 <a href="https://www.facebook.com/MoterosSportLine/" target="_blank"
+                            style="color:white;">Facebook</a></p>
+                    <p>📷 <a href="https://www.instagram.com/moteros.sportline/" target="_blank"
+                            style="color:white;">Instagram</a></p>
+                    <p>🎵 <a href="https://www.tiktok.com/@moterossportline" target="_blank"
+                            style="color:white;">TikTok</a></p>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <p><a href="terminos.html" style="color:white;">Terminos y Condiciones</a></p>
+                    <p><a href="privacidad.html" style="color:white;">Politica de Privacidad</a></p>
+                    <p><a href="habeas-data.html" style="color:white;">Habeas Data</a></p>
+                    <p><a href="politicas-domicilios.html" style="color:white;">Politicas de Domicilios</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Moteros Sports Line | Variedades JyM - Todos los derechos reservados</p>
             </div>
         </div>
     </footer>
 
     <!-- Config externo -->
     <script src="js/config.js"></script>
+    <script src="js/promociones.js"></script>
+    <script src="js/ia-core.js"></script>
+    <script src="js/ai-widget.js"></script>
 
-    <script>
-        // Cliente Supabase
-        const { createClient } = supabase;
-        const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-
-        // Variables globales
-        let todosLosProductos = [];
-        let productosFiltrados = [];
-        let carrito = JSON.parse(localStorage.getItem('carrito_moteros') || '[]');
-        let productoActual = null;
-
-        // Menu movil
-        function toggleMobileMenu() {
-            const nav = document.getElementById('mobileNav');
-            const btn = document.getElementById('menuToggle');
-            nav.classList.toggle('active');
-            btn.classList.toggle('active');
-        }
-
-        // Actualizar contador del carrito
-        function actualizarContadorCarrito() {
-            const total = carrito.reduce((sum, item) => sum + item.cantidad, 0);
-            document.getElementById('cartCount').textContent = total;
-        }
-
-        // Cargar productos
-        async function cargarProductos() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('productos')
-                    .select('*')
-                    .eq('estado', 'Activo')
-                    .order('nombre', { ascending: true });
-
-                if (error) throw error;
-
-                todosLosProductos = data || [];
-                productosFiltrados = [...todosLosProductos];
-                
-                console.log(`✅ ${todosLosProductos.length} productos cargados`);
-                
-                mostrarProductos();
-                actualizarContadorCarrito();
-                
-            } catch (err) {
-                console.error('Error:', err);
-                document.getElementById('contadorProductos').textContent = 'Error al cargar productos';
-                document.getElementById('productosGrid').innerHTML = `
-                    <div class="empty-state" style="grid-column: 1/-1;">
-                        <div class="empty-state-icon">⚠️</div>
-                        <div class="empty-state-text">Error al cargar los productos</div>
-                        <p style="margin-top: 1rem; color: #999;">${err.message}</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Filtros
-        function aplicarFiltros() {
-            const cat = document.getElementById('filtroCategoria').value;
-            const pre = document.getElementById('filtroPrecio').value;
-            const bus = document.getElementById('buscarProducto').value.toLowerCase();
-
-            productosFiltrados = todosLosProductos.filter(p => {
-                if (cat && p.categoria !== cat) return false;
-                if (pre) {
-                    const [min, max] = pre.split('-').map(Number);
-                    if (p.precio < min || p.precio > max) return false;
-                }
-                if (bus) {
-                    const busqueda = `${p.nombre} ${p.marca} ${p.descripcion_corta || ''}`.toLowerCase();
-                    if (!busqueda.includes(bus)) return false;
-                }
-                return true;
-            });
-
-            mostrarProductos();
-        }
-
-        function limpiarFiltros() {
-            document.getElementById('filtroCategoria').value = '';
-            document.getElementById('filtroPrecio').value = '';
-            document.getElementById('buscarProducto').value = '';
-            aplicarFiltros();
-        }
-
-        // Mostrar productos
-        function mostrarProductos() {
-            const grid = document.getElementById('productosGrid');
-            const contador = document.getElementById('contadorProductos');
-
-            contador.textContent = `${productosFiltrados.length} ${productosFiltrados.length === 1 ? 'producto encontrado' : 'productos encontrados'}`;
-
-            if (productosFiltrados.length === 0) {
-                grid.innerHTML = `
-                    <div class="empty-state" style="grid-column: 1/-1;">
-                        <div class="empty-state-icon">🔍</div>
-                        <div class="empty-state-text">No se encontraron productos</div>
-                        <p style="margin-top: 1rem; color: #999;">Intenta con otros filtros de búsqueda</p>
-                    </div>
-                `;
-                return;
-            }
-
-            grid.innerHTML = productosFiltrados.map(p => `
-                <div class="producto-card" onclick="verDetalle('${p.id}')">
-                    <div class="producto-imagen-wrapper">
-                        <img class="producto-imagen"
-                             src="${p.url_imagen || ''}"
-                             alt="${p.nombre}"
-                             loading="lazy"
-                             onerror="this.style.display='none'; this.parentElement.innerHTML += '<div style=\\'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;color:#999;font-size:3rem;\\'>🏍️</div>';">
-                        <span class="badge-categoria">${p.categoria}</span>
-                    </div>
-                    <div class="producto-info">
-                        <h3 class="producto-nombre">${p.nombre}</h3>
-                        <p class="producto-marca">${p.marca}</p>
-                        <p class="producto-descripcion">${p.descripcion_corta || 'Producto de alta calidad'}</p>
-                        <div class="producto-footer">
-                            <span class="producto-precio">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
-                            <button class="btn-ver-mas" onclick="event.stopPropagation(); verDetalle('${p.id}')">Ver detalle</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            console.log(`✅ ${productosFiltrados.length} productos mostrados en grid`);
-        }
-
-        // Ver detalle
-        function verDetalle(id) {
-            productoActual = todosLosProductos.find(p => p.id === id);
-            if (!productoActual) return;
-
-            document.getElementById('contenidoDetalle').innerHTML = `
-                <div style="display:flex; flex-wrap:wrap; gap:3rem;">
-                    <div style="flex:1; min-width:300px;">
-                        <img src="${productoActual.url_imagen || ''}"
-                             style="width:100%; border-radius:20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); min-height:300px; background:#f5f5f5;"
-                             onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'width:100%;min-height:400px;border-radius:20px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:5rem;color:#ccc;\\'>🏍️</div>';">
-                    </div>
-                    <div style="flex:1; min-width:300px;">
-                        <h2 style="color: var(--primary); font-size: 2.2rem; margin-bottom: 1rem;">${productoActual.nombre}</h2>
-                        <p style="font-size:1.4rem; color: #333; margin-bottom: 1.5rem;"><strong>${productoActual.marca}</strong></p>
-                        <p style="font-size:2.8rem; color: var(--primary); font-weight:800; margin-bottom: 2rem;">
-                            $${parseInt(productoActual.precio).toLocaleString('es-CO')}
-                        </p>
-
-                        ${productoActual.descripcion_corta ? `
-                            <div style="margin-bottom: 1.5rem;">
-                                <h4 style="margin-bottom: 0.5rem; color: #333;">Descripción</h4>
-                                <p style="color: #666; line-height: 1.6;">${productoActual.descripcion_corta}</p>
-                            </div>
-                        ` : ''}
-                        
-                        ${productoActual.descripcion_tecnica ? `
-                            <div style="margin-bottom: 2rem;">
-                                <h4 style="margin-bottom: 0.5rem; color: #333;">Características técnicas</h4>
-                                <p style="color: #666; line-height: 1.6;">${productoActual.descripcion_tecnica.replace(/\n/g, '<br>')}</p>
-                            </div>
-                        ` : ''}
-
-                        <div style="background: #f8f9fa; padding: 2rem; border-radius: 15px; margin: 2rem 0;">
-                            <label style="font-weight: 600; font-size: 1.1rem; margin-bottom: 1rem; display: block;">Cantidad:</label>
-                            <div style="display: flex; align-items: center; gap: 1rem;">
-                                <input type="number" id="cantidadDetalle" value="1" min="1" 
-                                       style="padding: 1rem; width: 100px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1.1rem;">
-                                <button onclick="agregarAlCarrito()" class="btn-ver-mas" style="padding: 1rem 2rem; font-size: 1.1rem;">
-                                    🛒 Agregar al Carrito
-                                </button>
-                            </div>
-                        </div>
-
-                        <div style="text-align: center; margin-top: 2rem;">
-                            <a href="https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent('Hola, me interesa: ' + productoActual.nombre + ' (' + productoActual.marca + ')')}"
-                               target="_blank"
-                               style="background: #25D366; color: white; padding: 1.2rem 3rem; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 1.1rem; display: inline-block; transition: all 0.3s;">
-                                💬 Consultar por WhatsApp
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('modalDetalle').classList.add('active');
-        }
-
-        // Agregar al carrito
-        function agregarAlCarrito() {
-            if (!productoActual) return;
-            const cantidad = parseInt(document.getElementById('cantidadDetalle').value) || 1;
-
-            const existente = carrito.find(item => item.id === productoActual.id);
-            if (existente) {
-                existente.cantidad += cantidad;
-            } else {
-                carrito.push({
-                    id: productoActual.id,
-                    nombre: productoActual.nombre,
-                    marca: productoActual.marca,
-                    precio: productoActual.precio,
-                    cantidad: cantidad
-                });
-            }
-
-            localStorage.setItem('carrito_moteros', JSON.stringify(carrito));
-            actualizarContadorCarrito();
-            alert(`✅ ${cantidad} x ${productoActual.nombre} agregado al carrito`);
-            cerrarModalDetalle();
-        }
-
-        // Modal Carrito
-        function abrirCarrito() {
-            const lista = document.getElementById('listaCarrito');
-            const totalEl = document.getElementById('totalCarrito');
-
-            if (carrito.length === 0) {
-                lista.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🛒</div>
-                        <div class="empty-state-text">Tu carrito está vacío</div>
-                    </div>
-                `;
-                totalEl.textContent = '0';
-            } else {
-                lista.innerHTML = carrito.map((item, i) => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:1.5rem; border-bottom:2px solid #f0f0f0; gap: 1rem;">
-                        <div style="flex: 1;">
-                            <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">${item.nombre}</strong>
-                            <small style="color: #666;">${item.marca} • $${parseInt(item.precio).toLocaleString('es-CO')} c/u</small>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:1rem;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem; background: #f5f5f5; padding: 0.5rem; border-radius: 10px;">
-                                <button onclick="cambiarCantidad(${i}, -1)" style="width: 32px; height: 32px; border: none; background: white; border-radius: 50%; cursor: pointer; font-weight: bold;">−</button>
-                                <span style="padding: 0 1rem; font-weight: 600; min-width: 30px; text-align: center;">${item.cantidad}</span>
-                                <button onclick="cambiarCantidad(${i}, 1)" style="width: 32px; height: 32px; border: none; background: white; border-radius: 50%; cursor: pointer; font-weight: bold;">+</button>
-                            </div>
-                            <button onclick="eliminarDelCarrito(${i})" style="background:#dc3545; color:white; border:none; padding:0.7rem 1rem; border-radius:10px; cursor: pointer; font-weight: 600;">✖</button>
-                        </div>
-                    </div>
-                `).join('');
-
-                const total = carrito.reduce((s, item) => s + item.precio * item.cantidad, 0);
-                totalEl.textContent = total.toLocaleString('es-CO');
-            }
-            document.getElementById('modalCarrito').classList.add('active');
-        }
-
-        function cambiarCantidad(i, delta) {
-            const nueva = carrito[i].cantidad + delta;
-            if (nueva < 1) return eliminarDelCarrito(i);
-            carrito[i].cantidad = nueva;
-            guardarCarrito();
-        }
-
-        function eliminarDelCarrito(i) {
-            carrito.splice(i, 1);
-            guardarCarrito();
-        }
-
-        function vaciarCarrito() {
-            if (confirm('¿Estás seguro de vaciar el carrito?')) {
-                carrito = [];
-                guardarCarrito();
-            }
-        }
-
-        function guardarCarrito() {
-            localStorage.setItem('carrito_moteros', JSON.stringify(carrito));
-            abrirCarrito();
-            actualizarContadorCarrito();
-        }
-
-        function enviarPedidoWhatsApp() {
-            if (carrito.length === 0) return alert('El carrito está vacío');
-
-            let mensaje = "¡Hola Moteros Sports Line! 👋\n\n*Quiero consultar por:*\n\n";
-            carrito.forEach(item => {
-                mensaje += `• ${item.cantidad} x ${item.nombre}\n  ${item.marca}\n  $${parseInt(item.precio).toLocaleString('es-CO')} c/u\n\n`;
-            });
-            const total = carrito.reduce((s, item) => s + item.precio * item.cantidad, 0);
-            mensaje += `*Total estimado: $${total.toLocaleString('es-CO')}*\n\n¡Gracias! 🙌`;
-
-            window.open(`https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent(mensaje)}`, '_blank');
-        }
-
-        // Cerrar modales
-        function cerrarModalDetalle() {
-            document.getElementById('modalDetalle').classList.remove('active');
-        }
-        
-        function cerrarModalCarrito() {
-            document.getElementById('modalCarrito').classList.remove('active');
-        }
-
-        // Cerrar modal al hacer clic fuera
-        window.onclick = function(e) {
-            if (e.target.classList.contains('modal')) {
-                e.target.classList.remove('active');
-            }
-        };
-
-        // Inicializar
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Iniciando Moteros Sports Line...');
-            cargarProductos();
-        });
-
-        // Ocultar preloader
-        window.addEventListener('load', function() {
-            const preloader = document.getElementById('preloader');
-            if (preloader) {
-                preloader.style.opacity = '0';
-                setTimeout(() => preloader.style.display = 'none', 300);
-            }
-        });
-
-        // Bloquear selección de texto
-        document.addEventListener('selectstart', function(e) {
-            e.preventDefault();
-        });
-    </script>
+    <script src="js/catalogo.js"></script>
 
     <!-- WhatsApp Flotante -->
-    <a href="https://wa.me/573113408416?text=Hola!%20Vi%20el%20catalogo%20y%20quiero%20info" target="_blank" class="whatsapp-float" aria-label="WhatsApp">
+    <a href="https://wa.me/573113408416?text=Hola!%20Vi%20el%20catalogo%20y%20quiero%20info" target="_blank"
+        class="whatsapp-float" aria-label="WhatsApp">
         <svg viewBox="0 0 32 32" width="32" height="32" fill="white">
-            <path d="M16 0C7.163 0 0 7.163 0 16c0 2.837.736 5.496 2.021 7.805L0 32l8.469-2.012A15.94 15.94 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm8.176 22.648c-.346.971-2.024 1.855-2.782 1.971-.704.108-1.596.154-2.573-.161-.593-.192-1.356-.449-2.332-.877-4.099-1.798-6.776-5.978-6.978-6.254-.201-.275-1.648-2.188-1.648-4.175 0-1.986 1.043-2.963 1.413-3.369.371-.406.808-.508 1.078-.508.27 0 .539.003.775.014.248.012.581-.094.909.694.346.831 1.177 2.871 1.28 3.078.104.207.173.449.035.724-.139.275-.207.449-.415.69-.207.242-.437.539-.624.724-.207.207-.424.432-.183.848.242.415 1.072 1.77 2.303 2.865 1.582 1.409 2.917 1.848 3.331 2.054.415.207.656.173.898-.104.242-.276 1.043-1.219 1.321-1.636.277-.415.553-.346.932-.207.38.138 2.399 1.132 2.813 1.337.415.207.69.311.794.483.103.173.103.986-.243 1.957z"/>
+            <path
+                d="M16 0C7.163 0 0 7.163 0 16c0 2.837.736 5.496 2.021 7.805L0 32l8.469-2.012A15.94 15.94 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm8.176 22.648c-.346.971-2.024 1.855-2.782 1.971-.704.108-1.596.154-2.573-.161-.593-.192-1.356-.449-2.332-.877-4.099-1.798-6.776-5.978-6.978-6.254-.201-.275-1.648-2.188-1.648-4.175 0-1.986 1.043-2.963 1.413-3.369.371-.406.808-.508 1.078-.508.27 0 .539.003.775.014.248.012.581-.094.909.694.346.831 1.177 2.871 1.28 3.078.104.207.173.449.035.724-.139.275-.207.449-.415.69-.207.242-.437.539-.624.724-.207.207-.424.432-.183.848.242.415 1.072 1.77 2.303 2.865 1.582 1.409 2.917 1.848 3.331 2.054.415.207.656.173.898-.104.242-.276 1.043-1.219 1.321-1.636.277-.415.553-.346.932-.207.38.138 2.399 1.132 2.813 1.337.415.207.69.311.794.483.103.173.103.986-.243 1.957z" />
         </svg>
     </a>
 </body>
+
 </html>

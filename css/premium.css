@@ -1,0 +1,420 @@
+/* ═══════════════════════════════════════════════════════════════
+   MOTEROS SPORTS LINE - PREMIUM PRODUCT DETAILS CSS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Modal Detalle Premium */
+.product-details-premium {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 3rem;
+    padding: 2.5rem;
+    background: white;
+    color: #1e293b;
+}
+
+.product-media-column {
+    position: sticky;
+    top: 0;
+}
+
+.main-image-container {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+}
+
+.main-product-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 1rem;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-image-container:hover .main-product-image {
+    transform: scale(1.05);
+}
+
+.discount-pill {
+    position: absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+    background: #ef4444;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.product-trust-badges {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    justify-content: center;
+}
+
+.trust-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.category-tag {
+    display: inline-block;
+    color: #ff6b00;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+}
+
+.product-title-premium {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+    color: #0f172a;
+}
+
+.product-brand-premium {
+    font-size: 1.2rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 2rem;
+}
+
+.product-price-section {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.price-wrapper {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+}
+
+.current-price {
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+.current-price.discount {
+    color: #ef4444;
+}
+
+.old-price {
+    font-size: 1.4rem;
+    color: #94a3b8;
+    text-decoration: line-through;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #334155;
+}
+
+.short-desc {
+    color: #475569;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.specs-box {
+    background: #f8fafc;
+    border-radius: 15px;
+    padding: 1.5rem;
+    border: 1px solid #f1f5f9;
+}
+
+.specs-title {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #1e293b;
+}
+
+.specs-content {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.purchase-actions-premium {
+    margin-top: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.quantity-selector-premium {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.quantity-selector-premium label {
+    font-weight: 600;
+    color: #475569;
+}
+
+.quantity-controls-inner {
+    display: flex;
+    align-items: center;
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 0.3rem;
+}
+
+.qty-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: white;
+    color: #0f172a;
+    font-size: 1.2rem;
+    font-weight: 600;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.qty-btn:hover {
+    background: #ff6b00;
+    color: white;
+}
+
+#cantidadDetalle {
+    width: 60px;
+    text-align: center;
+    border: none;
+    background: transparent;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0f172a;
+    outline: none;
+}
+
+#cantidadDetalle::-webkit-inner-spin-button,
+#cantidadDetalle::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.btn-add-main {
+    background: linear-gradient(135deg, #ff6b00 0%, #ff8533 100%);
+    color: white;
+    border: none;
+    padding: 1.25rem;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 10px 20px rgba(255, 107, 0, 0.2);
+}
+
+.btn-add-main:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(255, 107, 0, 0.3);
+}
+
+.btn-wa-main {
+    background: #25D366;
+    color: white;
+    text-decoration: none;
+    padding: 1.25rem;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: all 0.3s;
+}
+
+.btn-wa-main:hover {
+    background: #1fab52;
+    transform: translateY(-3px);
+}
+
+/* Ajustes Modal Extendido */
+#modalDetalle .modal-content {
+    max-width: 1000px !important;
+    width: 95% !important;
+    border-radius: 30px !important;
+    overflow-y: auto !important;
+    /* Permitir scroll vertical */
+    max-height: 90vh;
+    /* Evitar que se salga de la pantalla */
+}
+
+/* Items del Carrito Premium */
+.carrito-item {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.25rem;
+    background: white;
+    border-radius: 15px;
+    margin-bottom: 1rem;
+    border: 1px solid #f1f5f9;
+    transition: all 0.3s;
+}
+
+.carrito-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: #e2e8f0;
+}
+
+.carrito-item-img {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 5px;
+}
+
+.carrito-item-info {
+    flex: 1;
+}
+
+.carrito-item-nombre {
+    font-size: 1rem;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.carrito-item-detalles {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.carrito-item-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.cantidad-badge {
+    display: flex;
+    align-items: center;
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 2px;
+}
+
+.cantidad-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cantidad-numero {
+    padding: 0 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.btn-eliminar {
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+.btn-eliminar:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* Botón Agregar Rápido en Grid */
+.btn-agregar-inline {
+    background: var(--primary-gradient, linear-gradient(135deg, #ff6b00 0%, #ff8533 100%));
+    color: white;
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 10px rgba(255, 107, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-agregar-inline:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255, 107, 0, 0.25);
+}
+
+.btn-agregar-inline small {
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+@media (max-width: 992px) {
+    .product-details-premium {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 1.5rem;
+    }
+
+    .product-media-column {
+        position: static;
+    }
+
+    .product-title-premium {
+        font-size: 1.8rem;
+    }
+
+    .current-price {
+        font-size: 2.2rem;
+    }
+}

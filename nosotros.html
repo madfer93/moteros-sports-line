@@ -4,42 +4,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blog Motero | Noticias y Videos de Motos | Moteros Sport Line</title>
-    <link rel="icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <title>Nosotros | Moteros Sport Line Villavicencio</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff6b00">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon"
         href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <meta name="description"
-        content="Blog de Moteros Sport Line. Videos, noticias, consejos y contenido para la comunidad motera de Villavicencio y Colombia. TikTok, YouTube y más.">
+        content="Conoce a Moteros Sport Line - La Casa Oficial de los Moteros en Villavicencio. Nuestra mision, vision y valores.">
 
     <!-- SEO Meta Tags -->
-    <meta name="keywords"
-        content="blog motos, videos motos, noticias motociclistas, consejos moteros, comunidad motera villavicencio, tiktok motos colombia">
+    <meta name="keywords" content="moteros sport line, quienes somos, mision, vision, tienda motos villavicencio">
     <meta name="robots" content="index, follow">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://moterossportline.store/blog.html">
-    <meta property="og:title" content="Blog - Moteros Sport Line">
+    <meta property="og:url" content="https://moterossportline.store/nosotros.html">
+    <meta property="og:title" content="Nosotros - Moteros Sport Line">
     <meta property="og:description"
-        content="Videos, noticias y contenido para la comunidad motera. Síguenos en TikTok e Instagram.">
+        content="Conoce nuestra historia, mision y vision. La Casa Oficial de los Moteros en Villavicencio.">
     <meta property="og:image"
         content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
 
-    <link rel="canonical" href="https://moterossportline.store/blog.html">
-
-    <!-- CSS externo -->
+    <link rel="canonical" href="https://moterossportline.store/nosotros.html">
     <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/blog-mejorado.css">
 
-    <!-- SDK de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* Preloader */
+        .nosotros-hero {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 5rem 1rem;
+            text-align: center;
+        }
+
+        .nosotros-hero h1 {
+            font-size: clamp(2.2rem, 5vw, 3.5rem);
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .nosotros-hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .nosotros-content {
+            padding: 4rem 0;
+            background: #f8fafc;
+        }
+
+        .quienes-somos {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 3rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .quienes-somos h2 {
+            color: #ff6b00;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .quienes-somos p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #475569;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .mision-vision-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .mv-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s;
+        }
+
+        .mv-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .mv-card.mision {
+            border-top: 4px solid #ff6b00;
+        }
+
+        .mv-card.vision {
+            border-top: 4px solid #10b981;
+        }
+
+        .mv-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .mv-card.mision h3 {
+            color: #ff6b00;
+        }
+
+        .mv-card.vision h3 {
+            color: #10b981;
+        }
+
+        .mv-card p {
+            color: #64748b;
+            line-height: 1.7;
+            font-size: 1rem;
+        }
+
+        .whatsapp-float {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            background: #25D366;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+            z-index: 999;
+            transition: all 0.3s;
+            animation: bounce 2s infinite;
+        }
+
+        .whatsapp-float:hover {
+            transform: scale(1.1);
+            animation: none;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
         .preloader {
             position: fixed;
             top: 0;
@@ -73,38 +196,13 @@
             }
         }
 
-        /* WhatsApp Flotante */
-        .whatsapp-float {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 60px;
-            height: 60px;
-            background: #25D366;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
-            z-index: 999;
-            transition: all 0.3s;
-            animation: wabounce 2s infinite;
-        }
-
-        .whatsapp-float:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5);
-        }
-
-        @keyframes wabounce {
-
-            0%,
-            100% {
-                transform: translateY(0);
+        @media (max-width: 768px) {
+            .quienes-somos {
+                padding: 2rem 1.5rem;
             }
 
-            50% {
-                transform: translateY(-8px);
+            .mv-card {
+                padding: 2rem 1.5rem;
             }
         }
     </style>
@@ -132,13 +230,13 @@
                 <img id="siteLogo"
                     src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
                     alt="Moteros Sports Line" style="height:50px;">
-                <h1 id="siteTitle">MOTEROS SPORTS LINE</h1>
+                <h1 id="siteTitle">MOTEROS SPORT LINE</h1>
             </a>
             <nav class="nav">
                 <a href="index.html">Inicio</a>
                 <a href="catalogo.html">Tienda</a>
-                <a href="nosotros.html">Nosotros</a>
-                <a href="blog.html" class="active">Blog</a>
+                <a href="nosotros.html" class="active">Nosotros</a>
+                <a href="blog.html">Blog</a>
                 <a href="contacto.html">Contacto</a>
             </nav>
             <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()">
@@ -149,22 +247,32 @@
         </div>
     </header>
 
-    <section class="hero"
-        style="padding: 4rem 0; background: linear-gradient(135deg, #ff6b00, #ff8534); color: white; text-align: center;">
+    <!-- Hero -->
+    <section class="nosotros-hero">
         <div class="container">
-            <h1>Nuestro Blog</h1>
-            <p>Noticias, tips, rutas y aventuras para la comunidad motera 🏍️</p>
+            <h1>Conocenos</h1>
+            <p>La Casa Oficial de los Moteros en Villavicencio</p>
         </div>
     </section>
 
-    <section style="padding: 4rem 0; background: #f8f9fa;">
+    <!-- Contenido Principal -->
+    <section class="nosotros-content">
         <div class="container">
-            <div id="postsGrid"
-                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2.5rem;">
-                <!-- Loading -->
-                <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: #666;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">🔥</div>
-                    <h3>Cargando las últimas publicaciones...</h3>
+            <!-- Quienes Somos -->
+            <div class="quienes-somos">
+                <h2 id="quienesSomosTitulo">Quienes Somos</h2>
+                <p id="quienesSomosContenido">Cargando...</p>
+            </div>
+
+            <!-- Mision y Vision -->
+            <div class="mision-vision-grid">
+                <div class="mv-card mision">
+                    <h3><span>🎯</span> <span id="misionTitulo">Mision</span></h3>
+                    <p id="misionContenido">Cargando...</p>
+                </div>
+                <div class="mv-card vision">
+                    <h3><span>🔭</span> <span id="visionTitulo">Vision</span></h3>
+                    <p id="visionContenido">Cargando...</p>
                 </div>
             </div>
         </div>
@@ -213,7 +321,7 @@
     </footer>
 
     <!-- WhatsApp Flotante -->
-    <a href="https://wa.me/573113408416?text=Hola!%20Vi%20el%20blog%20y%20tengo%20una%20pregunta" target="_blank"
+    <a href="https://wa.me/573113408416?text=Hola!%20Quiero%20informacion%20sobre%20sus%20productos" target="_blank"
         class="whatsapp-float" aria-label="WhatsApp">
         <svg viewBox="0 0 32 32" width="32" height="32" fill="white">
             <path
@@ -221,12 +329,42 @@
         </svg>
     </a>
 
-    <!-- Nuestros scripts -->
     <script src="js/config.js"></script>
     <script src="js/ia-core.js"></script>
     <script src="js/ai-widget.js"></script>
-    <script src="js/blog.js"></script>
     <script>
+        const { createClient } = supabase;
+        const db = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+
+        // Cargar contenido desde Supabase
+        async function cargarContenido() {
+            try {
+                const { data, error } = await db
+                    .from('contenido_sitio')
+                    .select('*')
+                    .in('tipo', ['quienes_somos', 'mision', 'vision']);
+
+                if (error) throw error;
+
+                if (data) {
+                    data.forEach(item => {
+                        if (item.tipo === 'quienes_somos') {
+                            document.getElementById('quienesSomosTitulo').textContent = item.titulo || 'Quienes Somos';
+                            document.getElementById('quienesSomosContenido').textContent = item.contenido || '';
+                        } else if (item.tipo === 'mision') {
+                            document.getElementById('misionTitulo').textContent = item.titulo || 'Mision';
+                            document.getElementById('misionContenido').textContent = item.contenido || '';
+                        } else if (item.tipo === 'vision') {
+                            document.getElementById('visionTitulo').textContent = item.titulo || 'Vision';
+                            document.getElementById('visionContenido').textContent = item.contenido || '';
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('Error cargando contenido:', err);
+            }
+        }
+
         function toggleMobileMenu() {
             document.getElementById('mobileNav').classList.toggle('active');
             document.getElementById('menuToggle').classList.toggle('active');
@@ -239,9 +377,10 @@
                 preloader.style.opacity = '0';
                 setTimeout(() => preloader.style.display = 'none', 300);
             }
+            cargarContenido();
         });
 
-        // Bloquear selección de texto
+        // Bloquear seleccion de texto
         document.addEventListener('selectstart', function (e) {
             e.preventDefault();
         });

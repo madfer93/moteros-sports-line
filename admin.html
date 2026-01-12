@@ -1,15 +1,24 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel | Moteros Sports Line</title>
-    <link rel="icon" href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="icon"
+        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- SheetJS para exportar Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- jsPDF para exportar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="css/admin.css">
 </head>
+
 <body>
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
@@ -24,7 +33,8 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>Contraseña Actual <span class="required">*</span></label>
-                    <input type="password" id="passwordActual" class="form-control" placeholder="Ingresa tu contraseña actual">
+                    <input type="password" id="passwordActual" class="form-control"
+                        placeholder="Ingresa tu contraseña actual">
                 </div>
                 <div class="form-group">
                     <label>Nueva Contraseña <span class="required">*</span></label>
@@ -32,7 +42,8 @@
                 </div>
                 <div class="form-group">
                     <label>Confirmar Nueva Contraseña <span class="required">*</span></label>
-                    <input type="password" id="passwordConfirmar" class="form-control" placeholder="Repite la nueva contraseña">
+                    <input type="password" id="passwordConfirmar" class="form-control"
+                        placeholder="Repite la nueva contraseña">
                 </div>
                 <div class="alert alert-info" style="margin-top:1rem; font-size:0.85rem;">
                     💡 La contraseña se guarda de forma segura en la base de datos.
@@ -48,11 +59,12 @@
     <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="login-wrapper">
         <div id="pantallaAbrirCaja">
-            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
-                 alt="Moteros Sports Line" class="locked-logo logo-img">
+            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
+                alt="Moteros Sports Line" class="locked-logo logo-img">
             <h1>Admin Panel</h1>
             <p class="subtitle">Moteros Sports Line</p>
-            <input type="password" id="adminPassword" class="login-input" placeholder="Ingresa la contraseña" onkeypress="if(event.key==='Enter')loginAdmin()">
+            <input type="password" id="adminPassword" class="login-input" placeholder="Ingresa la contraseña"
+                onkeypress="if(event.key==='Enter')loginAdmin()">
             <button onclick="loginAdmin()" class="login-btn">Iniciar Sesión</button>
             <p id="loginError" class="login-error"></p>
         </div>
@@ -60,14 +72,15 @@
 
     <!-- ADMIN PANEL -->
     <div id="adminPanel" style="display:none;">
-        
+
         <!-- ═══════════════ HEADER CON MENÚ HORIZONTAL ═══════════════ -->
         <header class="top-header">
             <div class="header-brand">
-                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Logo" style="height:40px;width:40px;border-radius:50%;object-fit:cover;margin-right:0.75rem;">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
+                    alt="Logo" style="height:40px;width:40px;border-radius:50%;object-fit:cover;margin-right:0.75rem;">
                 <span class="brand-name">Moteros Admin</span>
             </div>
-            
+
             <nav class="header-nav">
                 <!-- PRINCIPAL -->
                 <div class="nav-dropdown">
@@ -98,16 +111,17 @@
                         <a href="#" data-section="envios">📦 Gestión Envíos</a>
                         <a href="#" data-section="envios-estadisticas">📊 Estadísticas Envíos</a>
                     </div>
-                </div>  
+                </div>
 
                 <!-- CATÁLOGO -->
                 <div class="nav-dropdown">
                     <button class="nav-dropdown-btn">📦 Catálogo <span class="arrow">▼</span></button>
                     <div class="nav-dropdown-content">
                         <a href="#" data-section="productos">📦 Productos</a>
+                        <a href="#" data-section="categorias">📁 Categorías</a>
                         <a href="#" data-section="destacados">⭐ Destacados</a>
                         <a href="#" data-section="inventario">📋 Inventario</a>
-                        <a href="#" data-section="bodegas">🏭 Bodegas</a>
+                        <a href="#" data-section="contenido">📄 Contenido del Sitio</a>
                         <a href="#" data-section="alertas">⚠️ Alertas Stock</a>
                     </div>
                 </div>
@@ -133,6 +147,7 @@
                         <a href="#" data-section="promociones">🏷️ Promociones</a>
                         <a href="#" data-section="blog">📝 Blog</a>
                         <a href="#" data-section="alianzas">🤝 Alianzas</a>
+                        <a href="#" data-section="leads">👥 Leads IA</a>
                     </div>
                 </div>
 
@@ -150,10 +165,12 @@
             <!-- Búsqueda Global -->
             <div class="header-search" style="position:relative;">
                 <input type="text" id="busquedaGlobal" class="form-control" placeholder="Buscar..."
-                       style="width:280px;padding-left:2.5rem;border-radius:2rem;border:2px solid #e2e8f0;font-size:0.9rem;"
-                       oninput="busquedaGlobalAdmin(this.value)" onfocus="mostrarResultadosBusqueda()" onblur="setTimeout(()=>ocultarResultadosBusqueda(),200)">
+                    style="width:280px;padding-left:2.5rem;border-radius:2rem;border:2px solid #e2e8f0;font-size:0.9rem;"
+                    oninput="busquedaGlobalAdmin(this.value)" onfocus="mostrarResultadosBusqueda()"
+                    onblur="setTimeout(()=>ocultarResultadosBusqueda(),200)">
                 <span style="position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:#94a3b8;">🔍</span>
-                <div id="resultadosBusqueda" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border-radius:0.75rem;box-shadow:0 10px 40px rgba(0,0,0,0.15);max-height:400px;overflow-y:auto;z-index:9999;margin-top:0.5rem;">
+                <div id="resultadosBusqueda"
+                    style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border-radius:0.75rem;box-shadow:0 10px 40px rgba(0,0,0,0.15);max-height:400px;overflow-y:auto;z-index:9999;margin-top:0.5rem;">
                 </div>
             </div>
 
@@ -190,9 +207,10 @@
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">Catálogo</div>
                     <a href="#" data-section="productos" onclick="toggleMobileMenu()">📦 Productos</a>
+                    <a href="#" data-section="categorias" onclick="toggleMobileMenu()">📁 Categorías</a>
                     <a href="#" data-section="destacados" onclick="toggleMobileMenu()">⭐ Destacados</a>
                     <a href="#" data-section="inventario" onclick="toggleMobileMenu()">📋 Inventario</a>
-                    <a href="#" data-section="bodegas" onclick="toggleMobileMenu()">🏭 Bodegas</a>
+                    <a href="#" data-section="contenido" onclick="toggleMobileMenu()">📄 Contenido del Sitio</a>
                     <a href="#" data-section="alertas" onclick="toggleMobileMenu()">⚠️ Alertas Stock</a>
                 </div>
                 <div class="mobile-nav-group">
@@ -210,6 +228,7 @@
                     <a href="#" data-section="promociones" onclick="toggleMobileMenu()">🏷️ Promociones</a>
                     <a href="#" data-section="blog" onclick="toggleMobileMenu()">📝 Blog</a>
                     <a href="#" data-section="alianzas" onclick="toggleMobileMenu()">🤝 Alianzas</a>
+                    <a href="#" data-section="leads" onclick="toggleMobileMenu()">👥 Leads IA</a>
                 </div>
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">Sistema</div>
@@ -222,7 +241,7 @@
 
         <!-- ═══════════════ CONTENIDO PRINCIPAL ═══════════════ -->
         <main class="main-content-horizontal">
-            
+
             <!-- ═══════════════════ DASHBOARD ═══════════════════ -->
             <section id="dashboardSection" class="section active">
                 <div class="page-header">
@@ -294,22 +313,30 @@
 
                 <div class="charts-grid">
                     <div class="card">
-                        <div class="card-header"><h3>📊 Stock por Local</h3></div>
+                        <div class="card-header">
+                            <h3>📊 Stock por Local</h3>
+                        </div>
                         <div class="card-body"><canvas id="chartStockLocales"></canvas></div>
                     </div>
                     <div class="card">
-                        <div class="card-header"><h3>📦 Productos por Categoría</h3></div>
+                        <div class="card-header">
+                            <h3>📦 Productos por Categoría</h3>
+                        </div>
                         <div class="card-body"><canvas id="chartCategorias"></canvas></div>
                     </div>
                 </div>
 
                 <div class="charts-grid" style="margin-top:1rem;">
                     <div class="card">
-                        <div class="card-header"><h3>💵 Ventas por Método de Pago (Hoy)</h3></div>
+                        <div class="card-header">
+                            <h3>💵 Ventas por Método de Pago (Hoy)</h3>
+                        </div>
                         <div class="card-body"><canvas id="chartMetodosPagoDash"></canvas></div>
                     </div>
                     <div class="card">
-                        <div class="card-header"><h3>📈 Ventas Últimos 7 Días</h3></div>
+                        <div class="card-header">
+                            <h3>📈 Ventas Últimos 7 Días</h3>
+                        </div>
                         <div class="card-body"><canvas id="chartVentas7Dias"></canvas></div>
                     </div>
                 </div>
@@ -323,31 +350,71 @@
                 </div>
 
                 <div class="stats-grid" style="margin-bottom:2rem;">
-                    <div class="stat-card"><div class="stat-icon blue">🏷️</div><div class="stat-info"><h3 id="totalProductosGlobal">-</h3><p>Productos en Catálogo</p></div></div>
-                    <div class="stat-card"><div class="stat-icon green">📦</div><div class="stat-info"><h3 id="totalUnidadesGlobal">-</h3><p>Unidades Totales</p></div></div>
-                    <div class="stat-card"><div class="stat-icon orange">💰</div><div class="stat-info"><h3 id="valorInventarioGlobal">-</h3><p>Valor Inventario</p></div></div>
-                    <div class="stat-card"><div class="stat-icon red">🚨</div><div class="stat-info"><h3 id="alertasGlobal">-</h3><p>Alertas Activas</p></div></div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🏷️</div>
+                        <div class="stat-info">
+                            <h3 id="totalProductosGlobal">-</h3>
+                            <p>Productos en Catálogo</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">📦</div>
+                        <div class="stat-info">
+                            <h3 id="totalUnidadesGlobal">-</h3>
+                            <p>Unidades Totales</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">💰</div>
+                        <div class="stat-info">
+                            <h3 id="valorInventarioGlobal">-</h3>
+                            <p>Valor Inventario</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">🚨</div>
+                        <div class="stat-info">
+                            <h3 id="alertasGlobal">-</h3>
+                            <p>Alertas Activas</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="locales-grid" id="localesStatsGrid">
-                    <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando...</p>
+                    </div>
                 </div>
 
                 <div class="card" style="margin-top:2rem;">
-                    <div class="card-header"><h3>📈 Resumen de Rendimiento por Local</h3></div>
+                    <div class="card-header">
+                        <h3>📈 Resumen de Rendimiento por Local</h3>
+                    </div>
                     <div class="card-body">
-                        <div id="resumenRendimiento" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
+                        <div id="resumenRendimiento"
+                            style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
                             <!-- Se llena dinámicamente -->
                         </div>
                     </div>
                 </div>
 
                 <div class="card" style="margin-top:1.5rem;">
-                    <div class="card-header"><h3>🏷️ Distribución por Categoría</h3></div>
+                    <div class="card-header">
+                        <h3>🏷️ Distribución por Categoría</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
-                                <thead><tr><th>Categoría</th><th>🏪 Alcalá</th><th>🏬 Local 01</th><th>🏢 Jordán</th><th>Total Unidades</th></tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th>Categoría</th>
+                                        <th>🏪 Alcalá</th>
+                                        <th>🏬 Local 01</th>
+                                        <th>🏢 Jordán</th>
+                                        <th>Total Unidades</th>
+                                    </tr>
+                                </thead>
                                 <tbody id="tbodyDistribucionCategorias"></tbody>
                             </table>
                         </div>
@@ -382,10 +449,10 @@
                         <button onclick="cargarReporteMetodos()" class="btn btn-primary">Ver Reporte</button>
                     </div>
                     <div class="report-card">
-                        <div class="report-icon">📈</div>
-                        <h3>Ventas por Local</h3>
-                        <p>Comparativa de ventas entre locales</p>
-                        <button onclick="cargarReporteLocales()" class="btn btn-primary">Ver Reporte</button>
+                        <div class="report-icon">📉</div>
+                        <h3>Promedio de Ventas</h3>
+                        <p>Análisis detallado de promedios diarios y mensuales</p>
+                        <button onclick="cargarReportePromedioVentas()" class="btn btn-primary">Ver Reporte</button>
                     </div>
                 </div>
 
@@ -395,6 +462,61 @@
                         <button onclick="exportarReporte()" class="btn btn-secondary btn-sm">📥 Exportar</button>
                     </div>
                     <div class="card-body" id="bodyReporte"></div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ CATEGORÍAS ═══════════════════ -->
+            <section id="categoriasSection" class="section">
+                <div class="page-header">
+                    <h1>📁 Gestión de Categorías</h1>
+                    <p>Crea y administra las categorías de productos</p>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="mostrarFormCategoria()" class="btn btn-primary">➕ Nueva Categoría</button>
+                    <button onclick="cargarCategorias()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+
+                <div id="formCategoria" class="form-modal"
+                    style="display:none; background: #fff5eb; border: 1px solid #ffe8cc; padding: 1.5rem; border-radius: 1rem; margin-bottom: 2rem;">
+                    <h3 id="formTituloCategoria">➕ Nueva Categoría</h3>
+                    <input type="hidden" id="categoriaId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre de Categoría <span class="required">*</span></label>
+                            <input type="text" id="categoriaNombre" class="form-control"
+                                placeholder="Ej: Cascos, Guantes...">
+                        </div>
+                        <div class="form-group">
+                            <label>Icono (Emoji o Texto)</label>
+                            <input type="text" id="categoriaIcono" class="form-control" placeholder="Ej: 🪖, 🧤, 🧥">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button onclick="guardarCategoria()" class="btn btn-success">💾 Guardar</button>
+                        <button onclick="cancelarFormCategoria()" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Icono</th>
+                                        <th>Nombre</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyCategorias">
+                                    <tr>
+                                        <td colspan="3" class="text-center">Cargando categorías...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -408,35 +530,48 @@
                 <div class="actions-bar">
                     <button onclick="mostrarFormProducto()" class="btn btn-primary">➕ Nuevo Producto</button>
                     <button onclick="cargarProductos()" class="btn btn-secondary">🔄 Recargar</button>
-                    <button onclick="exportarProductosExcel()" class="btn btn-success" title="Exportar a Excel">📥 Exportar</button>
+                    <div class="btn-group" style="display:inline-flex; gap:0.25rem;">
+                        <button onclick="exportarProductosExcel()" class="btn btn-success" title="Exportar a Excel">📊
+                            Excel</button>
+                        <button onclick="exportarProductosPDF()" class="btn btn-danger" title="Exportar a PDF">📄
+                            PDF</button>
+                    </div>
                     <div class="search-input">
-                        <input type="text" id="buscarProductoAdmin" placeholder="Buscar producto..." oninput="filtrarProductosAdmin()">
+                        <input type="text" id="buscarProductoAdmin" placeholder="Buscar producto..."
+                            oninput="filtrarProductosAdmin()">
                     </div>
                 </div>
 
                 <div id="formProducto" class="form-modal">
                     <h3 id="formTituloProducto">➕ Nuevo Producto</h3>
                     <input type="hidden" id="productoId">
-                            <input type="hidden" id="productoIdProducto">
-                    
-                    <div class="dropzone" id="dropzoneProducto" onclick="document.getElementById('fileInputProducto').click()">
+                    <input type="hidden" id="productoIdProducto">
+
+                    <div class="dropzone" id="dropzoneProducto"
+                        onclick="document.getElementById('fileInputProducto').click()">
                         <div class="dropzone-icon">📸</div>
                         <div class="dropzone-text">Arrastra una imagen aquí</div>
                         <div class="dropzone-subtext">o haz clic para seleccionar (JPG, PNG, WebP - Max 5MB)</div>
-                        <input type="file" id="fileInputProducto" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'producto')">
+                        <input type="file" id="fileInputProducto" accept="image/*" style="display:none;"
+                            onchange="handleFileSelect(event, 'producto')">
                         <div class="preview-container" id="previewContainerProducto" style="display:none;">
                             <img id="previewProducto" class="preview-image">
-                            <button class="remove-preview" onclick="event.stopPropagation(); removerPreview('producto')">×</button>
+                            <button class="remove-preview"
+                                onclick="event.stopPropagation(); removerPreview('producto')">×</button>
                         </div>
                     </div>
                     <div class="upload-progress" id="uploadProgressProducto">
-                        <div class="progress-bar"><div class="progress-fill" id="progressFillProducto" style="width:0%"></div></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFillProducto" style="width:0%"></div>
+                        </div>
                         <div class="progress-text">Subiendo imagen...</div>
                     </div>
 
                     <div class="form-row">
-                        <div class="form-group"><label>Nombre <span class="required">*</span></label><input type="text" id="productoNombre" class="form-control" placeholder="Nombre del producto"></div>
-                        <div class="form-group"><label>Referencia</label><input type="text" id="productoReferencia" class="form-control" placeholder="REF-001"></div>
+                        <div class="form-group"><label>Nombre <span class="required">*</span></label><input type="text"
+                                id="productoNombre" class="form-control" placeholder="Nombre del producto"></div>
+                        <div class="form-group"><label>Referencia</label><input type="text" id="productoReferencia"
+                                class="form-control" placeholder="REF-001"></div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -455,7 +590,8 @@
                                 <option value="Protecciones">Protecciones</option>
                             </select>
                         </div>
-                        <div class="form-group"><label>Marca <span class="required">*</span></label><input type="text" id="productoMarca" class="form-control" placeholder="Marca"></div>
+                        <div class="form-group"><label>Marca <span class="required">*</span></label><input type="text"
+                                id="productoMarca" class="form-control" placeholder="Marca"></div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -481,34 +617,44 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <!-- ASIGNAR STOCK A TIENDAS -->
-                    <div class="form-section" style="background: #f0fdf4; padding: 1rem; border-radius: 0.75rem; margin: 1rem 0; border: 1px solid #bbf7d0;">
+                    <div class="form-section"
+                        style="background: #f0fdf4; padding: 1rem; border-radius: 0.75rem; margin: 1rem 0; border: 1px solid #bbf7d0;">
                         <h4 style="margin-bottom: 1rem; color: #166534;">📦 Stock por Tienda</h4>
                         <div class="form-row">
                             <div class="form-group">
                                 <label>🏪 Alcalá</label>
-                                <input type="number" id="stockAlcala" class="form-control" placeholder="0" min="0" value="0">
+                                <input type="number" id="stockAlcala" class="form-control" placeholder="0" min="0"
+                                    value="0">
                             </div>
                             <div class="form-group">
                                 <label>🏬 Local 01</label>
-                                <input type="number" id="stockLocal01" class="form-control" placeholder="0" min="0" value="0">
+                                <input type="number" id="stockLocal01" class="form-control" placeholder="0" min="0"
+                                    value="0">
                             </div>
                             <div class="form-group">
                                 <label>🏢 Jordán</label>
-                                <input type="number" id="stockJordan" class="form-control" placeholder="0" min="0" value="0">
+                                <input type="number" id="stockJordan" class="form-control" placeholder="0" min="0"
+                                    value="0">
                             </div>
                             <div class="form-group">
                                 <label>🌐 Digital</label>
-                                <input type="number" id="stockDigital" class="form-control" placeholder="0" min="0" value="0">
+                                <input type="number" id="stockDigital" class="form-control" placeholder="0" min="0"
+                                    value="0">
                             </div>
                         </div>
                         <p class="form-hint">💡 Ingresa la cantidad inicial de stock en cada tienda</p>
                     </div>
-                    
-                    <div class="form-group"><label>Descripción corta</label><textarea id="productoDescCorta" class="form-control" rows="2" placeholder="Descripción breve"></textarea></div>
-                    <div class="form-group"><label>Descripción técnica</label><textarea id="productoDescTecnica" class="form-control" rows="3" placeholder="Características técnicas"></textarea></div>
-                    <div class="form-group"><label>URL Imagen (alternativa)</label><input type="url" id="productoImagen" class="form-control" placeholder="https://..."><p class="form-hint">Si no subes imagen, puedes pegar una URL directa</p></div>
+
+                    <div class="form-group"><label>Descripción corta</label><textarea id="productoDescCorta"
+                            class="form-control" rows="2" placeholder="Descripción breve"></textarea></div>
+                    <div class="form-group"><label>Descripción técnica</label><textarea id="productoDescTecnica"
+                            class="form-control" rows="3" placeholder="Características técnicas"></textarea></div>
+                    <div class="form-group"><label>URL Imagen (alternativa)</label><input type="url" id="productoImagen"
+                            class="form-control" placeholder="https://...">
+                        <p class="form-hint">Si no subes imagen, puedes pegar una URL directa</p>
+                    </div>
                     <div style="display:flex; gap:1rem; margin-top:1.5rem;">
                         <button onclick="guardarProducto()" class="btn btn-success">💾 Guardar</button>
                         <button onclick="cancelarFormProducto()" class="btn btn-secondary">Cancelar</button>
@@ -516,7 +662,10 @@
                 </div>
 
                 <div id="listaProductos" class="productos-admin-grid">
-                    <div class="loading"><div class="spinner"></div><p>Cargando productos...</p></div>
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando productos...</p>
+                    </div>
                 </div>
             </section>
 
@@ -537,7 +686,8 @@
 
                 <div class="actions-bar">
                     <button onclick="cargarDestacadosAdmin()" class="btn btn-secondary">🔄 Recargar</button>
-                    <span id="contadorDestacados" style="margin-left: auto; font-weight: 600; color: var(--gray-600);"></span>
+                    <span id="contadorDestacados"
+                        style="margin-left: auto; font-weight: 600; color: var(--gray-600);"></span>
                 </div>
 
                 <div class="destacados-layout">
@@ -547,15 +697,20 @@
                             <span class="contador" id="contadorDisponibles">0</span>
                         </div>
                         <div class="destacados-search">
-                            <input type="text" id="buscarDestacado" placeholder="🔍 Buscar producto..." oninput="filtrarProductosDestacados()">
+                            <input type="text" id="buscarDestacado" placeholder="🔍 Buscar producto..."
+                                oninput="filtrarProductosDestacados()">
                         </div>
                         <div class="destacados-panel-body" id="listaProductosDisponibles">
-                            <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Cargando...</p>
+                            </div>
                         </div>
                     </div>
 
                     <div class="destacados-panel" style="border: 2px solid var(--primary);">
-                        <div class="destacados-panel-header" style="background: linear-gradient(135deg, #fff7ed, #ffedd5);">
+                        <div class="destacados-panel-header"
+                            style="background: linear-gradient(135deg, #fff7ed, #ffedd5);">
                             <h3 style="color: var(--primary);">⭐ Destacados Activos</h3>
                             <span class="contador" id="contadorActivos">0 / 8</span>
                         </div>
@@ -578,26 +733,74 @@
                 </div>
 
                 <div class="pos-grid">
-                    <div class="pos-card"><div class="pos-icon">🏪</div><h3>Tienda Alcalá</h3><p>Registro de ventas y control de caja</p><a href="tienda-alcala.html" target="_blank" class="btn btn-primary btn-lg">Abrir POS</a></div>
-                    <div class="pos-card"><div class="pos-icon">🏬</div><h3>Tienda Local 01</h3><p>Registro de ventas y control de caja</p><a href="tienda-01.html" target="_blank" class="btn btn-success btn-lg">Abrir POS</a></div>
-                    <div class="pos-card"><div class="pos-icon">🏢</div><h3>Tienda Jordán</h3><p>Registro de ventas y control de caja</p><a href="tienda-jordan.html" target="_blank" class="btn btn-info btn-lg">Abrir POS</a></div>
-                    <div class="pos-card" style="border: 2px solid var(--primary);"><div class="pos-icon">🌐</div><h3>Tienda Digital</h3><p>Ventas online y envíos</p><a href="tienda-digital.html" target="_blank" class="btn btn-warning btn-lg">Abrir POS Digital</a></div>
+                    <div class="pos-card">
+                        <div class="pos-icon">🏪</div>
+                        <h3>Tienda Alcalá</h3>
+                        <p>Registro de ventas y control de caja</p><a href="tienda-alcala.html" target="_blank"
+                            class="btn btn-primary btn-lg">Abrir POS</a>
+                    </div>
+                    <div class="pos-card">
+                        <div class="pos-icon">🏬</div>
+                        <h3>Tienda Local 01</h3>
+                        <p>Registro de ventas y control de caja</p><a href="tienda-01.html" target="_blank"
+                            class="btn btn-success btn-lg">Abrir POS</a>
+                    </div>
+                    <div class="pos-card">
+                        <div class="pos-icon">🏢</div>
+                        <h3>Tienda Jordán</h3>
+                        <p>Registro de ventas y control de caja</p><a href="tienda-jordan.html" target="_blank"
+                            class="btn btn-info btn-lg">Abrir POS</a>
+                    </div>
+                    <div class="pos-card" style="border: 2px solid var(--primary);">
+                        <div class="pos-icon">🌐</div>
+                        <h3>Tienda Digital</h3>
+                        <p>Ventas online y envíos</p><a href="tienda-digital.html" target="_blank"
+                            class="btn btn-warning btn-lg">Abrir POS Digital</a>
+                    </div>
                 </div>
 
                 <div class="card" style="margin-top:2rem;">
                     <div class="card-header">
                         <h3>📊 Ventas del Día</h3>
-                        <div><span id="fechaHoy" style="color:var(--gray-500); margin-right:1rem;"></span><button onclick="exportarVentasDia()" class="btn btn-secondary btn-sm">📥 Exportar CSV</button></div>
+                        <div style="display:flex; align-items:center; gap:0.5rem;">
+                            <span id="fechaHoy" style="color:var(--gray-500);"></span>
+                            <button onclick="exportarVentasExcel()" class="btn btn-success btn-sm">📊 Excel</button>
+                            <button onclick="exportarVentasPDF()" class="btn btn-danger btn-sm">📄 PDF</button>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <div class="stats-grid" id="ventasDiaStats"><div class="loading"><div class="spinner"></div><p>Cargando ventas...</p></div></div>
+                        <div class="stats-grid" id="ventasDiaStats">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Cargando ventas...</p>
+                            </div>
+                        </div>
                         <div class="charts-grid" style="margin-top:2rem;">
-                            <div class="card"><div class="card-header"><h4>💳 Por Método de Pago</h4></div><div class="card-body"><canvas id="chartMetodosPago"></canvas></div></div>
-                            <div class="card"><div class="card-header"><h4>🏪 Por Local</h4></div><div class="card-body"><canvas id="chartVentasLocales"></canvas></div></div>
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4>💳 Por Método de Pago</h4>
+                                </div>
+                                <div class="card-body"><canvas id="chartMetodosPago"></canvas></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4>🏪 Por Local</h4>
+                                </div>
+                                <div class="card-body"><canvas id="chartVentasLocales"></canvas></div>
+                            </div>
                         </div>
                         <div class="table-container" style="margin-top:2rem;">
                             <table class="data-table">
-                                <thead><tr><th>Hora</th><th>Local</th><th>Producto</th><th>Cant.</th><th>Total</th><th>Método</th></tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th>Hora</th>
+                                        <th>Local</th>
+                                        <th>Producto</th>
+                                        <th>Cant.</th>
+                                        <th>Total</th>
+                                        <th>Método</th>
+                                    </tr>
+                                </thead>
                                 <tbody id="tbodyVentasDia"></tbody>
                             </table>
                         </div>
@@ -607,9 +810,13 @@
 
             <!-- ═══════════════════ INVENTARIO ═══════════════════ -->
             <section id="inventarioSection" class="section">
-                <div class="page-header"><h1>Gestión de Inventario</h1><p>Controla el stock de cada local</p></div>
+                <div class="page-header">
+                    <h1>Gestión de Inventario</h1>
+                    <p>Controla el stock de cada local</p>
+                </div>
                 <div class="actions-bar">
-                    <select id="inventarioLocal" class="form-control" style="max-width:300px;" onchange="cargarInventarioLocal()">
+                    <select id="inventarioLocal" class="form-control" style="max-width:300px;"
+                        onchange="cargarInventarioLocal()">
                         <option value="">-- Seleccionar Local --</option>
                         <option value="inventario_alcala">🏪 Alcalá</option>
                         <option value="inventario_01">🏬 Local 01</option>
@@ -617,9 +824,14 @@
                         <option value="inventario_digital">🌐 Digital</option>
                     </select>
                     <button onclick="cargarInventarioLocal()" class="btn btn-secondary">🔄 Recargar</button>
-                    <button onclick="exportarInventario()" class="btn btn-primary">📥 Exportar CSV</button>
+                    <button onclick="exportarInventarioExcel()" class="btn btn-success">📊 Excel</button>
+                    <button onclick="exportarInventarioPDF()" class="btn btn-danger">📄 PDF</button>
                 </div>
-                <div id="contenidoInventario" class="card"><div class="card-body"><div class="alert alert-info">👆 Selecciona un local para ver su inventario</div></div></div>
+                <div id="contenidoInventario" class="card">
+                    <div class="card-body">
+                        <div class="alert alert-info">👆 Selecciona un local para ver su inventario</div>
+                    </div>
+                </div>
             </section>
 
             <!-- ═══════════════════ BODEGAS ═══════════════════ -->
@@ -666,7 +878,9 @@
                 </div>
 
                 <div class="card" style="margin-top:1rem;">
-                    <div class="card-header"><h3>📋 Inventario de Bodegas</h3></div>
+                    <div class="card-header">
+                        <h3>📋 Inventario de Bodegas</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -680,7 +894,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyBodegas">
-                                    <tr><td colspan="5" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -690,9 +906,20 @@
 
             <!-- ═══════════════════ ALERTAS ═══════════════════ -->
             <section id="alertasSection" class="section">
-                <div class="page-header"><h1>Alertas de Stock</h1><p>Productos que requieren atención</p></div>
-                <div class="actions-bar"><button onclick="cargarAlertasStock()" class="btn btn-secondary">🔄 Actualizar</button></div>
-                <div id="contenidoAlertas" class="card"><div class="card-body"><div class="loading"><div class="spinner"></div><p>Cargando alertas...</p></div></div></div>
+                <div class="page-header">
+                    <h1>Alertas de Stock</h1>
+                    <p>Productos que requieren atención</p>
+                </div>
+                <div class="actions-bar"><button onclick="cargarAlertasStock()" class="btn btn-secondary">🔄
+                        Actualizar</button></div>
+                <div id="contenidoAlertas" class="card">
+                    <div class="card-body">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>Cargando alertas...</p>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- ═══════════════════ CIERRES DE CAJA ═══════════════════ -->
@@ -734,19 +961,23 @@
                 </div>
 
                 <div class="actions-bar">
-                    <select id="cierresLocalFiltro" class="form-control" style="max-width:200px;" onchange="cargarCierresCaja()">
+                    <select id="cierresLocalFiltro" class="form-control" style="max-width:200px;"
+                        onchange="cargarCierresCaja()">
                         <option value="">Todos los locales</option>
                         <option value="Alcala">🏪 Alcalá</option>
                         <option value="01">🏬 Local 01</option>
                         <option value="Jordan">🏢 Jordán</option>
                     </select>
-                    <input type="date" id="cierresFechaFiltro" class="form-control" style="max-width:180px;" onchange="cargarCierresCaja()">
+                    <input type="date" id="cierresFechaFiltro" class="form-control" style="max-width:180px;"
+                        onchange="cargarCierresCaja()">
                     <button onclick="cargarCierresCaja()" class="btn btn-secondary">🔄 Actualizar</button>
                     <button onclick="exportarCierres()" class="btn btn-primary">📥 Exportar</button>
                 </div>
 
                 <div class="card" style="margin-top:1rem;">
-                    <div class="card-header"><h3>📊 Historial de Cierres</h3></div>
+                    <div class="card-header">
+                        <h3>📊 Historial de Cierres</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -763,7 +994,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyCierres">
-                                    <tr><td colspan="8" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="8" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -811,7 +1044,8 @@
 
                 <div class="actions-bar">
                     <button onclick="mostrarFormGasto()" class="btn btn-primary">➕ Registrar Gasto</button>
-                    <select id="gastosLocalFiltro" class="form-control" style="max-width:200px;" onchange="cargarGastos()">
+                    <select id="gastosLocalFiltro" class="form-control" style="max-width:200px;"
+                        onchange="cargarGastos()">
                         <option value="">Todos los locales</option>
                         <option value="Alcala">🏪 Alcalá</option>
                         <option value="01">🏬 Local 01</option>
@@ -852,7 +1086,8 @@
                     </div>
                     <div class="form-group">
                         <label>Descripción <span class="required">*</span></label>
-                        <input type="text" id="gastoDescripcion" class="form-control" placeholder="Ej: Resma de papel, productos de aseo..." required>
+                        <input type="text" id="gastoDescripcion" class="form-control"
+                            placeholder="Ej: Resma de papel, productos de aseo..." required>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -880,7 +1115,8 @@
                     </div>
                     <div class="form-group">
                         <label>Notas adicionales</label>
-                        <textarea id="gastoNotas" class="form-control" rows="2" placeholder="Observaciones..."></textarea>
+                        <textarea id="gastoNotas" class="form-control" rows="2"
+                            placeholder="Observaciones..."></textarea>
                     </div>
                     <div style="display:flex; gap:1rem; margin-top:1.5rem;">
                         <button onclick="guardarGasto()" class="btn btn-success">💾 Guardar</button>
@@ -889,7 +1125,9 @@
                 </div>
 
                 <div class="card" style="margin-top:1rem;">
-                    <div class="card-header"><h3>📋 Registro de Gastos</h3></div>
+                    <div class="card-header">
+                        <h3>📋 Registro de Gastos</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -905,7 +1143,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyGastos">
-                                    <tr><td colspan="7" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="7" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -953,18 +1193,21 @@
 
                 <div class="actions-bar">
                     <button onclick="mostrarFormDeudor()" class="btn btn-primary">➕ Nuevo Deudor</button>
-                    <select id="deudoresEstadoFiltro" class="form-control" style="max-width:180px;" onchange="cargarDeudores()">
+                    <select id="deudoresEstadoFiltro" class="form-control" style="max-width:180px;"
+                        onchange="cargarDeudores()">
                         <option value="ABIERTO">🔴 Abiertos</option>
                         <option value="CERRADO">🟢 Cerrados</option>
                         <option value="">Todos</option>
                     </select>
-                    <select id="deudoresLocalFiltro" class="form-control" style="max-width:180px;" onchange="cargarDeudores()">
+                    <select id="deudoresLocalFiltro" class="form-control" style="max-width:180px;"
+                        onchange="cargarDeudores()">
                         <option value="">Todas las sedes</option>
                         <option value="Alcalá">Alcalá</option>
                         <option value="Cero1">Cero1 / Local 01</option>
                         <option value="Jordán">Jordán</option>
                     </select>
-                    <input type="text" id="deudoresBuscar" class="form-control" placeholder="🔍 Buscar..." style="max-width:200px;" oninput="buscarDeudores()">
+                    <input type="text" id="deudoresBuscar" class="form-control" placeholder="🔍 Buscar..."
+                        style="max-width:200px;" oninput="buscarDeudores()">
                     <button onclick="cargarDeudores()" class="btn btn-secondary">🔄 Actualizar</button>
                 </div>
 
@@ -998,7 +1241,8 @@
                     </div>
                     <div class="form-group">
                         <label>Descripción de la Compra <span class="required">*</span></label>
-                        <textarea id="deudorDescripcion" class="form-control" rows="2" required placeholder="Ej: Casco Shaft 526, Guantes..."></textarea>
+                        <textarea id="deudorDescripcion" class="form-control" rows="2" required
+                            placeholder="Ej: Casco Shaft 526, Guantes..."></textarea>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -1012,7 +1256,8 @@
                     </div>
                     <div class="form-group">
                         <label>Contacto de Referencia</label>
-                        <input type="text" id="deudorReferencia" class="form-control" placeholder="Persona que respalda">
+                        <input type="text" id="deudorReferencia" class="form-control"
+                            placeholder="Persona que respalda">
                     </div>
                     <div style="display:flex; gap:1rem; margin-top:1.5rem;">
                         <button onclick="guardarDeudor()" class="btn btn-success">💾 Guardar</button>
@@ -1021,7 +1266,9 @@
                 </div>
 
                 <div class="card" style="margin-top:1rem;">
-                    <div class="card-header"><h3>📋 Lista de Deudores</h3></div>
+                    <div class="card-header">
+                        <h3>📋 Lista de Deudores</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -1038,7 +1285,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyDeudores">
-                                    <tr><td colspan="8" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="8" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1079,7 +1328,8 @@
 
                 <div class="actions-bar">
                     <button onclick="mostrarFormProveedor()" class="btn btn-primary">➕ Nuevo Proveedor</button>
-                    <input type="text" id="proveedoresBuscar" class="form-control" placeholder="🔍 Buscar proveedor..." style="max-width:250px;" oninput="buscarProveedores()">
+                    <input type="text" id="proveedoresBuscar" class="form-control" placeholder="🔍 Buscar proveedor..."
+                        style="max-width:250px;" oninput="buscarProveedores()">
                     <button onclick="cargarProveedores()" class="btn btn-secondary">🔄 Actualizar</button>
                 </div>
 
@@ -1132,7 +1382,9 @@
                 </div>
 
                 <div class="card" style="margin-top:1rem;">
-                    <div class="card-header"><h3>🏭 Lista de Proveedores</h3></div>
+                    <div class="card-header">
+                        <h3>🏭 Lista de Proveedores</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -1147,7 +1399,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyProveedores">
-                                    <tr><td colspan="6" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="6" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1188,12 +1442,14 @@
 
                 <div class="actions-bar">
                     <button onclick="mostrarFormCompra()" class="btn btn-primary">➕ Nueva Compra</button>
-                    <select id="comprasEstadoFiltro" class="form-control" style="max-width:180px;" onchange="cargarCompras()">
+                    <select id="comprasEstadoFiltro" class="form-control" style="max-width:180px;"
+                        onchange="cargarCompras()">
                         <option value="">Todas</option>
                         <option value="ABIERTO">🔴 Pendientes</option>
                         <option value="CERRADO">🟢 Cerradas</option>
                     </select>
-                    <input type="text" id="comprasBuscar" class="form-control" placeholder="🔍 Buscar proveedor..." style="max-width:200px;" oninput="buscarCompras()">
+                    <input type="text" id="comprasBuscar" class="form-control" placeholder="🔍 Buscar proveedor..."
+                        style="max-width:200px;" oninput="buscarCompras()">
                     <button onclick="cargarCompras()" class="btn btn-secondary">🔄 Actualizar</button>
                 </div>
 
@@ -1201,7 +1457,7 @@
                 <div id="formCompra" class="form-modal" style="display:none;">
                     <h3 id="formTituloCompra">➕ Nueva Compra a Proveedor</h3>
                     <input type="hidden" id="compraId">
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label>Año <span class="required">*</span></label>
@@ -1232,7 +1488,8 @@
                         </div>
                         <div class="form-group">
                             <label>Día</label>
-                            <input type="number" id="compraDia" class="form-control" placeholder="1-31" min="1" max="31">
+                            <input type="number" id="compraDia" class="form-control" placeholder="1-31" min="1"
+                                max="31">
                         </div>
                     </div>
 
@@ -1249,7 +1506,8 @@
                         </div>
                         <div class="form-group" style="flex:2;">
                             <label>Proveedor <span class="required">*</span></label>
-                            <input type="text" id="compraProveedor" class="form-control" list="listaProveedoresDatalist" placeholder="Nombre del proveedor" required>
+                            <input type="text" id="compraProveedor" class="form-control" list="listaProveedoresDatalist"
+                                placeholder="Nombre del proveedor" required>
                             <datalist id="listaProveedoresDatalist"></datalist>
                         </div>
                     </div>
@@ -1272,7 +1530,8 @@
                         </div>
                         <div class="form-group">
                             <label>Valor Compra <span class="required">*</span></label>
-                            <input type="text" id="compraValor" class="form-control" placeholder="$0" oninput="formatearMonedaInput(this)" required>
+                            <input type="text" id="compraValor" class="form-control" placeholder="$0"
+                                oninput="formatearMonedaInput(this)" required>
                         </div>
                     </div>
 
@@ -1295,7 +1554,8 @@
 
                     <div class="form-group">
                         <label>Notas</label>
-                        <textarea id="compraNotas" class="form-control" rows="2" placeholder="Observaciones adicionales..."></textarea>
+                        <textarea id="compraNotas" class="form-control" rows="2"
+                            placeholder="Observaciones adicionales..."></textarea>
                     </div>
 
                     <div style="display:flex; gap:1rem; margin-top:1.5rem;">
@@ -1340,11 +1600,13 @@
                             </div>
                             <div class="form-group">
                                 <label>Monto del Pago <span class="required">*</span></label>
-                                <input type="text" id="pagoMonto" class="form-control" placeholder="$0" oninput="formatearMonedaInput(this)" required>
+                                <input type="text" id="pagoMonto" class="form-control" placeholder="$0"
+                                    oninput="formatearMonedaInput(this)" required>
                             </div>
                             <div class="form-group">
                                 <label>Notas</label>
-                                <input type="text" id="pagoNotas" class="form-control" placeholder="Referencia o nota del pago">
+                                <input type="text" id="pagoNotas" class="form-control"
+                                    placeholder="Referencia o nota del pago">
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -1355,7 +1617,9 @@
                 </div>
 
                 <div class="card" style="margin-top:1rem;">
-                    <div class="card-header"><h3>📋 Lista de Compras</h3></div>
+                    <div class="card-header">
+                        <h3>📋 Lista de Compras</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -1374,7 +1638,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyCompras">
-                                    <tr><td colspan="10" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="10" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1430,7 +1696,8 @@
                     <input type="hidden" id="deudaId">
                     <div class="form-group">
                         <label>Concepto <span class="required">*</span></label>
-                        <input type="text" id="deudaConcepto" class="form-control" placeholder="Ej: Préstamo compra MT" required>
+                        <input type="text" id="deudaConcepto" class="form-control" placeholder="Ej: Préstamo compra MT"
+                            required>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -1463,7 +1730,9 @@
                 </div>
 
                 <div class="card" style="margin-top:1rem;">
-                    <div class="card-header"><h3>📋 Lista de Deudas</h3></div>
+                    <div class="card-header">
+                        <h3>📋 Lista de Deudas</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -1479,7 +1748,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyDeudas">
-                                    <tr><td colspan="7" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="7" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1527,7 +1798,8 @@
 
                 <div class="actions-bar">
                     <button onclick="mostrarFormCredito()" class="btn btn-primary">➕ Nuevo Crédito</button>
-                    <select id="creditosEstadoFiltro" class="form-control" style="max-width:180px;" onchange="cargarCreditos()">
+                    <select id="creditosEstadoFiltro" class="form-control" style="max-width:180px;"
+                        onchange="cargarCreditos()">
                         <option value="" selected>📋 Todos</option>
                         <option value="activo">🟡 Activos</option>
                         <option value="mora">🔴 En Mora</option>
@@ -1537,7 +1809,9 @@
                 </div>
 
                 <div class="card" style="margin-top:1rem;">
-                    <div class="card-header"><h3>📋 Créditos</h3></div>
+                    <div class="card-header">
+                        <h3>📋 Créditos</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -1553,7 +1827,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyCreditos">
-                                    <tr><td colspan="7" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="7" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1563,97 +1839,147 @@
 
             <!-- ═══════════════════ PROMOCIONES ═══════════════════ -->
             <section id="promocionesSection" class="section">
-                <div class="page-header"><h1>Gestión de Promociones</h1><p>Administra ofertas y descuentos</p></div>
-                <div class="actions-bar">
-                    <button onclick="mostrarFormPromocion()" class="btn btn-primary">➕ Nueva Promoción</button>
-                    <button onclick="cargarPromociones()" class="btn btn-secondary">🔄 Recargar</button>
+                <div class="page-header">
+                    <h1>Gestión de Promociones</h1>
+                    <p>Administra ofertas y descuentos de forma organizada</p>
                 </div>
 
-                <!-- Modal de Promoción a Pantalla Completa -->
-                <div id="formPromocion" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9999; overflow-y:auto; padding:1rem;">
-                    <div style="background:white; border-radius:1rem; max-width:1400px; margin:0 auto; min-height:calc(100vh - 2rem); display:flex; flex-direction:column;">
-                        <!-- Header del Modal -->
-                        <div style="background:linear-gradient(135deg,#ff6b00,#ff8533); color:white; padding:1.25rem 2rem; border-radius:1rem 1rem 0 0; display:flex; justify-content:space-between; align-items:center;">
-                            <h3 id="formTituloPromocion" style="margin:0; font-size:1.5rem;">➕ Nueva Promoción</h3>
-                            <button onclick="cancelarFormPromocion()" style="background:rgba(255,255,255,0.2); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer;">&times;</button>
-                        </div>
-                        <input type="hidden" id="promocionIdOriginal">
-
-                        <!-- Contenido en 2 columnas -->
-                        <div style="display:grid; grid-template-columns:380px 1fr; flex:1; overflow:hidden;">
-
-                            <!-- Columna Izquierda: Datos de la Promo -->
-                            <div style="padding:1.5rem; border-right:1px solid #e2e8f0; overflow-y:auto; background:#f8fafc;">
-                                <h4 style="color:#1e293b; margin-bottom:1.25rem; font-size:1.1rem;">📋 Datos de la Promoción</h4>
-
-                                <div class="form-group" style="margin-bottom:1rem;">
-                                    <label style="font-weight:600; color:#374151; font-size:0.9rem;">ID Promoción <span style="color:#ef4444;">*</span></label>
-                                    <input type="text" id="promocionId" class="form-control" placeholder="PROMO06" style="margin-top:0.25rem;">
-                                </div>
-                                <div class="form-group" style="margin-bottom:1rem;">
-                                    <label style="font-weight:600; color:#374151; font-size:0.9rem;">Nombre <span style="color:#ef4444;">*</span></label>
-                                    <input type="text" id="promocionNombre" class="form-control" placeholder="Ej: Cascos al 20%" style="margin-top:0.25rem;">
-                                </div>
-                                <div class="form-group" style="margin-bottom:1rem;">
-                                    <label style="font-weight:600; color:#374151; font-size:0.9rem;">Descuento (%) <span style="color:#ef4444;">*</span></label>
-                                    <input type="number" id="promocionDescuento" class="form-control" placeholder="20" min="1" max="100" style="margin-top:0.25rem; font-size:1.25rem; font-weight:700; color:#ff6b00;">
-                                </div>
-                                <div class="form-group" style="margin-bottom:1rem;">
-                                    <label style="font-weight:600; color:#374151; font-size:0.9rem;">Locales Aplicables</label>
-                                    <input type="text" id="promocionLocales" class="form-control" placeholder="Todos" style="margin-top:0.25rem;">
-                                </div>
-                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
-                                    <div class="form-group">
-                                        <label style="font-weight:600; color:#374151; font-size:0.9rem;">Fecha Inicio</label>
-                                        <input type="date" id="promocionInicio" class="form-control" style="margin-top:0.25rem;">
-                                    </div>
-                                    <div class="form-group">
-                                        <label style="font-weight:600; color:#374151; font-size:0.9rem;">Fecha Fin</label>
-                                        <input type="date" id="promocionFin" class="form-control" style="margin-top:0.25rem;">
-                                    </div>
-                                </div>
-                                <div class="form-group" style="margin-bottom:1.5rem;">
-                                    <label style="font-weight:600; color:#374151; font-size:0.9rem;">Estado</label>
-                                    <select id="promocionEstado" class="form-control" style="margin-top:0.25rem;">
-                                        <option value="Activa">🟢 Activa</option>
-                                        <option value="Inactiva">🟡 Inactiva</option>
-                                        <option value="Finalizada">🔴 Finalizada</option>
-                                    </select>
-                                </div>
-
-                                <!-- Vista Previa -->
-                                <div style="background:linear-gradient(135deg,#fff7ed,#ffedd5); border:2px dashed #fb923c; border-radius:0.75rem; padding:1rem; margin-bottom:1rem;">
-                                    <p style="font-size:0.8rem; color:#9a3412; margin-bottom:0.5rem; font-weight:600;">👁️ Vista Previa</p>
-                                    <div id="previewPromo" style="background:white; padding:1rem; border-radius:0.5rem; text-align:center;">
-                                        <p style="font-size:0.9rem; color:#64748b;">Completa los datos para ver la vista previa</p>
-                                    </div>
-                                </div>
-
-                                <!-- Botones -->
-                                <div style="display:flex; gap:0.75rem;">
-                                    <button onclick="guardarPromocion()" class="btn btn-success" style="flex:1; padding:0.875rem; font-size:1rem;">💾 Guardar Promoción</button>
-                                    <button onclick="cancelarFormPromocion()" class="btn btn-secondary" style="padding:0.875rem;">Cancelar</button>
-                                </div>
-                            </div>
-
-                            <!-- Columna Derecha: Selección de Productos -->
-                            <div style="padding:1.5rem; display:flex; flex-direction:column; overflow:hidden;">
-                                <h4 style="color:#1e293b; margin-bottom:1rem; font-size:1.1rem;">🛒 Seleccionar Productos <span style="color:#ef4444;">*</span></h4>
-                                <div id="listaProductosPromo" style="flex:1; overflow:hidden; border:1px solid #e2e8f0; border-radius:0.75rem; background:#fafafa;">
-                                    <div class="loading"><div class="spinner"></div><p>Cargando productos...</p></div>
-                                </div>
-                                <input type="hidden" id="promocionProductos">
-                            </div>
+                <!-- VISTA 1: LISTADO DE PROMOCIONES -->
+                <div id="vistaListaPromociones">
+                    <div class="actions-bar">
+                        <button onclick="mostrarFormPromocion()" class="btn btn-primary">➕ Nueva Promoción</button>
+                        <button onclick="cargarPromociones()" class="btn btn-secondary">🔄 Recargar</button>
+                    </div>
+                    <div id="listaPromociones" style="margin-top:1.5rem;">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>Cargando promociones...</p>
                         </div>
                     </div>
                 </div>
 
-                <div id="listaPromociones"><div class="loading"><div class="spinner"></div><p>Cargando promociones...</p></div></div>
+                <!-- VISTA 2: FORMULARIO DE EDICIÓN (ESPACIO COMPLETO) -->
+                <div id="vistaFormPromocion" style="display:none; margin-top:1rem;">
+                    <div class="card" style="border:none; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+                        <div class="card-header"
+                            style="background:linear-gradient(135deg,#ff6b00,#ff8533); color:white; border:none; display:flex; justify-content:space-between; align-items:center;">
+                            <h3 id="formTituloPromocion" style="margin:0; font-size:1.5rem;">➕ Nueva Promoción</h3>
+                            <button onclick="cancelarFormPromocion()" class="btn btn-sm"
+                                style="background:rgba(255,255,255,0.2); color:white; border-radius:50%; width:32px; height:32px; padding:0;">&times;</button>
+                        </div>
+                        <div class="card-body" style="padding:2rem;">
+                            <input type="hidden" id="promocionIdOriginal">
+
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:3rem;">
+                                <!-- Columna Izquierda: Configuración -->
+                                <div>
+                                    <h4
+                                        style="color:#1e293b; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.5rem;">
+                                        <span
+                                            style="background:#ff6b00; color:white; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.9rem;">1</span>
+                                        Configuración General
+                                    </h4>
+
+                                    <div
+                                        style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+                                        <div class="form-group">
+                                            <label style="font-weight:700;">ID Promoción <span
+                                                    class="required">*</span></label>
+                                            <input type="text" id="promocionId" class="form-control"
+                                                placeholder="Ej: PROMO01">
+                                        </div>
+                                        <div class="form-group">
+                                            <label style="font-weight:700;">Descuento (%) <span
+                                                    class="required">*</span></label>
+                                            <input type="number" id="promocionDescuento" class="form-control"
+                                                placeholder="20" min="1" max="100"
+                                                style="font-size:1.25rem; font-weight:800; color:#ff6b00;">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom:1.5rem;">
+                                        <label style="font-weight:700;">Nombre de la Promoción <span
+                                                class="required">*</span></label>
+                                        <input type="text" id="promocionNombre" class="form-control"
+                                            placeholder="Ej: Especial de Cascos MT">
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom:1.5rem;">
+                                        <label style="font-weight:700;">Locales Aplicables</label>
+                                        <input type="text" id="promocionLocales" class="form-control"
+                                            placeholder="Todos (o separa por comas: Alcalá, Local 01)">
+                                    </div>
+
+                                    <div
+                                        style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+                                        <div class="form-group">
+                                            <label style="font-weight:700;">Fecha Inicio</label>
+                                            <input type="date" id="promocionInicio" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label style="font-weight:700;">Fecha Fin</label>
+                                            <input type="date" id="promocionFin" class="form-control">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom:2rem;">
+                                        <label style="font-weight:700;">Estado</label>
+                                        <select id="promocionEstado" class="form-control">
+                                            <option value="Activa">🟢 Activa</option>
+                                            <option value="Inactiva">🟡 Inactiva</option>
+                                            <option value="Finalizada">🔴 Finalizada</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Panel de Resumen -->
+                                    <div id="previewPromo"
+                                        style="background:#f8fafc; border:2px dashed #e2e8f0; border-radius:1rem; padding:1.5rem; min-height:100px; display:flex; align-items:center; justify-content:center; text-align:center; color:#64748b;">
+                                        Completa los datos para ver el resumen
+                                    </div>
+
+                                    <div style="margin-top:2rem; display:flex; gap:1rem;">
+                                        <button onclick="guardarPromocion()" class="btn btn-success"
+                                            style="flex:2; padding:1rem; font-size:1.1rem;">💾 Guardar Cambios</button>
+                                        <button onclick="cancelarFormPromocion()" class="btn btn-secondary"
+                                            style="flex:1;">Volver</button>
+                                    </div>
+                                </div>
+
+                                <!-- Columna Derecha: Selección de Productos -->
+                                <div style="display:flex; flex-direction:column; height:100%;">
+                                    <h4
+                                        style="color:#1e293b; margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
+                                        <div style="display:flex; align-items:center; gap:0.5rem;">
+                                            <span
+                                                style="background:#ff6b00; color:white; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.9rem;">2</span>
+                                            Selección de Productos
+                                        </div>
+                                        <small id="contadorSeleccionados"
+                                            style="font-weight:normal; color:#64748b; background:#f1f5f9; padding:2px 10px; border-radius:20px; font-size:0.8rem;">0
+                                            seleccionados</small>
+                                    </h4>
+
+                                    <div id="listaProductosPromo"
+                                        style="flex:1; border:1px solid #e2e8f0; border-radius:1rem; overflow:hidden; display:flex; flex-direction:column; background:#fcfcfc; max-height:600px;">
+                                        <div class="loading">
+                                            <div class="spinner"></div>
+                                            <p>Cargando productos...</p>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="promocionProductos">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- ═══════════════════ BLOG ═══════════════════ -->
             <section id="blogSection" class="section">
-                <div class="page-header"><h1>Gestión del Blog</h1><p>Publica contenido y noticias</p></div>
+                <div class="page-header">
+                    <h1>Gestión del Blog</h1>
+                    <p>Publica contenido y noticias</p>
+                </div>
                 <div class="actions-bar">
                     <button onclick="mostrarFormPost()" class="btn btn-primary">➕ Nueva Publicación</button>
                     <button onclick="cargarPosts()" class="btn btn-secondary">🔄 Recargar</button>
@@ -1665,23 +1991,35 @@
                     <div class="dropzone" id="dropzonePost" onclick="document.getElementById('fileInputPost').click()">
                         <div class="dropzone-icon">🖼️</div>
                         <div class="dropzone-text">Imagen del post</div>
-                        <input type="file" id="fileInputPost" accept="image/*" style="display:none;" onchange="handleFileSelect(event, 'post')">
+                        <input type="file" id="fileInputPost" accept="image/*" style="display:none;"
+                            onchange="handleFileSelect(event, 'post')">
                         <div class="preview-container" id="previewContainerPost" style="display:none;">
                             <img id="previewPost" class="preview-image">
-                            <button class="remove-preview" onclick="event.stopPropagation(); removerPreview('post')">×</button>
+                            <button class="remove-preview"
+                                onclick="event.stopPropagation(); removerPreview('post')">×</button>
                         </div>
                     </div>
-                    <div class="form-group"><label>Título <span class="required">*</span></label><input type="text" id="postTitulo" class="form-control" placeholder="Título del post"></div>
-                    <div class="form-group"><label>Contenido <span class="required">*</span></label><textarea id="postContenido" class="form-control" rows="6" placeholder="Escribe el contenido..."></textarea></div>
-                    <div class="form-group"><label>URL Imagen (alternativa)</label><input type="url" id="postImagenUrl" class="form-control" placeholder="https://..."></div>
-                    <div class="form-group"><label>Video (URL TikTok/YouTube)</label><input type="url" id="postVideo" class="form-control" placeholder="https://www.tiktok.com/@usuario/video/123"></div>
+                    <div class="form-group"><label>Título <span class="required">*</span></label><input type="text"
+                            id="postTitulo" class="form-control" placeholder="Título del post"></div>
+                    <div class="form-group"><label>Contenido <span class="required">*</span></label><textarea
+                            id="postContenido" class="form-control" rows="6"
+                            placeholder="Escribe el contenido..."></textarea></div>
+                    <div class="form-group"><label>URL Imagen (alternativa)</label><input type="url" id="postImagenUrl"
+                            class="form-control" placeholder="https://..."></div>
+                    <div class="form-group"><label>Video (URL TikTok/YouTube)</label><input type="url" id="postVideo"
+                            class="form-control" placeholder="https://www.tiktok.com/@usuario/video/123"></div>
                     <div style="display:flex; gap:1rem; margin-top:1.5rem;">
                         <button onclick="guardarPost()" class="btn btn-success">💾 Publicar</button>
                         <button onclick="cancelarFormPost()" class="btn btn-secondary">Cancelar</button>
                     </div>
                 </div>
 
-                <div id="listaPosts" class="productos-admin-grid"><div class="loading"><div class="spinner"></div><p>Cargando publicaciones...</p></div></div>
+                <div id="listaPosts" class="productos-admin-grid">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando publicaciones...</p>
+                    </div>
+                </div>
             </section>
 
             <!-- ═══════════════════ ALIANZAS ═══════════════════ -->
@@ -1697,7 +2035,9 @@
                 </div>
 
                 <div class="card" style="margin-top:1rem;">
-                    <div class="card-header"><h3>🤝 Lista de Alianzas</h3></div>
+                    <div class="card-header">
+                        <h3>🤝 Lista de Alianzas</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -1713,7 +2053,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyAlianzas">
-                                    <tr><td colspan="7" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="7" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1721,37 +2063,235 @@
                 </div>
             </section>
 
+            <!-- ═══════════════════ CONTENIDO DEL SITIO ═══════════════════ -->
+            <section id="contenidoSection" class="section">
+                <div class="page-header">
+                    <h1>Contenido del Sitio</h1>
+                    <p>Edita el contenido de las páginas públicas (Nosotros, Términos, Políticas)</p>
+                </div>
+
+                <div class="contenido-grid"
+                    style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:1.5rem;">
+                    <!-- Quiénes Somos -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🏢 Quiénes Somos</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Título</label>
+                                <input type="text" id="contenido_quienes_somos_titulo" class="form-control"
+                                    placeholder="Quiénes Somos">
+                            </div>
+                            <div class="form-group">
+                                <label>Contenido</label>
+                                <textarea id="contenido_quienes_somos" class="form-control" rows="5"
+                                    placeholder="Descripción de la empresa..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Misión -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🎯 Misión</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Título</label>
+                                <input type="text" id="contenido_mision_titulo" class="form-control"
+                                    placeholder="Misión">
+                            </div>
+                            <div class="form-group">
+                                <label>Contenido</label>
+                                <textarea id="contenido_mision" class="form-control" rows="5"
+                                    placeholder="Nuestra misión..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visión -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔭 Visión</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Título</label>
+                                <input type="text" id="contenido_vision_titulo" class="form-control"
+                                    placeholder="Visión">
+                            </div>
+                            <div class="form-group">
+                                <label>Contenido</label>
+                                <textarea id="contenido_vision" class="form-control" rows="5"
+                                    placeholder="Nuestra visión..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Términos y Condiciones -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📜 Términos y Condiciones</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Título</label>
+                                <input type="text" id="contenido_terminos_titulo" class="form-control"
+                                    placeholder="Términos y Condiciones">
+                            </div>
+                            <div class="form-group">
+                                <label>Contenido</label>
+                                <textarea id="contenido_terminos" class="form-control" rows="6"
+                                    placeholder="Términos y condiciones de uso..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Política de Privacidad -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔒 Política de Privacidad</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Título</label>
+                                <input type="text" id="contenido_privacidad_titulo" class="form-control"
+                                    placeholder="Política de Privacidad">
+                            </div>
+                            <div class="form-group">
+                                <label>Contenido</label>
+                                <textarea id="contenido_privacidad" class="form-control" rows="6"
+                                    placeholder="Política de privacidad..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Habeas Data -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📋 Habeas Data</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Título</label>
+                                <input type="text" id="contenido_habeas_data_titulo" class="form-control"
+                                    placeholder="Habeas Data">
+                            </div>
+                            <div class="form-group">
+                                <label>Contenido</label>
+                                <textarea id="contenido_habeas_data" class="form-control" rows="6"
+                                    placeholder="Tratamiento de datos personales..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Políticas de Domicilios -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🚚 Políticas de Domicilios</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Título</label>
+                                <input type="text" id="contenido_politicas_domicilios_titulo" class="form-control"
+                                    placeholder="Políticas de Domicilios">
+                            </div>
+                            <div class="form-group">
+                                <label>Contenido</label>
+                                <textarea id="contenido_politicas_domicilios" class="form-control" rows="6"
+                                    placeholder="Políticas de envíos y domicilios..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:2rem; display:flex; gap:1rem;">
+                    <button onclick="guardarContenidoSitio()" class="btn btn-success btn-lg">💾 Guardar Todo el
+                        Contenido</button>
+                    <button onclick="cargarContenidoSitio()" class="btn btn-secondary btn-lg">🔄 Recargar</button>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ PROMOCIONES ═══════════════════ -->
+            <section id="promocionesSection" class="section">
+                <div class="page-header">
+                    <h1>🏷️ Gestión de Promociones</h1>
+                    <p>Crea y administra ofertas especiales y descuentos</p>
+                </div>
+                <div class="actions-bar">
+                    <button onclick="mostrarFormPromocion()" class="btn btn-primary">➕ Nueva Promoción</button>
+                    <button onclick="cargarPromociones()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+                <div id="listaPromociones" style="margin-top:1rem;">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando promociones...</p>
+                    </div>
+                </div>
+            </section>
+
             <!-- ═══════════════════ CONFIGURACIÓN ═══════════════════ -->
             <section id="configuracionSection" class="section">
-                <div class="page-header"><h1>Configuración</h1><p>Ajustes generales del sistema</p></div>
+                <div class="page-header">
+                    <h1>Configuración</h1>
+                    <p>Ajustes generales del sistema</p>
+                </div>
                 <div class="config-grid">
                     <div class="config-card">
                         <h4>🖼️ Branding</h4>
-                        <div class="form-group"><label>Logo (URL)</label><input type="url" id="configLogo" class="form-control" placeholder="https://..."></div>
-                        <div class="form-group"><label>Nombre de la Tienda</label><input type="text" id="configNombre" class="form-control" placeholder="Moteros Sports Line"></div>
-                        <div class="form-group"><label>Slogan</label><input type="text" id="configSlogan" class="form-control" placeholder="Tu estilo, tu pasión"></div>
-                        <div class="form-group"><label>Color Principal</label><div class="color-picker-group"><input type="color" id="configColor" value="#ff6b00" class="color-preview"></div></div>
+                        <div class="form-group"><label>Logo (URL)</label><input type="url" id="configLogo"
+                                class="form-control" placeholder="https://..."></div>
+                        <div class="form-group"><label>Nombre de la Tienda</label><input type="text" id="configNombre"
+                                class="form-control" placeholder="Moteros Sports Line"></div>
+                        <div class="form-group"><label>Slogan</label><input type="text" id="configSlogan"
+                                class="form-control" placeholder="Tu estilo, tu pasión"></div>
+                        <div class="form-group"><label>Color Principal</label>
+                            <div class="color-picker-group"><input type="color" id="configColor" value="#ff6b00"
+                                    class="color-preview"></div>
+                        </div>
                     </div>
                     <div class="config-card">
                         <h4>📱 Redes Sociales</h4>
-                        <div class="form-group"><label>WhatsApp (con código país)</label><input type="text" id="configWhatsapp" class="form-control" placeholder="573113408416"></div>
-                        <div class="form-group"><label>Facebook</label><input type="url" id="configFacebook" class="form-control" placeholder="https://facebook.com/..."></div>
-                        <div class="form-group"><label>Instagram</label><input type="url" id="configInstagram" class="form-control" placeholder="https://instagram.com/..."></div>
-                        <div class="form-group"><label>TikTok</label><input type="url" id="configTiktok" class="form-control" placeholder="https://tiktok.com/..."></div>
+                        <div class="form-group"><label>WhatsApp (con código país)</label><input type="text"
+                                id="configWhatsapp" class="form-control" placeholder="573113408416"></div>
+                        <div class="form-group"><label>Facebook</label><input type="url" id="configFacebook"
+                                class="form-control" placeholder="https://facebook.com/..."></div>
+                        <div class="form-group"><label>Instagram</label><input type="url" id="configInstagram"
+                                class="form-control" placeholder="https://instagram.com/..."></div>
+                        <div class="form-group"><label>TikTok</label><input type="url" id="configTiktok"
+                                class="form-control" placeholder="https://tiktok.com/..."></div>
                     </div>
                     <div class="config-card">
                         <h4>📧 Contacto</h4>
-                        <div class="form-group"><label>Email principal</label><input type="email" id="configEmail" class="form-control" placeholder="moterossportline@gmail.com"></div>
-                        <div class="form-group"><label>Teléfono</label><input type="text" id="configTelefono" class="form-control" placeholder="3113408416"></div>
-                        <div class="form-group"><label>Dirección principal</label><input type="text" id="configDireccion" class="form-control" placeholder="Calle 123 #45-67"></div>
+                        <div class="form-group"><label>Email principal</label><input type="email" id="configEmail"
+                                class="form-control" placeholder="moterossportline@gmail.com"></div>
+                        <div class="form-group"><label>Teléfono</label><input type="text" id="configTelefono"
+                                class="form-control" placeholder="3113408416"></div>
+                        <div class="form-group"><label>Dirección principal</label><input type="text"
+                                id="configDireccion" class="form-control" placeholder="Calle 123 #45-67"></div>
                     </div>
                     <div class="config-card">
                         <h4>⚙️ Sistema</h4>
-                        <div class="form-group"><label>Stock mínimo por defecto</label><input type="number" id="configStockMinimo" class="form-control" placeholder="5" min="1"></div>
-                        <div class="form-group"><label>Moneda</label><select id="configMoneda" class="form-control"><option value="COP">COP - Peso Colombiano</option><option value="USD">USD - Dólar</option></select></div>
+                        <div class="form-group"><label>Stock mínimo por defecto</label><input type="number"
+                                id="configStockMinimo" class="form-control" placeholder="5" min="1"></div>
+                        <div class="form-group"><label>Moneda</label><select id="configMoneda" class="form-control">
+                                <option value="COP">COP - Peso Colombiano</option>
+                                <option value="USD">USD - Dólar</option>
+                            </select></div>
+                    </div>
+                    <div class="config-card">
+                        <h4>🕒 Horarios de Atención</h4>
+                        <div class="form-group"><label>Alcalá</label><input type="text" id="configHorarioAlcala"
+                                class="form-control" placeholder="Lun-Sáb 9AM-7PM"></div>
+                        <div class="form-group"><label>Local 01</label><input type="text" id="configHorarioLocal01"
+                                class="form-control" placeholder="Lun-Sáb 8AM-6PM"></div>
+                        <div class="form-group"><label>Jordán</label><input type="text" id="configHorarioJordan"
+                                class="form-control" placeholder="Lun-Dom 10AM-8PM"></div>
                     </div>
                 </div>
-                <div style="margin-top:2rem;"><button onclick="guardarConfiguracion()" class="btn btn-success btn-lg">💾 Guardar Configuración</button></div>
+                <div style="margin-top:2rem;"><button onclick="guardarConfiguracion()" class="btn btn-success btn-lg">💾
+                        Guardar Configuración</button></div>
 
                 <!-- Gestión de Empleados -->
                 <div class="card" style="margin-top:2rem;">
@@ -1760,7 +2300,8 @@
                         <button onclick="mostrarModalEmpleado()" class="btn btn-primary">➕ Nuevo Empleado</button>
                     </div>
                     <div class="card-body">
-                        <p style="color:#64748b;margin-bottom:1rem;">Administra los empleados que pueden acceder al POS de cada tienda.</p>
+                        <p style="color:#64748b;margin-bottom:1rem;">Administra los empleados que pueden acceder al POS
+                            de cada tienda.</p>
                         <div class="table-container">
                             <table class="data-table">
                                 <thead>
@@ -1775,7 +2316,10 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tablaEmpleados">
-                                    <tr><td colspan="7" style="text-align:center;padding:2rem;color:#94a3b8;">Cargando empleados...</td></tr>
+                                    <tr>
+                                        <td colspan="7" style="text-align:center;padding:2rem;color:#94a3b8;">Cargando
+                                            empleados...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1788,7 +2332,8 @@
                         <h3>💳 Métodos de Pago (Página Web)</h3>
                     </div>
                     <div class="card-body">
-                        <p style="color:#64748b;margin-bottom:1rem;">Configura los métodos de pago que se muestran en la página principal.</p>
+                        <p style="color:#64748b;margin-bottom:1rem;">Configura los métodos de pago que se muestran en la
+                            página principal.</p>
                         <div class="form-group">
                             <label>Métodos de Pago Activos</label>
                             <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.5rem;">
@@ -1809,7 +2354,8 @@
                                 </label>
                             </div>
                         </div>
-                        <button onclick="guardarMetodosPago()" class="btn btn-success" style="margin-top:1rem;">💾 Guardar Métodos de Pago</button>
+                        <button onclick="guardarMetodosPago()" class="btn btn-success" style="margin-top:1rem;">💾
+                            Guardar Métodos de Pago</button>
                     </div>
                 </div>
             </section>
@@ -1855,7 +2401,8 @@
 
                 <!-- Filtros y Acciones -->
                 <div class="actions-bar">
-                    <select id="enviosEstadoFiltro" class="form-control" style="max-width:180px;" onchange="cargarEnvios()">
+                    <select id="enviosEstadoFiltro" class="form-control" style="max-width:180px;"
+                        onchange="cargarEnvios()">
                         <option value="">Todos los estados</option>
                         <option value="pendiente">📋 Pendientes</option>
                         <option value="preparando">📦 Preparando</option>
@@ -1864,15 +2411,19 @@
                         <option value="entregado">✅ Entregados</option>
                         <option value="devuelto">🔄 Devueltos</option>
                     </select>
-                    <input type="text" id="enviosBuscar" class="form-control" placeholder="🔍 Buscar cliente, guía..." style="max-width:250px;" oninput="buscarEnvios()">
-                    <input type="date" id="enviosFechaFiltro" class="form-control" style="max-width:160px;" onchange="cargarEnvios()">
+                    <input type="text" id="enviosBuscar" class="form-control" placeholder="🔍 Buscar cliente, guía..."
+                        style="max-width:250px;" oninput="buscarEnvios()">
+                    <input type="date" id="enviosFechaFiltro" class="form-control" style="max-width:160px;"
+                        onchange="cargarEnvios()">
                     <button onclick="cargarEnvios()" class="btn btn-secondary">🔄 Actualizar</button>
                     <button onclick="exportarEnvios()" class="btn btn-primary">📥 Exportar</button>
                 </div>
 
                 <!-- Tabla de Envíos -->
                 <div class="card" style="margin-top:1rem;">
-                    <div class="card-header"><h3>📋 Lista de Envíos</h3></div>
+                    <div class="card-header">
+                        <h3>📋 Lista de Envíos</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -1890,7 +2441,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyEnvios">
-                                    <tr><td colspan="9" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="9" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1906,7 +2459,7 @@
                         </div>
                         <div class="modal-body">
                             <input type="hidden" id="envioId">
-                            
+
                             <!-- Info del cliente (solo lectura) -->
                             <div class="alert alert-info" style="margin-bottom:1rem;">
                                 <strong>Pedido:</strong> <span id="envioNumeroPedido">-</span><br>
@@ -1919,7 +2472,8 @@
                             <!-- Productos del pedido -->
                             <div class="form-group">
                                 <label>📦 Productos</label>
-                                <div id="envioProductos" class="alert" style="background:#f8fafc; max-height:100px; overflow-y:auto;">-</div>
+                                <div id="envioProductos" class="alert"
+                                    style="background:#f8fafc; max-height:100px; overflow-y:auto;">-</div>
                             </div>
 
                             <hr style="margin: 1rem 0; border-color: #e2e8f0;">
@@ -1928,11 +2482,13 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Transportadora</label>
-                                    <input type="text" id="envioTransportadora" class="form-control" placeholder="Ej: Servientrega, Interrapidísimo...">
+                                    <input type="text" id="envioTransportadora" class="form-control"
+                                        placeholder="Ej: Servientrega, Interrapidísimo...">
                                 </div>
                                 <div class="form-group">
                                     <label>Número de Guía</label>
-                                    <input type="text" id="envioGuia" class="form-control" placeholder="Número de tracking">
+                                    <input type="text" id="envioGuia" class="form-control"
+                                        placeholder="Número de tracking">
                                 </div>
                             </div>
 
@@ -1961,22 +2517,26 @@
 
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label><input type="checkbox" id="envioIncluidoPrecio"> Envío incluido en precio</label>
+                                    <label><input type="checkbox" id="envioIncluidoPrecio"> Envío incluido en
+                                        precio</label>
                                 </div>
                                 <div class="form-group">
-                                    <label><input type="checkbox" id="envioClientePaga" checked> Cliente paga envío</label>
+                                    <label><input type="checkbox" id="envioClientePaga" checked> Cliente paga
+                                        envío</label>
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label>Notas</label>
-                                <textarea id="envioNotas" class="form-control" rows="2" placeholder="Observaciones..."></textarea>
+                                <textarea id="envioNotas" class="form-control" rows="2"
+                                    placeholder="Observaciones..."></textarea>
                             </div>
 
                             <hr style="margin: 1rem 0; border-color: #e2e8f0;">
 
                             <!-- Notificación -->
-                            <div class="form-group" style="background:#f0fdf4; padding:1rem; border-radius:8px; border:1px solid #bbf7d0;">
+                            <div class="form-group"
+                                style="background:#f0fdf4; padding:1rem; border-radius:8px; border:1px solid #bbf7d0;">
                                 <label style="color:#166534; font-weight:600;">📣 Notificar al Cliente</label>
                                 <div style="display:flex; gap:1rem; margin-top:0.5rem;">
                                     <label><input type="checkbox" id="notificarWhatsApp" checked> 📱 WhatsApp</label>
@@ -1984,13 +2544,16 @@
                                 </div>
                                 <div class="form-group" style="margin-top:0.75rem;">
                                     <label>Mensaje personalizado (opcional)</label>
-                                    <textarea id="envioMensajePersonalizado" class="form-control" rows="2" placeholder="Dejar vacío para usar mensaje automático..."></textarea>
+                                    <textarea id="envioMensajePersonalizado" class="form-control" rows="2"
+                                        placeholder="Dejar vacío para usar mensaje automático..."></textarea>
                                 </div>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button onclick="guardarEnvioModal(false)" class="btn btn-secondary">💾 Solo Guardar</button>
-                            <button onclick="guardarEnvioModal(true)" class="btn btn-success">💾 Guardar y Notificar</button>
+                            <button onclick="guardarEnvioModal(false)" class="btn btn-secondary">💾 Solo
+                                Guardar</button>
+                            <button onclick="guardarEnvioModal(true)" class="btn btn-success">💾 Guardar y
+                                Notificar</button>
                             <button onclick="cerrarModalEnvio()" class="btn btn-secondary">Cancelar</button>
                         </div>
                     </div>
@@ -2005,7 +2568,10 @@
                         </div>
                         <div class="modal-body">
                             <div id="historialEnvioContenido">
-                                <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                    <p>Cargando...</p>
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -2089,13 +2655,17 @@
                 <!-- Gráficos y Tablas -->
                 <div class="charts-grid" style="margin-top:1.5rem;">
                     <div class="card">
-                        <div class="card-header"><h4>📈 Envíos por Mes</h4></div>
+                        <div class="card-header">
+                            <h4>📈 Envíos por Mes</h4>
+                        </div>
                         <div class="card-body">
                             <canvas id="chartEnviosMes"></canvas>
                         </div>
                     </div>
                     <div class="card">
-                        <div class="card-header"><h4>🚚 Por Transportadora</h4></div>
+                        <div class="card-header">
+                            <h4>🚚 Por Transportadora</h4>
+                        </div>
                         <div class="card-body">
                             <canvas id="chartTransportadoras"></canvas>
                         </div>
@@ -2104,7 +2674,9 @@
 
                 <!-- Ranking Transportadoras -->
                 <div class="card" style="margin-top:1.5rem;">
-                    <div class="card-header"><h3>🏆 Ranking de Transportadoras</h3></div>
+                    <div class="card-header">
+                        <h3>🏆 Ranking de Transportadoras</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -2119,7 +2691,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyTransportadoras">
-                                    <tr><td colspan="6" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="6" class="text-center">Cargando...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -2128,7 +2702,9 @@
 
                 <!-- Top Ciudades -->
                 <div class="card" style="margin-top:1.5rem;">
-                    <div class="card-header"><h3>📍 Top Ciudades Destino</h3></div>
+                    <div class="card-header">
+                        <h3>📍 Top Ciudades Destino</h3>
+                    </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table class="data-table">
@@ -2142,7 +2718,49 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyCiudades">
-                                    <tr><td colspan="5" class="text-center">Cargando...</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="text-center">Cargando...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- ═══════════════════ LEADS IA - NUEVO ═══════════════════ -->
+            <section id="leadsSection" class="section">
+                <div class="page-header">
+                    <h1>👥 Leads Generados por IA</h1>
+                    <p>Clientes potenciales capturados por el asistente inteligente</p>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="cargarLeadsIA()" class="btn btn-secondary">🔄 Actualizar</button>
+                    <div class="search-input">
+                        <input type="text" id="buscarLeadAdmin" placeholder="Buscar por nombre o WhatsApp..."
+                            oninput="filtrarLeadsAdmin()">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Nombre</th>
+                                        <th>WhatsApp</th>
+                                        <th>Interés</th>
+                                        <th>Necesidad</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyLeadsIA">
+                                    <tr>
+                                        <td colspan="6" class="text-center">Cargando leads...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -2164,7 +2782,8 @@
                 <input type="hidden" id="empleadoEditId">
                 <div class="form-group">
                     <label>Nombre Completo *</label>
-                    <input type="text" id="empleadoNombre" class="form-control" placeholder="Nombre del empleado" required>
+                    <input type="text" id="empleadoNombre" class="form-control" placeholder="Nombre del empleado"
+                        required>
                 </div>
                 <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
                     <div class="form-group">
@@ -2223,7 +2842,42 @@
         </div>
     </div>
 
+
+
     <script src="js/config.js"></script>
+    <script src="js/ia-core.js"></script>
+    <script src="js/ai-widget.js"></script>
     <script src="js/admin.js"></script>
+    <script>
+        // Bloquear atajos de inspección y teclado
+        document.addEventListener('keydown', function (e) {
+            const isForbidden =
+                e.keyCode === 123 ||
+                (e.ctrlKey && e.shiftKey && [73, 74, 67].includes(e.keyCode)) ||
+                (e.ctrlKey && [85, 83, 80].includes(e.keyCode)) ||
+                (e.metaKey && e.altKey && e.keyCode === 73);
+
+            if (isForbidden) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        // Anti-depuración
+        setInterval(() => {
+            (function () {
+                const start = Date.now();
+                debugger;
+                const end = Date.now();
+                if (end - start > 100) {
+                    console.clear();
+                    console.log("%c🛑 ACCESO RESTRINGIDO", "color:red; font-size:30px; font-weight:bold;");
+                }
+            })();
+        }, 1000);
+    </script>
 </body>
+
 </html>

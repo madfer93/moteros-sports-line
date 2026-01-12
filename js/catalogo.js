@@ -17,6 +17,38 @@ const PLACEHOLDER_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="
 const PLACEHOLDER_LG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"><rect fill="#f1f5f9" width="600" height="600"/><text fill="#94a3b8" font-family="system-ui" font-size="20" x="50%" y="50%" text-anchor="middle" dy="0.3em">Sin imagen</text></svg>');
 
 // ═══════════════════════════════════════════════════════════════
+// UI & MENÚ
+// ═══════════════════════════════════════════════════════════════
+
+function toggleMobileMenu() {
+    const nav = document.getElementById('mobileNav');
+    const btn = document.getElementById('menuToggle');
+    if (!nav || !btn) return;
+    nav.classList.toggle('active');
+    btn.classList.toggle('active');
+}
+
+function mostrarToast(titulo, mensaje, tipo = 'success') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const iconos = { success: '✅', warning: '⚠️', error: '❌' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${tipo}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${iconos[tipo] || '✅'}</span>
+        <div class="toast-content">
+            <div class="toast-title">${titulo}</div>
+            <div class="toast-message">${mensaje || ''}</div>
+        </div>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 400);
+    }, tipo === 'warning' ? 4000 : 3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // CARRITO
 // ═══════════════════════════════════════════════════════════════
 
@@ -33,19 +65,53 @@ function agregarAlCarrito() {
     if (existente) {
         existente.cantidad += cantidad;
     } else {
+        const infoPrecio = window.PromocionesManager
+            ? window.PromocionesManager.calcularPrecio(productoActual.precio, productoActual.id)
+            : { precioFinal: productoActual.precio, tieneDescuento: false };
+
         carrito.push({
             id: productoActual.id,
             nombre: productoActual.nombre,
             marca: productoActual.marca,
-            precio: productoActual.precio,
-            cantidad: cantidad
+            precio: infoPrecio.precioFinal,
+            url_imagen: productoActual.url_imagen,
+            cantidad: cantidad,
+            descuento: infoPrecio.tieneDescuento ? infoPrecio.porcentajeDescuento : 0
         });
     }
 
     localStorage.setItem('carrito_moteros', JSON.stringify(carrito));
     actualizarContadorCarrito();
-    alert(`✅ ${cantidad} x ${productoActual.nombre} agregado al carrito`);
+    mostrarToast('Carrito', `✅ ${cantidad} x ${productoActual.nombre} agregado`);
     cerrarModalDetalle();
+}
+
+function agregarAlCarritoRapido(id) {
+    const producto = todosLosProductos.find(p => p.id === id);
+    if (!producto) return;
+
+    const existente = carrito.find(item => item.id === id);
+    if (existente) {
+        existente.cantidad += 1;
+    } else {
+        const infoPrecio = window.PromocionesManager
+            ? window.PromocionesManager.calcularPrecio(producto.precio, producto.id)
+            : { precioFinal: producto.precio, tieneDescuento: false };
+
+        carrito.push({
+            id: producto.id,
+            nombre: producto.nombre,
+            marca: producto.marca,
+            precio: infoPrecio.precioFinal,
+            url_imagen: producto.url_imagen,
+            cantidad: 1,
+            descuento: infoPrecio.tieneDescuento ? infoPrecio.porcentajeDescuento : 0
+        });
+    }
+
+    localStorage.setItem('carrito_moteros', JSON.stringify(carrito));
+    actualizarContadorCarrito();
+    mostrarToast('Carrito', `✅ ${producto.nombre} agregado al carrito`);
 }
 
 function abrirCarrito() {
@@ -63,11 +129,12 @@ function abrirCarrito() {
     } else {
         lista.innerHTML = carrito.map((item, i) => `
             <div class="carrito-item">
+                <img src="${item.url_imagen || PLACEHOLDER_IMG}" alt="${item.nombre}" class="carrito-item-img">
                 <div class="carrito-item-info">
-                    <strong class="carrito-item-nombre">${item.nombre}</strong>
-                    <small class="carrito-item-detalles">
+                    <div class="carrito-item-nombre"><strong>${item.nombre}</strong></div>
+                    <div class="carrito-item-detalles">
                         ${item.marca} • $${parseInt(item.precio).toLocaleString('es-CO')} c/u
-                    </small>
+                    </div>
                 </div>
                 <div class="carrito-item-controls">
                     <div class="cantidad-badge">
@@ -75,7 +142,7 @@ function abrirCarrito() {
                         <span class="cantidad-numero">${item.cantidad}</span>
                         <button onclick="cambiarCantidad(${i}, 1)" class="cantidad-btn">+</button>
                     </div>
-                    <button onclick="eliminarDelCarrito(${i})" class="btn-eliminar">✖</button>
+                    <button onclick="eliminarDelCarrito(${i})" class="btn-eliminar" title="Eliminar">🗑️</button>
                 </div>
             </div>
         `).join('');
@@ -112,11 +179,33 @@ function guardarCarrito() {
 }
 
 function enviarPedidoWhatsApp() {
-    if (carrito.length === 0) return alert('El carrito está vacío');
+    if (carrito.length === 0) {
+        mostrarToast('Carrito vacío', 'Agrega productos antes de continuar', 'warning');
+        return;
+    }
+
+    // Verificar checkbox de Habeas Data
+    const checkHabeas = document.getElementById('aceptaHabeasData');
+    if (!checkHabeas || !checkHabeas.checked) {
+        mostrarToast('Acepta las políticas', 'Debes aceptar el Habeas Data y Términos para continuar', 'warning');
+
+        // Resaltar el checkbox
+        const checkContainer = checkHabeas?.closest('div') || checkHabeas?.parentElement;
+        if (checkContainer) {
+            checkContainer.style.animation = 'shake 0.5s ease';
+            checkContainer.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.5)';
+            setTimeout(() => {
+                checkContainer.style.animation = '';
+                checkContainer.style.boxShadow = '';
+            }, 2000);
+        }
+        return;
+    }
 
     let mensaje = "¡Hola Moteros Sports Line! 👋\n\n*Quiero consultar por:*\n\n";
     carrito.forEach(item => {
-        mensaje += `• ${item.cantidad} x ${item.nombre}\n  ${item.marca}\n  $${parseInt(item.precio).toLocaleString('es-CO')} c/u\n\n`;
+        const descInfo = item.descuento ? ` (Dto. ${item.descuento}%)` : '';
+        mensaje += `• ${item.cantidad} x ${item.nombre}${descInfo}\n  ${item.marca}\n  $${parseInt(item.precio).toLocaleString('es-CO')} c/u\n\n`;
     });
     const total = carrito.reduce((s, item) => s + item.precio * item.cantidad, 0);
     mensaje += `*Total estimado: $${total.toLocaleString('es-CO')}*\n\n¡Gracias! 🙌`;
@@ -140,12 +229,13 @@ async function cargarProductos() {
 
         todosLosProductos = data || [];
         productosFiltrados = [...todosLosProductos];
-        
+
         console.log(`✅ ${todosLosProductos.length} productos cargados`);
-        
+
         mostrarProductos();
+        await cargarCategoriasFiltro();
         actualizarContadorCarrito();
-        
+
     } catch (err) {
         console.error('Error:', err);
         document.getElementById('contadorProductos').textContent = 'Error al cargar productos';
@@ -204,8 +294,14 @@ function mostrarProductos() {
         return;
     }
 
-    grid.innerHTML = productosFiltrados.map(p => `
+    grid.innerHTML = productosFiltrados.map(p => {
+        const infoPrecio = window.PromocionesManager
+            ? window.PromocionesManager.calcularPrecio(p.precio, p.id)
+            : { precioFinal: p.precio, tieneDescuento: false };
+
+        return `
         <div class="producto-card" onclick="verDetalle('${p.id}')">
+            ${infoPrecio.tieneDescuento ? `<span class="badge-promo" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;padding:2px 8px;border-radius:12px;font-size:0.8rem;font-weight:bold;">-${infoPrecio.porcentajeDescuento}%</span>` : ''}
             <div class="producto-imagen-wrapper">
                 <img class="producto-imagen"
                      src="${p.url_imagen || PLACEHOLDER_IMG}"
@@ -218,15 +314,26 @@ function mostrarProductos() {
                 <h3 class="producto-nombre">${p.nombre}</h3>
                 <p class="producto-marca">${p.marca}</p>
                 <p class="producto-descripcion">${p.descripcion_corta || 'Producto de alta calidad'}</p>
-                <div class="producto-footer">
-                    <span class="producto-precio">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
-                    <button class="btn-ver-mas" onclick="event.stopPropagation(); verDetalle('${p.id}')">
-                        Ver detalle
+                <div class="producto-footer" style="flex-direction: column; gap: 1rem; align-items: stretch;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        ${infoPrecio.tieneDescuento ?
+                `<div style="display:flex;flex-direction:column;align-items:flex-start;">
+                                <span style="text-decoration:line-through;color:#94a3b8;font-size:0.85rem;">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
+                                <span class="producto-precio" style="color:#ef4444;">$${parseInt(infoPrecio.precioFinal).toLocaleString('es-CO')}</span>
+                             </div>`
+                : `<span class="producto-precio">$${parseInt(p.precio).toLocaleString('es-CO')}</span>`
+            }
+                        <button class="btn-agregar-inline" onclick="event.stopPropagation(); agregarAlCarritoRapido('${p.id}')">
+                            <span>🛒 Agregar</span>
+                        </button>
+                    </div>
+                    <button class="btn-ver-mas" onclick="event.stopPropagation(); verDetalle('${p.id}')" style="width: 100%;">
+                        Ver detalle completo
                     </button>
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 
     console.log(`✅ ${productosFiltrados.length} productos mostrados en grid`);
 }
@@ -239,53 +346,75 @@ function verDetalle(id) {
     productoActual = todosLosProductos.find(p => p.id === id);
     if (!productoActual) return;
 
+    const infoP = window.PromocionesManager ? window.PromocionesManager.calcularPrecio(productoActual.precio, productoActual.id) : { precioFinal: productoActual.precio, tieneDescuento: false };
+
     document.getElementById('contenidoDetalle').innerHTML = `
-        <div class="detalle-container">
-            <div class="detalle-imagen">
-                <img src="${productoActual.url_imagen || PLACEHOLDER_LG}"
-                     alt="${productoActual.nombre}"
-                     onerror="this.src='${PLACEHOLDER_LG}'">
+        <div class="product-details-premium">
+            <div class="product-media-column">
+                <div class="main-image-container">
+                    ${infoP.tieneDescuento ? `<span class="discount-pill">-${infoP.porcentajeDescuento}% OFF</span>` : ''}
+                    <img src="${productoActual.url_imagen || PLACEHOLDER_LG}" 
+                         alt="${productoActual.nombre}" 
+                         class="main-product-image"
+                         onerror="this.src='${PLACEHOLDER_LG}'">
+                </div>
+                <div class="product-trust-badges">
+                    <div class="trust-badge">🛡️ Envío Seguro</div>
+                    <div class="trust-badge">📦 En Stock</div>
+                    <div class="trust-badge">✅ Original</div>
+                </div>
             </div>
-            <div class="detalle-info">
-                <h2 class="detalle-titulo">${productoActual.nombre}</h2>
-                <p class="detalle-marca"><strong>${productoActual.marca}</strong></p>
-                <p class="detalle-precio">$${parseInt(productoActual.precio).toLocaleString('es-CO')}</p>
 
-                ${productoActual.descripcion_corta ? `
-                    <div class="detalle-seccion">
-                        <h4>Descripción</h4>
-                        <p>${productoActual.descripcion_corta}</p>
-                    </div>
-                ` : ''}
-                
-                ${productoActual.descripcion_tecnica ? `
-                    <div class="detalle-seccion">
-                        <h4>Características técnicas</h4>
-                        <p>${productoActual.descripcion_tecnica.replace(/\n/g, '<br>')}</p>
-                    </div>
-                ` : ''}
-
-                <div class="cantidad-container">
-                    <label>Cantidad:</label>
-                    <div class="cantidad-controls">
-                        <input type="number" 
-                               id="cantidadDetalle" 
-                               value="1" 
-                               min="1" 
-                               class="cantidad-input">
-                        <button onclick="agregarAlCarrito()" 
-                                class="btn-ver-mas" 
-                                style="padding: 1rem 2rem; font-size: 1.1rem;">
-                            🛒 Agregar al Carrito
-                        </button>
-                    </div>
+            <div class="product-info-column">
+                <div class="product-header">
+                    <span class="category-tag">${productoActual.categoria}</span>
+                    <h2 class="product-title-premium">${productoActual.nombre}</h2>
+                    <p class="product-brand-premium">${productoActual.marca}</p>
                 </div>
 
-                <div style="text-align: center; margin-top: 2rem;">
-                    <a href="https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent('Hola, me interesa: ' + productoActual.nombre + ' (' + productoActual.marca + ')')}"
-                       target="_blank"
-                       class="btn-whatsapp">
-                        💬 Consultar por WhatsApp
+                <div class="product-price-section">
+                    ${infoP.tieneDescuento ? `
+                        <div class="price-wrapper">
+                            <span class="old-price">$${parseInt(productoActual.precio).toLocaleString('es-CO')}</span>
+                            <span class="current-price discount">$${parseInt(infoP.precioFinal).toLocaleString('es-CO')}</span>
+                        </div>
+                    ` : `
+                        <div class="price-wrapper">
+                            <span class="current-price">$${parseInt(productoActual.precio).toLocaleString('es-CO')}</span>
+                        </div>
+                    `}
+                </div>
+
+                <div class="product-description-premium">
+                    <h4 class="section-title">Sobre este producto</h4>
+                    <p class="short-desc">${productoActual.descripcion_corta || 'Este producto cuenta con los más altos estándares de calidad de Moteros Sports Line.'}</p>
+                    ${productoActual.descripcion_tecnica ? `
+                        <div class="specs-box">
+                            <h5 class="specs-title">Características técnicas:</h5>
+                            <p class="specs-content">${productoActual.descripcion_tecnica.replace(/\n/g, '<br>')}</p>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="purchase-actions-premium">
+                    <div class="quantity-selector-premium">
+                        <label for="cantidadDetalle">Cantidad:</label>
+                        <div class="quantity-controls-inner">
+                            <button class="qty-btn" onclick="const input = document.getElementById('cantidadDetalle'); if(input.value > 1) input.value--">−</button>
+                            <input type="number" id="cantidadDetalle" value="1" min="1" readonly>
+                            <button class="qty-btn" onclick="document.getElementById('cantidadDetalle').value++">+</button>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-add-main" onclick="agregarAlCarrito()">
+                        <span>🛒 Agregar al Carrito</span>
+                    </button>
+                    
+                    <a href="https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent('¡Hola! Me interesa este producto: ' + productoActual.nombre + ' (' + productoActual.marca + ')')}" 
+                       target="_blank" 
+                       class="btn-wa-main">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.181-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.171.824-.299.045-.698.059-1.146-.086-.285-.092-.596-.213-.99-.382-1.684-.718-2.772-2.42-2.856-2.531-.084-.11-.692-.919-.692-1.756 0-.838.431-1.248.585-1.416.155-.168.337-.21.45-.21h.322c.113 0 .262.001.383.284l.443 1.074c.045.106.074.212.003.353-.071.141-.106.21-.212.333-.106.124-.216.208-.309.319l-.234.256c.123.214.281.411.464.584.183.174.379.324.593.447l.282.25c.114.108.358.337.358.337s.216-.251.309-.319c.093-.068.183-.16.284-.131s.574.271.743.354c.169.083.282.124.339.212.056.095.056.551-.088.956z"/></svg>
+                        Consultar por WhatsApp
                     </a>
                 </div>
             </div>
@@ -308,7 +437,7 @@ function cerrarModalCarrito() {
 // ═══════════════════════════════════════════════════════════════
 
 // Cerrar modal al hacer clic fuera
-window.onclick = function(e) {
+window.onclick = function (e) {
     if (e.target.classList.contains('modal')) {
         e.target.classList.remove('active');
     }
@@ -318,4 +447,49 @@ window.onclick = function(e) {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Iniciando Moteros Sports Line - Catálogo...');
     cargarProductos();
+    // cargarCategoriasFiltro() se llama dentro de cargarProductos() para asegurar que la DB esté lista
+});
+
+async function cargarCategoriasFiltro() {
+    const select = document.getElementById('filtroCategoria');
+    if (!select) return;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('categorias')
+            .select('nombre')
+            .order('nombre');
+
+        if (error) throw error;
+
+        const valActual = select.value;
+        select.innerHTML = '<option value="">Todas las categorías</option>' +
+            data.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
+        select.value = valActual;
+
+    } catch (err) {
+        console.error('Error cargando categorías para filtro:', err);
+    }
+}
+
+// Eventos de ventana
+window.onclick = function (e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.classList.remove('active');
+    }
+};
+
+window.addEventListener('load', function () {
+    const preloader = document.getElementById('preloader');
+    if (preloader) {
+        preloader.style.opacity = '0';
+        setTimeout(() => preloader.style.display = 'none', 300);
+    }
+});
+
+document.addEventListener('selectstart', function (e) {
+    // Solo bloquear si no es un input o textarea
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        // e.preventDefault(); // Descomentar para activar bloqueo total
+    }
 });

@@ -95,8 +95,19 @@ const CONFIG = {
   // ═══════════════════════════════════════════════════════════════
   STOCK_MINIMO_ALERTA: 5,
   MAX_PRODUCTOS_VISTA: 50,
-  MAX_DESTACADOS: 8, // Máximo de productos destacados
-  AUTO_REFRESH_INTERVAL: 30000
+  MAX_DESTACADOS: 8,
+  AUTO_REFRESH_INTERVAL: 30000,
+
+  // ═══════════════════════════════════════════════════════════════
+  // CONFIGURACIÓN INTELIGENCIA ARTIFICIAL (GROQ)
+  // ═══════════════════════════════════════════════════════════════
+  AI_KEYS: {
+    INDEX: 'TU_KEY_GROQ_AQUI',
+    TIENDA: 'TU_KEY_GROQ_AQUI',
+    ADMIN: 'TU_KEY_GROQ_AQUI',
+    POS: 'TU_KEY_GROQ_AQUI'
+  },
+  AI_MODEL: 'llama-3.3-70b-versatile'
 };
 
 // ═══════════════════════════════════════════════════════════════

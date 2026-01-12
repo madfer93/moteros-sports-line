@@ -65,3 +65,6 @@ out/
 *.bak
 *.backup
 *.old
+
+# CONFIGURACIÓN (CONTIENE KEYS)
+js/config.js
