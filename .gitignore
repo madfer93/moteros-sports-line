@@ -66,5 +66,5 @@ out/
 *.backup
 *.old
 
-# CONFIGURACIÓN (CONTIENE KEYS)
-js/config.js
+# CONFIGURACIÓN (SUBIDA DIRECTA POR BLOQUEO DE ACTIONS)
+# js/config.js
