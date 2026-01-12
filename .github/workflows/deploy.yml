@@ -1,0 +1,32 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Create config.js from secrets
+        run: |
+          sed -e "s|__SUPABASE_URL__|${{ secrets.SUPABASE_URL }}|g" \
+              -e "s|__SUPABASE_KEY__|${{ secrets.SUPABASE_KEY }}|g" \
+              -e "s|__GROQ_KEY__|${{ secrets.GROQ_KEY }}|g" \
+              js/config.js.example > js/config.js
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: .
+          branch: gh-pages
+          clean: true
