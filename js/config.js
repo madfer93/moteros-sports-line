@@ -6,8 +6,8 @@ const CONFIG = {
   // ═══════════════════════════════════════════════════════════════
   // CREDENCIALES SUPABASE
   // ═══════════════════════════════════════════════════════════════
-  SUPABASE_URL: (typeof process !== 'undefined' && process.env?.SUPABASE_URL) || 'URL_DE_SUPABASE_AQUI',
-  SUPABASE_KEY: (typeof process !== 'undefined' && process.env?.SUPABASE_ANON_KEY) || 'ANON_KEY_DE_SUPABASE_AQUI',
+  SUPABASE_URL: (typeof process !== 'undefined' && process.env?.SUPABASE_URL) || 'https://pbblthbrdkevuyjxyuar.supabase.co',
+  SUPABASE_KEY: (typeof process !== 'undefined' && process.env?.SUPABASE_ANON_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiYmx0aGJyZGtldnV5anh5dWFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxNjUwMzcsImV4cCI6MjA4MTc0MTAzN30.bNAcp186l7l9IRWdcwBxuSgvmRtRy-qPFhZ7HRvaBZE',
 
   // ═══════════════════════════════════════════════════════════════
   // TIENDAS

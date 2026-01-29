@@ -158,14 +158,6 @@ function filtrarProductosAdmin() {
 // Variables globales para gráficos (para poder destruirlos al actualizar)
 let chartStockInstance = null;
 let chartCategoriaInstance = null;
-const MAX_DESTACADOS = 8;
-let productosDestacadosFiltrados = [];
-let productosSeleccionadosPromo = [];
-let productosPromoFiltrados = [];
-let todosDeudores = [];
-let todosProveedores = [];
-let archivosTemporal = { producto: null, post: null, logo: null };
-
 function actualizarStatsDashboard(productos) {
     // Solo ejecutar si estamos en el dashboard (elementos existen)
     const elTotal = document.getElementById('statProductos');
