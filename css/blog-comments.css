@@ -1,0 +1,174 @@
+/* ═══════════════════════════════════════════════════════════════
+   SECCIÓN DE COMENTARIOS - MEJORADA
+   ═══════════════════════════════════════════════════════════════ */
+
+.blog-comments-section {
+    margin-top: 3rem;
+    padding: 2.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+}
+
+.blog-comments-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid #ff6b00;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Eliminado ::before para evitar doble burbuja 💬 */
+/* .blog-comments-title::before { content: '💬'; ... } */
+
+.blog-comment-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 2px solid #f0f0f0;
+    transition: border-color 0.3s;
+}
+
+.blog-comment-form:hover {
+    border-color: #ff6b00;
+}
+
+.blog-comment-form .form-group {
+    margin-bottom: 1.2rem;
+}
+
+.blog-comment-form label {
+    display: block;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 0.6rem;
+    font-size: 1rem;
+}
+
+.blog-comment-form input,
+.blog-comment-form textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    transition: all 0.3s;
+    font-family: inherit;
+}
+
+.blog-comment-form input:focus,
+.blog-comment-form textarea:focus {
+    outline: none;
+    border-color: #ff6b00;
+    box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
+}
+
+.blog-comment-form textarea {
+    min-height: 140px;
+    resize: vertical;
+}
+
+
+.blog-comment-submit {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    background: linear-gradient(135deg, #ff6b00, #ff8533);
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 30px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.blog-comment-submit:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
+}
+
+.blog-comment-submit:active {
+    transform: translateY(-1px);
+}
+
+.blog-comments-list {
+    margin-top: 2rem;
+}
+
+.blog-comment-item {
+    background: white;
+    padding: 1.8rem;
+    border-radius: 15px;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+    border-left: 4px solid #ff6b00;
+    transition: all 0.3s;
+}
+
+.blog-comment-item:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    transform: translateX(5px);
+}
+
+.blog-comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.blog-comment-author {
+    font-weight: 800;
+    color: #ff6b00;
+    font-size: 1.15rem;
+}
+
+.blog-comment-date {
+    color: #999;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.blog-comment-text {
+    color: #444;
+    line-height: 1.7;
+    font-size: 1.05rem;
+}
+
+.blog-comments-empty {
+    text-align: center;
+    padding: 3rem;
+    color: #999;
+    font-style: italic;
+    font-size: 1.1rem;
+}
+
+/* Responsive comentarios */
+@media (max-width: 768px) {
+    .blog-comments-section {
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .blog-comment-form {
+        padding: 1.25rem;
+    }
+
+    .blog-comment-item {
+        padding: 1.25rem;
+    }
+}

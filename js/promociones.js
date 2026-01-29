@@ -14,7 +14,7 @@ const PromocionesManager = {
         try {
             const client = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
             if (!client) {
-                console.warn('⚠️ Supabase client no listo. Reintentando cargar promociones en 1s...');
+                if (window.registrarLogSistema) window.registrarLogSistema("warn_sistema", '⚠️ Supabase client no listo. Reintentando cargar promociones en 1s...');
                 setTimeout(() => this.cargar(), 1000);
                 return [];
             }
@@ -29,11 +29,11 @@ const PromocionesManager = {
             this.promociones = data || [];
             this.cargado = true;
 
-            console.log('✅ Promociones cargadas:', this.promociones.length);
+
             return this.promociones;
 
         } catch (error) {
-            console.error('Error cargando promociones:', error);
+            if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando promociones:', error);
             return [];
         }
     },
@@ -46,7 +46,7 @@ const PromocionesManager = {
      */
     verificarPromocion(productoId, local = null) {
         if (!this.cargado) {
-            console.warn('⚠️ Promociones no cargadas. Llama primero a PromocionesManager.cargar()');
+            if (window.registrarLogSistema) window.registrarLogSistema("warn_sistema", '⚠️ Promociones no cargadas. Llama primero a PromocionesManager.cargar();');
             return null;
         }
 
@@ -79,6 +79,14 @@ const PromocionesManager = {
             );
 
             if (!productoEnPromo) continue;
+
+            // Verificar si es un COMBO/PAQUETE (estos requieren validación especial de carrito completo)
+            const esCombo = promo.tipo === 'Combo' || promo.tipo === 'Paquete' || promo.nombre.toLowerCase().includes('combo') || promo.nombre.toLowerCase().includes('paquete');
+            if (esCombo && !local) { // Si no se pasa local, solemos estar verificando precio individual
+                // No aplicar descuento de combo automáticamente si se consulta precio individual sin contexto de carrito
+                // a menos que sea explícito
+                continue;
+            }
 
             // Verificar si aplica al local
             const localesAplicables = promo.locales_aplicables || promo.locales || 'Todos';
@@ -116,10 +124,20 @@ const PromocionesManager = {
         // Parsear fechas (soporta ISO YYYY-MM-DD y DD/MM/AAAA)
         const parseDate = (dateStr) => {
             if (!dateStr) return null;
-            if (dateStr.includes('-')) return new Date(dateStr + 'T00:00:00'); // ISO
-            const parts = dateStr.split('/');
-            if (parts.length !== 3) return null;
-            return new Date(parts[2], parts[1] - 1, parts[0]); // DD/MM/AAAA
+            if (dateStr instanceof Date) return dateStr;
+
+            // Intentar parseo directo (ISO YYYY-MM-DD, Timestamps, etc.)
+            let d = new Date(dateStr);
+            if (!isNaN(d.getTime())) return d;
+
+            // Caso especial DD/MM/AAAA si el directo falló
+            if (typeof dateStr === 'string' && dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    return new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+            }
+            return null;
         };
 
         const fechaInicio = parseDate(fechaInicioStr);
@@ -146,6 +164,19 @@ const PromocionesManager = {
      * @returns {object} - Precio original, con descuento, y info de promo
      */
     calcularPrecio(precioOriginal, productoId, local = null) {
+        // La promoción solo aplica en index.js (Carrusel), no en catalogo.html
+        if (window.location.pathname.includes('catalogo')) {
+            return {
+                precioOriginal,
+                precioFinal: precioOriginal,
+                tieneDescuento: false,
+                tienePromo: false,
+                descuento: 0,
+                ahorro: 0,
+                promocion: null
+            };
+        }
+
         const promo = this.verificarPromocion(productoId, local);
 
         if (!promo) {
@@ -288,6 +319,62 @@ const PromocionesManager = {
                 cantidadProductos: productosPromo.length
             };
         });
+    },
+
+    /**
+     * Valida el carrito completo para asegurar que los combos tengan todos sus componentes
+     */
+    validarCarrito(carrito, local = null) {
+        // Agrupar items que vienen de un combo
+        const combos = {};
+        carrito.forEach(item => {
+            if (item.promocion && item.promocion.startsWith('Combo:')) {
+                const idPromo = item.promocion.replace('Combo: ', '');
+                if (!combos[idPromo]) combos[idPromo] = [];
+                combos[idPromo].push(item);
+            }
+        });
+
+        // Validar cada combo encontrado
+        for (const idPromo in combos) {
+            const itemsEnCarrito = combos[idPromo];
+            const promo = this.promociones.find(p => String(p.id_promo) === String(idPromo));
+
+            if (!promo) {
+                this.revertirPrecios(itemsEnCarrito, local);
+                continue;
+            }
+
+            // Obtener IDs requeridos
+            let idsRequeridos = [];
+            if (Array.isArray(promo.productos)) idsRequeridos = promo.productos;
+            else if (promo.productos_incluidos) idsRequeridos = promo.productos_incluidos.split(',');
+            else idsRequeridos = String(promo.productos || '').split(',');
+
+            idsRequeridos = idsRequeridos.map(id => id.trim().toLowerCase()).filter(id => id && id !== '000');
+
+            // Verificar integridad
+            const idsEnCarritoActual = itemsEnCarrito.map(i => String(i.id_producto || i.id).toLowerCase());
+            const incompleto = idsRequeridos.some(idReq =>
+                !idsEnCarritoActual.some(idCar => idCar === idReq || idCar === `prod${idReq}` || idCar.includes(idReq))
+            );
+
+            if (incompleto) {
+                this.revertirPrecios(itemsEnCarrito, local);
+            }
+        }
+    },
+
+    revertirPrecios(items, local) {
+        items.forEach(item => {
+            // Quitar marca de combo
+            item.promocion = null;
+            // Buscar si tiene otra promo individual
+            const info = this.calcularPrecio(item.precioOriginal, [item.id, item.id_producto], local);
+            item.precioFinal = info.precioFinal;
+            item.descuento = info.descuento;
+            item.promocion = info.tienePromo ? info.nombrePromo : null;
+        });
     }
 };
 
@@ -301,4 +388,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-console.log('✅ Módulo de Promociones cargado');
+

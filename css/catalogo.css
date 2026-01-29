@@ -690,3 +690,5 @@ body {
         padding: 0.6rem 1rem;
     }
 }
+/* Variant Chips */
+.variant-chip { padding: 0.5rem 1rem; border: 2px solid #e2e8f0; border-radius: 2rem; background: white; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; } .variant-chip:hover { border-color: #ea580c; background: #fff7ed; color: #ea580c; } .variant-chip.selected { background: #ea580c; color: white; border-color: #ea580c; }

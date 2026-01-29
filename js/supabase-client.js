@@ -9,4 +9,4 @@ const supabaseClient = window.supabase.createClient(
 // Exportar como supabaseClient (no sobrescribir supabase)
 window.supabaseClient = supabaseClient;
 
-console.log('✅ Supabase Client conectado');
+

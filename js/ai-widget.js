@@ -13,33 +13,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     else if (path.includes('tienda-digital')) context = 'TIENDA';
     else if (path.includes('tienda-')) context = 'POS';
 
-    console.log('🤖 Inicializando AI Widget. Contexto:', context);
+
 
     // 2. Cargar CSS dinámicamente
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'css/ai-widget.css';
+    const prefix = (path.includes('/pos/') || path.includes('/admin/')) ? '../' : '';
+    link.href = prefix + 'css/ai-widget.css';
     document.head.appendChild(link);
 
     // 3. Crear HTML del Widget
-    const widgetContainer = document.createElement('div');
-    widgetContainer.className = 'ai-fab-container';
-    widgetContainer.innerHTML = `
-        <div class="ai-fab-label">💡 IA Asistida</div>
-        <button id="aiFabBtn" class="ai-fab-btn" title="Asistente IA">
-            <svg viewBox="0 0 24 24">
-                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z" />
-            </svg>
-        </button>
-    `;
+    const adminContainer = document.getElementById('aiAdminChatContainer');
+    const isInsideAdmin = context === 'ADMIN' && adminContainer;
+
+    if (!isInsideAdmin) {
+        const widgetContainer = document.createElement('div');
+        widgetContainer.className = 'ai-fab-container';
+        widgetContainer.innerHTML = `
+            <div class="ai-fab-label">💡 IA Asistida</div>
+            <button id="aiFabBtn" class="ai-fab-btn" title="Asistente IA">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20,2H4C2.9,2,2,2.9,2,4v18l4-4h14c1.1,0,2-0.9,2-2V4C22,2.9,21.1,2,20,2z" />
+                </svg>
+            </button>
+        `;
+        document.body.appendChild(widgetContainer);
+    }
 
     const chatWindow = document.createElement('div');
     chatWindow.id = 'aiChatWindow';
-    chatWindow.className = 'ai-chat-window hidden';
+    chatWindow.className = isInsideAdmin ? 'ai-chat-window admin-box' : 'ai-chat-window hidden';
     chatWindow.innerHTML = `
         <div class="ai-header">
-            <h4><span class="ai-status-dot"></span> Moteros AI</h4>
-            <button id="aiCloseBtn" class="ai-close-btn">×</button>
+            <h4><span class="ai-status-dot"></span> Moteros AI ${isInsideAdmin ? '(Modo Prueba)' : ''}</h4>
+            ${!isInsideAdmin ? '<button id="aiCloseBtn" class="ai-close-btn">×</button>' : ''}
         </div>
         <div id="aiMessages" class="ai-messages"></div>
         <div id="aiLeadCapture" class="ai-lead-capture hidden">
@@ -55,8 +62,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
     `;
 
-    document.body.appendChild(widgetContainer);
-    document.body.appendChild(chatWindow);
+    if (isInsideAdmin) {
+        chatWindow.classList.remove('hidden');
+        adminContainer.appendChild(chatWindow);
+    } else {
+        document.body.appendChild(chatWindow);
+    }
 
     // 4. Inicializar Core y UI
     const messagesContainer = document.getElementById('aiMessages');
@@ -91,8 +102,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const submitLeadBtn = document.getElementById('aiSubmitLead');
     // messagesContainer ya está declarado arriba
 
-    fabBtn.addEventListener('click', toggleChat);
-    closeBtn.addEventListener('click', toggleChat);
+    if (fabBtn) fabBtn.addEventListener('click', toggleChat);
+    if (closeBtn) closeBtn.addEventListener('click', toggleChat);
     sendBtn.addEventListener('click', sendMessage);
     input.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
@@ -126,6 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             scrollToBottom();
         }
     }
+    window.toggleChatIA = toggleChat;
 
     async function sendMessage() {
         const text = input.value.trim();

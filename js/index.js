@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    MOTEROS SPORTS LINE - INDEX.JS v2.0
    Catálogo con Carrito, Promociones y Destacados
    ═══════════════════════════════════════════════════════════════ */
@@ -104,6 +104,11 @@ function agregarComboAlCarrito(idPromo, precioOriginalTotal, precioFinalTotal, d
             const existente = carrito.find(item => String(item.id) === String(p.id));
             if (existente) {
                 existente.cantidad += 1;
+                // Actualizar con precio de promoción
+                existente.precioOriginal = precioOrig;
+                existente.precioFinal = precioFin;
+                existente.descuento = descuento;
+                existente.promocion = `Combo: ${idPromo}`;
             } else {
                 carrito.push({
                     id: p.id,
@@ -120,12 +125,52 @@ function agregarComboAlCarrito(idPromo, precioOriginalTotal, precioFinalTotal, d
             }
         });
 
-        guardarCarrito();
+        guardarCarrito(true); // Skip validation when adding combo
         const ahorro = precioOriginalTotal - precioFinalTotal;
         mostrarToast('¡Combo agregado!', `Ahorras $${formatearPrecio(ahorro)} con esta oferta`, 'promo');
 
     } catch (e) {
-        console.error('Error al agregar combo:', e);
+        if (window.registrarLogSistema) window.registrarLogSistema('error_sistema', 'Error al agregar combo', e.message);
+    }
+}
+
+// Función global para agregar combo desde el carrusel
+function agregarComboDesdeCarrusel(button) {
+    try {
+        const card = button.closest('.promo-card');
+        if (!card) return;
+
+        const promoData = JSON.parse(card.dataset.promoData);
+
+        // Agregar cada producto del combo al carrito
+        promoData.productos.forEach(prod => {
+            const precioOriginal = parseFloat(prod.precio);
+            const precioFinal = Math.round(precioOriginal * (1 - (promoData.descuento / 100)));
+
+            const existente = carrito.find(item => item.id === prod.id && item.promocion === `Combo: ${promoData.id_promo}`);
+            if (existente) {
+                existente.cantidad += 1;
+            } else {
+                carrito.push({
+                    id: prod.id,
+                    nombre: prod.nombre,
+                    marca: prod.marca,
+                    url_imagen: prod.url_imagen,
+                    precioOriginal: precioOriginal,
+                    precioFinal: precioFinal,
+                    descuento: promoData.descuento,
+                    promocion: `Combo: ${promoData.id_promo}`,
+                    cantidad: 1
+                });
+            }
+        });
+
+        guardarCarrito(true);
+        const ahorro = promoData.precioOriginal - promoData.precioConDescuento;
+        mostrarToast('¡Combo agregado!', `Ahorras $${formatearPrecio(ahorro)} con esta oferta`, 'promo');
+
+    } catch (e) {
+        mostrarToast('Error', 'No se pudo agregar el combo', 'error');
     }
 }
 
@@ -197,7 +242,10 @@ function vaciarCarrito() {
     }
 }
 
-function guardarCarrito() {
+function guardarCarrito(skipValidation = false) {
+    if (!skipValidation && window.PromocionesManager && window.PromocionesManager.cargado) {
+        window.PromocionesManager.validarCarrito(carrito);
+    }
     localStorage.setItem('carrito_moteros', JSON.stringify(carrito));
     actualizarContadorCarrito();
 }
@@ -365,7 +413,6 @@ function enviarPedidoWhatsApp() {
 async function cargarPromociones() {
     const client = getSupabase();
     if (!client) {
-        console.warn('⚠️ Supabase no listo en index.js. Reintentando...');
         setTimeout(cargarPromociones, 1000);
         return;
     }
@@ -381,8 +428,6 @@ async function cargarPromociones() {
             .eq('estado', 'Activa');
 
         if (errorPromos) throw errorPromos;
-
-        console.log('🔍 Promociones Activas encontradas:', promos?.length, promos);
 
         if (!promos || promos.length === 0) {
             const seccion = document.getElementById('seccionPromociones');
@@ -400,11 +445,9 @@ async function cargarPromociones() {
         if (errorProd) throw errorProd;
 
         productosPromo = productos || [];
-        console.log('🔍 Productos Activos para promo:', productosPromo.length);
 
         renderizarCarruselPromo();
         iniciarAutoPlayPromo();
-        cargarCategoriasDinamicas();
 
         // IA Learning: Enseñar promociones REALMENTE vigentes (considerando fechas)
         if (window.moterosIA && promocionesActivas.length > 0) {
@@ -419,7 +462,7 @@ async function cargarPromociones() {
         }
 
     } catch (error) {
-        console.error('❌ Error cargando promociones:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema('error_ia', 'Error cargando promociones', error.message);
         const seccion = document.getElementById('seccionPromociones');
         if (seccion) seccion.style.display = 'none';
     }
@@ -438,17 +481,17 @@ function renderizarCarruselPromo() {
         // Verificar vigencia antes de procesar
         if (!PromocionesManager.estaVigente(promo)) return;
 
-        // Obtener IDs de los productos de esta promo
         const idsIncluidosStr = promo.productos_incluidos || '';
         const idsIncluidos = idsIncluidosStr.split(',').map(id => id.trim()).filter(id => id && id !== '000');
 
         // Buscar los datos de los productos que pertenecen a la promo
         const productosDeLaPromo = productosPromo.filter(p =>
-            idsIncluidos.some(idIncl =>
-                String(p.id).toLowerCase() === idIncl.toLowerCase() ||
-                String(p.id_producto).toLowerCase() === idIncl.toLowerCase() ||
-                String(p.id_producto).toLowerCase() === `prod${idIncl.toLowerCase()}`
-            )
+            idsIncluidos.some(idIncl => {
+                const match = String(p.id).toLowerCase() === idIncl.toLowerCase() ||
+                    String(p.id_producto).toLowerCase() === idIncl.toLowerCase() ||
+                    String(p.id_producto).toLowerCase() === `prod${idIncl.toLowerCase()}`;
+                return match;
+            })
         );
 
         if (productosDeLaPromo.length === 0) return;
@@ -479,10 +522,7 @@ function renderizarCarruselPromo() {
         });
     });
 
-    console.log('📋 Tarjetas de Combo a renderizar:', cards.length);
-
     if (cards.length === 0) {
-        console.warn('⚠️ No hay promociones vigentes con productos válidos');
         const seccion = document.getElementById('seccionPromociones');
         if (seccion) seccion.style.display = 'none';
         return;
@@ -493,11 +533,8 @@ function renderizarCarruselPromo() {
     if (seccion) seccion.style.display = 'block';
 
     track.innerHTML = cards.map((item, index) => {
-        // Crear string de productos para la función onclick
-        const prodsJson = JSON.stringify(item.productos).replace(/"/g, '&quot;');
-
         return `
-        <div class="promo-card" data-index="${index}">
+        <div class="promo-card" data-index="${index}" data-promo-id="${item.id_promo}" data-promo-data='${JSON.stringify(item)}'>
             <span class="promo-badge">${item.descuento > 0 ? `-${item.descuento}%` : 'OFERTA'}</span>
             <div class="promo-card-image">
                 <img src="${item.imagenUrl || 'https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg'}" 
@@ -512,7 +549,7 @@ function renderizarCarruselPromo() {
                     <span class="precio-promo">$${formatearPrecio(item.precioConDescuento)}</span>
                 </div>
                 ${item.fechaFin ? `<div class="promo-expiry" style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.75rem;">⏳ Válido hasta: ${new Date(item.fechaFin).toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}</div>` : ''}
-                <button class="promo-btn-agregar" onclick="agregarComboAlCarrito('${item.id_promo}', ${item.precioOriginal}, ${item.precioConDescuento}, ${item.descuento}, '${prodsJson}')">
+                <button class="promo-btn-agregar" onclick="agregarComboDesdeCarrusel(this)">
                     🛒 Agregar Combo
                 </button>
             </div>
@@ -673,7 +710,7 @@ async function cargarDestacados() {
         await contarCategorias();
 
     } catch (error) {
-        console.error('Error cargando destacados:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema('error_sistema', 'Error cargando destacados', error.message);
     }
 }
 
@@ -690,41 +727,67 @@ async function cargarCategoriasDinamicas() {
     if (!client) return;
 
     try {
-        const { data: categorias, error } = await client
+        // 1. Obtener todas las categorías
+        const { data: categorias, error: errCat } = await client
             .from('categorias')
             .select('*')
             .order('nombre');
 
-        if (error) throw error;
+        if (errCat) {
+            console.error("❌ Error Supabase (Categorías):", errCat);
+            throw errCat;
+        }
+        // 2. Obtener TODOS los productos (solo campos necesarios) para conteo preciso y case-insensitive
+        const { data: productos, error: errProd } = await client
+            .from('productos')
+            .select('id, categoria')
+            .eq('estado', 'Activo');
 
+        if (errProd) {
+            console.error("❌ Error Supabase (Productos):", errProd);
+            throw errProd;
+        }
         if (!categorias || categorias.length === 0) {
+            console.warn("⚠️ No se encontraron categorías en Supabase.");
             grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Próximamente nuevas categorías</p>';
             return;
         }
 
-        // Obtener cuentas para todas las categorías en paralelo
-        const categoriasConCuenta = await Promise.all(categorias.map(async (cat) => {
-            const { count } = await client
-                .from('productos')
-                .select('*', { count: 'exact', head: true })
-                .eq('estado', 'Activo')
-                .eq('categoria', cat.nombre);
-            return { ...cat, count: count || 0 };
-        }));
+        // 3. Contar productos por categoría (normalizando a mayúsculas para comparar)
+        const conteoMap = {};
+        (productos || []).forEach(p => {
+            if (p.categoria) {
+                const catNorm = p.categoria.trim().toUpperCase();
+                conteoMap[catNorm] = (conteoMap[catNorm] || 0) + 1;
+            }
+        });
 
-        // Ordenar por cantidad descendente
-        categoriasConCuenta.sort((a, b) => b.count - a.count);
+        // 4. Mapear categorías con sus cuentas
+        const categoriasConCuenta = categorias.map(cat => {
+            const nombreNorm = cat.nombre.trim().toUpperCase();
+            // Sumar coincidencias (puede que 'Cascos' y 'CASCOS' existan como keys si la normalización fallara en otro contexto, pero aquí normalizamos todo)
+            // En este caso, buscaremos la coincidencia exacta de la categoría normalizada
+            const count = conteoMap[nombreNorm] || 0;
+            return { ...cat, count, nombreDisplay: nombreNorm };
+        });
 
+        // 5. Ordenar: primero los que tienen productos, luego alfabético
+        categoriasConCuenta.sort((a, b) => {
+            if (b.count !== a.count) return b.count - a.count;
+            return a.nombreDisplay.localeCompare(b.nombreDisplay);
+        });
+
+        // 6. Renderizar
         grid.innerHTML = categoriasConCuenta.map(cat => `
             <div class="categoria-card" onclick="irATienda('${cat.nombre}')">
                 <div class="categoria-icon">${cat.icono || '📁'}</div>
-                <h3>${cat.nombre}</h3>
-                <p>${cat.count} productos</p>
+                <h3>${cat.nombreDisplay}</h3>
+                <p>${cat.count} ${cat.count === 1 ? 'producto' : 'productos'}</p>
             </div>
         `).join('');
 
     } catch (error) {
-        console.error('Error cargando categorías dinámicas:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema('error_sistema', 'Error cargando categorías dinámicas', error.message);
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Error al cargar categorías</p>';
     }
 }
@@ -737,69 +800,38 @@ function irATienda(categoria) {
 // CONFIGURACIÓN DINÁMICA
 // ═══════════════════════════════════════════════════════════════
 
-async function cargarConfiguracion() {
-    const client = getSupabase();
-    if (!client) {
-        setTimeout(cargarConfiguracion, 1000);
-        return;
-    }
-
-    try {
-        const { data, error } = await client
-            .from('configuracion_sistema')
-            .select('*');
-
-        if (error) throw error;
-
-        // Convertir de formato KV a Objeto
-        const config = (data || []).reduce((acc, item) => {
-            acc[item.clave] = item.valor;
-            return acc;
-        }, {});
-
-        // Logo
-        if (config.logo_url) {
-            const logoEl = document.getElementById('siteLogo');
-            if (logoEl) logoEl.src = config.logo_url;
-        }
-
-        // Título
-        if (config.nombre_tienda) {
-            const titleEl = document.getElementById('siteTitle');
-            if (titleEl) titleEl.textContent = config.nombre_tienda;
-            document.title = config.nombre_tienda + ' | Inicio';
-        }
-
-        // Horarios
-        if (config.horario_alcala) {
-            const el = document.getElementById('horarioAlcala');
-            if (el) el.textContent = config.horario_alcala;
-        }
-        if (config.horario_local01) {
-            const el = document.getElementById('horarioLocal01');
-            if (el) el.textContent = config.horario_local01;
-        }
-        if (config.horario_jordan) {
-            const el = document.getElementById('horarioJordan');
-            if (el) el.textContent = config.horario_jordan;
-        }
-
-    } catch (error) {
-        console.error('Error cargando configuración:', error);
-    }
-}
+// La función cargarConfiguracion ha sido reemplazada por sincronizarBrandingGlobal() en config.js
 
 // ═══════════════════════════════════════════════════════════════
 // INICIALIZACIÓN
 // ═══════════════════════════════════════════════════════════════
 
-window.addEventListener('DOMContentLoaded', () => {
-    console.log('🏍️ Moteros Sports Line - Iniciando...');
-
+window.addEventListener('DOMContentLoaded', async () => {
+    // 1. Sincronizar UI Básica
     actualizarContadorCarrito();
-    cargarConfiguracion();
-    cargarPromociones();
-    cargarDestacados();
+    if (window.sincronizarBrandingGlobal) {
+        await window.sincronizarBrandingGlobal();
+    }
+
+    // 2. Cargar Datos Dinámicos con reintentos si Supabase no está listo
+    let intentos = 0;
+    const maxIntentos = 10;
+
+    const initInterval = setInterval(() => {
+        const client = getSupabase();
+        if (client || intentos >= maxIntentos) {
+            clearInterval(initInterval);
+            if (client) {
+                cargarCategoriasDinamicas();
+                cargarPromociones();
+                cargarDestacados();
+                cargarImagenHero();
+            } else {
+                console.error("❌ Supabase no se pudo inicializar tras varios intentos.");
+            }
+        }
+        intentos++;
+    }, 200);
 
     // Event listeners para carrusel
     const track = document.getElementById('promoCarouselTrack');
@@ -830,18 +862,36 @@ window.addEventListener('resize', () => {
 
 // ═══════════════════════════════════════════════════════════════
 // EXPORTS GLOBALES (para onclick en HTML)
-// ═══════════════════════════════════════════════════════════════
 
-window.agregarAlCarritoPromo = agregarAlCarritoPromo;
-window.agregarComboAlCarrito = agregarComboAlCarrito;
-window.agregarAlCarritoNormal = agregarAlCarritoNormal;
-window.agregarAlCarritoRapido = agregarAlCarritoRapido;
-window.cambiarCantidad = cambiarCantidad;
-window.eliminarDelCarrito = eliminarDelCarrito;
-window.vaciarCarrito = vaciarCarrito;
-window.abrirCarrito = abrirCarrito;
-window.cerrarCarrito = cerrarCarrito;
-window.enviarPedidoWhatsApp = enviarPedidoWhatsApp;
-window.moverCarruselPromo = moverCarruselPromo;
-window.irASlidePromo = irASlidePromo;
-window.irATienda = irATienda;
+// La lógica de categorías ahora se maneja exclusivamente mediante cargarCategoriasDinamicas()
+// para asegurar consistencia y conteo preciso de productos.
+
+/* ═══════════════════════════════════════════════════════════════
+   HERO DINÁMICO
+   ═══════════════════════════════════════════════════════════════ */
+async function cargarImagenHero() {
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+
+    try {
+        const client = getSupabase();
+        if (!client) return;
+
+        const { data, error } = await client
+            .from('contenido_sitio')
+            .select('contenido')
+            .eq('tipo', 'hero_imagen')
+            .maybeSingle();
+
+        if (data && data.contenido) {
+            // Aplicar imagen manteniendo el gradiente definido en CSS (Sincronizado con styles.css)
+            const gradiente = 'linear-gradient(to right, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.6) 50%, rgba(15, 23, 42, 0.2) 100%)';
+            hero.style.backgroundImage = `${gradiente}, url('${data.contenido}')`;
+            hero.style.backgroundPosition = 'center top';
+        }
+    } catch (e) {
+        // Silencioso si falla, usa default css
+        console.warn('Nota: Usando hero default');
+    }
+}
+

@@ -1,7 +1,7 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    POS MOTEROS SPORTS LINE - JAVASCRIPT UNIFICADO v2.0
    Compatible con tiendas físicas (Alcalá, 01, Jordán) y Digital
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════*/
 
 // ═══════════════════════════════════════════════════════════════
 // CONFIGURACIÓN DE SUPABASE (se carga desde config.js)
@@ -39,13 +39,14 @@ let datosCaja = null;
 let resumenVentas = null;
 let gastosDelDia = [];
 let empleadoLogueado = null; // Datos del empleado con sesión activa
+let productoParaVariante = null; // Variable para manejo de variantes
 
 // ═══════════════════════════════════════════════════════════════
 // INICIALIZACIÓN
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
-    const tipoTienda = TIENDA.esDigital ? '📦 Digital' : `🏪 ${TIENDA.nombre}`;
-    console.log(`${tipoTienda} POS iniciando...`);
+    const tipoTienda = TIENDA.esDigital ? 'Digital' : `${TIENDA.nombre}`;
+
 
     // Cargar logos
     document.querySelectorAll('.logo-img').forEach(img => img.src = LOGO_URL);
@@ -57,12 +58,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cargar productos
     await cargarProductos();
 
-    console.log('✅ POS listo');
+    // Cargar vendedores
+    await cargarVendedores();
+
+    // AUTO-LOGIN para Admin (Solicitud Usuario)
+    if (TIENDA.nombre === 'Admin') {
+
+        empleadoLogueado = {
+            id: 999,
+            nombre: 'Administrador',
+            cargo: 'Gerencia',
+            tiendas_permitidas: ['Todas'],
+            activo: true
+        };
+        // Abrir directamente la caja sin pedir login
+        setTimeout(() => abrirModalCajaConEmpleado(), 500);
+    }
+
+
 });
 
 // ═══════════════════════════════════════════════════════════════
 // SISTEMA DE CAJA
 // ═══════════════════════════════════════════════════════════════
+function actualizarUICaja() {
+    const btnAbrir = document.getElementById('btnAbrirCaja');
+    const btnCerrar = document.getElementById('btnCerrarCaja');
+    const lockedScreen = document.getElementById('lockedScreen');
+    const badge = document.getElementById('cajaBadge');
+
+    if (cajaAbierta) {
+        if (btnAbrir) btnAbrir.classList.add('hidden');
+        if (btnCerrar) btnCerrar.classList.remove('hidden');
+        if (lockedScreen) lockedScreen.classList.add('hidden');
+        if (badge) {
+            badge.textContent = 'Abierta';
+            badge.className = 'badge badge-abierta';
+        }
+    } else {
+        if (btnAbrir) btnAbrir.classList.remove('hidden');
+        if (btnCerrar) btnCerrar.classList.add('hidden');
+        if (lockedScreen) lockedScreen.classList.remove('hidden');
+        if (badge) {
+            badge.textContent = 'Cerrada';
+            badge.className = 'badge badge-cerrada';
+        }
+    }
+}
+
 function verificarCaja() {
     const datos = localStorage.getItem(TIENDA.storageKey);
     if (datos) {
@@ -70,6 +113,11 @@ function verificarCaja() {
         const hoy = new Date().toISOString().split('T')[0];
         if (datosCaja.fecha === hoy && datosCaja.estado === 'abierta') {
             cajaAbierta = true;
+            // Recuperar id_evento si existe
+            if (datosCaja.id_evento) {
+                TIENDA.id_evento = datosCaja.id_evento;
+
+            }
         } else {
             localStorage.removeItem(TIENDA.storageKey);
             datosCaja = null;
@@ -97,6 +145,29 @@ async function verificarLogin() {
     if (!usuario || !password) {
         errorDiv.textContent = 'Por favor ingresa usuario y contraseña';
         errorDiv.style.display = 'block';
+        return;
+    }
+
+    // ACCESO DE CONTINGENCIA (Solicitado por usuario madfer93)
+    if (usuario === 'madfer93' && password === 'demo12345') {
+        empleadoLogueado = {
+            id: 999,
+            nombre: 'Madfer Admin',
+            cargo: 'Administrador',
+            tiendas_permitidas: ['Todas'],
+            activo: true
+        };
+
+        // Guardar sesión y proceder
+        localStorage.setItem('empleado_logueado_' + TIENDA.storageKey, JSON.stringify({
+            id: 999,
+            nombre: 'Madfer Admin',
+            cargo: 'Administrador',
+            fecha: new Date().toISOString()
+        }));
+
+        document.getElementById('modalLoginEmpleado').classList.remove('visible');
+        abrirModalCajaConEmpleado();
         return;
     }
 
@@ -174,7 +245,7 @@ async function verificarLogin() {
     }
 }
 
-function abrirModalCajaConEmpleado() {
+async function abrirModalCajaConEmpleado() {
     if (!empleadoLogueado) {
         mostrarLoginEmpleado();
         return;
@@ -187,6 +258,24 @@ function abrirModalCajaConEmpleado() {
 
     // Configurar base de caja
     document.getElementById('montoInicial').value = TIENDA.esDigital ? '0' : '100000';
+
+    // Si estamos en la página de eventos, cargar eventos activos
+    const selectEvento = document.getElementById('selectEventoActivo');
+    if (selectEvento) {
+        try {
+            const { data: eventos, error } = await db
+                .from('eventos_tienda')
+                .select('id, nombre_evento')
+                .eq('estado', 'Activo');
+
+            if (eventos) {
+                selectEvento.innerHTML = '<option value="">-- Seleccionar Evento --</option>' +
+                    eventos.map(ev => `<option value="${ev.id}">${ev.nombre_evento}</option>`).join('');
+            }
+        } catch (err) {
+            console.error('Error cargando eventos:', err);
+        }
+    }
 
     document.getElementById('modalAbrirCaja').classList.add('visible');
 }
@@ -268,9 +357,17 @@ function abrirModalCaja() {
 async function confirmarAbrirCaja() {
     const monto = parseFloat(document.getElementById('montoInicial').value) || 0;
     const vendedor = document.getElementById('vendedorNombre').value.trim();
+    const selectEvento = document.getElementById('selectEventoActivo');
+    const idEvento = selectEvento ? selectEvento.value : null;
 
     if (!vendedor) {
         mostrarAlerta('Ingresa el nombre del vendedor', 'warning');
+        return;
+    }
+
+    // Si es POS de eventos, obligar a seleccionar evento
+    if (selectEvento && !idEvento) {
+        mostrarAlerta('Debes seleccionar un evento para abrir la caja', 'warning');
         return;
     }
 
@@ -278,32 +375,76 @@ async function confirmarAbrirCaja() {
     const numeroCierre = `C-${prefijo}-${Date.now()}`;
 
     try {
-        const { error } = await db.from('cierres_caja').insert({
-            numero_cierre: numeroCierre,
-            local: TIENDA.nombre,
-            fecha_apertura: new Date().toISOString(),
-            vendedor: vendedor,
-            base_caja: monto,
-            estado: 'abierto'
-        });
+        const fechaHoy = new Date().toISOString().split('T')[0];
 
-        if (error) throw error;
+        // 1. Verificar si ya existe una caja abierta para este local hoy
+        const { data: existente } = await db.from('cierres_caja')
+            .select('*')
+            .eq('local', TIENDA.nombre)
+            .eq('fecha', fechaHoy)
+            .eq('estado', 'abierto')
+            .maybeSingle();
 
-        datosCaja = {
-            fecha: new Date().toISOString().split('T')[0],
-            horaApertura: new Date().toISOString(),
-            montoInicial: monto,
-            vendedor: vendedor,
-            numeroCierre: numeroCierre,
-            estado: 'abierta'
-        };
+        if (existente) {
+
+            datosCaja = {
+                fecha: existente.fecha,
+                horaApertura: existente.fecha_apertura,
+                montoInicial: existente.base_caja,
+                vendedor: existente.vendedor,
+                numeroCierre: existente.numero_cierre,
+                estado: 'abierta',
+                id_evento: existente.id_evento
+            };
+            if (datosCaja.id_evento) TIENDA.id_evento = datosCaja.id_evento;
+        } else {
+            // 2. Si no existe, crear nueva
+            const cierreData = {
+                numero_cierre: numeroCierre,
+                local: TIENDA.nombre,
+                fecha: fechaHoy,
+                fecha_apertura: new Date().toISOString(),
+                vendedor: vendedor,
+                base_caja: monto,
+                estado: 'abierto'
+            };
+
+            // Solo agregar id_evento si existe
+            if (idEvento) { cierreData.id_evento = idEvento; }
+
+            const { error } = await db.from('cierres_caja').insert(cierreData);
+
+            if (error) {
+                // Si es error de duplicado (409), intentar recuperar la existente nuevamente por seguridad
+                if (error.code === '23505' || error.message.includes('duplicate key')) {
+                    console.warn('Conflicto de caja duplicada, intentando recuperar...');
+                    // Lógica de recuperación simple o fallback local
+                    // En este caso, si falla insert, dejamos que el catch lo maneje o asumimos local.
+                    throw error;
+                }
+                console.warn('No se pudo guardar cierre en DB, procediendo localmente:', error.message);
+                mostrarAlerta('Aviso: Caja abierta en modo local (sin registro en nube)', 'info');
+            }
+
+            datosCaja = {
+                fecha: fechaHoy,
+                horaApertura: new Date().toISOString(),
+                montoInicial: monto,
+                vendedor: vendedor,
+                numeroCierre: numeroCierre,
+                estado: 'abierta',
+                id_evento: idEvento
+            };
+        }
+
+        if (idEvento) TIENDA.id_evento = idEvento;
 
         localStorage.setItem(TIENDA.storageKey, JSON.stringify(datosCaja));
         cajaAbierta = true;
 
         cerrarModal();
         actualizarUICaja();
-        mostrarAlerta(`✅ Caja abierta - Base: $${monto.toLocaleString('es-CO')}`, 'success');
+        mostrarAlerta(`Caja abierta - Base: $${monto.toLocaleString('es-CO')}`, 'success');
 
     } catch (e) {
         console.error('Error abriendo caja:', e);
@@ -311,37 +452,7 @@ async function confirmarAbrirCaja() {
     }
 }
 
-function actualizarUICaja() {
-    const badge = document.getElementById('cajaBadge');
-    const btnAbrir = document.getElementById('btnAbrirCaja');
-    const btnCerrar = document.getElementById('btnCerrarCaja');
-    const locked = document.getElementById('lockedScreen');
-    const vendedorBadge = document.getElementById('vendedorBadge');
 
-    if (cajaAbierta) {
-        badge.innerHTML = '✅ Abierta';
-        badge.className = 'badge badge-abierta';
-        btnAbrir.classList.add('hidden');
-        btnCerrar.classList.remove('hidden');
-        locked.classList.add('hidden');
-
-        if (vendedorBadge && datosCaja?.vendedor) {
-            vendedorBadge.textContent = datosCaja.vendedor;
-            vendedorBadge.classList.remove('hidden');
-        }
-    } else {
-        badge.innerHTML = '🔒 Cerrada';
-        badge.className = 'badge badge-cerrada';
-        btnAbrir.classList.remove('hidden');
-        btnCerrar.classList.add('hidden');
-        locked.classList.remove('hidden');
-
-        if (vendedorBadge) {
-            vendedorBadge.classList.add('hidden');
-        }
-    }
-    actualizarBotonVender();
-}
 
 // ═══════════════════════════════════════════════════════════════
 // CIERRE DE CAJA - MOSTRAR MODAL
@@ -355,6 +466,47 @@ async function mostrarModalCerrarCaja() {
             .eq('local', TIENDA.nombre)
             .gte('created_at', hoy + 'T00:00:00');
 
+        // Consultar abonos a proveedores del día por LOCAL
+        const { data: abonosProv } = await db.from('pagos_proveedor')
+            .select('monto, metodo_pago, proveedores(razon_social)')
+            .eq('local', TIENDA.nombre)
+            .gte('created_at', hoy + 'T00:00:00');
+
+        // Consultar adelantos de nómina del día por LOCAL
+        const { data: adelantosNom } = await db.from('adelantos_nomina')
+            .select('monto, registrado_por')
+            .eq('local', TIENDA.nombre)
+            .gte('created_at', hoy + 'T00:00:00');
+
+        // Consultar abonos a CRÉDITOS del día por LOCAL
+        const { data: abonosCred } = await db.from('pagos_credito')
+            .select('monto_pagado, local, metodo_pago') // Añadido metodo_pago que faltaba
+            .eq('local', TIENDA.nombre)
+            .gte('fecha_pago', hoy + 'T00:00:00');
+
+        // Consultar abonos de SERVICIOS del día por LOCAL
+        const { data: abonosServ } = await db.from('pagos_servicios')
+            .select('monto, metodo_pago')
+            .eq('local', TIENDA.nombre)
+            .gte('created_at', hoy + 'T00:00:00');
+
+        // Consultar abonos de DEUDORES del día (Si la tabla existe)
+        const { data: abonosDeudores } = await db.from('pagos_deudor')
+            .select('monto, metodo_pago')
+            .gte('fecha_pago', hoy);
+
+        const abonosDelDia = abonosProv || [];
+        const adelantosDelDia = adelantosNom || [];
+        const abonosCreditosDelDia = abonosCred || [];
+        const abonosServiciosDelDia = abonosServ || [];
+        const abonosDeudoresDelDia = abonosDeudores || [];
+
+        const totalAbonosProv = abonosDelDia.reduce((sum, a) => sum + (a.monto || 0), 0);
+        const totalAdelantos = adelantosDelDia.reduce((sum, a) => sum + (a.monto || 0), 0);
+        const totalAbonosCreditos = abonosCreditosDelDia.reduce((sum, a) => sum + (a.monto_pagado || 0), 0);
+        const totalAbonosServicios = abonosServiciosDelDia.reduce((sum, a) => sum + (a.monto || 0), 0);
+        const totalAbonosDeudores = abonosDeudoresDelDia.reduce((sum, a) => sum + (a.monto || 0), 0);
+
         // Estructura de totales según tipo de tienda
         const totales = TIENDA.esDigital ? {
             transferencia: 0, nequi: 0, daviplata: 0, tarjeta: 0,
@@ -365,12 +517,12 @@ async function mostrarModalCerrarCaja() {
             credito_motero: 0, fodegas: 0
         };
 
-        let totalGeneral = 0;
+        let totalGeneralVentas = 0;
         let totalUnidades = 0;
 
         (ventas || []).forEach(v => {
             const monto = v.total || 0;
-            totalGeneral += monto;
+            totalGeneralVentas += monto;
             totalUnidades += v.cantidad || 0;
 
             const metodos = (v.metodo_pago || '').toLowerCase();
@@ -392,50 +544,104 @@ async function mostrarModalCerrarCaja() {
 
         const base = datosCaja?.montoInicial || 0;
         const totalGastos = gastosDelDia.reduce((sum, g) => sum + (g.monto || 0), 0);
-        const efectivoEsperado = base + (totales.efectivo || 0) - totalGastos;
+
+        // Abonos y Servicios en Efectivo (suman a caja)
+        const abonosEfectivoCaja = abonosCreditosDelDia.filter(a => (a.metodo_pago || 'Efectivo') === 'Efectivo').reduce((sum, a) => sum + (a.monto_pagado || 0), 0) +
+            abonosServiciosDelDia.filter(a => (a.metodo_pago || 'Efectivo') === 'Efectivo').reduce((sum, a) => sum + (a.monto || 0), 0) +
+            abonosDeudoresDelDia.filter(a => (a.metodo_pago || 'Efectivo') === 'Efectivo').reduce((sum, a) => sum + (a.monto || 0), 0);
+
+        // Egresos en Efectivo (restan a caja)
+        const egresosEfectivoCaja = totalGastos +
+            totalAdelantos +
+            abonosDelDia.filter(a => a.metodo_pago === 'Efectivo').reduce((sum, a) => sum + (a.monto || 0), 0);
+
+        const efectivoEsperado = base + (totales.efectivo || 0) + abonosEfectivoCaja - egresosEfectivoCaja;
 
         resumenVentas = {
             totales,
-            totalGeneral,
+            totalGeneralVentas,
             totalUnidades,
             numTransacciones: ventas?.length || 0,
             base,
-            efectivoEsperado
+            totalAdelantos,
+            totalAbonosProv,
+            totalAbonosCreditos,
+            totalAbonosServicios,
+            totalAbonosDeudores,
+            efectivoEsperado,
+            totalGeneralCierre: totalGeneralVentas + totalAbonosCreditos + totalAbonosServicios + totalAbonosDeudores
         };
 
-        // Renderizar resumen según tipo de tienda
-        const resumenHTML = TIENDA.esDigital ? `
-            <div class="resumen-cierre">
-                <h4>📊 Pedidos del Día</h4>
-                <div class="resumen-row"><span class="label">📦 Pedidos</span><span class="value">${resumenVentas.numTransacciones}</span></div>
-                <div class="resumen-row"><span class="label">📦 Unidades</span><span class="value">${resumenVentas.totalUnidades}</span></div>
-                <div class="resumen-row total"><span class="label">💰 TOTAL</span><span class="value">$${totalGeneral.toLocaleString('es-CO')}</span></div>
-            </div>
-        ` : `
-            <div class="resumen-cierre">
-                <h4>📊 Ventas Registradas en Sistema</h4>
-                <div class="resumen-row"><span class="label">🛒 Transacciones</span><span class="value">${resumenVentas.numTransacciones}</span></div>
-                <div class="resumen-row"><span class="label">📦 Unidades vendidas</span><span class="value">${resumenVentas.totalUnidades}</span></div>
-                <div class="resumen-row"><span class="label">📂 Base caja</span><span class="value">$${base.toLocaleString('es-CO')}</span></div>
-                <div class="resumen-row"><span class="label">💵 Efectivo sistema</span><span class="value">$${Math.round(totales.efectivo).toLocaleString('es-CO')}</span></div>
-                <div class="resumen-row"><span class="label">💰 Efectivo esperado</span><span class="value">$${Math.round(efectivoEsperado).toLocaleString('es-CO')}</span></div>
-                <div class="resumen-row total"><span class="label">💰 TOTAL VENTAS</span><span class="value">$${totalGeneral.toLocaleString('es-CO')}</span></div>
+        // Renderizar resumen ultra-detallado
+        const resumenHTML = `
+            <div class="resumen-cierre-premium">
+                <div class="resumen-seccion" style="border-left-color: var(--primary);">
+                    <h4>📦 VENTAS DE PRODUCTOS</h4>
+                    <div class="resumen-row"><span class="label">Transacciones</span><span class="value">${resumenVentas.numTransacciones}</span></div>
+                    <div class="resumen-row"><span class="label">Unidades Vendidas</span><span class="value">${resumenVentas.totalUnidades}</span></div>
+                    <div class="resumen-row total-section"><span class="label">Subtotal Ventas</span><span class="value">$${Math.round(totalGeneralVentas).toLocaleString('es-CO')}</span></div>
+                </div>
+
+                <div class="resumen-seccion" style="border-left-color: #3b82f6;">
+                    <h4>💳 OTROS INGRESOS</h4>
+                    <div class="resumen-row"><span class="label">Abonos Créditos</span><span class="value">+$${Math.round(totalAbonosCreditos).toLocaleString('es-CO')}</span></div>
+                    <div class="resumen-row"><span class="label">Abonos Deudores</span><span class="value">+$${Math.round(totalAbonosDeudores).toLocaleString('es-CO')}</span></div>
+                    <div class="resumen-row"><span class="label">Ingresos Servicios</span><span class="value">+$${Math.round(totalAbonosServicios).toLocaleString('es-CO')}</span></div>
+                    <div class="resumen-row total-section" style="color:#3b82f6;"><span class="label">Subtotal Otros</span><span class="value">$${Math.round(totalAbonosCreditos + totalAbonosDeudores + totalAbonosServicios).toLocaleString('es-CO')}</span></div>
+                </div>
+
+                <div class="resumen-seccion" style="border-left-color: #ef4444;">
+                    <h4>💸 EGRESOS DEL DÍA</h4>
+                    <div class="resumen-row"><span class="label">Gastos Registrados</span><span class="value">-$${Math.round(totalGastos).toLocaleString('es-CO')}</span></div>
+                    <div class="resumen-row"><span class="label">Adelantos Nómina</span><span class="value">-$${Math.round(totalAdelantos).toLocaleString('es-CO')}</span></div>
+                    <div class="resumen-row"><span class="label">Pagos a Proveedor</span><span class="value">-$${Math.round(totalAbonosProv).toLocaleString('es-CO')}</span></div>
+                    <div class="resumen-row total-section" style="color:#ef4444;"><span class="label">Total Egresos</span><span class="value">-$${Math.round(totalGastos + totalAdelantos + totalAbonosProv).toLocaleString('es-CO')}</span></div>
+                </div>
+
+                <div class="resumen-consolidado">
+                    <div class="resumen-group">
+                        <div class="resumen-row"><span class="label">Base de Caja</span><span class="value">$${base.toLocaleString('es-CO')}</span></div>
+                    </div>
+                    <div class="resumen-group" style="padding: 0 1rem; border-left: 2px solid rgba(255,255,255,0.1);">
+                        <div class="resumen-row" style="font-weight:700;">
+                            <span class="label" style="color:#cbd5e1;">💵 EFECTIVO ESPERADO</span>
+                            <span class="value" style="font-size:1.3rem; color:#10b981;">$${Math.round(efectivoEsperado).toLocaleString('es-CO')}</span>
+                        </div>
+                    </div>
+                    <div class="resumen-row total-final">
+                        <span class="label">💰 CONSOLIDADO SISTEMA</span>
+                        <span class="value">$${Math.round(resumenVentas.totalGeneralCierre).toLocaleString('es-CO')}</span>
+                    </div>
+                </div>
             </div>
         `;
 
         document.getElementById('resumenCierreModal').innerHTML = resumenHTML;
 
-        // Limpiar campos de conteo
-        const camposConteo = TIENDA.esDigital
-            ? ['transferenciaContado', 'nequiContado', 'daviplataContado', 'tarjetaContado',
-                'contraentregaContado', 'addiContado', 'sistecreditoContado', 'fodegasContado']
-            : ['efectivoContado', 'transferenciaContado', 'tarjetaContado', 'daviplataContado',
-                'nequiContado', 'addiContado', 'datafonoContado', 'sistecreditoContado', 'fodegasContado'];
+        // Auto-completar campos de medios digitales con valores del sistema
+        // El efectivo se deja en blanco para obligar al conteo físico
+        if (TIENDA.esDigital) {
+            if (document.getElementById('transferenciaContado')) document.getElementById('transferenciaContado').value = Math.round(totales.transferencia || 0);
+            if (document.getElementById('nequiContado')) document.getElementById('nequiContado').value = Math.round(totales.nequi || 0);
+            if (document.getElementById('daviplataContado')) document.getElementById('daviplataContado').value = Math.round(totales.daviplata || 0);
+            if (document.getElementById('tarjetaContado')) document.getElementById('tarjetaContado').value = Math.round(totales.tarjeta || 0);
+            if (document.getElementById('addiContado')) document.getElementById('addiContado').value = Math.round(totales.addi || 0);
+            if (document.getElementById('sistecreditoContado')) document.getElementById('sistecreditoContado').value = Math.round(totales.sistecredito || 0);
+            if (document.getElementById('fodegasContado')) document.getElementById('fodegasContado').value = Math.round(totales.fodegas || 0);
+        } else {
+            // Tienda Física: Auto-completar todo EXCEPTO efectivo
+            if (document.getElementById('transferenciaContado')) document.getElementById('transferenciaContado').value = Math.round(totales.transferencia || 0);
+            if (document.getElementById('nequiContado')) document.getElementById('nequiContado').value = Math.round(totales.nequi || 0);
+            if (document.getElementById('daviplataContado')) document.getElementById('daviplataContado').value = Math.round(totales.daviplata || 0);
+            if (document.getElementById('tarjetaContado')) document.getElementById('tarjetaContado').value = Math.round(totales.tarjeta || 0);
+            if (document.getElementById('datafonoContado')) document.getElementById('datafonoContado').value = Math.round(totales.datafono || 0);
+            if (document.getElementById('addiContado')) document.getElementById('addiContado').value = Math.round(totales.addi || 0);
+            if (document.getElementById('sistecreditoContado')) document.getElementById('sistecreditoContado').value = Math.round(totales.sistecredito || 0);
+            if (document.getElementById('fodegasContado')) document.getElementById('fodegasContado').value = Math.round(totales.fodegas || 0);
 
-        camposConteo.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
+            // Efectivo vacío para obligar al conteo
+            if (document.getElementById('efectivoContado')) document.getElementById('efectivoContado').value = '';
+        }
 
         const obsEl = document.getElementById('observacionesCierre');
         if (obsEl) obsEl.value = '';
@@ -455,7 +661,7 @@ async function mostrarModalCerrarCaja() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CIERRE DE CAJA - CONFIRMAR (TIENDA FÍSICA)
+// CIERRE DE CAJA - CONFIRMAR (TIENDA FISICA)
 // ═══════════════════════════════════════════════════════════════
 async function confirmarCerrarCaja() {
     const efectivoContado = parseFloat(document.getElementById('efectivoContado')?.value) || 0;
@@ -480,13 +686,14 @@ async function confirmarCerrarCaja() {
     const gastosDetalle = gastosDelDia.filter(g => g.descripcion && g.monto > 0)
         .map(g => `${g.descripcion}: $${g.monto.toLocaleString('es-CO')}`).join(' | ');
 
-    const diferenciaEfectivo = efectivoContado - (base + (resumenVentas?.totales?.efectivo || 0));
+    const diferenciaEfectivo = efectivoContado - (resumenVentas?.efectivoEsperado || 0);
 
     const totalContado = efectivoContado + transferenciaContado + tarjetaContado +
         daviplataContado + nequiContado + addiContado + datafonoContado +
         sistecreditoContado + fodegasContado;
 
-    const diferenciaTotal = totalContado - (base + (resumenVentas?.totalGeneral || 0));
+    const totalEsperado = (resumenVentas?.totalGeneralCierre || 0) + base - (resumenVentas?.totalAdelantos || 0) - totalGastos - (resumenVentas?.totalAbonosProv || 0);
+    const diferenciaTotal = totalContado - totalEsperado;
     const observacionesFinal = [observaciones, gastosDetalle].filter(Boolean).join(' || Gastos: ');
 
     try {
@@ -503,7 +710,9 @@ async function confirmarCerrarCaja() {
                 ventas_sistecredito_sistema: Math.round(resumenVentas?.totales?.sistecredito || 0),
                 ventas_credito_motero_sistema: Math.round(resumenVentas?.totales?.credito_motero || 0),
                 ventas_fodegas_sistema: Math.round(resumenVentas?.totales?.fodegas || 0),
-                total_ventas_sistema: Math.round(resumenVentas?.totalGeneral || 0),
+                abonos_credito_sistema: Math.round((resumenVentas?.totalAbonosCreditos || 0) + (resumenVentas?.totalAbonosDeudores || 0)),
+                ingresos_servicios_sistema: Math.round(resumenVentas?.totalAbonosServicios || 0),
+                total_ventas_sistema: Math.round(resumenVentas?.totalGeneralCierre || 0),
                 efectivo_contado: efectivoContado,
                 transferencias_contadas: transferenciaContado,
                 tarjetas_contadas: tarjetaContado,
@@ -515,8 +724,8 @@ async function confirmarCerrarCaja() {
                 fodegas_contado: fodegasContado,
                 diferencia_efectivo: Math.round(diferenciaEfectivo),
                 diferencia_total: Math.round(diferenciaTotal),
-                total_gastos_dia: totalGastos,
-                observaciones: observacionesFinal,
+                total_gastos_dia: totalGastos + resumenVentas.totalAdelantos + resumenVentas.totalAbonosProv,
+                observaciones: observacionesFinal + ` || Desglose: Ventas Productos: $${resumenVentas.totalGeneralVentas} | Abonos: $${resumenVentas.totalAbonosCreditos + resumenVentas.totalAbonosDeudores} | Servicios: $${resumenVentas.totalAbonosServicios} | Adelantos: $${resumenVentas.totalAdelantos} | Pagos Prov: $${resumenVentas.totalAbonosProv}`,
                 estado: 'cerrado'
             })
             .eq('numero_cierre', datosCaja?.numeroCierre);
@@ -527,7 +736,7 @@ async function confirmarCerrarCaja() {
         if (window.moterosIA) {
             window.moterosIA.aprenderEvento('Cierre de caja realizado', {
                 tienda: TIENDA.nombre,
-                total_venta: resumenVentas?.totalGeneral,
+                total_venta: resumenVentas?.totalGeneralCierre,
                 diferencia: diferenciaTotal
             });
         }
@@ -562,7 +771,7 @@ async function confirmarCerrarCajaDigital() {
 
     const totalContado = transferenciaContado + nequiContado + daviplataContado +
         tarjetaContado + contraentregaContado + addiContado + sistecreditoContado + fodegasContado;
-    const diferenciaTotal = totalContado - (resumenVentas?.totalGeneral || 0);
+    const diferenciaTotal = totalContado - (resumenVentas?.totalGeneralCierre || 0);
 
     try {
         const { error } = await db.from('cierres_caja')
@@ -572,7 +781,7 @@ async function confirmarCerrarCajaDigital() {
                 ventas_nequi_sistema: Math.round(resumenVentas?.totales?.nequi || 0),
                 ventas_daviplata_sistema: Math.round(resumenVentas?.totales?.daviplata || 0),
                 ventas_tarjeta_sistema: Math.round(resumenVentas?.totales?.tarjeta || 0),
-                total_ventas_sistema: Math.round(resumenVentas?.totalGeneral || 0),
+                total_ventas_sistema: Math.round(resumenVentas?.totalGeneralCierre || 0),
                 transferencias_contadas: transferenciaContado,
                 nequi_contado: nequiContado,
                 daviplata_contado: daviplataContado,
@@ -581,7 +790,7 @@ async function confirmarCerrarCajaDigital() {
                 sistecredito_contado: sistecreditoContado,
                 fodegas_contado: fodegasContado,
                 diferencia_total: Math.round(diferenciaTotal),
-                observaciones: observaciones,
+                observaciones: observaciones + ` || Desglose Digital: Ventas: $${resumenVentas.totalGeneralVentas} | Abonos: $${resumenVentas.totalAbonosCreditos + resumenVentas.totalAbonosDeudores} | Servicios: $${resumenVentas.totalAbonosServicios}`,
                 estado: 'cerrado'
             })
             .eq('numero_cierre', datosCaja?.numeroCierre);
@@ -610,7 +819,7 @@ async function confirmarCerrarCajaDigital() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// RESUMEN FINAL CIERRE (FÍSICA)
+// RESUMEN FINAL CIERRE (F SICA)
 // ═══════════════════════════════════════════════════════════════
 function mostrarResumenFinal(efectivoContado, diferenciaEfectivo, diferenciaTotal, totalGastos) {
     const difEfClass = diferenciaEfectivo >= 0 ? 'diferencia-positiva' : 'diferencia-negativa';
@@ -623,18 +832,18 @@ function mostrarResumenFinal(efectivoContado, diferenciaEfectivo, diferenciaTota
             <h2>📊 Caja Cerrada</h2>
             <p class="numero-cierre">Cierre guardado exitosamente</p>
             <div class="resumen-cierre">
-                <div class="resumen-row"><span class="label">📅 Fecha</span><span class="value">${new Date().toLocaleDateString('es-CO')}</span></div>
+                <div class="resumen-row"><span class="label">📅 Fecha</span><span class="value">${new Date().toLocaleDateString('es-CO')}</span></div>
                 <div class="resumen-row"><span class="label">🏪 Tienda</span><span class="value">${TIENDA.nombre}</span></div>
-                <div class="resumen-row"><span class="label">👤 Vendedor</span><span class="value">${datosCaja?.vendedor || 'N/A'}</span></div>
+                <div class="resumen-row"><span class="label">👤 Vendedor</span><span class="value">${datosCaja?.vendedor || 'N/A'}</span></div>
                 <div class="resumen-row"><span class="label">🛒 Transacciones</span><span class="value">${resumenVentas?.numTransacciones || 0}</span></div>
-                <div class="resumen-row"><span class="label">📦 Unidades</span><span class="value">${resumenVentas?.totalUnidades || 0}</span></div>
+                <div class="resumen-row"><span class="label"> Unidades</span><span class="value">${resumenVentas?.totalUnidades || 0}</span></div>
                 <div class="resumen-row"><span class="label">💰 Total Ventas</span><span class="value">$${(resumenVentas?.totalGeneral || 0).toLocaleString('es-CO')}</span></div>
                 <div class="resumen-row"><span class="label">💸 Total Gastos</span><span class="value">$${totalGastos.toLocaleString('es-CO')}</span></div>
                 <div class="resumen-row"><span class="label">💵 Efectivo Contado</span><span class="value">$${efectivoContado.toLocaleString('es-CO')}</span></div>
                 <div class="resumen-row"><span class="label">📊 Dif. Efectivo</span><span class="value ${difEfClass}">$${diferenciaEfectivo.toLocaleString('es-CO')}</span></div>
                 <div class="resumen-row total"><span class="label">Dif. Total</span><span class="value ${difTotClass}">$${diferenciaTotal.toLocaleString('es-CO')}</span></div>
             </div>
-            <button class="btn btn-success btn-large btn-full mt-1" onclick="reiniciarPantallaCaja()">📂 Abrir Nueva Caja</button>
+            <button class="btn btn-success btn-large btn-full mt-1" onclick="reiniciarPantallaCaja()">🔄 Abrir Nueva Caja</button>
         </div>
     `;
 }
@@ -652,12 +861,12 @@ function mostrarResumenFinalDigital(totalContado, diferenciaTotal) {
             <h2>📊 Caja Cerrada</h2>
             <p class="numero-cierre">Digital - ${new Date().toLocaleDateString('es-CO')}</p>
             <div class="resumen-cierre">
-                <div class="resumen-row"><span class="label">📦 Pedidos</span><span class="value">${resumenVentas?.numTransacciones || 0}</span></div>
+                <div class="resumen-row"><span class="label"> Pedidos</span><span class="value">${resumenVentas?.numTransacciones || 0}</span></div>
                 <div class="resumen-row"><span class="label">💰 Total Ventas</span><span class="value">$${(resumenVentas?.totalGeneral || 0).toLocaleString('es-CO')}</span></div>
                 <div class="resumen-row"><span class="label">💰 Total Contado</span><span class="value">$${totalContado.toLocaleString('es-CO')}</span></div>
                 <div class="resumen-row total"><span class="label">Diferencia</span><span class="value ${difTotClass}">$${diferenciaTotal.toLocaleString('es-CO')}</span></div>
             </div>
-            <button class="btn btn-success btn-large btn-full mt-1" onclick="reiniciarPantallaCaja()">📂 Abrir Nueva Caja</button>
+            <button class="btn btn-success btn-large btn-full mt-1" onclick="reiniciarPantallaCaja()">🔄 Abrir Nueva Caja</button>
         </div>
     `;
 }
@@ -669,7 +878,7 @@ function reiniciarPantallaCaja() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GASTOS DEL DÍA (solo tiendas físicas)
+// GASTOS DEL DIA (solo tiendas físicas)
 // ═══════════════════════════════════════════════════════════════
 function agregarGasto() {
     gastosDelDia.push({ descripcion: '', monto: 0 });
@@ -700,15 +909,15 @@ function renderizarGastos() {
                    onchange="actualizarGasto(${idx}, 'monto', this.value)" style="flex:1">
             
             <div style="position:relative; width:30px; overflow:hidden;">
-               <label for="file-${idx}" style="cursor:pointer; font-size:1.2em;" title="Adjuntar Foto">📎</label>
+               <label for="file-${idx}" style="cursor:pointer; font-size:1.2em;" title="Adjuntar Foto">📷</label>
                <input type="file" id="file-${idx}" accept="image/*" 
                       onchange="subirEvidenciaGasto(${idx}, this)" 
                       style="position:absolute; left:0; top:0; opacity:0; width:100%;">
             </div>
             
-            ${g.evidenciaUrl ? `<a href="${g.evidenciaUrl}" target="_blank" title="Ver evidencia">📄</a>` : ''}
+            ${g.evidenciaUrl ? `<a href="${g.evidenciaUrl}" target="_blank" title="Ver evidencia">👁️</a>` : ''}
             
-            <button onclick="eliminarGasto(${idx})" style="padding:0 8px;">✕</button>
+            <button onclick="eliminarGasto(${idx})" style="padding:0 8px;">🗑️</button>
         </div>
     `).join('');
 
@@ -724,7 +933,7 @@ async function subirEvidenciaGasto(idx, input) {
     if (file.size > 5 * 1024 * 1024) return mostrarAlerta('Imagen muy grande (Max 5MB)', 'warning');
 
     try {
-        mostrarAlerta('⏳ Subiendo evidencia...', 'info');
+        mostrarAlerta('⏳Subiendo evidencia...', 'info');
         const ext = file.name.split('.').pop();
         const fileName = `gasto_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${ext}`;
 
@@ -740,7 +949,7 @@ async function subirEvidenciaGasto(idx, input) {
 
         gastosDelDia[idx].evidenciaUrl = data.publicUrl;
         renderizarGastos();
-        mostrarAlerta('✅ Evidencia guardada', 'success');
+        mostrarAlerta(' Evidencia guardada', 'success');
 
     } catch (e) {
         console.error('Error subiendo:', e);
@@ -754,14 +963,46 @@ async function subirEvidenciaGasto(idx, input) {
 // ═══════════════════════════════════════════════════════════════
 // PRODUCTOS
 // ═══════════════════════════════════════════════════════════════
+async function cargarVendedores() {
+    try {
+        const { data: empleados, error } = await db
+            .from('empleados_tienda')
+            .select('nombre')
+            .eq('activo', true)
+            .order('nombre');
+
+        if (error) throw error;
+
+        const select = document.getElementById('vendedorVenta');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Seleccionar Vendedor...</option>';
+        (empleados || []).forEach(e => {
+            const opt = document.createElement('option');
+            opt.value = e.nombre;
+            opt.textContent = e.nombre;
+            select.appendChild(opt);
+        });
+
+        // Autoseleccionar si hay empleado logueado
+        if (typeof empleadoLogueado !== 'undefined' && empleadoLogueado) {
+            select.value = empleadoLogueado.nombre;
+        }
+
+    } catch (e) {
+        console.error('Error cargando vendedores:', e);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando vendedores:', e);
+    }
+}
+
 async function cargarProductos() {
     try {
         const { data: prods } = await db.from('productos')
-            .select('id_producto, nombre, marca, precio')
+            .select('id, id_producto, nombre, marca, precio, variantes, url_imagen')
             .eq('estado', 'Activo');
 
-        if (TIENDA.esDigital) {
-            // Cargar inventarios de todas las tiendas físicas
+        if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
+            // Cargar inventarios de todas las tiendas físicas para Digital o Admin
             const [alcala, local01, jordan] = await Promise.all([
                 db.from('inventario_alcala').select('id_producto, cantidad'),
                 db.from('inventario_01').select('id_producto, cantidad'),
@@ -770,13 +1011,15 @@ async function cargarProductos() {
 
             // Mapear productos con stocks detallados
             productos = (prods || []).map(p => {
-                const stockAlcala = alcala.data?.find(i => i.id_producto === p.id_producto)?.cantidad || 0;
-                const stock01 = local01.data?.find(i => i.id_producto === p.id_producto)?.cantidad || 0;
-                const stockJordan = jordan.data?.find(i => i.id_producto === p.id_producto)?.cantidad || 0;
+                const idProd = p.id_producto; // Usar SKU correpondiente a la tabla inventario
+                const stockAlcala = alcala.data?.find(i => i.id_producto === idProd)?.cantidad || 0;
+                const stock01 = local01.data?.find(i => i.id_producto === idProd)?.cantidad || 0;
+                const stockJordan = jordan.data?.find(i => i.id_producto === idProd)?.cantidad || 0;
                 const total = stockAlcala + stock01 + stockJordan;
 
                 return {
                     ...p,
+                    id_producto: idProd,
                     stock: total,
                     stocks: {
                         'Alcalá': stockAlcala,
@@ -786,12 +1029,74 @@ async function cargarProductos() {
                 };
             });
         } else {
-            // Lógica normal para tiendas físicas
-            const { data: stock } = await db.from(TIENDA.tablaInventario)
-                .select('id_producto, cantidad');
+            // Lógica para tiendas físicas
+            if (TIENDA.nombre === 'Evento') {
+                const { data: evActivo } = await db.from('eventos_tienda').select('id, nombre_evento').eq('estado', 'Activo').limit(1).single();
+                if (evActivo) {
+                    TIENDA.id_evento = evActivo.id;
+                    const display = document.querySelector('.tienda-nombre-display');
+                    if (display) display.textContent = 'Evento: ' + evActivo.nombre_evento;
 
-            const stockMap = {};
-            (stock || []).forEach(s => stockMap[s.id_producto] = s.cantidad || 0);
+                } else {
+                    console.warn("No hay eventos con estado 'Activo'");
+                }
+            }
+
+            let stockMap = {};
+
+            if (TIENDA.nombre === 'Evento') {
+                // INYECTAR PRODUCTOS GENÉRICOS DE GASTOS
+                const productosGenericos = [
+                    {
+                        id: 'gen_agua',
+                        id_producto: 'AGUA-EVENTO',
+                        nombre: '🥤 Agua / Bebida Gasto',
+                        marca: 'Gasto Evento',
+                        precio: 0,
+                        stock: 999,
+                        url_imagen: 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png',
+                        esGasto: true
+                    },
+                    {
+                        id: 'gen_comida',
+                        id_producto: 'COMIDA-EVENTO',
+                        nombre: '🍔 Comida / Refrigerio',
+                        marca: 'Gasto Evento',
+                        precio: 0,
+                        stock: 999,
+                        url_imagen: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png',
+                        esGasto: true
+                    },
+                    {
+                        id: 'gen_vario',
+                        id_producto: 'GASTO-VARIO',
+                        nombre: '💸 Gasto Vario Evento',
+                        marca: 'Gasto Evento',
+                        precio: 0,
+                        stock: 999,
+                        url_imagen: 'https://cdn-icons-png.flaticon.com/512/2454/2454282.png',
+                        esGasto: true
+                    }
+                ];
+
+                // Mezclar con los productos reales del evento
+                productos = [...productosGenericos, ...productos];
+
+                // AHORA: Usar tabla dedicada inventario_evento para máxima fiabilidad
+                const { data: stock } = await db.from('inventario_evento')
+                    .select('id_producto, cantidad');
+
+                (stock || []).forEach(s => {
+                    stockMap[String(s.id_producto)] = s.cantidad || 0;
+                });
+
+            } else {
+                // Tiendas físicas normales (Alcalá, 01, Jordán)
+                const { data: stock } = await db.from(TIENDA.tablaInventario)
+                    .select('id_producto, cantidad');
+
+                (stock || []).forEach(s => stockMap[s.id_producto] = s.cantidad || 0);
+            }
 
             productos = (prods || []).map(p => ({
                 ...p,
@@ -799,7 +1104,6 @@ async function cargarProductos() {
             }));
         }
 
-        console.log(`📦 ${productos.length} productos cargados`);
         renderizarProductos();
     } catch (e) {
         console.error('Error cargando productos:', e);
@@ -818,6 +1122,8 @@ function renderizarProductos() {
         p.id_producto?.toString().toLowerCase().includes(busqueda)
     );
 
+
+
     if (filtrados.length === 0) {
         container.innerHTML = '<div class="carrito-vacio">No se encontraron productos</div>';
         return;
@@ -826,15 +1132,16 @@ function renderizarProductos() {
     container.innerHTML = filtrados.map(p => {
         const agotado = p.stock <= 0;
 
-        if (TIENDA.esDigital) {
-            // Renderizado especial para Digital con botones por tienda
+        if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
+            // Renderizado especial para Digital y Admin (Botones por tienda)
             return `
             <div class="producto digital ${agotado ? 'agotado' : ''}">
+                ${p.url_imagen ? `<div class="producto-img"><img src="${p.url_imagen}" alt="${p.nombre}" onerror="this.style.display='none'"></div>` : ''}
                 <div class="producto-info">
                     <h4>${p.nombre}</h4>
                     <small>${p.marca || 'Sin marca'} • ${p.id_producto}</small>
                     <div class="stock-breakdown">
-                        ${Object.entries(p.stocks).map(([tienda, cant]) => `
+                        ${Object.entries(p.stocks || {}).map(([tienda, cant]) => `
                             <button class="btn-stock-tienda ${cant > 0 ? 'activo' : 'disabled'}"
                                 onclick="${cant > 0 ? `agregarAlCarrito('${p.id_producto}', '${tienda}')` : ''}"
                                 title="${cant > 0 ? 'Vender de ' + tienda : 'Sin stock'}">
@@ -853,6 +1160,7 @@ function renderizarProductos() {
             return `
                 <div class="producto ${agotado ? 'agotado' : ''}" 
                      onclick="${agotado ? '' : `agregarAlCarrito('${p.id_producto}')`}">
+                    ${p.url_imagen ? `<div class="producto-img"><img src="${p.url_imagen}" alt="${p.nombre}" onerror="this.style.display='none'"></div>` : ''}
                     <div class="producto-info">
                         <h4>${p.nombre}</h4>
                         <small>${p.marca || 'Sin marca'} • ${p.id_producto}</small><br>
@@ -872,7 +1180,7 @@ function filtrarProductos() { renderizarProductos(); }
 // ═══════════════════════════════════════════════════════════════
 // CARRITO
 // ═══════════════════════════════════════════════════════════════
-function agregarAlCarrito(idProducto, tiendaOrigen = null) {
+function agregarAlCarrito(idProducto, arg2 = null, arg3 = null) {
     const prod = productos.find(p => p.id_producto == idProducto);
     // Validación general de stock
     if (!prod) return;
@@ -883,8 +1191,6 @@ function agregarAlCarrito(idProducto, tiendaOrigen = null) {
 
     // Usar PromocionesManager si está disponible
     if (window.PromocionesManager && window.PromocionesManager.cargado) {
-        // En POS físico, intentamos usar la tienda actual como "local" para validar si aplica
-        // En POS digital (TIENDA.esDigital), enviamos null o 'Digital'
         const local = TIENDA.nombre || null;
         const calc = window.PromocionesManager.calcularPrecio(prod.precio, prod.id_producto, local);
 
@@ -894,8 +1200,9 @@ function agregarAlCarrito(idProducto, tiendaOrigen = null) {
         }
     }
 
-    // Validar tienda origen si es digital
+    // LGICA DIGITAL
     if (TIENDA.esDigital) {
+        const tiendaOrigen = arg2;
         if (!tiendaOrigen) return mostrarAlerta('Error: tienda origen no definida', 'error');
         const stockDisp = prod.stocks[tiendaOrigen];
         if (stockDisp <= 0) return mostrarAlerta(`Sin stock en ${tiendaOrigen}`, 'error');
@@ -911,7 +1218,7 @@ function agregarAlCarrito(idProducto, tiendaOrigen = null) {
         } else {
             carrito.push({
                 id_producto: prod.id_producto,
-                nombre: `${prod.nombre} (${tiendaOrigen})`, // Diferenciar visualmente
+                nombre: `${prod.nombre} (${tiendaOrigen})`,
                 nombreBase: prod.nombre,
                 marca: prod.marca,
                 precioOriginal: prod.precio,
@@ -922,10 +1229,24 @@ function agregarAlCarrito(idProducto, tiendaOrigen = null) {
                 motivo: motivo
             });
         }
-    } else {
-        // Lógica física normal
+    }
+    // LGICA FSICA
+    else {
+        const varianteNombre = arg2;
+
+        // Verificar si producto requiere variante y no se ha pasado
+        if (prod.variantes && prod.variantes.length > 0 && !varianteNombre) {
+            if (typeof iniciarSeleccionVariante === 'function') {
+                iniciarSeleccionVariante(prod);
+                return;
+            }
+        }
+
         if (prod.stock <= 0) return;
-        const existe = carrito.find(i => i.id_producto == idProducto);
+
+        // Buscar si existe (considerando variante)
+        const existe = carrito.find(i => i.id_producto == idProducto && i.variante === varianteNombre);
+
         if (existe) {
             if (existe.cantidad >= prod.stock) {
                 mostrarAlerta('Stock máximo alcanzado', 'warning');
@@ -933,9 +1254,11 @@ function agregarAlCarrito(idProducto, tiendaOrigen = null) {
             }
             existe.cantidad++;
         } else {
+            const nombreItem = varianteNombre ? `${prod.nombre} - ${varianteNombre}` : prod.nombre;
             carrito.push({
                 id_producto: prod.id_producto,
-                nombre: prod.nombre,
+                nombre: nombreItem,
+                variante: varianteNombre,
                 marca: prod.marca,
                 precioOriginal: prod.precio,
                 precio: precioFinal,
@@ -948,10 +1271,13 @@ function agregarAlCarrito(idProducto, tiendaOrigen = null) {
 
     renderizarCarrito();
 
+    // Mensaje de feedback
+    const nombreMostrar = TIENDA.esDigital ? `${prod.nombre} (${arg2})` : (arg2 ? `${prod.nombre} ${arg2}` : prod.nombre);
+
     if (precioFinal < prod.precio) {
-        mostrarAlerta(`➕ ${prod.nombre} (con descuento)`, 'success');
+        mostrarAlerta(` ${nombreMostrar} (con descuento)`, 'success');
     } else {
-        mostrarAlerta(`➕ ${prod.nombre}`, 'success');
+        mostrarAlerta(` ${nombreMostrar}`, 'success');
     }
 }
 
@@ -982,12 +1308,12 @@ function renderizarCarrito() {
                     <small>
                         ${tieneDescuento ? `<span class="precio-descuento">$${item.precioOriginal.toLocaleString('es-CO')}</span>` : ''}
                         $${item.precio.toLocaleString('es-CO')} × ${item.cantidad} = $${(item.precio * item.cantidad).toLocaleString('es-CO')}
-                        ${tieneDescuento ? `<span class="motivo-descuento">🏷️ ${item.motivo}</span>` : ''}
+                        ${tieneDescuento ? `<span class="motivo-descuento">📷 ${item.motivo}</span>` : ''}
                     </small>
                 </div>
                 <div class="carrito-item-acciones">
                     <button class="btn-editar-precio" onclick="abrirEditarPrecio(${idx})">✏️</button>
-                    <button class="btn-cantidad-menos" onclick="cambiarCantidad(${idx}, -1)">−</button>
+                    <button class="btn-cantidad-menos" onclick="cambiarCantidad(${idx}, -1)">ˆ’</button>
                     <span class="cantidad-display">${item.cantidad}</span>
                     <button class="btn-cantidad-mas" onclick="cambiarCantidad(${idx}, 1)">+</button>
                     <button class="btn-quitar" onclick="quitarDelCarrito(${idx})">×</button>
@@ -1045,12 +1371,12 @@ function aplicarDescuento() {
 
     cerrarModal();
     renderizarCarrito();
-    mostrarAlerta('✅ Precio actualizado', 'success');
+    mostrarAlerta(' Precio actualizado', 'success');
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MÉTODOS DE PAGO
-// ═══════════════════════════════════════════════════════════════
+// METODOS DE PAGO
+// 
 function toggleMetodo(el) {
     const metodo = el.dataset.metodo;
 
@@ -1064,7 +1390,7 @@ function toggleMetodo(el) {
 
     const infoEl = document.getElementById('metodosSeleccionados');
     if (metodosSeleccionados.size > 0) {
-        infoEl.textContent = '✅ ' + [...metodosSeleccionados].join(' + ');
+        infoEl.textContent = ' ' + [...metodosSeleccionados].join(' + ');
         infoEl.classList.add('visible');
     } else {
         infoEl.classList.remove('visible');
@@ -1105,9 +1431,9 @@ function actualizarBotonVender() {
 // PROCESAR VENTA (TIENDA FÍSICA)
 // ═══════════════════════════════════════════════════════════════
 async function procesarVenta() {
-    if (!cajaAbierta) return mostrarAlerta('❌ Primero abre la caja', 'error');
-    if (carrito.length === 0) return mostrarAlerta('❌ El carrito está vacío', 'error');
-    if (metodosSeleccionados.size === 0) return mostrarAlerta('❌ Selecciona al menos un método de pago', 'error');
+    if (!cajaAbierta) return mostrarAlerta(' Primero abre la caja', 'error');
+    if (carrito.length === 0) return mostrarAlerta('El carrito está vacío', 'error');
+    if (metodosSeleccionados.size === 0) return mostrarAlerta('Selecciona al menos un método de pago', 'error');
 
     const destino = document.getElementById('selectDestino')?.value || 'tienda';
     const tieneCredito = [...metodosSeleccionados].some(m => METODOS_CREDITO.includes(m));
@@ -1121,47 +1447,69 @@ async function procesarVenta() {
         const autoriza = document.getElementById('creditoAutoriza')?.value;
 
         if (!nombre || !telefono || !cedula || !direccion || !autoriza) {
-            return mostrarAlerta('❌ Completa todos los datos del crédito', 'error');
+            return mostrarAlerta('Completa todos los datos del crédito', 'error');
         }
     }
 
     const btnVender = document.getElementById('btnVender');
     btnVender.disabled = true;
-    btnVender.innerHTML = '⏳ Procesando...';
+    btnVender.innerHTML = 'Procesando...';
 
     const localRegistro = destino === 'digital' ? `Digital (${TIENDA.nombre})` : TIENDA.nombre;
     const metodoPagoStr = [...metodosSeleccionados].join(' + ');
 
     try {
         for (const item of carrito) {
-            const id_venta = 'V' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+            const fechaPersonalizadaInput = document.getElementById('fechaPersonalizada');
+            const fechaVenta = (fechaPersonalizadaInput && fechaPersonalizadaInput.value)
+                ? new Date(fechaPersonalizadaInput.value).toISOString()
+                : new Date().toISOString();
+
+            // Si hay una fecha personalizada, ajustar también el ID para que sea más único/rastreable
+            const timestampId = (fechaPersonalizadaInput && fechaPersonalizadaInput.value)
+                ? new Date(fechaPersonalizadaInput.value).getTime()
+                : Date.now();
+
+            // Determinar local real:
+            // 1. Si el item ya trae tiendaOrigen (porque se eligió con botón específico), usar esa.
+            // 2. Si no, usar el selector global del Admin POS.
+            // 3. Fallback al localRegistro standard.
+            const origenReal = item.tiendaOrigen || document.getElementById('origenVentaReal')?.value || localRegistro;
+
+            const id_venta = 'V' + timestampId + Math.random().toString(36).substr(2, 5).toUpperCase();
 
             const { error: errorVenta } = await db.from('ventas').insert({
                 id_venta: id_venta,
-                local: localRegistro,
+                local: origenReal,
                 id_producto: item.id_producto,
                 nombre_producto: item.nombre,
                 cantidad: item.cantidad,
                 precio_unitario: item.precio,
                 total: item.precio * item.cantidad,
                 metodo_pago: metodoPagoStr,
-                usuario: `POS ${TIENDA.nombre}`
+                usuario: `POS ${TIENDA.nombre}`,
+                id_evento: TIENDA.id_evento || null,
+                created_at: fechaVenta // Fecha histórica o actual
             });
 
             if (errorVenta) throw new Error(errorVenta.message);
 
-            // Descontar stock
-            const { data: stockActual } = await db
-                .from(TIENDA.tablaInventario)
-                .select('cantidad')
-                .eq('id_producto', item.id_producto)
-                .single();
+            // Descontar stock SOLO si está marcado o si no existe el checkbox (comportamiento normal)
+            const checkInventario = document.getElementById('afectarInventario');
+            const debeAfectarInventario = !checkInventario || checkInventario.checked;
 
-            if (stockActual) {
-                const nuevoStock = Math.max(0, stockActual.cantidad - item.cantidad);
-                await db.from(TIENDA.tablaInventario)
-                    .update({ cantidad: nuevoStock })
-                    .eq('id_producto', item.id_producto);
+            if (debeAfectarInventario) {
+                const { data: stockActual } = await db
+                    .from(TIENDA.tablaInventario)
+                    .select('cantidad')
+                    .eq('id_producto', item.id_producto)
+                    .single();
+
+                if (stockActual) {
+                    await db.from(TIENDA.tablaInventario)
+                        .update({ cantidad: Math.max(0, stockActual.cantidad - item.cantidad) })
+                        .eq('id_producto', item.id_producto);
+                }
             }
 
             // Si es digital, agregar al inventario digital
@@ -1224,15 +1572,14 @@ async function procesarVenta() {
 
             if (errorCredito) {
                 console.error('Error registrando crédito:', errorCredito);
-                mostrarAlerta('⚠️ Venta ok, pero error al registrar crédito: ' + errorCredito.message, 'warning');
+                mostrarAlerta(' Venta ok, pero error al registrar crédito: ' + errorCredito.message, 'warning');
             } else {
-                console.log('✅ Crédito Motero registrado:', numeroCredito);
             }
         }
 
         const msg = destino === 'digital'
-            ? `📦 Transferido a Digital: $${total.toLocaleString('es-CO')}`
-            : `✅ Venta exitosa: $${total.toLocaleString('es-CO')}`;
+            ? ` Transferido a Digital: $${total.toLocaleString('es-CO')}`
+            : ` Venta exitosa: $${total.toLocaleString('es-CO')}`;
 
         if (window.moterosIA) {
             window.moterosIA.aprenderEvento('Venta realizada en tienda', {
@@ -1248,10 +1595,10 @@ async function procesarVenta() {
 
     } catch (error) {
         console.error('Error procesando venta:', error);
-        mostrarAlerta('❌ ' + error.message, 'error');
+        mostrarAlerta('Error procesando venta: ' + error.message, 'error');
     }
 
-    btnVender.innerHTML = '✅ Procesar Venta';
+    btnVender.innerHTML = ' Procesar Venta';
     actualizarBotonVender();
 }
 
@@ -1259,9 +1606,9 @@ async function procesarVenta() {
 // PROCESAR VENTA (TIENDA DIGITAL) + CREAR ENVÍO
 // ═══════════════════════════════════════════════════════════════
 async function procesarVentaDigital() {
-    if (!cajaAbierta) return mostrarAlerta('❌ Abre la caja', 'error');
-    if (carrito.length === 0) return mostrarAlerta('❌ Pedido vacío', 'error');
-    if (metodosSeleccionados.size === 0) return mostrarAlerta('❌ Selecciona método de pago', 'error');
+    if (!cajaAbierta) return mostrarAlerta('Abre la caja', 'error');
+    if (carrito.length === 0) return mostrarAlerta('Pedido vacío', 'error');
+    if (metodosSeleccionados.size === 0) return mostrarAlerta('Selecciona método de pago', 'error');
 
     // Validar datos de envío (obligatorios para digital)
     const clienteNombre = document.getElementById('clienteNombre').value.trim();
@@ -1273,7 +1620,7 @@ async function procesarVentaDigital() {
     const notasEnvio = document.getElementById('notasEnvio').value.trim();
 
     if (!clienteNombre || !clienteTelefono || !clienteCedula || !direccionEnvio || !ciudadEnvio || !departamentoEnvio) {
-        return mostrarAlerta('❌ Completa todos los datos de envío', 'error');
+        return mostrarAlerta(' Completa todos los datos de envío', 'error');
     }
 
     // Validar crédito
@@ -1284,12 +1631,12 @@ async function procesarVentaDigital() {
     if (tieneCredito) {
         creditoAutoriza = document.getElementById('creditoAutoriza').value;
         creditoCuotas = parseInt(document.getElementById('creditoCuotas').value) || 1;
-        if (!creditoAutoriza) return mostrarAlerta('❌ Selecciona quién autoriza el crédito', 'error');
+        if (!creditoAutoriza) return mostrarAlerta(' Selecciona quién autoriza el crédito', 'error');
     }
 
     const btnVender = document.getElementById('btnVender');
     btnVender.disabled = true;
-    btnVender.innerHTML = '⏳ Procesando...';
+    btnVender.innerHTML = 'ó Procesando...';
 
     const metodoPagoStr = [...metodosSeleccionados].join(' + ');
     const pedidoTimestamp = Date.now();
@@ -1329,7 +1676,8 @@ async function procesarVentaDigital() {
                 es_credito: tieneCredito,
                 credito_autorizado_por: tieneCredito ? creditoAutoriza : null,
                 credito_cuotas: tieneCredito ? creditoCuotas : 0,
-                credito_estado: tieneCredito ? 'Pendiente' : null
+                credito_estado: tieneCredito ? 'Pendiente' : null,
+                id_evento: TIENDA.id_evento || null
             };
 
             const { error } = await db.from('ventas').insert(ventaData);
@@ -1360,7 +1708,7 @@ async function procesarVentaDigital() {
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // CREAR ENVÍO AUTOMÁTICO EN TABLA envios
+        // CREAR ENVIO AUTOMATICO EN TABLA envios
         // ═══════════════════════════════════════════════════════════════
         const totalPedido = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
         const productosDescripcion = carrito.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
@@ -1404,22 +1752,22 @@ async function procesarVentaDigital() {
             });
         }
 
-        mostrarAlerta(`✅ Pedido registrado: $${total.toLocaleString('es-CO')}`, 'success');
+        mostrarAlerta(`Pedido registrado: $${total.toLocaleString('es-CO')}`, 'success');
 
         limpiarDespuesVentaDigital();
         await cargarProductos();
 
     } catch (error) {
         console.error('Error:', error);
-        mostrarAlerta('❌ ' + error.message, 'error');
+        mostrarAlerta('Error: ' + error.message, 'error');
     }
 
-    btnVender.innerHTML = '📦 Registrar Pedido';
+    btnVender.innerHTML = ' Registrar Pedido';
     actualizarBotonVender();
 }
 
 // ═══════════════════════════════════════════════════════════════
-// LIMPIAR DESPUÉS DE VENTA
+// LIMPIAR DESPUES DE VENTA
 // ═══════════════════════════════════════════════════════════════
 function limpiarDespuesVenta() {
     carrito = [];
@@ -1473,7 +1821,10 @@ function limpiarFormCredito() {
 // MODALES Y ALERTAS
 // ═══════════════════════════════════════════════════════════════
 function cerrarModal() {
-    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('visible'));
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.classList.remove('visible');
+        m.style.display = '';
+    });
 }
 
 function mostrarAlerta(mensaje, tipo = 'success') {
@@ -1503,3 +1854,957 @@ document.addEventListener('click', e => {
         cerrarModal();
     }
 });
+// ═══════════════════════════════════════════════════════════════
+// GESTION DE VARIANTES (POS)
+// ═══════════════════════════════════════════════════════════════
+
+// Inyectar modal de variantes al cargar
+document.addEventListener('DOMContentLoaded', () => {
+    const modalHTML = `
+    <div id="modalSeleccionVariante" class="modal-overlay">
+        <div class="modal" style="max-width: 500px;">
+            <h3>¨ Seleccionar Variante</h3>
+            <p id="nombreProductoVariante" style="font-weight:600; margin-bottom:1rem; color:var(--primary);"></p>
+            
+            <div id="contenedorOpcionesVariante" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
+                <!-- Opciones dinámicas -->
+            </div>
+
+            <div class="modal-botones">
+                <button class="btn btn-danger" onclick="cerrarModalVariante()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    <style>
+        .chip-variante {
+            padding: 10px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .chip-variante:hover {
+            border-color: var(--primary);
+            background: #fff7ed;
+        }
+        .chip-variante.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+    </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+});
+
+function cerrarModalVariante() {
+    const modal = document.getElementById('modalSeleccionVariante');
+    if (modal) {
+        modal.classList.remove('visible');
+        modal.style.display = ''; // Limpiar estilo inline
+    }
+    productoParaVariante = null;
+}
+
+// Interceptar o manejar clicks para agregar
+// NOTA: Esta función se debe llamar desde el renderizado de productos
+function iniciarSeleccionVariante(producto) {
+    productoParaVariante = producto;
+    const modal = document.getElementById('modalSeleccionVariante');
+    const titulo = document.getElementById('nombreProductoVariante');
+    const contenedor = document.getElementById('contenedorOpcionesVariante');
+
+    titulo.textContent = producto.nombre;
+    contenedor.innerHTML = '';
+
+    // Obtener opciones de 'variantes' (array) o 'stock_variantes' (objeto antiguo)
+    const opciones = Array.isArray(producto.variantes) ? producto.variantes : Object.keys(producto.stock_variantes || {});
+    const stockVar = producto.stock_variantes || {};
+
+    if (opciones.length === 0) {
+        // Fallback si no hay stock definido pero hay variantes teóricas
+        contenedor.innerHTML = '<p class="text-danger"> No hay stock detallado para inventario. Se agregará como genérico.</p>';
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-primary btn-full';
+        btn.textContent = 'Agregar Genérico';
+        btn.onclick = () => { confirmAgregarVariante(null); };
+        contenedor.appendChild(btn);
+    } else {
+        opciones.forEach(opcion => {
+            const btn = document.createElement('div');
+            btn.className = 'chip-variante';
+            const hasStockInfo = stockVar[opcion] !== undefined;
+            btn.textContent = hasStockInfo ? `${opcion.replace(/-/g, ' ')} (Stock: ${stockVar[opcion]})` : opcion.replace(/-/g, ' ');
+            btn.onclick = () => confirmAgregarVariante(opcion);
+            contenedor.appendChild(btn);
+        });
+    }
+
+    modal.classList.add('visible');
+    modal.style.display = 'flex';
+}
+
+function confirmAgregarVariante(varianteNombre) {
+    if (!productoParaVariante) return;
+    agregarAlCarrito(productoParaVariante.id_producto, varianteNombre); // Corregido: pasar id_producto
+    cerrarModalVariante();
+}
+
+// Modificar agregarAlCarrito existente o crear uno nuevo que soporte variantes
+// Buscaremos la función agregarAlCarrito original para reemplazarla o sobrecargarla
+
+// ═══════════════════════════════════════════════════════════════
+// 
+// TRASLADOS ENTRE TIENDAS
+// 
+
+async function abrirModalTraslado() {
+    if (!cajaAbierta) return mostrarAlerta('⚠️ Abre la caja primero', 'error');
+
+    try {
+        // 1. Cargar inventario con cantidad > 0
+        const { data: inventario, error: errorInv } = await db
+            .from(TIENDA.tablaInventario)
+            .select('id_producto, cantidad')
+            .gt('cantidad', 0);
+
+        if (errorInv) throw errorInv;
+
+        if (!inventario || inventario.length === 0) {
+            mostrarAlerta('No hay productos con stock para trasladar', 'warning');
+            return;
+        }
+
+        const ids = inventario.map(i => i.id_producto);
+        const { data: detallesProductos } = await db
+            .from('productos')
+            .select('id_producto, nombre, marca')
+            .in('id_producto', ids)
+            .eq('estado', 'Activo');
+
+        const productosMap = {};
+        (detallesProductos || []).forEach(p => productosMap[p.id_producto] = p);
+
+        const select = document.getElementById('trasladoProducto');
+        select.innerHTML = '<option value="">Selecciona un producto...</option>';
+
+        const itemsCombinados = inventario.map(item => {
+            const prod = productosMap[item.id_producto];
+            return {
+                id_producto: item.id_producto,
+                cantidad: item.cantidad,
+                nombre: prod ? prod.nombre : 'Producto ' + item.id_producto,
+                marca: prod ? prod.marca : ''
+            };
+        }).sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+        itemsCombinados.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id_producto;
+            option.textContent = `${item.nombre} (${item.marca}) - Stock: ${item.cantidad}`;
+            option.dataset.stock = item.cantidad;
+            select.appendChild(option);
+        });
+
+        // 2. Cargar EVENTOS ACTIVOS como destinos adicionales
+        const { data: eventosActivos } = await db.from('eventos_tienda').select('id, nombre_evento').eq('estado', 'Activo');
+
+        const selectDestino = document.getElementById('trasladoDestino');
+        // Limpiar para no duplicar si se abre varias veces
+        selectDestino.innerHTML = `
+            <option value="">Seleccionar...</option>
+            <option value="Alcalá">Alcalá</option>
+            <option value="01">Local 01</option>
+            <option value="Jordán">Jordán</option>
+            <option value="Digital">Digital</option>
+            <option value="Evento">🎈 Evento (Actual)</option>
+        `;
+
+        if (eventosActivos && eventosActivos.length > 0) {
+            eventosActivos.forEach(ev => {
+                // Si no es el evento actual (para evitar confusiones)
+                const option = document.createElement('option');
+                option.value = 'Evento:' + ev.id;
+                option.textContent = '🎪 ' + ev.nombre_evento;
+                selectDestino.appendChild(option);
+            });
+        }
+
+        // Filtrar destino actual (evitar trasladar a sí mismo)
+        Array.from(selectDestino.options).forEach(opt => {
+            if (opt.value === TIENDA.nombre || opt.value === TIENDA.nombre.replace('Local ', '')) {
+                opt.disabled = true;
+                opt.style.display = 'none';
+            }
+        });
+
+        const modal = document.getElementById('modalTraslado');
+        modal.classList.add('visible');
+        modal.style.display = 'flex';
+
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarAlerta('Error cargando productos: ' + error.message, 'error');
+    }
+}
+
+async function procesarTraslado() {
+    const productoId = document.getElementById('trasladoProducto').value;
+    const destino = document.getElementById('trasladoDestino').value;
+    const cantidad = parseInt(document.getElementById('trasladoCantidad').value);
+
+    if (!productoId || !destino || !cantidad || cantidad <= 0) {
+        return mostrarAlerta(' Completa todos los campos', 'error');
+    }
+
+    // Validar stock
+    const selectProd = document.getElementById('trasladoProducto');
+    const stockDisponible = parseInt(selectProd.selectedOptions[0].dataset.stock);
+
+    if (cantidad > stockDisponible) {
+        return mostrarAlerta(`Stock insuficiente. Disponible: ${stockDisponible}`, 'error');
+    }
+
+    try {
+        // Determinar tabla destino
+        let tablaDestino = '';
+        let eventoActivoId = null;
+
+        if (destino === 'Alcalá') tablaDestino = 'inventario_alcala';
+        else if (destino === '01' || destino === 'Local 01') tablaDestino = 'inventario_01';
+        else if (destino === 'Jordán') tablaDestino = 'inventario_jordan';
+        else if (destino === 'Digital') tablaDestino = 'inventario_digital';
+        else if (destino === 'Evento' || destino.startsWith('Evento:')) {
+            tablaDestino = 'inventario_evento';
+            if (destino.includes(':')) {
+                eventoActivoId = destino.split(':')[1];
+            }
+        }
+
+        if (!tablaDestino) return mostrarAlerta('Destino no válido', 'error');
+
+        // 1. Descontar de inventario origen
+        const { data: stockOrigen } = await db
+            .from(TIENDA.tablaInventario)
+            .select('cantidad, productos(nombre)')
+            .eq('id_producto', productoId)
+            .single();
+
+        if (!stockOrigen) throw new Error('Producto no encontrado en inventario origen');
+
+        await db.from(TIENDA.tablaInventario)
+            .update({ cantidad: stockOrigen.cantidad - cantidad })
+            .eq('id_producto', productoId);
+
+        // 2. Sumar a inventario destino
+        const { data: stockDestino } = await db.from(tablaDestino).select('cantidad').eq('id_producto', productoId).single();
+        if (stockDestino) {
+            await db.from(tablaDestino).update({ cantidad: stockDestino.cantidad + cantidad }).eq('id_producto', productoId);
+        } else {
+            await db.from(tablaDestino).insert({ id_producto: productoId, cantidad: cantidad, stock_minimo: 0 });
+        }
+
+        // 3. Registrar en tabla movimientos_transferencia
+        try {
+            await db.from('movimientos_transferencia').insert({
+                id_producto: productoId,
+                nombre_producto: stockOrigen.productos?.nombre || 'Producto',
+                cantidad: cantidad,
+                origen: TIENDA.nombre,
+                destino: destino.includes(':') ? document.getElementById('trasladoDestino').selectedOptions[0].textContent : destino,
+                usuario: (empleadoLogueado?.nombre || 'Usuario POS'),
+                notas: `Traslado desde ${TIENDA.nombre}` + (eventoActivoId ? ` para Evento ID ${eventoActivoId}` : '')
+            });
+        } catch (eLog) {
+            console.error('Error logueando traslado:', eLog);
+        }
+
+        mostrarAlerta('✅ Traslado realizado con éxito', 'success');
+        cerrarModal('modalTraslado');
+
+        // Limpiar
+        document.getElementById('trasladoDestino').value = '';
+        document.getElementById('trasladoCantidad').value = '1';
+
+        // Recargar inventario local
+        cargarProductos();
+
+    } catch (error) {
+        console.error('Error en traslado:', error);
+        mostrarAlerta(' Error: ' + error.message, 'error');
+    }
+}
+
+// 
+// PAGOS A PROVEEDORES (POS)
+// 
+
+let proveedoresCache = [];
+let proveedorSeleccionado = null;
+
+async function abrirModalProveedoresPOS() {
+    if (!cajaAbierta) return mostrarAlerta(' Abre la caja primero', 'error');
+
+    document.getElementById('modalProveedoresPOS').classList.add('visible');
+    document.getElementById('modalProveedoresPOS').style.display = 'flex';
+
+    await cargarProveedoresConSaldo();
+}
+
+async function cargarProveedoresConSaldo() {
+    try {
+        // Consultar proveedores con saldo pendiente > 0
+        const { data, error } = await db
+            .from('compras_proveedor')
+            .select(`
+                proveedor_id,
+                saldo_pendiente,
+                proveedores (
+                    id,
+                    razon_social,
+                    banco,
+                    tipo_cuenta,
+                    numero_cuenta,
+                    titular_cuenta
+                )
+            `)
+            .gt('saldo_pendiente', 0);
+
+        if (error) throw error;
+
+        // Agrupar por proveedor y sumar saldos
+        const proveedoresMap = {};
+        data.forEach(compra => {
+            const prov = compra.proveedores;
+            if (!prov) return;
+
+            if (!proveedoresMap[prov.id]) {
+                proveedoresMap[prov.id] = {
+                    id: prov.id,
+                    nombre: prov.razon_social,
+                    saldo: 0,
+                    banco: prov.banco,
+                    tipo_cuenta: prov.tipo_cuenta,
+                    numero_cuenta: prov.numero_cuenta,
+                    titular: prov.titular_cuenta
+                };
+            }
+            proveedoresMap[prov.id].saldo += parseFloat(compra.saldo_pendiente || 0);
+        });
+
+        proveedoresCache = Object.values(proveedoresMap);
+        renderizarProveedoresPOS();
+
+    } catch (e) {
+        console.error('Error cargando proveedores:', e);
+        mostrarAlerta('Error cargando proveedores', 'error');
+    }
+}
+
+function renderizarProveedoresPOS() {
+    const tbody = document.getElementById('listaProveedoresPOS');
+
+    if (proveedoresCache.length === 0) {
+        tbody.innerHTML = '<tr><td colspan=\"3\" style=\"text-align:center; color:#94a3b8;\"> No hay proveedores con saldo pendiente</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = proveedoresCache.map(p => `
+        <tr>
+            <td>
+                <strong>${p.nombre}</strong><br>
+                <small style="color:#64748b; font-size:0.85rem;">
+                    ${p.banco || ''} - ${p.tipo_cuenta || ''} ${p.numero_cuenta || ''}
+                </small>
+            </td>
+            <td style="color:#ef4444; font-weight:600;">$${p.saldo.toLocaleString('es-CO')}</td>
+            <td>
+                <button class="btn btn-sm btn-success" onclick="abrirModalAbonoProveedor('${p.id}', '${p.nombre}', ${p.saldo}, '${p.banco || ''}', '${p.tipo_cuenta || ''}', '${p.numero_cuenta || ''}', '${p.titular || ''}')">
+                     Pagar
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filtrarProveedoresPOS() {
+    const busqueda = document.getElementById('busquedaProveedorPOS').value.toLowerCase();
+    const filas = document.querySelectorAll('#listaProveedoresPOS tr');
+
+    filas.forEach(fila => {
+        const texto = fila.textContent.toLowerCase();
+        fila.style.display = texto.includes(busqueda) ? '' : 'none';
+    });
+}
+
+function abrirModalAbonoProveedor(id, nombre, saldo, banco, tipoCuenta, numeroCuenta, titular) {
+    proveedorSeleccionado = { id, nombre, saldo };
+
+    document.getElementById('abonoProveedorId').value = id;
+    document.getElementById('abonoProveedorNombre').value = nombre;
+    document.getElementById('abonoNombreDisplay').textContent = nombre;
+    document.getElementById('abonoSaldoDisplay').textContent = '$' + saldo.toLocaleString('es-CO');
+
+    // Mostrar datos bancarios
+    let datosBancarios = '';
+    if (banco && banco !== 'null' && banco !== 'undefined') {
+        datosBancarios = `
+            <strong>Banco:</strong> ${banco}<br>
+            <strong>Tipo:</strong> ${tipoCuenta}<br>
+            <strong>Número:</strong> ${numeroCuenta}<br>
+            <strong>Titular:</strong> ${titular}
+        `;
+    } else {
+        datosBancarios = '<em style=\"color:#94a3b8;\">No hay datos bancarios registrados</em>';
+    }
+    document.getElementById('abonoBancoDisplay').innerHTML = datosBancarios;
+
+    // Limpiar formulario
+    document.getElementById('abonoMonto').value = '';
+    document.getElementById('abonoMetodoPago').selectedIndex = 0;
+    document.getElementById('abonoReferencia').value = '';
+    document.getElementById('abonoNotas').value = '';
+
+    document.getElementById('modalAbonoProveedor').classList.add('visible');
+    document.getElementById('modalAbonoProveedor').style.display = 'flex';
+}
+
+async function confirmarAbonoProveedor() {
+    const id = document.getElementById('abonoProveedorId').value;
+    const monto = parseFloat(document.getElementById('abonoMonto').value);
+    const metodo = document.getElementById('abonoMetodoPago').value;
+    const referencia = document.getElementById('abonoReferencia').value.trim();
+    const notas = document.getElementById('abonoNotas').value.trim();
+
+    // Validaciones
+    if (!monto || monto <= 0) {
+        return mostrarAlerta(' Ingresa un monto válido', 'error');
+    }
+
+    if (!metodo) {
+        return mostrarAlerta(' Selecciona el método de pago', 'error');
+    }
+
+    if (monto > proveedorSeleccionado.saldo) {
+        return mostrarAlerta(`El monto no puede ser mayor al saldo ($${proveedorSeleccionado.saldo.toLocaleString('es-CO')})`, 'error');
+    }
+
+    try {
+        // 1. Registrar el pago general en pagos_proveedor
+        const { error: errorPago } = await db.from('pagos_proveedor').insert({
+            proveedor_id: id,
+            monto: monto,
+            metodo_pago: metodo,
+            referencia: referencia || null,
+            fecha_pago: new Date().toISOString().split('T')[0],
+            registrado_por: (empleadoLogueado?.nombre || 'POS') + ' - ' + TIENDA.nombre,
+            local: TIENDA.nombre, // Nuevo campo para trazabilidad de cierre
+            notas: notas || null
+        });
+
+        if (errorPago) throw errorPago;
+
+        // 2. Descontar del saldo_pendiente de las compras (FIFO)
+        let montoRestante = monto;
+
+        // Obtener compras pendientes ordenadas por fecha (más antiguas primero)
+        const { data: comprasPendientes } = await db
+            .from('compras_proveedor')
+            .select('id, saldo_pendiente')
+            .eq('proveedor_id', id)
+            .gt('saldo_pendiente', 0)
+            .order('fecha_compra', { ascending: true });
+
+        if (comprasPendientes) {
+            for (const compra of comprasPendientes) {
+                if (montoRestante <= 0) break;
+
+                const saldoActual = parseFloat(compra.saldo_pendiente || 0);
+                let rebaja = Math.min(montoRestante, saldoActual);
+                let nuevoSaldo = saldoActual - rebaja;
+
+                await db.from('compras_proveedor')
+                    .update({
+                        saldo_pendiente: nuevoSaldo,
+                        estado: nuevoSaldo <= 0 ? 'PAGADO' : 'PENDIENTE'
+                    })
+                    .eq('id', compra.id);
+
+                montoRestante -= rebaja;
+            }
+        }
+
+        // 3. Actualizar saldo global en tabla proveedores (si existe la columna saldo_pendiente)
+        try {
+            const { data: prov } = await db.from('proveedores').select('saldo_pendiente').eq('id', id).single();
+            if (prov) {
+                const nuevoSaldoGlobal = Math.max(0, parseFloat(prov.saldo_pendiente || 0) - monto);
+                await db.from('proveedores').update({ saldo_pendiente: nuevoSaldoGlobal }).eq('id', id);
+            }
+        } catch (e) {
+            console.warn('No se pudo actualizar saldo global del proveedor:', e);
+        }
+
+        mostrarAlerta(`Pago de $${monto.toLocaleString('es-CO')} registrado y aplicado a facturas`, 'success');
+        cerrarModalAbonoProveedor();
+        await cargarProveedoresConSaldo(); // Recargar lista
+
+        // Opcional: Agregar como gasto visualmente si se desea
+        // gastosDelDia.push({ descripcion: Abono proveedor , monto: -monto }); ESTO NO, porque se resta aparte en el cierre
+
+    } catch (e) {
+        console.error('Error registrando pago:', e);
+        mostrarAlerta(' Error: ' + e.message, 'error');
+    }
+}
+
+function cerrarModalProveedoresPOS() {
+    document.getElementById('modalProveedoresPOS').classList.remove('visible');
+    document.getElementById('modalProveedoresPOS').style.display = '';
+}
+
+function cerrarModalAbonoProveedor() {
+    document.getElementById('modalAbonoProveedor').classList.remove('visible');
+    document.getElementById('modalAbonoProveedor').style.display = '';
+    proveedorSeleccionado = null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADELANTOS DE NÓMINA - LÓGICA
+// ═══════════════════════════════════════════════════════════════
+
+async function abrirModalAdelantoNomina() {
+    if (!cajaAbierta) return mostrarAlerta('Debes abrir la caja primero', 'warning');
+
+    document.getElementById('modalAdelantoNomina').classList.add('visible');
+    document.getElementById('modalAdelantoNomina').style.display = 'flex';
+
+    // Cargar empleados en el select
+    const select = document.getElementById('adelantoEmpleadoId');
+    select.innerHTML = '<option value="">Cargando...</option>';
+
+    try {
+        const { data, error } = await db.from('empleados_tienda').select('*').eq('activo', true).order('nombre');
+        if (error) throw error;
+
+        select.innerHTML = '<option value="">Seleccionar empleado...</option>' +
+            data.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+
+        // Autoseleccionar el empleado logueado si coincide (opcional)
+        if (empleadoLogueado) {
+            const match = data.find(e => e.nombre === empleadoLogueado.nombre);
+            if (match) select.value = match.id;
+        }
+    } catch (e) {
+        console.error('Error cargando empleados:', e);
+        mostrarAlerta('Error al cargar empleados', 'error');
+    }
+}
+
+function cerrarModalAdelantoNomina() {
+    document.getElementById('modalAdelantoNomina').classList.remove('visible');
+    document.getElementById('modalAdelantoNomina').style.display = '';
+    // Limpiar campos
+    ['adelantoMonto', 'adelantoAutoriza', 'adelantoMotivo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+}
+
+async function guardarAdelantoNomina() {
+    const empleadoId = document.getElementById('adelantoEmpleadoId').value;
+    const monto = parseFloat(document.getElementById('adelantoMonto').value);
+    const autoriza = document.getElementById('adelantoAutoriza').value.trim();
+    const motivo = document.getElementById('adelantoMotivo').value.trim();
+
+    if (!empleadoId) return mostrarAlerta('Selecciona un empleado', 'warning');
+    if (!monto || monto <= 0) return mostrarAlerta('Ingresa un monto válido', 'warning');
+    if (!autoriza) return mostrarAlerta('Ingresa quién autoriza el adelanto', 'warning');
+
+    try {
+        const { error } = await db.from('adelantos_nomina').insert({
+            empleado_id: empleadoId,
+            monto: monto,
+            quien_autoriza: autoriza,
+            motivo: motivo || null,
+            local: TIENDA.nombre,
+            fecha: new Date().toISOString(),
+            registrado_por: empleadoLogueado?.nombre || 'POS'
+        });
+
+        if (error) throw error;
+
+        mostrarAlerta(`Adelanto de $${monto.toLocaleString('es-CO')} registrado con éxito`, 'success');
+        cerrarModalAdelantoNomina();
+
+        if (window.moterosIA) {
+            window.moterosIA.aprenderEvento('Adelanto de nómina registrado', {
+                monto,
+                autoriza,
+                tienda: TIENDA.nombre
+            });
+        }
+    } catch (e) {
+        console.error('Error guardando adelanto:', e);
+        mostrarAlerta('Error al guardar: ' + e.message, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ABONOS A CRÉDITO MOTERO DESDE EL POS
+// ═══════════════════════════════════════════════════════════════
+
+function abrirModalAbonoCredito() {
+    if (!cajaAbierta) return mostrarAlerta('Debes abrir caja primero', 'warning');
+    document.getElementById('modalAbonoCredito').style.display = 'flex';
+    document.getElementById('buscarClienteCredito').focus();
+}
+
+function cerrarModalAbonoCredito() {
+    document.getElementById('modalAbonoCredito').style.display = 'none';
+    document.getElementById('listaCreditosCliente').style.display = 'none';
+    document.getElementById('detalleCreditoAbono').style.display = 'none';
+    document.getElementById('btnConfirmarAbono').style.display = 'none';
+    document.getElementById('buscarClienteCredito').value = '';
+    document.getElementById('montoAbonoCredito').value = '';
+}
+
+async function buscarCreditoCliente() {
+    const q = document.getElementById('buscarClienteCredito').value.toLowerCase().trim();
+    if (!q) return;
+
+    const lista = document.getElementById('listaCreditosCliente');
+    lista.innerHTML = 'Cargando...';
+    lista.style.display = 'block';
+
+    try {
+        const { data: deudores, error } = await db
+            .from('deudores')
+            .select('*')
+            .gt('saldo_actual', 0) // Solo con deuda pendiente
+            .order('nombre_completo', { ascending: true });
+
+        if (error) throw error;
+
+        // Filtrado en cliente (más flexible)
+        const filtrados = (deudores || []).filter(d => {
+            const nombre = (d.nombre_completo || '').toLowerCase();
+            const tel = (d.telefono || '').toLowerCase();
+            const desc = (d.descripcion_compra || '').toLowerCase();
+            return nombre.includes(q) || tel.includes(q) || desc.includes(q);
+        });
+
+        if (filtrados.length === 0) {
+            lista.innerHTML = 'No se encontraron deudores activos que coincidan.';
+            return;
+        }
+
+        lista.innerHTML = filtrados.map(d => {
+            return `
+                <div class="opcion-busqueda" onclick="seleccionarCreditoParaAbono('${d.id}')" style="padding:0.5rem; border-bottom:1px solid #eee; cursor:pointer; background:#fff;">
+                    <strong>${d.nombre_completo}</strong><br>
+                    <small>${d.telefono || 'Sin tel'}</small> - Saldo: <strong style="color:#ef4444;">$${(d.saldo_actual || 0).toLocaleString('es-CO')}</strong>
+                </div>
+            `;
+        }).join('');
+
+    } catch (e) {
+        console.error(e);
+        lista.innerHTML = 'Error al buscar.';
+    }
+}
+
+let deudorSeleccionado = null;
+
+async function seleccionarCreditoParaAbono(id) {
+    try {
+        const { data: d, error } = await db.from('deudores').select('*').eq('id', id).single();
+        if (error) throw error;
+
+        deudorSeleccionado = d;
+
+        document.getElementById('listaCreditosCliente').style.display = 'none';
+        document.getElementById('detalleCreditoAbono').style.display = 'block';
+        document.getElementById('creditoAbonoId').value = d.id;
+        document.getElementById('abonoClienteNombre').textContent = d.nombre_completo;
+        document.getElementById('abonoSaldoActual').textContent = '$' + (d.saldo_actual || 0).toLocaleString('es-CO');
+
+        // No hay cuotas definidas en este modelo simple, sugerimos el total o un abono común
+        document.getElementById('abonoCuotaSugerida').textContent = 'Pagar Total';
+        document.getElementById('montoAbonoCredito').value = '';
+        document.getElementById('montoAbonoCredito').focus();
+
+        document.getElementById('btnConfirmarAbono').style.display = 'block';
+
+    } catch (e) {
+        console.error(e);
+        mostrarAlerta('Error al seleccionar el deudor', 'error');
+    }
+}
+
+async function confirmarAbonoCredito() {
+    const id = document.getElementById('creditoAbonoId').value;
+    const monto = parseFloat(document.getElementById('montoAbonoCredito').value);
+
+    if (!monto || monto <= 0 || !deudorSeleccionado) {
+        return mostrarAlerta('Ingresa un monto válido', 'warning');
+    }
+
+    if (monto > deudorSeleccionado.saldo_actual) {
+        if (!confirm('¿El abono es mayor al saldo pendiente? Se registrará saldo a favor.')) return;
+    }
+
+    const metodoPago = document.getElementById('metodoAbonoCredito')?.value || 'Efectivo';
+
+    try {
+        const nuevoSaldo = (deudorSeleccionado.saldo_actual || 0) - monto;
+        const nuevoEstado = nuevoSaldo <= 0 ? 'cerrado' : 'activo';
+
+        // 1. Registrar el pago en pagos_deudor
+        const { error: errorPago } = await db.from('pagos_deudor').insert({
+            deudor_id: id,
+            monto: monto,
+            metodo_pago: metodoPago,
+            nota: 'Abono desde POS ' + TIENDA.nombre,
+            fecha_pago: new Date().toISOString(),
+            registrado_por: TIENDA.nombre // Usamos nombre de tienda como autor por simplicidad en POS
+        });
+
+        if (errorPago) throw errorPago;
+
+        // 2. Actualizar el saldo del deudor
+        const { error: errorDeudor } = await db.from('deudores').update({
+            saldo_actual: nuevoSaldo,
+            estado: nuevoEstado,
+            ultimo_pago: new Date().toISOString()
+        }).eq('id', id);
+
+        if (errorDeudor) throw errorDeudor;
+
+        mostrarAlerta('Abono registrado con éxito', 'success');
+        cerrarModalAbonoCredito();
+
+        if (window.moterosIA) {
+            window.moterosIA.aprenderEvento('Abono registrado POS', {
+                monto,
+                tienda: TIENDA.nombre,
+                saldo_restante: nuevoSaldo
+            });
+        }
+    } catch (e) {
+        console.error('Error al abonar:', e);
+        mostrarAlerta('Error al registrar el abono: ' + e.message, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MÓDULO DE SERVICIOS (LAVADOS, ARREGLOS, ETC.)
+// ═══════════════════════════════════════════════════════════════
+
+async function abrirModalServicios() {
+    document.getElementById('modalServicios').style.display = 'flex';
+    cargarEmpleadosServicio();
+    // Limpiar campos
+    document.getElementById('servClienteNombre').value = '';
+    document.getElementById('servClienteTelefono').value = '';
+    document.getElementById('servPrecioTotal').value = '';
+    document.getElementById('servAbono').value = '';
+    document.getElementById('servCascoInfo').value = '';
+}
+
+function cerrarModalServicios() {
+    document.getElementById('modalServicios').style.display = 'none';
+}
+
+async function cargarEmpleadosServicio() {
+    const select = document.getElementById('servEmpleado');
+    if (!select) return;
+
+    // Si ya tiene opciones (más que la default), no recargar cada vez si no es necesario
+    if (select.options.length > 1) return;
+
+    try {
+        const { data, error } = await db.from('empleados_tienda')
+            .select('id, nombre')
+            .eq('activo', true)
+            .order('nombre');
+
+        if (error) throw error;
+
+        data.forEach(emp => {
+            const opt = document.createElement('option');
+            opt.value = emp.id;
+            opt.textContent = emp.nombre;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('Error cargando empleados para servicios:', e);
+    }
+}
+
+async function registrarServicio() {
+    const tipo = document.getElementById('servTipo').value;
+    const empleadoId = document.getElementById('servEmpleado').value;
+    const cliente = document.getElementById('servClienteNombre').value.trim();
+    const telefono = document.getElementById('servClienteTelefono').value.trim();
+    const casco = document.getElementById('servCascoInfo').value.trim();
+    const precioTotal = parseFloat(document.getElementById('servPrecioTotal').value) || 0;
+    const abono = parseFloat(document.getElementById('servAbono').value) || 0;
+
+    if (!empleadoId) return mostrarAlerta('Selecciona al empleado que realizará el servicio.', 'warning');
+    if (!cliente || !telefono) return mostrarAlerta('Nombre y teléfono del cliente son obligatorios.', 'warning');
+    if (precioTotal <= 0) return mostrarAlerta('Ingresa el precio total del servicio.', 'warning');
+
+    try {
+        const { data: serv, error: errorServ } = await db.from('servicios_motero').insert({
+            tipo_servicio: tipo,
+            empleado_id: empleadoId,
+            cliente_nombre: cliente,
+            cliente_telefono: telefono,
+            casco_prestado: casco,
+            precio_total: precioTotal,
+            monto_abonado: abono,
+            saldo_pendiente: precioTotal - abono,
+            local: TIENDA.nombre,
+            estado: 'pendiente'
+        }).select().single();
+
+        if (errorServ) throw errorServ;
+
+        // Si hay abono inicial, registrar pago
+        if (abono > 0) {
+            await db.from('pagos_servicios').insert({
+                servicio_id: serv.id,
+                monto: abono,
+                metodo_pago: 'Efectivo',
+                local: TIENDA.nombre,
+                registrado_por: (typeof empleadoLogueado !== 'undefined' ? empleadoLogueado?.id : null)
+            });
+        }
+
+        mostrarAlerta('¡Servicio registrado exitosamente!', 'success');
+        cerrarModalServicios();
+
+    } catch (e) {
+        console.error('Error al registrar servicio:', e);
+        mostrarAlerta('Error al guardar el servicio: ' + e.message, 'error');
+    }
+}
+
+function abrirBuscadorServicios() {
+    cerrarModalServicios();
+    document.getElementById('modalBuscarServicios').style.display = 'flex';
+    document.getElementById('resultadosServicios').innerHTML = '<p style="text-align:center; color:var(--gray);">Ingresa el nombre o teléfono para buscar.</p>';
+}
+
+async function buscarServicios() {
+    const query = document.getElementById('queryServicio').value.trim();
+    const contenedor = document.getElementById('resultadosServicios');
+
+    if (query.length < 3) return mostrarAlerta('Ingresa al menos 3 caracteres.', 'info');
+
+    contenedor.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    try {
+        const { data, error } = await db.from('servicios_motero')
+            .select('*, empleados_tienda(nombre)')
+            .or(`cliente_nombre.ilike.%${query}%,cliente_telefono.ilike.%${query}%`)
+            .eq('local', TIENDA.nombre)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            contenedor.innerHTML = '<p style="text-align:center; padding:2rem; color:var(--gray);">No se encontraron servicios pendientes.</p>';
+            return;
+        }
+
+        contenedor.innerHTML = '';
+        data.forEach(s => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.marginBottom = '1rem';
+            card.style.borderLeft = s.estado === 'pendiente' ? '4px solid #f59e0b' : (s.estado === 'listo' ? '4px solid #3b82f6' : '4px solid #10b981');
+
+            card.innerHTML = `
+                <div class="card-body" style="padding:1rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div>
+                            <h4 style="margin:0; color:var(--dark);">${s.tipo_servicio} - #${s.numero_servicio}</h4>
+                            <p style="margin:0.2rem 0; font-size:0.85rem; color:#64748b;"><strong>Cliente:</strong> ${s.cliente_nombre} (${s.cliente_telefono})</p>
+                            <p style="margin:0; font-size:0.85rem; color:#64748b;"><strong>Empleado:</strong> ${s.empleados_tienda?.nombre || 'N/A'}</p>
+                            ${s.casco_prestado ? `<p style="margin:0.2rem 0; font-size:0.8rem; background:#f1f5f9; padding:0.3rem; border-radius:4px;">🪖 Casco: ${s.casco_prestado}</p>` : ''}
+                        </div>
+                        <div style="text-align:right;">
+                            <span class="badge" style="background:${s.estado === 'pendiente' ? '#fef3c7' : '#dbeafe'}; color:${s.estado === 'pendiente' ? '#92400e' : '#1e40af'}; text-transform:uppercase; font-size:0.75rem;">${s.estado}</span>
+                            <div style="font-weight:800; color:var(--primary); margin-top:0.5rem;">Saldo: $${(s.saldo_pendiente || 0).toLocaleString('es-CO')}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:1rem; display:flex; gap:0.5rem;">
+                        ${s.estado !== 'entregado' ? `
+                            <button onclick="registrarAbonoServicio('${s.id}', ${s.saldo_pendiente})" class="btn btn-sm btn-success">💰 Abonar/Pagar</button>
+                            ${s.estado === 'pendiente' ? `<button onclick="cambiarEstadoServicio('${s.id}', 'listo')" class="btn btn-sm btn-primary">✅ Listo</button>` : ''}
+                            ${s.estado === 'listo' && s.saldo_pendiente <= 0 ? `<button onclick="cambiarEstadoServicio('${s.id}', 'entregado')" class="btn btn-sm btn-info">📦 Entregar</button>` : ''}
+                        ` : '<span style="color:#10b981; font-weight:700;">✓ Servicio Completado</span>'}
+                    </div>
+                </div>
+            `;
+            contenedor.appendChild(card);
+        });
+
+    } catch (e) {
+        console.error('Error buscando servicios:', e);
+        mostrarAlerta('Error en la búsqueda.', 'error');
+    }
+}
+
+async function cambiarEstadoServicio(id, nuevoEstado) {
+    try {
+        const { error } = await db.from('servicios_motero')
+            .update({ estado: nuevoEstado })
+            .eq('id', id);
+
+        if (error) throw error;
+        mostrarAlerta('Estado actualizado.', 'success');
+        buscarServicios();
+    } catch (e) {
+        mostrarAlerta('Error al actualizar estado.', 'error');
+    }
+}
+
+async function registrarAbonoServicio(id, saldo) {
+    const monto = parseFloat(prompt(`Saldo pendiente: $${saldo.toLocaleString('es-CO')}\n¿Cuánto desea abonar?`, saldo));
+    if (isNaN(monto) || monto <= 0) return;
+    if (monto > saldo) return mostrarAlerta('El abono no puede superar el saldo.', 'warning');
+
+    try {
+        const { data: serv } = await db.from('servicios_motero').select('*').eq('id', id).single();
+
+        const { error } = await db.from('servicios_motero')
+            .update({
+                monto_abonado: (serv.monto_abonado || 0) + monto,
+                saldo_pendiente: (serv.saldo_pendiente || 0) - monto,
+                estado: (serv.saldo_pendiente - monto) <= 0 && serv.estado === 'pendiente' ? 'listo' : serv.estado
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // Registrar en pagos_servicios
+        await db.from('pagos_servicios').insert({
+            servicio_id: id,
+            monto: monto,
+            metodo_pago: 'Efectivo',
+            local: TIENDA.nombre,
+            registrado_por: (typeof empleadoLogueado !== 'undefined' ? empleadoLogueado?.id : null)
+        });
+
+        mostrarAlerta('Abono registrado.', 'success');
+        buscarServicios();
+    } catch (e) {
+        console.error(e);
+        mostrarAlerta('Error al registrar abono.', 'error');
+    }
+}

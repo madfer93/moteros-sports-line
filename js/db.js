@@ -29,7 +29,7 @@ const DB = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error al cargar productos:', error);
+      if(window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error al cargar productos:', error);
       return [];
     }
   },
@@ -46,7 +46,7 @@ const DB = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error al cargar producto:', error);
+      if(window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error al cargar producto:', error);
       return null;
     }
   },
@@ -67,7 +67,7 @@ const DB = {
       return data || [];
       
     } catch (error) {
-      console.error('Error al cargar stock:', error);
+      if(window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error al cargar stock:', error);
       return [];
     }
   },
@@ -88,7 +88,7 @@ const DB = {
       return data;
       
     } catch (error) {
-      console.error('Error al actualizar stock:', error);
+      if(window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error al actualizar stock:', error);
       throw error;
     }
   },
@@ -127,7 +127,7 @@ const DB = {
       return data;
       
     } catch (error) {
-      console.error('Error al registrar venta:', error);
+      if(window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error al registrar venta:', error);
       throw error;
     }
   },
@@ -152,7 +152,7 @@ const DB = {
       }
       
     } catch (error) {
-      console.error('Error al reducir stock:', error);
+      if(window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error al reducir stock:', error);
     }
   },
   
@@ -169,7 +169,7 @@ const DB = {
       return data || [];
       
     } catch (error) {
-      console.error('Error al cargar ventas:', error);
+      if(window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error al cargar ventas:', error);
       return [];
     }
   }

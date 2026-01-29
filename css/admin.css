@@ -1,4 +1,4 @@
-/* ╔══════════════════════════════════════════════════════════════════════════════╗
+﻿/* ╔══════════════════════════════════════════════════════════════════════════════╗
    ║          MOTEROS SPORTS LINE - ADMIN CSS V3 - MENÚ HORIZONTAL               ║
    ╚══════════════════════════════════════════════════════════════════════════════╝ */
 
@@ -71,7 +71,6 @@ body {
     margin-bottom: 1rem;
 }
 
-/* Logo de imagen en login */
 .login-wrapper img.logo-img,
 .login-wrapper .locked-logo {
     width: 100px;
@@ -193,7 +192,6 @@ body {
     white-space: nowrap;
 }
 
-/* Navigation Dropdowns */
 .header-nav {
     display: flex;
     align-items: center;
@@ -277,7 +275,6 @@ body {
     color: var(--danger);
 }
 
-/* Header User */
 .header-user {
     display: flex;
     align-items: center;
@@ -307,7 +304,6 @@ body {
     color: white;
 }
 
-/* Mobile Menu Toggle */
 .mobile-menu-toggle {
     display: none;
     background: rgba(255, 255, 255, 0.1);
@@ -321,7 +317,6 @@ body {
     margin-left: auto;
 }
 
-/* Mobile Navigation */
 .mobile-nav {
     position: fixed;
     top: 0;
@@ -390,9 +385,6 @@ body {
     color: white;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MAIN CONTENT
-═══════════════════════════════════════════════════════════════ */
 .main-content-horizontal {
     margin-top: var(--header-height);
     padding: 2rem;
@@ -420,7 +412,6 @@ body {
     }
 }
 
-/* Page Header */
 .page-header {
     margin-bottom: 2rem;
 }
@@ -436,9 +427,6 @@ body {
     margin-top: 0.25rem;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   STATS GRID
-═══════════════════════════════════════════════════════════════ */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -507,9 +495,6 @@ body {
     font-size: 0.875rem;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CARDS
-═══════════════════════════════════════════════════════════════ */
 .card {
     background: white;
     border-radius: 1rem;
@@ -536,16 +521,12 @@ body {
     padding: 1.5rem;
 }
 
-/* Charts Grid */
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 1.5rem;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ACTIONS BAR
-═══════════════════════════════════════════════════════════════ */
 .actions-bar {
     display: flex;
     flex-wrap: wrap;
@@ -574,9 +555,6 @@ body {
     border-color: var(--primary);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   BUTTONS
-═══════════════════════════════════════════════════════════════ */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -645,9 +623,6 @@ body {
     font-size: 1rem;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TABLES
-═══════════════════════════════════════════════════════════════ */
 .table-container {
     overflow-x: auto;
 }
@@ -687,19 +662,38 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   FORMS
+   FORMS - UPDATED FOR FULL SCREEN OVERLAY
 ═══════════════════════════════════════════════════════════════ */
 .form-modal {
-    background: white;
-    border-radius: 1rem;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
     display: none;
+    align-items: center;
+    justify-content: center;
 }
 
-.form-modal.active {
-    display: block;
+.form-modal.active,
+.form-modal[style*="display: block"] {
+    display: flex !important;
+}
+
+.form-modal>div,
+.form-modal .modal-content {
+    background: white;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 2rem;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
 }
 
 .form-modal h3 {
@@ -753,9 +747,6 @@ body {
     margin-top: 0.25rem;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DROPZONE
-═══════════════════════════════════════════════════════════════ */
 .dropzone {
     border: 2px dashed var(--gray-300);
     border-radius: 1rem;
@@ -839,9 +830,6 @@ body {
     text-align: center;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   POS GRID
-═══════════════════════════════════════════════════════════════ */
 .pos-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -879,9 +867,6 @@ body {
     margin-bottom: 1.5rem;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   REPORTS GRID
-═══════════════════════════════════════════════════════════════ */
 .reports-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -919,9 +904,6 @@ body {
     margin-bottom: 1rem;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CONFIG GRID
-═══════════════════════════════════════════════════════════════ */
 .config-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -956,10 +938,6 @@ body {
     border-radius: 0.5rem;
     cursor: pointer;
 }
-
-/* ═══════════════════════════════════════════════════════════════
-       ESTILOS PARA SECCIÓN DESTACADOS
-       ═══════════════════════════════════════════════════════════════ */
 
 .destacados-layout {
     display: grid;
@@ -1265,9 +1243,6 @@ body {
     animation: slideIn 0.3s ease forwards;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   PRODUCTOS ADMIN GRID
-═══════════════════════════════════════════════════════════════ */
 .productos-admin-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1353,9 +1328,6 @@ body {
     text-align: center;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MODAL
-═══════════════════════════════════════════════════════════════ */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -1422,9 +1394,6 @@ body {
     justify-content: flex-end;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ALERTS
-═══════════════════════════════════════════════════════════════ */
 .alert {
     padding: 1rem 1.25rem;
     border-radius: 0.75rem;
@@ -1455,9 +1424,6 @@ body {
     border: 1px solid #fecaca;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TOAST
-═══════════════════════════════════════════════════════════════ */
 .toast-container {
     position: fixed;
     top: calc(var(--header-height) + 1rem);
@@ -1508,9 +1474,6 @@ body {
     }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   LOADING
-═══════════════════════════════════════════════════════════════ */
 .loading {
     display: flex;
     flex-direction: column;
@@ -1536,9 +1499,6 @@ body {
     }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   STATUS BADGES
-═══════════════════════════════════════════════════════════════ */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -1568,9 +1528,6 @@ body {
     color: #1e40af;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RESPONSIVE
-═══════════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
     .header-nav {
         display: none;
@@ -1642,18 +1599,12 @@ body {
     }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   LOCALES STATS GRID
-═══════════════════════════════════════════════════════════════ */
 .locales-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PRODUCTOS PROMO GRID - MEJORADO
-═══════════════════════════════════════════════════════════════ */
 .productos-promo-grid {
     max-height: 400px;
     overflow-y: auto;
@@ -1663,7 +1614,6 @@ body {
     background: var(--gray-50);
 }
 
-/* Lista de productos para seleccionar */
 .productos-promo-lista {
     max-height: 350px;
     overflow-y: auto;
@@ -1693,7 +1643,6 @@ body {
     background: #fff7ed !important;
 }
 
-/* Formulario de promociones */
 #formPromocion {
     max-width: 900px;
     margin-bottom: 2rem;
@@ -1707,18 +1656,8 @@ body {
     margin-bottom: 1.5rem;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CSS ADICIONAL PARA COMPRAS - AGREGAR AL FINAL DE admin.css
-   ═══════════════════════════════════════════════════════════════ */
+/* CSS ADICIONAL PARA COMPRAS */
 
-/* Variables faltantes - agregar en :root si no existen */
-:root {
-    --white: #ffffff;
-    --radius: 0.5rem;
-    --radius-lg: 1rem;
-}
-
-/* Botones verticales para acciones */
 .btn-group-vertical {
     display: flex;
     gap: 0.25rem;
@@ -1729,163 +1668,11 @@ body {
     font-size: 0.85rem;
 }
 
-/* Modal overlay mejorado */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 1rem;
-    width: 100%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--gray-200);
-    background: linear-gradient(135deg, #fff7ed, #ffedd5);
-}
-
-.modal-header h3 {
-    margin: 0;
-    color: var(--gray-800);
-}
-
-.modal-body {
-    padding: 1.5rem;
-}
-
-.modal-footer {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    padding: 1rem 1.5rem;
-    border-top: 1px solid var(--gray-200);
-    background: var(--gray-50);
-}
-
-.btn-cerrar {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--gray-500);
-    padding: 0;
-    line-height: 1;
-}
-
-.btn-cerrar:hover {
-    color: var(--gray-700);
-}
-
-/* Texto rojo para saldos pendientes */
+/* ... Other utility classes you had ... */
 .text-danger {
     color: #dc2626 !important;
 }
 
-/* Badges de estado */
-.badge {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border-radius: 9999px;
-    text-transform: uppercase;
-}
-
-.badge-success {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.badge-warning {
-    background: #fef3c7;
-    color: #92400e;
-}
-
-.badge-danger {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.badge-info {
-    background: #dbeafe;
-    color: #1e40af;
-}
-
-/* Formulario de compras */
-#formCompra .form-row {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-#formCompra .form-group {
-    flex: 1;
-}
-
-#formCompra .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: var(--gray-700);
-}
-
-#formCompra .form-control {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--gray-300);
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    transition: all 0.2s;
-}
-
-#formCompra .form-control:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-}
-
-/* Datalist styling */
-input::-webkit-calendar-picker-indicator {
-    opacity: 0;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    #formCompra .form-row {
-        flex-direction: column;
-    }
-
-    .btn-group-vertical {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-
-    .modal-content {
-        max-width: 100%;
-        margin: 0.5rem;
-    }
-}
-
-/* Alert info en modal */
 .alert-info {
     background: #eff6ff;
     border: 1px solid #bfdbfe;
@@ -1894,295 +1681,365 @@ input::-webkit-calendar-picker-indicator {
     border-radius: 0.5rem;
 }
 
-.alert-info strong {
-    color: #1e3a8a;
+/* FIX PRODUCT CARDS ALIGNMENT */
+.producto-admin-card {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    /* Ensure all cards take full height of grid cell */
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ESTILOS MÓDULO DE ENVÍOS
-   ═══════════════════════════════════════════════════════════════ */
-
-/* Badges de estado envío */
-.badge-envio-pendiente {
-    background: #fef3c7;
-    color: #92400e;
+.producto-admin-info {
+    flex: 1 !important;
+    /* Pushes subsequent siblings (actions) to bottom */
+    display: flex !important;
+    flex-direction: column !important;
 }
 
-.badge-envio-preparando {
-    background: #dbeafe;
-    color: #1e40af;
+.producto-admin-actions {
+    margin-top: auto !important;
+    /* Fallback */
+    padding: 1rem !important;
+    /* Ensure consistency */
 }
 
-.badge-envio-despachado {
-    background: #e0e7ff;
-    color: #3730a3;
-}
 
-.badge-envio-en_transito {
-    background: #cffafe;
-    color: #0e7490;
-}
+/* ESTILOS DE IMPRESIÓN */
+/* ==========================================================================
+   IMPRESIÓN OPTIMIZADA - TICKET NÓMINA
+   ========================================================================== */
+@media print {
 
-.badge-envio-entregado {
-    background: #d1fae5;
-    color: #065f46;
-}
-
-.badge-envio-devuelto {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-/* Timeline historial */
-.historial-timeline {
-    position: relative;
-    padding-left: 2rem;
-}
-
-.historial-timeline::before {
-    content: '';
-    position: absolute;
-    left: 0.5rem;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #e2e8f0;
-}
-
-.historial-item {
-    position: relative;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.historial-item:last-child {
-    border-bottom: none;
-}
-
-.historial-item::before {
-    content: '';
-    position: absolute;
-    left: -1.5rem;
-    top: 1rem;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #3b82f6;
-    border: 2px solid white;
-    box-shadow: 0 0 0 2px #3b82f6;
-}
-
-.historial-item.notificado::after {
-    content: '📱';
-    position: absolute;
-    left: -2.5rem;
-    top: 0.7rem;
-    font-size: 0.75rem;
-}
-
-.historial-fecha {
-    font-size: 0.75rem;
-    color: #64748b;
-}
-
-.historial-estado {
-    font-weight: 600;
-    margin: 0.25rem 0;
-}
-
-.historial-mensaje {
-    font-size: 0.85rem;
-    color: #475569;
-    background: #f8fafc;
-    padding: 0.5rem;
-    border-radius: 6px;
-    margin-left: 0.5rem;
-}
-
-/* ESTADOS LEADS IA */
-.badge-estado {
-    padding: 0.25rem 0.75rem;
-    border-radius: 99px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.badge-estado.nuevo {
-    background: #dcfce7;
-    color: #166534;
-    border: 1px solid #bbf7d0;
-}
-
-.badge-estado.contactado {
-    background: #f1f5f9;
-    color: #475569;
-    border: 1px solid #e2e8f0;
-}
-
-.historial-por {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    margin-top: 0.25rem;
-}
-
-/* Acciones rápidas en tabla */
-.btn-envio-accion {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.8rem;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-envio-accion:hover {
-    transform: scale(1.05);
-}
-
-.btn-whatsapp {
-    background: #25D366;
-    color: white;
-}
-
-.btn-tracking {
-    background: #3b82f6;
-    color: white;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   UTILIDADES ADICIONALES
-   ═══════════════════════════════════════════════════════════════ */
-.text-muted {
-    color: var(--gray-500) !important;
-    font-size: 0.85em;
-}
-
-.text-danger {
-    color: var(--danger) !important;
-}
-
-.text-success {
-    color: var(--success) !important;
-}
-
-.btn-outline {
-    background: transparent;
-    border: 2px solid var(--gray-300);
-    color: var(--gray-600);
-}
-
-.btn-outline:hover {
-    background: var(--gray-100);
-    border-color: var(--gray-400);
-}
-
-/* Badge primary para estado despachado */
-.badge-primary {
-    background: #dbeafe;
-    color: #1e40af;
-}
-
-/* Mejora para btn-group-vertical en tabla */
-.btn-group-vertical {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.btn-group-vertical .btn {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.75rem;
-}
-
-/* Tabla responsive para envíos */
-@media (max-width: 1200px) {
-    #tbodyEnvios td {
-        font-size: 0.85rem;
-        padding: 0.75rem 0.5rem;
+    /* 1. Resetear visibilidad global: ocultar todo por defecto */
+    body * {
+        visibility: hidden;
+        height: auto !important;
+        overflow: visible !important;
     }
 
-    .btn-group-vertical {
-        flex-direction: row;
-        flex-wrap: wrap;
+    /* 2. Mostrar solo el ticket y sus padres necesarios */
+    #modalDetalleNomina,
+    #modalDetalleNomina .modal-content-wrapper,
+    #modalDetalleNomina .modal-body,
+    #modalDetalleNomina .nomina-split-view,
+    #modalDetalleNomina .nomina-preview-panel,
+    #modalDetalleNomina .ticket-container,
+    #modalDetalleNomina .ticket-container * {
+        visibility: visible;
+    }
+
+    /* 3. Posicionamiento del Modal */
+    #modalDetalleNomina {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: white;
+        display: block !important;
+        z-index: 9999;
+    }
+
+    /* 4. Ocultar interfaz UI (botones, header, editor izquierdo) */
+    .modal-header,
+    .modal-footer,
+    .modal-close,
+    .nomina-editor-panel {
+        display: none !important;
+    }
+
+    /* 5. Ajustar Layout para Impresión: CENTRADO Y ANCHO FIJO */
+    .modal-content-wrapper {
+        width: 100% !important;
+        max-width: none !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        position: static !important;
+    }
+
+    .nomina-split-view {
+        display: block !important;
+        /* Quitar flex para control total */
+        padding: 20px 0 !important;
+        text-align: center !important;
+        /* Centrar inline-blocks */
+    }
+
+    .nomina-preview-panel {
+        display: inline-block !important;
+        /* Para centrar con text-align */
+        width: auto !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    /* 6. EL TICKET: TAMAÑO ESTÁNDAR 80MM */
+    .ticket-container {
+        width: 80mm !important;
+        max-width: 80mm !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        font-size: 10pt !important;
+        /* Letra de tamaño normal de lectura */
+        text-align: left !important;
+        /* Restaurar alineación interna */
+    }
+
+    /* Limpieza extra */
+    @page {
+        margin: 5mm;
+        size: auto;
+    }
+
+    /* Ocultar texto de 'Vista Previa' que está debajo del ticket */
+    .nomina-preview-panel>div:last-child {
+        display: none !important;
     }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PREVIEW PROMO CARD (Copied from index.css)
-   ═══════════════════════════════════════════════════════════════ */
-.promo-card {
-    min-width: 250px;
-    max-width: 280px;
-    background: linear-gradient(145deg, #ffffff, #f8f9fa);
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    transition: all 0.4s ease;
-    position: relative;
-    border: 1px solid #e2e8f0;
-}
+/* ========================================= */
+/* MEJORAS VISUALES METAS Y COMPRAS (FIX)    */
+/* ========================================= */
 
-.promo-badge {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: linear-gradient(135deg, #ff6b00, #ff8533);
-    color: white;
-    padding: 0.4rem 0.8rem;
-    border-radius: 50px;
-    font-weight: 800;
-    font-size: 0.9rem;
-    z-index: 10;
-    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4);
-}
-
-.promo-card-image {
-    height: 150px;
-    background: #f1f5f9;
-    overflow: hidden;
-    position: relative;
-}
-
-.promo-card-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.promo-card-info {
-    padding: 1rem;
-}
-
-.promo-card-info h3 {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #1a1a2e;
-    margin-bottom: 0.3rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.promo-prices {
+/* Fix Layout Formularios Rotos */
+.form-row {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    flex-wrap: wrap;
+    /* CRITICAL: Permite que salten de linea */
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    align-items: flex-end;
+    /* Alinea inputs con botones */
+}
+
+.form-group {
+    flex: 1;
+    min-width: 200px;
+    /* Evita inputs aplastados */
     margin-bottom: 0.5rem;
 }
 
-.precio-original {
-    color: #999;
-    text-decoration: line-through;
-    font-size: 0.8rem;
+/* Para grupos dentro de cards pequeñas */
+.card-body .form-group {
+    min-width: 100%;
+    /* En cards stackea todo */
 }
 
-.precio-promo {
-    color: #ff6b00;
+@media (min-width: 768px) {
+    .card-body .form-group {
+        min-width: auto;
+        /* En desktop deja flex */
+    }
+}
+
+/* Tablas con scroll horizontal si necesario */
+.table-container {
+    overflow-x: auto;
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--gray-200);
+}
+
+/* Dashboard Metas - Estilos específicos */
+.metas-grid-locales {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.meta-local-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s;
+}
+
+.meta-local-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-light);
+}
+
+.meta-local-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.meta-input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.meta-input-group input {
     font-size: 1.1rem;
-    font-weight: 800;
+    font-weight: 700;
+    color: var(--gray-800);
+    padding: 0.5rem;
+    text-align: right;
+    border: 2px solid #e2e8f0;
+    border-radius: 0.5rem;
+    width: 100%;
 }
 
-.preview-promo .promo-card {
-    margin: 0 auto;
+.meta-input-group input:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+/* Gráficos en Metas */
+.grafico-metas-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-top: 2rem;
+    height: 400px;
+    width: 100%;
+}
+
+/* Impresión Específica de Tablas (Metas/Compras) */
+@media print {
+
+    #metasSection,
+    #comprasSection {
+        display: block !important;
+        visibility: visible !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: white;
+        z-index: 2000;
+    }
+
+    body>* {
+        visibility: hidden;
+        /* Ocultar resto */
+    }
+
+    #metasSection *,
+    #comprasSection * {
+        visibility: visible;
+    }
+
+    /* Ocultar elementos de navegación al imprimir sección */
+    .actions-bar,
+    .page-header button,
+    .btn,
+    .top-header,
+    .sidebar,
+    .mobile-nav,
+    .mobile-menu-toggle {
+        display: none !important;
+    }
+
+    .table-container {
+        border: none !important;
+        overflow: visible !important;
+    }
+
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 10pt;
+    }
+
+    th,
+    td {
+        border: 1px solid #000 !important;
+        padding: 4px !important;
+        color: black !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM MODAL SYSTEM (AMPLIFIED)
+═══════════════════════════════════════════════════════════════ */
+.modal-premium-content {
+    background: white;
+    width: 95% !important;
+    max-width: 900px !important;
+    height: auto !important;
+    max-height: 90vh;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-premium-header {
+    background: linear-gradient(135deg, var(--gray-900), var(--secondary));
+    padding: 1.75rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-close-modal {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.btn-close-modal:hover {
+    background: var(--danger);
+    transform: rotate(90deg);
+}
+
+.modal-premium-body {
+    padding: 3rem;
+    /* Más espacio solicitado */
+    overflow-y: auto;
+}
+
+.modal-premium-footer {
+    padding: 2rem 3rem;
+    background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    gap: 1.5rem;
+    justify-content: flex-end;
 }

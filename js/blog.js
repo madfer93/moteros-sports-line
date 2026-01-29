@@ -61,7 +61,7 @@ function getVideoEmbed(url) {
             </div>
         `;
     }
-    
+
     // TikTok sin ID de video (fallback con botón)
     if (url.includes('tiktok.com')) {
         return `
@@ -129,7 +129,7 @@ function getVideoEmbed(url) {
 // ═══════════════════════════════════════════════════════════════
 async function cargarPosts() {
     const grid = document.getElementById('postsGrid');
-    
+
     // Loading state
     grid.innerHTML = `
         <div class="blog-loading">
@@ -173,22 +173,50 @@ async function cargarPosts() {
                     <p class="blog-card-text">${post.contenido}</p>
                     <div class="blog-card-meta">
                         <span class="blog-card-date">
-                            📅 ${new Date(post.created_at).toLocaleDateString('es-CO', { 
-                                weekday: 'long', 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                            })}
+                            📅 ${new Date(post.created_at).toLocaleDateString('es-CO', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })}
                         </span>
+                    </div>
+
+                    <!-- SECCIÓN DE COMENTARIOS -->
+                    <div class="blog-comments-section">
+                        <h3 class="blog-comments-title">💬 Comentarios</h3>
+                        
+                        <div id="comentarios-${post.id}" class="blog-comments-list">
+                            <div class="spinner-small"></div> Cargando comentarios...
+                        </div>
+
+                        <form class="blog-comment-form" onsubmit="enviarComentario(event, '${post.id}')">
+                            <h4>Deja tu opinión</h4>
+                            <div class="form-group">
+                                <input type="text" id="nombre-${post.id}" placeholder="Tu nombre *" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="email" id="email-${post.id}" placeholder="Tu email (opcional)">
+                            </div>
+                            <div class="form-group">
+                                <textarea id="comentario-${post.id}" placeholder="Escribe tu comentario... *" required></textarea>
+                            </div>
+                            <button type="submit" class="blog-comment-submit">Enviar Comentario</button>
+                        </form>
                     </div>
                 </div>
             </article>
         `).join('');
 
-        console.log(`✅ ${posts.length} posts cargados`);
+        // Cargar comentarios para cada post
+        if (window.cargarComentariosPost) {
+            posts.forEach(post => {
+                window.cargarComentariosPost(post.id);
+            });
+        }
 
     } catch (err) {
-        console.error('Error cargando posts:', err);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando posts:', err);
         grid.innerHTML = `
             <div class="blog-error">
                 <div class="blog-error-icon">⚠️</div>
@@ -204,6 +232,6 @@ async function cargarPosts() {
 // INICIALIZACIÓN
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🏍️ Blog Moteros Sports Line - Iniciando...');
+
     cargarPosts();
 });

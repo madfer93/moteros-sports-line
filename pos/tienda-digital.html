@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -8,14 +8,22 @@
     <link rel="icon"
         href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="css/pos.css">
+    <link rel="stylesheet" href="../css/pos.css">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MGGG89S8XM"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-MGGG89S8XM');
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
 <body>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-     PANTALLA BLOQUEADA - CAJA CERRADA
-     ═══════════════════════════════════════════════════════════════ -->
+    <!-- ===== PANTALLA BLOQUEADA - CAJA CERRADA ===== -->
     <div id="lockedScreen" class="locked-screen">
         <div class="locked-content">
             <div id="resumenCierreCompleto" class="hidden"></div>
@@ -25,15 +33,13 @@
                 <p class="tienda-nombre tienda-nombre-digital">📦 Tienda Digital</p>
                 <p>Abre la caja para comenzar a vender</p>
                 <button class="btn btn-success btn-large" onclick="abrirModalCaja()">
-                    📂 Abrir Caja
+                    🔓 Abrir Caja
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-     HEADER
-     ═══════════════════════════════════════════════════════════════ -->
+    <!-- ===== HEADER ===== -->
     <header class="header header-digital">
         <div class="header-left">
             <img src="" alt="Logo" class="header-logo logo-img">
@@ -44,23 +50,26 @@
         <div class="header-info">
             <span id="vendedorBadge" class="badge badge-vendedor hidden">👤 Vendedor</span>
             <span id="cajaBadge" class="badge badge-cerrada">🔒 Cerrada</span>
-            <button id="btnAbrirCaja" class="btn btn-success" onclick="abrirModalCaja()">📂 Abrir</button>
-            <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">📊 Cerrar
+            <button class="btn btn-warning" onclick="toggleChatIA()" title="Soporte Inteligente">🤖 Soporte IA</button>
+            <button class="btn btn-secondary" onclick="abrirModalTraslado()" title="Trasladar Mercancía">🚚
+                Traslados</button>
+            <button class="btn btn-warning" onclick="abrirModalAdelantoNomina()" title="Adelanto de Nómina">💵
+                Adelanto</button>
+            <button id="btnAbrirCaja" class="btn btn-success" onclick="abrirModalCaja()">🔓 Abrir</button>
+            <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">🔐 Cerrar
                 Caja</button>
         </div>
     </header>
 
     <div id="alertas"></div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-     CONTENIDO PRINCIPAL
-     ═══════════════════════════════════════════════════════════════ -->
+    <!-- ===== CONTENIDO PRINCIPAL ===== -->
     <div class="container">
         <!-- Panel de Productos -->
         <div class="panel">
             <h3 class="panel-title">📦 Productos Disponibles</h3>
             <div class="search-box">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon">🔍</span>
                 <input type="text" class="search-input search-input-digital" id="inputBuscar"
                     placeholder="Buscar por nombre, marca o código..." oninput="filtrarProductos()">
             </div>
@@ -80,9 +89,9 @@
                 <div class="carrito-vacio">🛒 El pedido está vacío</div>
             </div>
 
-            <!-- DATOS DE ENVÍO (obligatorio para digital) -->
+            <!-- DATOS DE ENVíO (obligatorio para digital) -->
             <div class="envio-form">
-                <h4>📬 Datos de Envío (obligatorio)</h4>
+                <h4>📃 Datos de Envío (obligatorio)</h4>
                 <input type="text" id="clienteNombre" placeholder="Nombre completo del cliente *">
                 <div class="row">
                     <input type="tel" id="clienteTelefono" placeholder="Teléfono *">
@@ -132,6 +141,14 @@
                     placeholder="Notas adicionales (barrio, referencias, horario de entrega...)"></textarea>
             </div>
 
+            <!-- Selector de Vendedor -->
+            <div class="seccion">
+                <h4 class="seccion-titulo">👤 Vendedor</h4>
+                <select id="vendedorVenta" class="vendedor-select">
+                    <option value="">Cargando vendedores...</option>
+                </select>
+            </div>
+
             <!-- Métodos de Pago -->
             <div class="seccion">
                 <h4 class="seccion-titulo">💰 Método(s) de Pago</h4>
@@ -143,47 +160,13 @@
                         <span class="icono">📱</span>Nequi
                     </div>
                     <div class="metodo-btn" data-metodo="Daviplata" onclick="toggleMetodo(this)">
-                        <span class="icono">📲</span>Daviplata
+                        <span class="icono">📱</span>Daviplata
                     </div>
                     <div class="metodo-btn" data-metodo="Tarjeta" onclick="toggleMetodo(this)">
                         <span class="icono">💳</span>Tarjeta
                     </div>
-                    <div class="metodo-btn" data-metodo="Contraentrega" onclick="toggleMetodo(this)">
-                        <span class="icono">📦</span>Contraentrega
-                    </div>
-                    <div class="metodo-btn" data-metodo="Addi" onclick="toggleMetodo(this)">
-                        <span class="icono">🅰️</span>Addi
-                    </div>
-                    <div class="metodo-btn" data-metodo="Sistecredito" onclick="toggleMetodo(this)">
-                        <span class="icono">📋</span>Sistecrédito
-                    </div>
-                    <div class="metodo-btn" data-metodo="Credito Motero" onclick="toggleMetodo(this)">
-                        <span class="icono">🏍️</span>Crédito Motero
-                    </div>
-                    <div class="metodo-btn" data-metodo="Fodegas" onclick="toggleMetodo(this)">
-                        <span class="icono">⛽</span>Fodegas
-                    </div>
                 </div>
                 <div id="metodosSeleccionados" class="metodos-seleccionados"></div>
-            </div>
-
-            <!-- Datos de Crédito (si aplica) -->
-            <div id="datosCredito" class="datos-credito">
-                <h4>📝 Datos de Crédito</h4>
-                <select id="creditoAutoriza">
-                    <option value="">-- ¿Quién autoriza el crédito? --</option>
-                    <option value="Gerencia">Gerencia</option>
-                    <option value="Administrador">Administrador</option>
-                    <option value="Jefe de Tienda">Jefe de Tienda</option>
-                </select>
-                <select id="creditoCuotas">
-                    <option value="1">1 Cuota</option>
-                    <option value="2">2 Cuotas</option>
-                    <option value="3">3 Cuotas</option>
-                    <option value="4">4 Cuotas</option>
-                    <option value="6">6 Cuotas</option>
-                    <option value="12">12 Cuotas</option>
-                </select>
             </div>
 
             <!-- Total -->
@@ -200,9 +183,7 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-     MODAL: LOGIN EMPLEADO
-     ═══════════════════════════════════════════════════════════════ -->
+    <!-- ==== MODAL: LOGIN EMPLEADO ===== -->
     <div id="modalLoginEmpleado" class="modal-overlay">
         <div class="modal">
             <h3>🔐 Iniciar Sesión</h3>
@@ -219,7 +200,7 @@
             </div>
             <div id="loginError" class="alert alert-danger" style="display:none;margin-bottom:1rem;"></div>
             <div class="modal-botones">
-                <button class="btn btn-success btn-full" onclick="verificarLogin()">🔓 Iniciar Sesión</button>
+                <button class="btn btn-success btn-full" onclick="verificarLogin()">➡️ Iniciar Sesión</button>
             </div>
             <p style="color:#94a3b8;font-size:0.8rem;margin-top:1rem;text-align:center;">
                 ¿Olvidaste tu contraseña? Contacta al administrador
@@ -227,12 +208,10 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-     MODAL: ABRIR CAJA
-     ═══════════════════════════════════════════════════════════════ -->
+    <!-- ==== MODAL: ABRIR CAJA ===== -->
     <div id="modalAbrirCaja" class="modal-overlay">
         <div class="modal">
-            <h3>📂 Abrir Caja - Digital</h3>
+            <h3>🔓 Abrir Caja - Digital</h3>
             <div id="empleadoLogueado"
                 style="background:linear-gradient(135deg,#10b981,#059669);color:white;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
                 <span style="font-size:1.5rem;">👤</span>
@@ -253,12 +232,10 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-     MODAL: CERRAR CAJA (DIGITAL)
-     ═══════════════════════════════════════════════════════════════ -->
+    <!-- ==== MODAL: CERRAR CAJA (DIGITAL) ===== -->
     <div id="modalCerrarCaja" class="modal-overlay">
         <div class="modal modal-large">
-            <h3>📊 Cierre de Caja - Digital</h3>
+            <h3>🔐 Cierre de Caja - Digital</h3>
             <div id="resumenCierreModal"></div>
 
             <h4 style="margin:1rem 0 0.6rem; font-size:0.9rem; color:#475569;">💵 Conteo de Pagos Recibidos</h4>
@@ -272,7 +249,7 @@
                     <input type="number" id="nequiContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>📲 Daviplata</label>
+                    <label>📱 Daviplata</label>
                     <input type="number" id="daviplataContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
@@ -283,17 +260,18 @@
                     <label>📦 Contraentrega</label>
                     <input type="number" id="contraentregaContado" min="0" placeholder="0">
                 </div>
-                <div class="form-group">
-                    <label>🅰️ Addi</label>
-                    <input type="number" id="addiContado" min="0" placeholder="0">
+            </div>
+
+            <!-- Dinero Sobrante - NUEVO -->
+            <div id="seccionSobrante"
+                style="margin:1rem 0; padding:1rem; background:#f0f9ff; border-radius:12px; border:1px solid #bae6fd;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin:0; color:#0369a1;">💰 Dinero Sobrante / Ajuste</h4>
+                    <span id="labelMontoSobrante" style="font-weight:700; color:#0369a1;">$0</span>
                 </div>
-                <div class="form-group">
-                    <label>📋 Sistecrédito</label>
-                    <input type="number" id="sistecreditoContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>⛽ Fodegas</label>
-                    <input type="number" id="fodegasContado" min="0" placeholder="0">
+                <div class="form-group" style="margin-top:0.5rem;">
+                    <label>Motivo del dinero extra (opcional)</label>
+                    <input type="text" id="motivoSobrante" placeholder="Ej: Propina, cliente no llevó cambio, etc.">
                 </div>
             </div>
 
@@ -309,9 +287,7 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-     MODAL: EDITAR PRECIO
-     ═══════════════════════════════════════════════════════════════ -->
+    <!-- ===== MODAL: EDITAR PRECIO ===== -->
     <div id="modalEditarPrecio" class="modal-overlay">
         <div class="modal">
             <h3>✏️ Modificar Precio</h3>
@@ -335,17 +311,52 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-     SCRIPTS
-     ═══════════════════════════════════════════════════════════════ -->
-    <script src="js/config.js"></script>
-    <script src="js/promociones.js"></script>
-    <script src="js/ia-core.js"></script>
-    <script src="js/ai-widget.js"></script>
+    <!-- ===== MODAL: TRASLADOS ===== -->
+    <div id="modalTraslado" class="modal-overlay">
+        <div class="modal" style="max-width: 450px;">
+            <h3>🚚 Trasladar Mercancía</h3>
+            <p style="margin-bottom:1rem; font-size:0.9rem; color:var(--gray);">Mueve productos de esta sede a otra
+                sucursal de forma inmediata.</p>
+
+            <div class="form-group">
+                <label>Producto a trasladar *</label>
+                <select id="trasladoProducto" class="form-control" style="width: 100%;">
+                    <option value="">Selecciona un producto...</option>
+                </select>
+            </div>
+
+            <div class="form-row" style="display:flex; gap:1rem; margin-top:1rem;">
+                <div class="form-group" style="flex:1;">
+                    <label>Sede Destino *</label>
+                    <select id="trasladoDestino" class="form-control">
+                        <option value="">Seleccionar...</option>
+                        <option value="Alcalá">Alcalá</option>
+                        <option value="01">Local 01</option>
+                        <option value="Jordán">Jordán</option>
+                        <option value="Digital">Digital</option>
+                    </select>
+                </div>
+                <div class="form-group" style="width:100px;">
+                    <label>Cantidad *</label>
+                    <input type="number" id="trasladoCantidad" min="1" value="1" class="form-control">
+                </div>
+            </div>
+
+            <div class="modal-botones" style="margin-top:1.5rem;">
+                <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="procesarTraslado()">🚚 Confirmar Traslado</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="../js/config.js"></script>
+    <script src="../js/security.js"></script>
+    <script src="../js/promociones.js"></script>
+    <script src="../js/ia-core.js"></script>
+    <script src="../js/ai-widget.js"></script>
     <script>
-        // ═══════════════════════════════════════════════════════════════
-        // CONFIGURACIÓN TIENDA DIGITAL
-        // ═══════════════════════════════════════════════════════════════
+        // ===== CONFIGURACIÓN TIENDA DIGITAL =====
         const TIENDA = {
             nombre: 'Digital',
             tablaInventario: 'inventario_digital',
@@ -353,7 +364,50 @@
             esDigital: true
         };
     </script>
-    <script src="js/pos.js"></script>
+    <!-- ===== MODAL: REGISTRAR ADELANTO DE NÓMINA ===== -->
+    <div id="modalAdelantoNomina" class="modal-overlay">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header"
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="margin:0;">💵 Registrar Adelanto de Nómina</h3>
+                <button class="modal-close" onclick="cerrarModalAdelantoNomina()"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">í—</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Empleado *</label>
+                    <select id="adelantoEmpleadoId" class="form-control">
+                        <option value="">Seleccionar empleado...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Monto del Adelanto *</label>
+                    <input type="number" id="adelantoMonto" class="form-control" placeholder="$0"
+                        style="font-size:1.2rem; font-weight:bold;">
+                </div>
+
+                <div class="form-group">
+                    <label>¿Quién Autoriza? *</label>
+                    <input type="text" id="adelantoAutoriza" class="form-control"
+                        placeholder="Ej: Gerencia / Pedro Pérez">
+                </div>
+
+                <div class="form-group">
+                    <label>Motivo / Observaciones</label>
+                    <textarea id="adelantoMotivo" class="form-control" rows="2"
+                        placeholder="Ej: Adelanto para transporte"></textarea>
+                </div>
+            </div>
+            <div class="modal-botones" style="margin-top:1.5rem;">
+                <button class="btn btn-success btn-large" onclick="guardarAdelantoNomina()">✅ Confirmar
+                    Adelanto</button>
+                <button class="btn btn-secondary" onclick="cerrarModalAdelantoNomina()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/pos.js"></script>
 
 </body>
 

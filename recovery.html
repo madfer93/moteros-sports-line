@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Contraseña | Moteros Sports Line</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/admin.css">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MGGG89S8XM"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-MGGG89S8XM');
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
+                alt="Moteros Sports Line" class="locked-logo logo-img">
+            <h1>🔍 Nueva Contraseña</h1>
+            <p class="subtitle">Ingresa tu nueva contraseña</p>
+
+            <input type="password" id="newPassword" class="login-input"
+                placeholder="Nueva contraseña (mínimo 6 caracteres)">
+            <input type="password" id="confirmPassword" class="login-input" placeholder="Confirmar contraseña">
+
+            <button onclick="actualizarPassword()" class="login-btn">🔄 Actualizar Contraseña</button>
+            <p id="mensaje" class="login-error"></p>
+        </div>
+    </div>
+
+    <script>
+        // Credenciales correctas de config.js
+        const SUPABASE_URL = 'URL_DE_SUPABASE_AQUI';
+        const SUPABASE_ANON_KEY = 'ANON_KEY_DE_SUPABASE_AQUI';
+
+        // Inicializar Supabase
+        let supabaseClient;
+        try {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('mensaje').textContent = 'Error de conexión';
+            document.getElementById('mensaje').style.color = '#ef4444';
+        }
+
+        // Función global
+        window.actualizarPassword = async function () {
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const mensaje = document.getElementById('mensaje');
+
+            if (!newPassword || newPassword.length < 6) {
+                mensaje.textContent = '❌ La contraseña debe tener al menos 6 caracteres';
+                mensaje.style.color = '#ef4444';
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                mensaje.textContent = '❌ Las contraseñas no coinciden';
+                mensaje.style.color = '#ef4444';
+                return;
+            }
+
+            try {
+                mensaje.textContent = '🔄 Actualizando contraseña...';
+                mensaje.style.color = '#3b82f6';
+
+                const { data, error } = await supabaseClient.auth.updateUser({
+                    password: newPassword
+                });
+
+                if (error) throw error;
+
+                mensaje.textContent = '✅ Contraseña actualizada correctamente. Redirigiendo...';
+                mensaje.style.color = '#22c55e';
+
+                setTimeout(() => {
+                    window.location.href = 'admin.html';
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error:', error);
+                mensaje.textContent = '❌ ​Error: ' + error.message;
+                mensaje.style.color = '#ef4444';
+            }
+        };
+
+        // Verificar token
+        const hash = window.location.hash;
+        if (!hash || !hash.includes('access_token')) {
+            document.getElementById('mensaje').textContent = '🏍️ Link de recuperación inválido o expirado';
+            document.getElementById('mensaje').style.color = '#f59e0b';
+        }
+    </script>
+    <script src="js/security.js"></script>
+</body>
+
+</html>

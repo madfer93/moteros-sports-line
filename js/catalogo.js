@@ -3,8 +3,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 // Cliente Supabase
-const { createClient } = supabase;
-const supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+// Cliente Supabase (Reutilizar global si existe para evitar warning GoTrueClient)
+const supabaseClient = window.supabaseClient || supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 
 // Variables globales
 let todosLosProductos = [];
@@ -60,8 +60,34 @@ function actualizarContadorCarrito() {
 function agregarAlCarrito() {
     if (!productoActual) return;
     const cantidad = parseInt(document.getElementById('cantidadDetalle').value) || 1;
+    let variante = null;
 
-    const existente = carrito.find(item => item.id === productoActual.id);
+    // Validación de Variante (DESACTIVADA POR SOLICITUD)
+    /*
+    if (productoActual.variantes && productoActual.variantes.length > 0) {
+        variante = document.getElementById('varianteSeleccionada').value;
+        if (!variante) {
+            mostrarToast('⚠️ Selecciona una opción', 'Debes elegir variante (Color/Talla)', 'warning');
+
+            // Animación de error en contenedor
+            const container = document.getElementById('contenedorVariantes');
+            if (container) {
+                container.style.animation = 'shake 0.5s ease';
+                setTimeout(() => container.style.animation = '', 500);
+            }
+            return;
+        }
+    }
+    */
+    // Intentamos capturar si seleccionó algo, pero es opcional
+    const varianteInput = document.getElementById('varianteSeleccionada');
+    if (varianteInput && varianteInput.value) variante = varianteInput.value;
+
+    // ID único compuesto para carrito (ID_producto + Variante)
+    const cartId = variante ? `${productoActual.id}-${variante}` : productoActual.id;
+    const nombreDisplay = variante ? `${productoActual.nombre} (${variante})` : productoActual.nombre;
+
+    const existente = carrito.find(item => item.cartId === cartId); // Usamos cartId para diferenciar
     if (existente) {
         existente.cantidad += cantidad;
     } else {
@@ -70,19 +96,21 @@ function agregarAlCarrito() {
             : { precioFinal: productoActual.precio, tieneDescuento: false };
 
         carrito.push({
-            id: productoActual.id,
+            id: productoActual.id, // ID original limpio para DB
+            cartId: cartId,        // ID compuesto para frontend
             nombre: productoActual.nombre,
+            variante: variante,    // Guardar dato variante
             marca: productoActual.marca,
-            precio: infoPrecio.precioFinal,
+            precio: productoActual.precio,
             url_imagen: productoActual.url_imagen,
             cantidad: cantidad,
-            descuento: infoPrecio.tieneDescuento ? infoPrecio.porcentajeDescuento : 0
+            descuento: 0
         });
     }
 
     localStorage.setItem('carrito_moteros', JSON.stringify(carrito));
     actualizarContadorCarrito();
-    mostrarToast('Carrito', `✅ ${cantidad} x ${productoActual.nombre} agregado`);
+    mostrarToast('Carrito', `✅ ${cantidad} x ${nombreDisplay} agregado`);
     cerrarModalDetalle();
 }
 
@@ -102,10 +130,10 @@ function agregarAlCarritoRapido(id) {
             id: producto.id,
             nombre: producto.nombre,
             marca: producto.marca,
-            precio: infoPrecio.precioFinal,
+            precio: producto.precio,
             url_imagen: producto.url_imagen,
             cantidad: 1,
-            descuento: infoPrecio.tieneDescuento ? infoPrecio.porcentajeDescuento : 0
+            descuento: 0
         });
     }
 
@@ -173,6 +201,9 @@ function vaciarCarrito() {
 }
 
 function guardarCarrito() {
+    if (window.PromocionesManager && window.PromocionesManager.cargado) {
+        window.PromocionesManager.validarCarrito(carrito);
+    }
     localStorage.setItem('carrito_moteros', JSON.stringify(carrito));
     abrirCarrito();
     actualizarContadorCarrito();
@@ -205,7 +236,8 @@ function enviarPedidoWhatsApp() {
     let mensaje = "¡Hola Moteros Sports Line! 👋\n\n*Quiero consultar por:*\n\n";
     carrito.forEach(item => {
         const descInfo = item.descuento ? ` (Dto. ${item.descuento}%)` : '';
-        mensaje += `• ${item.cantidad} x ${item.nombre}${descInfo}\n  ${item.marca}\n  $${parseInt(item.precio).toLocaleString('es-CO')} c/u\n\n`;
+        const varianteInfo = item.variante ? ` [${item.variante}]` : '';
+        mensaje += `• ${item.cantidad} x ${item.nombre}${varianteInfo}${descInfo}\n  ${item.marca}\n  $${parseInt(item.precio).toLocaleString('es-CO')} c/u\n\n`;
     });
     const total = carrito.reduce((s, item) => s + item.precio * item.cantidad, 0);
     mensaje += `*Total estimado: $${total.toLocaleString('es-CO')}*\n\n¡Gracias! 🙌`;
@@ -227,17 +259,37 @@ async function cargarProductos() {
 
         if (error) throw error;
 
-        todosLosProductos = data || [];
-        productosFiltrados = [...todosLosProductos];
+        // Cargar reseñas APROBADAS para cálculo de estrellas real
+        const { data: resenas } = await supabaseClient
+            .from('producto_resenas')
+            .select('id_producto, estrellas')
+            .eq('aprobado', true);
+        const cal = {};
+        if (resenas) {
+            resenas.forEach(r => {
+                if (!cal[r.id_producto]) cal[r.id_producto] = { sum: 0, count: 0 };
+                cal[r.id_producto].sum += r.estrellas;
+                cal[r.id_producto].count++;
+            });
+        }
 
-        console.log(`✅ ${todosLosProductos.length} productos cargados`);
+        todosLosProductos = (data || []).map(p => {
+            const c = cal[p.id] || cal[p.id_producto];
+            return {
+                ...p,
+                rating: c ? (c.sum / c.count).toFixed(1) : 0,
+                ratingCount: c ? c.count : 0
+            };
+        });
+
+        productosFiltrados = [...todosLosProductos];
 
         mostrarProductos();
         await cargarCategoriasFiltro();
         actualizarContadorCarrito();
 
     } catch (err) {
-        console.error('Error:', err);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error:', err);
         document.getElementById('contadorProductos').textContent = 'Error al cargar productos';
         document.getElementById('productosGrid').innerHTML = `
             <div class="empty-state" style="grid-column: 1/-1;">
@@ -252,13 +304,23 @@ async function cargarProductos() {
 function aplicarFiltros() {
     const cat = document.getElementById('filtroCategoria').value;
     const pre = document.getElementById('filtroPrecio').value;
+    const rate = document.getElementById('filtroCalificacion') ? document.getElementById('filtroCalificacion').value : '';
     const bus = document.getElementById('buscarProducto').value.toLowerCase();
 
     productosFiltrados = todosLosProductos.filter(p => {
-        if (cat && p.categoria !== cat) return false;
+        // Filtro Categoría (Case Insensitive)
+        if (cat) {
+            const catProd = (p.categoria || '').toLowerCase().trim();
+            const catFiltro = cat.toLowerCase().trim();
+            if (catProd !== catFiltro) return false;
+        }
+
         if (pre) {
             const [min, max] = pre.split('-').map(Number);
             if (p.precio < min || p.precio > max) return false;
+        }
+        if (rate) {
+            if (parseFloat(p.rating || 0) < parseInt(rate)) return false;
         }
         if (bus) {
             const busqueda = `${p.nombre} ${p.marca} ${p.descripcion_corta || ''}`.toLowerCase();
@@ -273,6 +335,7 @@ function aplicarFiltros() {
 function limpiarFiltros() {
     document.getElementById('filtroCategoria').value = '';
     document.getElementById('filtroPrecio').value = '';
+    if (document.getElementById('filtroCalificacion')) document.getElementById('filtroCalificacion').value = '';
     document.getElementById('buscarProducto').value = '';
     aplicarFiltros();
 }
@@ -295,13 +358,8 @@ function mostrarProductos() {
     }
 
     grid.innerHTML = productosFiltrados.map(p => {
-        const infoPrecio = window.PromocionesManager
-            ? window.PromocionesManager.calcularPrecio(p.precio, p.id)
-            : { precioFinal: p.precio, tieneDescuento: false };
-
         return `
         <div class="producto-card" onclick="verDetalle('${p.id}')">
-            ${infoPrecio.tieneDescuento ? `<span class="badge-promo" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;padding:2px 8px;border-radius:12px;font-size:0.8rem;font-weight:bold;">-${infoPrecio.porcentajeDescuento}%</span>` : ''}
             <div class="producto-imagen-wrapper">
                 <img class="producto-imagen"
                      src="${p.url_imagen || PLACEHOLDER_IMG}"
@@ -312,17 +370,14 @@ function mostrarProductos() {
             </div>
             <div class="producto-info">
                 <h3 class="producto-nombre">${p.nombre}</h3>
+                <div style="font-size:0.85rem; color:#f59e0b; margin-bottom:0.25rem;">
+                    ${p.ratingCount > 0 ? '⭐'.repeat(Math.round(p.rating)) + ` <span style="color:#64748b;">(${p.ratingCount})</span>` : '<span style="color:#94a3b8; font-size:0.8rem;">Sin reseñas</span>'}
+                </div>
                 <p class="producto-marca">${p.marca}</p>
                 <p class="producto-descripcion">${p.descripcion_corta || 'Producto de alta calidad'}</p>
                 <div class="producto-footer" style="flex-direction: column; gap: 1rem; align-items: stretch;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        ${infoPrecio.tieneDescuento ?
-                `<div style="display:flex;flex-direction:column;align-items:flex-start;">
-                                <span style="text-decoration:line-through;color:#94a3b8;font-size:0.85rem;">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
-                                <span class="producto-precio" style="color:#ef4444;">$${parseInt(infoPrecio.precioFinal).toLocaleString('es-CO')}</span>
-                             </div>`
-                : `<span class="producto-precio">$${parseInt(p.precio).toLocaleString('es-CO')}</span>`
-            }
+                        <span class="producto-precio">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
                         <button class="btn-agregar-inline" onclick="event.stopPropagation(); agregarAlCarritoRapido('${p.id}')">
                             <span>🛒 Agregar</span>
                         </button>
@@ -335,7 +390,7 @@ function mostrarProductos() {
         </div>
     `}).join('');
 
-    console.log(`✅ ${productosFiltrados.length} productos mostrados en grid`);
+
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -349,77 +404,275 @@ function verDetalle(id) {
     const infoP = window.PromocionesManager ? window.PromocionesManager.calcularPrecio(productoActual.precio, productoActual.id) : { precioFinal: productoActual.precio, tieneDescuento: false };
 
     document.getElementById('contenidoDetalle').innerHTML = `
-        <div class="product-details-premium">
-            <div class="product-media-column">
-                <div class="main-image-container">
-                    ${infoP.tieneDescuento ? `<span class="discount-pill">-${infoP.porcentajeDescuento}% OFF</span>` : ''}
+        <div class="product-details-premium" style="display: grid; grid-template-columns: 30% 40% 30%; gap: 1.5rem; padding: 3.5rem 2rem 2rem 2rem; height: 100%; overflow: hidden; font-size: 0.95rem;">
+            
+            <!-- COL 1: IMAGEN & VISUAL -->
+            <div class="column-media" style="overflow-y: auto; display:flex; flex-direction:column; align-items:center;">
+                <div class="main-image-container" style="position:relative; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.05); margin-bottom: 1rem; width:100%; padding-top: 0 !important;">
+                    ${infoP.tieneDescuento ? `<span class="discount-pill" style="position:absolute; top:0.5rem; left:0.5rem; background:#ef4444; color:white; padding:0.25rem 0.75rem; border-radius:15px; font-weight:700; font-size:0.8rem; z-index:10;">-${infoP.porcentajeDescuento}% OFF</span>` : ''}
                     <img src="${productoActual.url_imagen || PLACEHOLDER_LG}" 
                          alt="${productoActual.nombre}" 
-                         class="main-product-image"
+                         style="width:100%; max-height: 400px; object-fit:contain; display:block; margin:auto;"
                          onerror="this.src='${PLACEHOLDER_LG}'">
                 </div>
-                <div class="product-trust-badges">
-                    <div class="trust-badge">🛡️ Envío Seguro</div>
-                    <div class="trust-badge">📦 En Stock</div>
-                    <div class="trust-badge">✅ Original</div>
+                
+                <!-- NUEVO UBICACIÓN: Variantes (Debajo de la imagen en columna izquierda) -->
+                ${productoActual.variantes && productoActual.variantes.length > 0 ? `
+                <div class="variantes-section" style="width:100%; margin-bottom: 1rem; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0; text-align: left;">
+                    <h5 style="margin-bottom: 0.5rem; font-weight: 700; color: #334155; font-size:0.9rem;">Colores disponibles:</h5>
+                    <div id="contenedorVariantes" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+                    <input type="hidden" id="varianteSeleccionada" value="">
+                </div>
+                ` : ''}
+
+                <!-- Trust Badges -->
+                <div class="product-trust-badges" style="width:100%; display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; background:#f8fafc; padding:0.75rem; border-radius:8px;">
+                    <div class="trust-badge" style="display:flex; align-items:center; gap:0.25rem; font-size:0.8rem; color:#64748b;">
+                        <span>🛡️</span> Envío Seguro
+                    </div>
+                    <div class="trust-badge" style="display:flex; align-items:center; gap:0.25rem; font-size:0.8rem; color:#64748b;">
+                        <span>📦</span> Stock Real
+                    </div>
+                    <div class="trust-badge" style="display:flex; align-items:center; gap:0.25rem; font-size:0.8rem; color:#64748b;">
+                        <span>✅</span> Garantía
+                    </div>
                 </div>
             </div>
 
-            <div class="product-info-column">
-                <div class="product-header">
-                    <span class="category-tag">${productoActual.categoria}</span>
-                    <h2 class="product-title-premium">${productoActual.nombre}</h2>
-                    <p class="product-brand-premium">${productoActual.marca}</p>
+            <!-- COL 2: INFO & COMPRA & SPECS (Center) -->
+            <div class="column-info" style="display:flex; flex-direction:column; overflow-y: auto; padding-right: 0.5rem;">
+                <!-- Header Info -->
+                <div class="product-header" style="border-bottom:1px solid #e2e8f0; padding-bottom:1rem; margin-bottom:1rem;">
+                    <span class="category-tag" style="background:#fff7ed; color:#ea580c; padding:0.25rem 0.75rem; border-radius:15px; font-size:0.75rem; font-weight:700; text-transform:uppercase;">${productoActual.categoria}</span>
+                    <h2 style="font-size:1.75rem; margin:0.5rem 0; line-height:1.2; color:#1e293b;">${productoActual.nombre}</h2>
+                    <p style="color:#64748b; margin:0; font-size:0.9rem;">Marca: <strong style="color:#334155;">${productoActual.marca}</strong></p>
                 </div>
 
-                <div class="product-price-section">
-                    ${infoP.tieneDescuento ? `
-                        <div class="price-wrapper">
-                            <span class="old-price">$${parseInt(productoActual.precio).toLocaleString('es-CO')}</span>
-                            <span class="current-price discount">$${parseInt(infoP.precioFinal).toLocaleString('es-CO')}</span>
-                        </div>
-                    ` : `
-                        <div class="price-wrapper">
-                            <span class="current-price">$${parseInt(productoActual.precio).toLocaleString('es-CO')}</span>
-                        </div>
-                    `}
+                <div class="product-price-section" style="margin-bottom:1rem;">
+                    <span class="current-price" style="font-size:2.2rem; font-weight:800; color:#0f172a;">$${parseInt(productoActual.precio).toLocaleString('es-CO')}</span>
                 </div>
 
-                <div class="product-description-premium">
-                    <h4 class="section-title">Sobre este producto</h4>
-                    <p class="short-desc">${productoActual.descripcion_corta || 'Este producto cuenta con los más altos estándares de calidad de Moteros Sports Line.'}</p>
+                <!-- Descripción & Specs -->
+                <div style="flex:1;">
+                    <h4 style="font-size:1rem; font-weight:700; color:#334155; margin-bottom:0.5rem;">Descripción</h4>
+                    <p style="color:#475569; line-height:1.5; margin-bottom:1.5rem; font-size:0.95rem;">
+                        ${productoActual.descripcion_corta || 'Producto disponible en nuestras tiendas.'}
+                    </p>
+
+                    <!-- Ficha Técnica -->
                     ${productoActual.descripcion_tecnica ? `
-                        <div class="specs-box">
-                            <h5 class="specs-title">Características técnicas:</h5>
-                            <p class="specs-content">${productoActual.descripcion_tecnica.replace(/\n/g, '<br>')}</p>
-                        </div>
+                    <div style="margin-bottom: 2rem; background: #fffcf8; padding: 1.25rem; border-radius: 10px; border: 1px dashed #e2e8f0; display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem;">
+                         <div style="flex: 1;">
+                             <h4 class="section-title" style="margin-bottom:0.75rem; color:#334155; font-size:0.95rem; font-weight:700;">📋 Ficha Técnica</h4>
+                             <p style="color:#475569; line-height:1.6; white-space: pre-line; margin:0; font-size:0.9rem;">${productoActual.descripcion_tecnica}</p>
+                         </div>
+                         <div style="flex-shrink: 0; width: 140px; opacity: 0.8; align-self: center; margin-right: 3rem;">
+                             <!-- Logo Sticker -->
+                             <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
+                                  onerror="this.style.display='none'"
+                                  alt="Moteros" 
+                                  style="width: 100%; height: auto; display: block; border-radius:50%; opacity:0.8; filter: none;">
+                         </div>
+                    </div>
                     ` : ''}
                 </div>
 
-                <div class="purchase-actions-premium">
-                    <div class="quantity-selector-premium">
-                        <label for="cantidadDetalle">Cantidad:</label>
-                        <div class="quantity-controls-inner">
-                            <button class="qty-btn" onclick="const input = document.getElementById('cantidadDetalle'); if(input.value > 1) input.value--">−</button>
-                            <input type="number" id="cantidadDetalle" value="1" min="1" readonly>
-                            <button class="qty-btn" onclick="document.getElementById('cantidadDetalle').value++">+</button>
+                <!-- Botones de Acción (Al final del scroll del centro) -->
+                <div class="purchase-actions" style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid #f1f5f9;">
+                    <div style="display:flex; gap:0.75rem; margin-bottom:0.75rem;">
+                        <div class="quantity-selector" style="border:1px solid #e2e8f0; border-radius:8px; display:flex; align-items:center; width:100px;">
+                             <button style="flex:1; border:none; background:transparent; font-size:1rem; cursor:pointer;" onclick="const i=document.getElementById('cantidadDetalle'); if(i.value>1) i.value--">−</button>
+                             <input type="number" id="cantidadDetalle" value="1" min="1" readonly style="width:35px; text-align:center; border:none; font-weight:700; font-size:1rem;">
+                             <button style="flex:1; border:none; background:transparent; font-size:1rem; cursor:pointer;" onclick="document.getElementById('cantidadDetalle').value++">+</button>
+                        </div>
+                        <button onclick="agregarAlCarrito()" style="flex:1; background:linear-gradient(135deg,#ff6b00,#ea580c); color:white; border:none; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer; padding:0.75rem;">
+                            🛒 Agregar
+                        </button>
+                    </div>
+                    <a href="https://wa.me/${CONFIG.WHATSAPP.numero}" target="_blank" id="btnWhatsappDetalle"
+                       style="display:block; text-align:center; padding:0.6rem; background:#25D366; color:white; border-radius:8px; text-decoration:none; font-weight:600; font-size:0.95rem;">
+                        📱 Consultar por WhatsApp
+                    </a>
+                </div>
+            </div>
+
+            <!-- COL 3: SOLO RESEÑAS, CALIFICACION Y COMENTARIOS (Right) -->
+            <div class="column-extras" style="overflow-y: auto; padding-right: 4rem; border-left: 1px solid #f1f5f9; padding-left: 1.5rem; display:flex; flex-direction:column;">
+                
+                <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; border-bottom:1px solid #e2e8f0; padding-bottom:1rem;">
+                        <div>
+                            <h4 style="margin:0; font-size:1.1rem; color:#334155; font-weight:700;">Opiniones</h4>
+                            <span style="font-size:0.8rem; color:#94a3b8;">${productoActual.ratingCount || 0} valoraciones</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:900; color:#334155; font-size:1.8rem; line-height:1;">${productoActual.rating || '0.0'}</div>
+                            <div style="color:#f59e0b; font-size:0.9rem;">★ ★ ★ ★ ★</div>
                         </div>
                     </div>
                     
-                    <button class="btn-add-main" onclick="agregarAlCarrito()">
-                        <span>🛒 Agregar al Carrito</span>
+                    <button onclick="document.getElementById('formResena').style.display = document.getElementById('formResena').style.display === 'none' ? 'block' : 'none'" 
+                        class="btn-primary" style="width:100%; margin-bottom:1rem; padding:0.6rem; font-size:0.9rem; border-radius:8px; background:white; color:#ff6b00; border:1px solid #ff6b00;">
+                        ✍️ Escribir mi opinión
                     </button>
+
+                    <!-- Formulario (Oculto) -->
+                    <div id="formResena" style="display:none; background:#fff7ed; padding:1rem; border-radius:8px; margin-bottom:1.5rem; border:1px solid #ffedd5;">
+                        <input type="hidden" id="resenaProductoId" value="${productoActual.id}">
+                        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                            <label style="font-size:0.85rem; font-weight:700; color:#ea580c;">Tu Calificación:</label>
+                            <div class="rating-input" style="font-size:1.5rem; cursor:pointer; color:#fbbf24;">
+                                <span onclick="setRating(1)">☆</span><span onclick="setRating(2)">☆</span><span onclick="setRating(3)">☆</span><span onclick="setRating(4)">☆</span><span onclick="setRating(5)">☆</span>
+                            </div>
+                            <input type="hidden" id="resenaEstrellas" value="0">
+                            <input type="text" id="resenaNombre" placeholder="Tu Nombre" class="form-control" style="font-size:0.85rem; padding:0.5rem; border:1px solid #e2e8f0; border-radius:6px;">
+                            <textarea id="resenaComentario" placeholder="¿Qué te pareció?" class="form-control" rows="2" style="font-size:0.85rem; padding:0.5rem; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
+                            <button onclick="enviarResenaCliente()" class="btn-primary" style="width:100%; padding:0.5rem; font-size:0.9rem; margin-top:0.5rem;">Publicar</button>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Reseñas -->
+                    <div id="listaResenasContainer">
+                        <!-- Inyectado dinámicamente -->
+                        <div style="display:flex; justify-content:center; align-items:center; height:100px;">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
                     
-                    <a href="https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent('¡Hola! Me interesa este producto: ' + productoActual.nombre + ' (' + productoActual.marca + ')')}" 
-                       target="_blank" 
-                       class="btn-wa-main">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.181-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.171.824-.299.045-.698.059-1.146-.086-.285-.092-.596-.213-.99-.382-1.684-.718-2.772-2.42-2.856-2.531-.084-.11-.692-.919-.692-1.756 0-.838.431-1.248.585-1.416.155-.168.337-.21.45-.21h.322c.113 0 .262.001.383.284l.443 1.074c.045.106.074.212.003.353-.071.141-.106.21-.212.333-.106.124-.216.208-.309.319l-.234.256c.123.214.281.411.464.584.183.174.379.324.593.447l.282.25c.114.108.358.337.358.337s.216-.251.309-.319c.093-.068.183-.16.284-.131s.574.271.743.354c.169.083.282.124.339.212.056.095.056.551-.088.956z"/></svg>
-                        Consultar por WhatsApp
-                    </a>
+                    <!-- Botón Ver Más (Oculto por defecto, se maneja en JS) -->
+                    <button id="btnVerMasResenas" style="display:none; width:100%; margin-top:1rem; padding:0.5rem; background:#f1f5f9; border:none; color:#64748b; font-weight:600; cursor:pointer; border-radius:6px;">
+                        Ver comentarios antiguos
+                    </button>
                 </div>
             </div>
         </div>
     `;
+
+    // Cargar reviews asíncronamente
+    setTimeout(() => cargarResenasProducto(productoActual.id), 100);
+
+    // Renderizar opciones de variantes (chips confirmados)
+    if (productoActual.variantes && productoActual.variantes.length > 0) {
+        const container = document.getElementById('contenedorVariantes');
+        if (container) {
+            let opciones = [];
+
+            // Prioridad: Stock real -> Variantes simples registradas
+            if (productoActual.stock_variantes && Object.keys(productoActual.stock_variantes).length > 0) {
+                opciones = Object.keys(productoActual.stock_variantes);
+            } else {
+                // Si no hay stock detallado, usamos la lista de variantes (que puede ser ["Rojo", "Azul"])
+                opciones = Array.isArray(productoActual.variantes) ? productoActual.variantes : [];
+            }
+
+            if (opciones.length === 0) {
+                container.innerHTML = '<span style="color:#64748b; font-size:0.9rem;">No hay opciones específicas registradas.</span>';
+            } else {
+                // MAPA DE COLORES PARA CIRCULOS
+                const colorMap = {
+                    'negro': '#000000', 'blanco': '#ffffff', 'rojo': '#ef4444',
+                    'azul': '#3b82f6', 'verde': '#22c55e', 'amarillo': '#eab308',
+                    'gris': '#64748b', 'morado': '#a855f7', 'rosa': '#ec4899', 'rosado': '#ec4899',
+                    'naranja': '#f97316', 'cafe': '#78350f', 'cian': '#06b6d4',
+                    'mate': '#333333', 'fucsia': '#d946ef', 'fuscia': '#d946ef',
+                    'dorado': '#fbbf24', 'plateado': '#94a3b8', 'beige': '#f5f5dc',
+                    'turquesa': '#2dd4bf', 'vino': '#881337', 'lila': '#c084fc',
+                    'neon': '#ccff00', 'multicolor': 'linear-gradient(45deg, red, blue)'
+                };
+
+                opciones.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'variant-chip';
+
+                    // Limpiar label
+                    let label = opt;
+                    if (typeof opt !== 'string') label = JSON.stringify(opt);
+                    label = label.replace(/-/g, ' ').replace(/[{"}]/g, '');
+
+                    // Detectar si es color
+                    const labelLower = label.toLowerCase().trim();
+                    const esColor = colorMap[labelLower];
+
+                    // --- Mostrar Stock Disponible si existe ---
+                    let stockTexto = '';
+                    let stockVars = productoActual.stock_variantes;
+                    if (typeof stockVars === 'string') {
+                        try { stockVars = JSON.parse(stockVars); } catch (e) { stockVars = {}; }
+                    }
+
+                    if (stockVars && stockVars[opt] !== undefined) {
+                        stockTexto = ` (${stockVars[opt]})`;
+                    }
+
+                    if (esColor) {
+                        // Renderizar como círculo de color
+                        btn.title = label + stockTexto; // Tooltip con nombre
+                        btn.style.cssText = `
+                            width: 32px;
+                            height: 32px;
+                            border-radius: 50%;
+                            background-color: ${esColor};
+                            border: 2px solid #e2e8f0;
+                            cursor: pointer;
+                            transition: transform 0.2s, border-color 0.2s;
+                            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                        `;
+                        // Borde extra para blanco
+                        if (labelLower === 'blanco') btn.style.border = '2px solid #cbd5e1';
+                    } else {
+                        // Renderizar como chip normal
+                        btn.textContent = label + stockTexto;
+                        btn.style.cssText = `
+                            padding: 0.5rem 1rem;
+                            border: 2px solid #e2e8f0;
+                            border-radius: 2rem;
+                            background: white;
+                            cursor: pointer;
+                            font-size: 0.9rem;
+                            transition: all 0.2s;
+                        `;
+                    }
+
+                    btn.onclick = () => {
+                        // Reset visual selection
+                        document.querySelectorAll('#contenedorVariantes .variant-chip').forEach(b => {
+                            if (b.style.borderRadius === '50%') {
+                                // Es color
+                                b.style.transform = 'scale(1)';
+                                b.style.borderColor = '#e2e8f0';
+                                if (b.title.toLowerCase().includes('blanco')) b.style.borderColor = '#cbd5e1';
+                            } else {
+                                // Es chip normal
+                                b.style.borderColor = '#e2e8f0';
+                                b.style.background = 'white';
+                                b.style.color = 'black';
+                            }
+                        });
+
+                        // Selección activa
+                        if (esColor) {
+                            btn.style.transform = 'scale(1.2)';
+                            btn.style.borderColor = '#ea580c'; // Naranja selección
+                        } else {
+                            btn.style.borderColor = '#ea580c';
+                            btn.style.background = '#fff7ed';
+                            btn.style.color = '#ea580c';
+                        }
+
+                        document.getElementById('varianteSeleccionada').value = label;
+
+                        // --- Actualizar botón WhatsApp con la selección ---
+                        const waBtn = document.getElementById('btnWhatsappDetalle');
+                        if (waBtn) {
+                            const text = `¡Hola! Me interesa este producto: ${productoActual.nombre} (${productoActual.marca}) - Variante: ${label}`;
+                            waBtn.href = `https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent(text)}`;
+                        }
+                    };
+                    container.appendChild(btn);
+                });
+            }
+        }
+    }
 
     document.getElementById('modalDetalle').classList.add('active');
 }
@@ -445,7 +698,7 @@ window.onclick = function (e) {
 
 // Inicializar al cargar el DOM
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Iniciando Moteros Sports Line - Catálogo...');
+    if (window.sincronizarBrandingGlobal) window.sincronizarBrandingGlobal();
     cargarProductos();
     // cargarCategoriasFiltro() se llama dentro de cargarProductos() para asegurar que la DB esté lista
 });
@@ -462,15 +715,45 @@ async function cargarCategoriasFiltro() {
 
         if (error) throw error;
 
-        const valActual = select.value;
-        select.innerHTML = '<option value="">Todas las categorías</option>' +
-            data.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
-        select.value = valActual;
+        // Limpiar opciones manteniendo la default
+        select.innerHTML = '<option value="">Todas las Categorías</option>';
 
-    } catch (err) {
-        console.error('Error cargando categorías para filtro:', err);
+        if (data) {
+            data.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.nombre;
+                option.textContent = cat.nombre;
+                select.appendChild(option);
+            });
+        }
+
+        // Verificar URL param después de cargar opciones
+        checkUrlParams();
+
+    } catch (e) {
+        console.error('Error cargando categorías filtro:', e);
     }
 }
+
+function checkUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const catParam = params.get('categoria');
+
+    if (catParam) {
+        const select = document.getElementById('filtroCategoria');
+        if (select) {
+            select.value = catParam;
+            // Si el valor no existe en el select (legacy vs db mismatch), lo ignorará o quedará vacío.
+            // Forzamos filtro si hay valor
+            if (select.value) {
+                aplicarFiltros();
+            }
+        }
+    }
+}
+
+// Exponer globalmente
+window.cargarCategoriasFiltro = cargarCategoriasFiltro;
 
 // Eventos de ventana
 window.onclick = function (e) {
@@ -493,3 +776,190 @@ document.addEventListener('selectstart', function (e) {
         // e.preventDefault(); // Descomentar para activar bloqueo total
     }
 });
+
+// ═══════════════════════════════════════════════════════════════
+// FUNCIONES DE RESEÑAS
+// ═══════════════════════════════════════════════════════════════
+
+function setRating(n) {
+    const stars = document.querySelectorAll('.rating-input span');
+    document.getElementById('resenaEstrellas').value = n;
+    stars.forEach((s, i) => {
+        s.textContent = i < n ? '★' : '☆';
+        s.style.color = i < n ? '#f59e0b' : '#cbd5e1';
+    });
+}
+window.setRating = setRating;
+
+async function enviarResenaCliente() {
+    const idProducto = document.getElementById('resenaProductoId').value;
+    const estrellas = parseInt(document.getElementById('resenaEstrellas').value);
+    const nombre = document.getElementById('resenaNombre').value.trim() || 'Anónimo';
+    const comentario = document.getElementById('resenaComentario').value.trim();
+
+    if (estrellas === 0) {
+        if (typeof showToast === 'function') showToast('Atención', 'Selecciona las estrellas', 'warning');
+        else alert('Por favor selecciona una calificación de estrellas');
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient.from('producto_resenas').insert({
+            id_producto: idProducto,
+            estrellas: estrellas,
+            comentario: comentario,
+            nombre_cliente: nombre,
+            created_at: new Date().toISOString()
+        });
+
+        if (error) throw error;
+
+        if (typeof showToast === 'function') showToast('¡Recibido!', 'Tu reseña será publicada tras aprobación.', 'success');
+        else alert('Tu reseña ha sido enviada y está pendiente de aprobación.');
+
+        document.getElementById('formResena').style.display = 'none';
+    } catch (e) {
+        console.error(e);
+        alert('Error al enviar reseña: ' + e.message);
+    }
+}
+window.enviarResenaCliente = enviarResenaCliente;
+
+async function cargarResenasProducto(idProducto) {
+    const container = document.getElementById('listaResenasContainer');
+    if (!container) return;
+
+    container.innerHTML = '<p style="text-align:center; color:#94a3b8;">Cargando opiniones...</p>';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('producto_resenas')
+            .select('*')
+            .eq('id_producto', idProducto)
+            .eq('aprobado', true) // Solo aprobados
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:2rem; color:#64748b;">
+                    <p style="margin-bottom:0.5rem; font-size:1.1rem;">Este producto aún no tiene opiniones.</p>
+                    <p style="font-size:0.9rem;">¡Sé el primero en compartir tu experiencia!</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = data.map(r => `
+            <div style="border-bottom:1px solid #f1f5f9; padding:1.5rem 0;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                    <div style="font-weight:700; color:#334155;">${r.nombre_cliente || 'Anónimo'}</div>
+                    <div style="font-size:0.85rem; color:#94a3b8;">${new Date(r.created_at).toLocaleDateString()}</div>
+                </div>
+                <div style="color:#f59e0b; font-size:1rem; margin-bottom:0.5rem;">
+                    ${'★'.repeat(r.estrellas)}${'☆'.repeat(5 - r.estrellas)}
+                </div>
+                <p style="color:#475569; line-height:1.6; margin:0;">${r.comentario}</p>
+            </div>
+        `).join('');
+
+    } catch (err) {
+        console.error('Error cargando reseñas:', err);
+        container.innerHTML = '<p style="text-align:center; color:red;">No se pudieron cargar las opiniones.</p>';
+    }
+}
+window.cargarResenasProducto = cargarResenasProducto;
+
+// ═══════════════════════════════════════════════════════════════
+// OVERRIDE: NUEVA LÓGICA DE RESEÑAS (Paginación + Word-Break)
+// ═══════════════════════════════════════════════════════════════
+// Variables globales para paginación de reseñas
+let lastReviewFecha = null;
+let reviewLimit = 2; // Mostrar 2 inicialmente
+
+async function cargarResenasProductoV2(idProducto, reset = true) {
+    const container = document.getElementById('listaResenasContainer');
+    const btnVerMas = document.getElementById('btnVerMasResenas');
+
+    if (!container) return;
+
+    // Si la función antigua llama sin reset, reset es undefined, forzamos true
+    if (reset === undefined) reset = true;
+
+    if (reset) {
+        container.innerHTML = '<div style="display:flex; justify-content:center; padding:1rem;"><div class="spinner"></div></div>';
+        lastReviewFecha = null; // Reset pointer
+        if (btnVerMas) btnVerMas.style.display = 'none';
+    }
+
+    try {
+        let query = supabaseClient
+            .from('producto_resenas')
+            .select('*')
+            .eq('id_producto', idProducto)
+            .eq('aprobado', true)
+            .order('created_at', { ascending: false })
+            .limit(reviewLimit + 1); // Pedimos 1 extra para saber si hay más
+
+        if (lastReviewFecha) {
+            query = query.lt('created_at', lastReviewFecha);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        if (reset) container.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            if (reset) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:1.5rem; color:#94a3b8; background:#f8fafc; border-radius:8px;">
+                        <p style="margin-bottom:0.25rem; font-size:1.5rem;">🌟</p>
+                        <p style="margin-bottom:0.25rem; font-weight:600; color:#64748b;">Aún no hay opiniones</p>
+                        <p style="font-size:0.85rem;">¡Sé el primero en calificar este producto!</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        // Determinar si hay más páginas
+        const hayMas = data.length > reviewLimit;
+        const reviewsIO = hayMas ? data.slice(0, reviewLimit) : data;
+
+        // Renderizar reviews
+        reviewsIO.forEach(r => {
+            const div = document.createElement('div');
+            div.style.borderBottom = '1px solid #f1f5f9';
+            div.style.padding = '1rem 0';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+                    <div style="font-weight:700; color:#334155; font-size:0.9rem; text-transform:uppercase;">${r.nombre_cliente || 'Anónimo'}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">${new Date(r.created_at).toLocaleDateString()}</div>
+                </div>
+                <div style="color:#f59e0b; font-size:0.9rem; margin-bottom:0.5rem;">
+                    ${'★'.repeat(r.estrellas)}${'☆'.repeat(5 - r.estrellas)}
+                </div>
+                <!-- FORCE WORD BREAK HERE -->
+                <p style="color:#475569; line-height:1.5; margin:0; font-size:0.9rem; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;">${r.comentario}</p>
+            `;
+            container.appendChild(div);
+            lastReviewFecha = r.created_at; // Guardar fecha para siguiente paginación
+        });
+
+        // Manejo del botón "Ver Más"
+        if (btnVerMas) {
+            btnVerMas.style.display = hayMas ? 'block' : 'none';
+            btnVerMas.onclick = () => cargarResenasProductoV2(idProducto, false);
+            if (hayMas) btnVerMas.textContent = 'Ver comentarios antiguos (+2)';
+        }
+
+    } catch (err) {
+        console.error('Error cargando reseñas:', err);
+        if (reset) container.innerHTML = '<p style="text-align:center; color:red; font-size:0.85rem;">Error al cargar opiniones.</p>';
+    }
+}
+window.cargarResenasProducto = cargarResenasProductoV2;

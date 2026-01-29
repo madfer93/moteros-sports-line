@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -34,6 +34,7 @@
     <!-- CSS externo -->
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/blog-mejorado.css">
+    <link rel="stylesheet" href="css/blog-comments.css">
 
     <!-- SDK de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -108,6 +109,16 @@
             }
         }
     </style>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MGGG89S8XM"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-MGGG89S8XM');
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
 <body oncontextmenu="return false;">
@@ -185,17 +196,17 @@
                 </div>
                 <div class="footer-section">
                     <h4>Contacto General</h4>
-                    <p>📞 <a href="tel:+573113408416" style="color:white;">311 340 8416</a></p>
-                    <p>✉️ <a href="mailto:moterossportline@gmail.com"
+                    <p><i class="fas fa-phone"></i><a href="tel:+573113408416" style="color:white;">311 340 8416</a></p>
+                    <p><i class="fas fa-envelope"></i><a href="mailto:moterossportline@gmail.com"
                             style="color:white;">moterossportline@gmail.com</a></p>
                 </div>
                 <div class="footer-section">
                     <h4>Siguenos</h4>
-                    <p>📘 <a href="https://www.facebook.com/MoterosSportLine/" target="_blank"
-                            style="color:white;">Facebook</a></p>
-                    <p>📷 <a href="https://www.instagram.com/moteros.sportline/" target="_blank"
-                            style="color:white;">Instagram</a></p>
-                    <p>🎵 <a href="https://www.tiktok.com/@moterossportline" target="_blank"
+                    <p><i class="fab fa-facebook"></i><a href="https://www.facebook.com/MoterosSportLine/"
+                            target="_blank" style="color:white;">Facebook</a></p>
+                    <p><i class="fab fa-instagram"></i><a href="https://www.instagram.com/moteros.sportline/"
+                            target="_blank" style="color:white;">Instagram</a></p>
+                    <p><i class="fab fa-tiktok"></i><a href="https://www.tiktok.com/@moterossportline" target="_blank"
                             style="color:white;">TikTok</a></p>
                 </div>
                 <div class="footer-section">
@@ -226,6 +237,7 @@
     <script src="js/ia-core.js"></script>
     <script src="js/ai-widget.js"></script>
     <script src="js/blog.js"></script>
+    <script src="js/blog-comments.js"></script>
     <script>
         function toggleMobileMenu() {
             document.getElementById('mobileNav').classList.toggle('active');
@@ -246,6 +258,7 @@
             e.preventDefault();
         });
     </script>
+    <script src="js/security.js"></script>
 </body>
 
 </html>
