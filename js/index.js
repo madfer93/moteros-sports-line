@@ -539,7 +539,8 @@ function renderizarCarruselPromo() {
             <div class="promo-card-image">
                 <img src="${item.imagenUrl || 'https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg'}" 
                      alt="${item.nombre}" 
-                     onerror="this.src='https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg'">
+                     onerror="this.src='https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg'"
+                     loading="lazy" decoding="async" width="300" height="180">
             </div>
             <div class="promo-card-info">
                 <div class="promo-name">${item.nombre}</div>
@@ -680,7 +681,8 @@ async function cargarDestacados() {
                 <div class="producto-imagen" style="position:relative;">
                     <img src="${p.url_imagen || 'https://picsum.photos/400/300'}" 
                          alt="${p.nombre}" 
-                         onerror="this.src='https://picsum.photos/400/300'">
+                         onerror="this.src='https://picsum.photos/400/300'"
+                         loading="lazy" decoding="async" width="300" height="280">
                     <span class="badge-categoria">${p.categoria}</span>
                     <span class="badge-destacado">⭐ DESTACADO</span>
                 </div>

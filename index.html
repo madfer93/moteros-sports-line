@@ -11,13 +11,12 @@
         href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
     <link rel="shortcut icon"
         href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ff6b00">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <!-- Resource Preconnects -->
+    <link rel="preconnect" href="https://pbblthbrdkevuyjxyuar.supabase.co">
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <meta name="description"
         content="Moteros Sport Line - La Casa Oficial de los Moteros en Villavicencio, Meta. Cascos, guantes, chaquetas, botas, intercomunicadores y accesorios de calidad para motociclistas. 3 locales: Alcalá, Jordán y Local 01.">
 
@@ -166,8 +165,6 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/index.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MGGG89S8XM"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
@@ -175,7 +172,11 @@
 
         gtag('config', 'G-MGGG89S8XM');
     </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    </noscript>
 </head>
 
 <body oncontextmenu="return false;">
@@ -188,7 +189,7 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- Carrito Flotante -->
-    <button class="cart-floating" onclick="abrirCarrito()">
+    <button class="cart-floating" onclick="abrirCarrito()" aria-label="Ver carrito de compras">
         <span class="cart-floating-icon">🛒</span>
         <span class="cart-floating-count" id="cartFloatingCount">0</span>
     </button>
@@ -208,7 +209,7 @@
             <a href="index.html" class="logo" style="text-decoration:none;">
                 <img id="siteLogo"
                     src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                    alt="Moteros Sports Line">
+                    alt="Moteros Sports Line" width="50" height="50" fetchpriority="high">
                 <h1 id="siteTitle">MOTEROS SPORT LINE</h1>
             </a>
             <nav class="nav">
@@ -218,7 +219,8 @@
                 <a href="blog.html">Blog</a>
                 <a href="contacto.html">Contacto</a>
             </nav>
-            <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()">
+            <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()"
+                aria-label="Abrir menú de navegación">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -262,15 +264,17 @@
                         <p class="metodos-pago-titulo">💳 Métodos de Pago Aceptados:</p>
                         <div class="metodos-pago-logos">
                             <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
-                                alt="Nequi" title="Nequi">
+                                alt="Nequi" title="Nequi" width="40" height="40" loading="lazy" decoding="async">
                             <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
-                                alt="Daviplata" title="Daviplata">
+                                alt="Daviplata" title="Daviplata" width="40" height="40" loading="lazy"
+                                decoding="async">
                             <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
-                                alt="Addi" title="Addi">
+                                alt="Addi" title="Addi" width="40" height="40" loading="lazy" decoding="async">
                             <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
-                                alt="Sistecredito" title="Sistecredito">
+                                alt="Sistecredito" title="Sistecredito" width="40" height="40" loading="lazy"
+                                decoding="async">
                             <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
-                                alt="Bodegas" title="Bodegas">
+                                alt="Bodegas" title="Bodegas" width="40" height="40" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="domicilios-info-hero">
@@ -286,7 +290,8 @@
             <!-- Logo Animado -->
             <div class="hero-logo">
                 <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                    alt="Moteros Sport Line Logo" class="hero-logo-img">
+                    alt="Moteros Sport Line Logo" class="hero-logo-img" width="300" height="300" fetchpriority="high"
+                    decoding="async">
             </div>
         </div>
     </section>
@@ -433,19 +438,18 @@
     </a>
 
     <!-- Scripts -->
-    <script src="js/security.js"></script>
-    <script src="js/config.js" onerror="this.src='js/config.js.example'"></script>
-    <script src="js/promociones.js"></script>
-    <script src="js/ia-core.js"></script>
-    <script src="js/ai-widget.js"></script>
-    <script src="js/index.js"></script>
+    <script src="js/security.js" defer></script>
+    <script src="js/config.js" onerror="this.src='js/config.js.example'" defer></script>
+    <script src="js/promociones.js" defer></script>
+    <script src="js/ia-core.js" defer></script>
+    <script src="js/ai-widget.js" defer></script>
+    <script src="js/index.js" defer></script>
     <script>
         function toggleMobileMenu() {
             document.getElementById('mobileNav').classList.toggle('active');
             document.getElementById('menuToggle').classList.toggle('active');
         }
 
-        // Ocultar preloader cuando carga la página
         window.addEventListener('load', function () {
             const preloader = document.getElementById('preloader');
             if (preloader) {
@@ -454,6 +458,7 @@
             }
         });
     </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MGGG89S8XM"></script>
 </body>
 
 </html>

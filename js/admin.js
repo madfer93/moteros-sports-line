@@ -28,6 +28,7 @@ let productosSeleccionadosPromo = [];
 let productosPromoFiltrados = [];
 let todosDeudores = [];
 let todosProveedores = [];
+let leadsIAData = [];
 
 // ═══════════════════════════════════════════════════════════════
 // UTILIDADES
@@ -8594,198 +8595,7 @@ window.editarCategoria = editarCategoria;
 window.eliminarCategoria = eliminarCategoria;
 window.cargarCategorias = cargarCategorias;
 // ═══════════════════════════════════════════════════════════════
-// LEADS IA
-// ═══════════════════════════════════════════════════════════════
-
-let todosLeadsIA = [];
-
-async function cargarLeadsIA() {
-    const tbody = document.getElementById('tbodyLeadsIA');
-    if (!tbody) return;
-
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center">🔍 Consultando base de datos...</td></tr>';
-
-    try {
-        if (typeof supabaseClient === 'undefined') {
-            throw new Error('Supabase no está inicializado');
-        }
-
-        const { data, error } = await supabaseClient
-            .from('leads_ia')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        todosLeadsIA = data || [];
-        renderizarTablaLeads(todosLeadsIA);
-
-    } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando leads:', error);
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="color:var(--danger);">⚠️ Error: ${error.message || 'No se pudo conectar con la base de datos'}</td></tr>`;
-        showToast('Error al cargar leads', 'error');
-    }
-}
-
-function renderizarTablaLeads(data) {
-    const tbody = document.getElementById('tbodyLeadsIA');
-    if (!tbody) return;
-
-    if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay leads capturados aún.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = data.map(lead => {
-        const interesClass = `badge-interes-${(lead.nivel_interes || 'Media').toLowerCase()}`;
-        return `
-            <tr>
-                <td>${new Date(lead.created_at).toLocaleString('es-CO')}</td>
-                <td style="font-weight:600;">${lead.nombre}</td>
-                <td style="font-family: monospace;">${lead.whatsapp}</td>
-                <td><span class="badge-interes ${interesClass}">${lead.nivel_interes || 'Media'}</span></td>
-                <td style="max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${lead.fragmento_interes || ''}">
-                    ${lead.fragmento_interes || 'Interés general'}
-                </td>
-                <td>
-                    <span class="badge-estado ${lead.estado === 'Contactado' ? 'contactado' : 'nuevo'}">
-                        ${lead.estado || 'Nuevo'}
-                    </span>
-                </td>
-                <td style="text-align:right;">
-                    <button class="btn-icon green" onclick="contactarLeadWA('${lead.whatsapp}')" title="Contactar WhatsApp">💬</button>
-                    <button class="btn-icon blue" onclick="verDetalleLead('${lead.id}')" title="Ver Detalles">👁️</button>
-                    <button class="btn-icon red" onclick="eliminarLead('${lead.id}', '${lead.nombre}')" title="Eliminar">🗑️</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-
-function filtrarLeadsAdmin() {
-    const busqueda = document.getElementById('buscarLeadAdmin').value.toLowerCase();
-    const filtrados = todosLeadsIA.filter(l =>
-        l.nombre.toLowerCase().includes(busqueda) ||
-        l.whatsapp.includes(busqueda) ||
-        (l.fragmento_interes && l.fragmento_interes.toLowerCase().includes(busqueda))
-    );
-    renderizarTablaLeads(filtrados);
-}
-
-async function eliminarLead(id, nombre) {
-    if (!confirm(`¿Estás seguro de eliminar el lead de "${nombre}"?`)) return;
-
-    try {
-        const { error } = await supabaseClient.from('leads_ia').delete().eq('id', id);
-        if (error) throw error;
-
-        showToast('Lead eliminado con éxito');
-        cargarLeadsIA();
-    } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error eliminando lead:', error);
-        showToast('Error al eliminar el lead', 'error');
-    }
-}
-
-async function contactarLeadWA(whatsapp) {
-    const lead = todosLeadsIA.find(l => l.whatsapp === whatsapp);
-    const nombre = lead ? lead.nombre : 'Cliente';
-    const interes = lead ? lead.fragmento_interes : 'nuestros productos';
-
-    // Generar mensaje personalizado
-    let saludo = `¡Hola ${nombre}! 👋`;
-    if (nombre === 'Cliente Web' || !nombre) saludo = "¡Hola! 👋";
-
-    const texto = `${saludo} Soy un asesor de Moteros Sports Line. Vi que estuviste consultando con nuestro asistente virtual sobre *${interes}*. Me gustaría ayudarte personalmente con más información, fotos o lo que necesites. ¿En qué puedo servirte hoy?`;
-
-    const cleanNumber = whatsapp.replace(/\D/g, '');
-    const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(texto)}`;
-
-    // Abrir WhatsApp
-    window.open(url, '_blank');
-
-    // Actualizar estado a 'Contactado' en Supabase si era 'Nuevo'
-    if (lead && lead.estado !== 'Contactado') {
-        try {
-            const { error } = await supabaseClient
-                .from('leads_ia')
-                .update({ estado: 'Contactado' })
-                .eq('id', lead.id);
-
-            if (!error) {
-
-                lead.estado = 'Contactado';
-                renderizarTablaLeads(todosLeadsIA);
-            }
-        } catch (e) {
-            if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error actualizando estado del lead:', e);
-        }
-    }
-}
-
-function verDetalleLead(id) {
-    const lead = todosLeadsIA.find(l => l.id === id);
-    if (!lead) return;
-
-    // Crear y mostrar modal de detalle premium
-    const modalHtml = `
-        <div id="modalLeadDetalle" class="modal-overlay">
-            <div class="modal-content" style="max-width:800px;">
-                <div class="modal-header">
-                    <h3>👤 Detalle del Lead: ${lead.nombre}</h3>
-                    <button onclick="cerrarModalLead()" class="btn-cerrar">×</button>
-                </div>
-                <div class="modal-body">
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
-                        <div class="info-group">
-                            <label style="font-weight:700; color:var(--gray-500); font-size:0.75rem; text-transform:uppercase;">WhatsApp</label>
-                            <p style="font-size:1.1rem; font-weight:600;">${lead.whatsapp}</p>
-                        </div>
-                        <div class="info-group">
-                            <label style="font-weight:700; color:var(--gray-500); font-size:0.75rem; text-transform:uppercase;">Nivel de Interés</label>
-                            <p><span class="badge-interes badge-interes-${(lead.nivel_interes || 'Media').toLowerCase()}">${lead.nivel_interes || 'Media'}</span></p>
-                        </div>
-                        <div class="info-group" style="grid-column: span 2;">
-                            <label style="font-weight:700; color:var(--gray-500); font-size:0.75rem; text-transform:uppercase;">Necesidad Detectada</label>
-                            <p style="background:var(--gray-50); padding:1rem; border-radius:0.5rem; border-left:4px solid var(--primary); font-style:italic;">
-                                "${lead.fragmento_interes || 'N/A'}"
-                            </p>
-                        </div>
-                    </div>
-
-                    <label style="font-weight:700; color:var(--gray-500); font-size:0.75rem; text-transform:uppercase; display:block; margin-bottom:1rem;">Historial de Chat (IA)</label>
-                    <div id="chatVisor" style="background:#f1f5f9; padding:1.5rem; border-radius:1rem; max-height:400px; overflow-y:auto; display:flex; flex-direction:column; gap:1rem;">
-                        ${renderizarHistorialChat(lead.historial_asociado)}
-                    </div>
-                </div>
-                <div class="modal-footer" style="padding-top:1.5rem; border-top:1px solid var(--gray-100); display:flex; gap:1rem; justify-content:flex-end;">
-                    <button class="btn btn-success" onclick="contactarLeadWA('${lead.whatsapp}')">💬 Hablar por WhatsApp</button>
-                    <button class="btn btn-secondary" onclick="cerrarModalLead()">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-}
-
-function renderizarHistorialChat(historial) {
-    if (!historial || !Array.isArray(historial)) return '<p class="text-center" style="color:var(--gray-400);">No hay historial de chat disponible.</p>';
-
-    return historial.map(msg => {
-        const isUser = msg.role === 'user';
-        return `
-            <div style="align-self: ${isUser ? 'flex-end' : 'flex-start'}; max-width: 80%; background: ${isUser ? 'var(--primary)' : 'white'}; color: ${isUser ? 'white' : 'var(--gray-800)'}; padding: 0.75rem 1rem; border-radius: 1rem; ${isUser ? 'border-bottom-right-radius: 0.25rem;' : 'border-bottom-left-radius: 0.25rem;'}; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 0.9rem;">
-                ${msg.content.replace(/\n/g, '<br>')}
-            </div>
-        `;
-    }).join('');
-}
-
-function cerrarModalLead() {
-    const modal = document.getElementById('modalLeadDetalle');
-    if (modal) modal.remove();
-}
+// Redundant Leads IA implementation removed. Management consolidated at the end of the file.
 
 // ═══════════════════════════════════════════════════════════════
 // TRASLADOS, COMENTARIOS Y RESEÑAS
@@ -8976,13 +8786,7 @@ window.aprobarComentario = aprobarComentario;
 window.eliminarComentario = eliminarComentario;
 window.calcularPorcentajesLocales = calcularPorcentajesLocales;
 
-window.cargarLeadsIA = cargarLeadsIA;
-window.renderizarTablaLeads = renderizarTablaLeads;
-window.filtrarLeadsAdmin = filtrarLeadsAdmin;
-window.eliminarLead = eliminarLead;
-window.contactarLeadWA = contactarLeadWA;
-window.verDetalleLead = verDetalleLead;
-window.cerrarModalLead = cerrarModalLead;
+// Redundant Leads IA window exports removed.
 
 window.actualizarSelectsCategorias = actualizarSelectsCategorias;
 
@@ -9452,78 +9256,9 @@ window.eliminarEmpleado = eliminarEmpleado;
 window.mostrarModalEmpleado = mostrarModalEmpleado;
 window.cancelarFormEmpleado = cancelarFormEmpleado;
 
-// ═══════════════════════════════════════════════════════════════
-// GESTIÓN DE LEADS IA
-// ═══════════════════════════════════════════════════════════════
+// Redundant Leads IA implementation removed.
 
-async function cargarLeadsIA() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('leads_ia')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        renderizarTablaLeads(data || []);
-    } catch (e) {
-        console.error(e);
-        const tbody = document.getElementById('tbodyLeads');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error cargando leads. Verifique tabla "leads_ia".</td></tr>';
-    }
-}
-
-function renderizarTablaLeads(lista) {
-    const tbody = document.getElementById('tbodyLeadsIA');
-    if (!tbody) return;
-
-    if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay leads capturados aún.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = lista.map(l => `
-        <tr>
-            <td>${formatearFecha(l.created_at)}</td>
-            <td><strong>${l.nombre || 'Anónimo'}</strong></td>
-            <td>${l.whatsapp || l.telefono || '-'}</td>
-            <td>
-                <span class="badge ${l.nivel_interes === 'Alta' ? 'badge-danger' : (l.nivel_interes === 'Media' ? 'badge-warning' : 'badge-info')}">
-                    ${l.nivel_interes || 'Medio'}
-                </span>
-            </td>
-            <td><small>${l.fragmento_interes || l.necesidad || '-'}</small></td>
-            <td><span class="badge ${l.estado === 'nuevo' || l.estado === 'Nuevo' ? 'badge-success' : 'badge-secondary'}">${l.estado || 'Nuevo'}</span></td>
-            <td>
-                <button class="btn-icon green" onclick="contactarLeadWA('${l.whatsapp || l.telefono}', '${l.nombre}')" title="WhatsApp">💬</button>
-                <button class="btn-icon red" onclick="eliminarLead('${l.id}')" title="Eliminar">🗑️</button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function contactarLeadWA(telefono, nombre) {
-    if (!telefono) { showToast('No hay teléfono registrado', 'warning'); return; }
-    const tel = telefono.replace(/\D/g, '');
-    const mensaje = `Hola ${nombre}, te saludamos de Moteros Sports Line. Vimos tu interés en nuestros productos. ¿Cómo podemos asesorarte?`;
-    window.open(`https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`, '_blank');
-}
-
-async function eliminarLead(id) {
-    if (!confirm('¿Eliminar este lead?')) return;
-    try {
-        const { error } = await supabaseClient.from('leads_ia').delete().eq('id', id);
-        if (error) throw error;
-        showToast('Lead eliminado');
-        cargarLeadsIA();
-    } catch (e) {
-        showToast('Error eliminando lead', 'error');
-    }
-}
-
-window.cargarLeadsIA = cargarLeadsIA;
-window.renderizarTablaLeads = renderizarTablaLeads;
-window.contactarLeadWA = contactarLeadWA;
-window.eliminarLead = eliminarLead;
+// Redundant Leads IA implementation removed from middle of file. Consistently managed at the end.
 
 // ═══════════════════════════════════════════════════════════════
 // ALERTAS DE STOCK
@@ -12228,8 +11963,6 @@ function renderChart(canvasId, type, data, title) {
 // GESTIÓN DE LEADS IA
 // ═══════════════════════════════════════════════════════════════
 
-let leadsIAData = [];
-
 async function cargarLeadsIA() {
     const tbody = document.getElementById('tbodyLeadsIA');
     if (!tbody) return;
@@ -12264,21 +11997,23 @@ function renderTablaLeads(leads) {
     tbody.innerHTML = leads.map(lead => {
         const fecha = new Date(lead.created_at).toLocaleString('es-CO');
         const badgeColor = getEstadoLeadColor(lead.estado);
-        const waClean = (lead.whatsapp || '').replace(/\D/g, '');
+        const waClean = (lead.whatsapp || lead.telefono || '').replace(/\D/g, '');
 
         return `
             <tr>
                 <td>${fecha}</td>
                 <td><strong>${lead.nombre || 'Cliente Web'}</strong></td>
-                <td>${lead.whatsapp || '-'}</td>
+                <td>${lead.whatsapp || lead.telefono || '-'}</td>
                 <td><span class="badge" style="background:${lead.nivel_interes === 'Alta' ? '#dc2626' : '#2563eb'};color:white;">${lead.nivel_interes || 'Medio'}</span></td>
-                <td><div style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${lead.fragmento_interes}">${lead.fragmento_interes || '-'}</div></td>
+                <td><div style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${lead.fragmento_interes || lead.necesidad || ''}">${lead.fragmento_interes || lead.necesidad || '-'}</div></td>
                 <td><span class="badge ${badgeColor}">${(lead.estado || 'Nuevo').toUpperCase()}</span></td>
                 <td>
-                    <button onclick='verDetalleLead("${lead.id}")' class="btn btn-sm btn-info" title="Ver historial completo">👁️</button>
-                    ${waClean && waClean.length >= 7 ? `
-                        <a href="https://wa.me/57${waClean}" target="_blank" class="btn btn-sm btn-success" title="Contactar por WhatsApp">📱</a>
-                    ` : ''}
+                    <div style="display:flex; gap:0.5rem;">
+                        <button onclick='verDetalleLead("${lead.id}")' class="btn btn-sm btn-info" title="Ver historial completo">👁️</button>
+                        ${waClean ? `
+                            <button onclick='contactarLeadWA("${lead.id}", "${waClean}", "${lead.nombre || 'Cliente'}")' class="btn btn-sm btn-success" title="Contactar por WhatsApp">📱</button>
+                        ` : ''}
+                    </div>
                 </td>
             </tr>
         `;
@@ -12286,11 +12021,100 @@ function renderTablaLeads(leads) {
 }
 
 function getEstadoLeadColor(estado) {
-    const est = (estado || 'Nuevo').toLowerCase();
-    if (est === 'nuevo') return 'badge-danger';
-    if (est === 'contactado') return 'badge-warning';
-    if (est === 'convertido') return 'badge-success';
-    return 'badge-secondary';
+    switch ((estado || '').toLowerCase()) {
+        case 'nuevo': return 'badge-danger';
+        case 'contactado': return 'badge-info';
+        case 'en seguimiento': return 'badge-warning';
+        case 'cerrado': return 'badge-secondary';
+        default: return 'badge-danger';
+    }
+}
+
+async function contactarLeadWA(id, wa, nombre) {
+    // 1. WhatsApp Redir con mensaje - Normalizar prefijo
+    let cleanWA = wa.replace(/\D/g, '');
+    if (cleanWA.length === 10) cleanWA = '57' + cleanWA;
+
+    const mensaje = encodeURIComponent(`¡Hola ${nombre}! Te contactamos de Moteros Sports Line. Vimos tu interés por nuestros productos en nuestro asistente virtual. ¿En qué podemos ayudarte hoy?`);
+    window.open(`https://wa.me/${cleanWA}?text=${mensaje}`, '_blank');
+
+    // 2. Cambiar estado a 'contactado' en Supabase si es nuevo
+    try {
+        const { error } = await supabaseClient
+            .from('leads_ia')
+            .update({ estado: 'contactado' })
+            .match({ id: id, estado: 'nuevo' }); // Solo actualizar si es nuevo
+
+        if (error) throw error;
+
+        // Refrescar localmente el estado si era nuevo
+        const lead = leadsIAData.find(l => l.id === id);
+        if (lead && (lead.estado || 'nuevo').toLowerCase() === 'nuevo') {
+            lead.estado = 'contactado';
+            renderTablaLeads(leadsIAData);
+        }
+
+    } catch (e) {
+        console.error("Error al actualizar estado del lead:", e);
+    }
+}
+
+function verDetalleLead(id) {
+    const lead = leadsIAData.find(l => l.id === id);
+    if (!lead) return;
+
+    let historialHTML = '<p>No hay historial disponible.</p>';
+    try {
+        const h = typeof lead.historial_asociado === 'string' ? JSON.parse(lead.historial_asociado) : lead.historial_asociado;
+        if (Array.isArray(h) && h.length > 0) {
+            historialHTML = h.map(m => `
+                <div style="margin-bottom:0.8rem; padding:0.8rem; border-radius:0.5rem; background:${m.role === 'user' ? '#f1f5f9' : '#e0f2fe'}; border-left:4px solid ${m.role === 'user' ? '#64748b' : '#0284c7'};">
+                    <strong style="display:block; font-size:0.75rem; text-transform:uppercase; color:#64748b; margin-bottom:0.2rem;">${m.role === 'user' ? 'Cliente' : 'Asistente IA'}</strong>
+                    <div style="font-size:0.9rem;">${m.content}</div>
+                </div>
+            `).join('');
+        }
+    } catch (e) { console.error("Error parseando historial:", e); }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.zIndex = '9999';
+    modal.style.display = 'flex'; // Forzar visibilidad
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:1000px; width:95%; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; padding:0; border-radius:1rem;">
+            <div class="modal-header" style="padding:1.5rem; border-bottom:1px solid #e2e8f0;">
+                <h2 style="margin:0; font-size:1.3rem;">👤 Lead: ${lead.nombre || 'Cliente'}</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()" style="font-size:1.5rem; background:none; border:none; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:1.5rem; overflow-y:auto; background:#f8fafc;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                    <div style="background:white; padding:1rem; border-radius:0.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                        <small style="color:#64748b; font-weight:bold;">WhatsApp</small>
+                        <div style="font-size:1.1rem;">${lead.whatsapp || lead.telefono || 'N/A'}</div>
+                    </div>
+                    <div style="background:white; padding:1rem; border-radius:0.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                        <small style="color:#64748b; font-weight:bold;">Interés</small>
+                        <div style="font-size:1.1rem;"><span class="badge" style="background:${lead.nivel_interes === 'Alta' ? '#dc2626' : '#2563eb'};color:white;">${lead.nivel_interes || 'Medio'}</span></div>
+                    </div>
+                </div>
+                <div style="background:white; padding:1rem; border-radius:0.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-bottom:1.5rem;">
+                    <small style="color:#64748b; font-weight:bold;">Necesidad Detectada</small>
+                    <div style="font-size:1rem; font-style:italic;">${lead.fragmento_interes || lead.necesidad || 'N/A'}</div>
+                </div>
+
+                <h4 style="margin-top:0;">🤖 Historial de Conversación con IA</h4>
+                <div style="background:white; padding:1rem; border-radius:1rem; border:1px solid #e2e8f0;">
+                    ${historialHTML}
+                </div>
+            </div>
+            <div class="modal-footer" style="padding:1rem 1.5rem; border-top:1px solid #e2e8f0; background:white; display:flex; justify-content:flex-end; gap:1rem;">
+                <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cerrar</button>
+                <button class="btn btn-success" onclick='contactarLeadWA("${lead.id}", "${(lead.whatsapp || lead.telefono || '').replace(/\D/g, '')}", "${lead.nombre || 'Cliente'}")'>💬 Contactar WhatsApp</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
 }
 
 function filtrarLeadsAdmin() {
@@ -12302,43 +12126,32 @@ function filtrarLeadsAdmin() {
     renderTablaLeads(filtrados);
 }
 
-function verDetalleLead(id) {
-    const lead = leadsIAData.find(l => l.id === id);
-    if (!lead) return;
+async function eliminarLead(id, nombre) {
+    if (!confirm(`¿Estás seguro de eliminar el lead de "${nombre}"?`)) return;
 
-    let historialHTML = 'No hay historial disponible.';
     try {
-        const h = typeof lead.historial_asociado === 'string' ? JSON.parse(lead.historial_asociado) : lead.historial_asociado;
-        if (Array.isArray(h)) {
-            historialHTML = h.map(m => `
-                <div style="margin-bottom:0.5rem; padding:0.5rem; border-radius:0.5rem; background:${m.role === 'user' ? '#f1f5f9' : '#e0f2fe'};">
-                    <strong>${m.role === 'user' ? 'Cliente' : 'IA'}:</strong> ${m.content}
-                </div>
-            `).join('');
-        }
-    } catch (e) { console.error("Error parseando historial:", e); }
+        const { error } = await supabaseClient
+            .from('leads_ia')
+            .delete()
+            .eq('id', id);
 
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-    modal.innerHTML = `
-        <div class="modal-content" style="max-width:600px; max-height:80vh; overflow-y:auto;">
-            <div class="modal-header">
-                <h2>Detalle del Lead: ${lead.nombre || 'Cliente'}</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p><strong>WhatsApp:</strong> ${lead.whatsapp || 'No proporcionado'}</p>
-                <p><strong>Contexto:</strong> ${lead.contexto || 'N/A'}</p>
-                <p><strong>Interés:</strong> ${lead.fragmento_interes || 'N/A'}</p>
-                <hr>
-                <h4>Historial de Chat:</h4>
-                <div style="margin-top:1rem;">${historialHTML}</div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
+        if (error) throw error;
+
+        showToast('Lead eliminado con éxito');
+        cargarLeadsIA();
+    } catch (error) {
+        console.error('Error eliminando lead:', error);
+        showToast('Error al eliminar el lead', 'error');
+    }
 }
+
+// Exportar funciones
+window.cargarLeadsIA = cargarLeadsIA;
+window.verDetalleLead = verDetalleLead;
+window.contactarLeadWA = contactarLeadWA;
+window.getEstadoLeadColor = getEstadoLeadColor;
+window.filtrarLeadsAdmin = filtrarLeadsAdmin;
+window.eliminarLead = eliminarLead;
 
 
 // ═══════════════════════════════════════════════════════════════
