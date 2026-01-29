@@ -15,12 +15,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-    // 2. Cargar CSS dinámicamente
+    // 2. Cargar CSS dinámicamente (Desactivado: ahora inlineado en index.html)
+    /* 
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     const prefix = (path.includes('/pos/') || path.includes('/admin/')) ? '../' : '';
     link.href = prefix + 'css/ai-widget.css';
     document.head.appendChild(link);
+    */
 
     // 3. Crear HTML del Widget
     const adminContainer = document.getElementById('aiAdminChatContainer');
@@ -198,7 +200,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function scrollToBottom() {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        requestAnimationFrame(() => {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
     }
 
     function formatResponse(text) {
