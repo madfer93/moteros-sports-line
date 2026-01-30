@@ -331,6 +331,41 @@
             opacity: 0;
             transform: translateY(20px)
         }
+
+        @media (max-width: 768px) {
+            .hero {
+                /* Forzar posición para mostrar al motociclista a la derecha */
+                background-position: 85% center !important;
+            }
+
+            /* Corrección agresiva para categorías que se desbordan */
+            .categorias-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+                padding: 0 4px !important;
+            }
+
+            .categoria-card {
+                padding: 0.8rem !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+            }
+
+            .categoria-card h3 {
+                font-size: 0.85rem !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Ajuste productos igual */
+            .productos-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+            }
+        }
     </style>
     <link rel="stylesheet" href="css/styles.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/index.css" media="print" onload="this.media='all'">
