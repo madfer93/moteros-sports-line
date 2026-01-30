@@ -9,7 +9,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const path = window.location.pathname;
     let context = 'INDEX';
 
-    if (path.includes('admin') || document.title.includes('Admin')) context = 'ADMIN';
+    // 🚨 REGLA DE VISIBILIDAD: Solo en Index y Admin
+    const isIndex = path === '/' || path.endsWith('/index.html') || path.endsWith('/moteros-sports-line/');
+    const isAdmin = path.includes('admin');
+
+    if (!isIndex && !isAdmin) return; // 🚫 No cargar en otras páginas
+
+    if (isAdmin || document.title.includes('Admin')) context = 'ADMIN';
     else if (path.includes('tienda-digital')) context = 'TIENDA';
     else if (path.includes('tienda-')) context = 'POS';
 
