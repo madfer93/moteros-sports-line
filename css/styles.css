@@ -709,22 +709,35 @@ button {
         width: 100%;
     }
 
+    .container {
+        padding: 0 1rem;
+        /* Reducir padding lateral container */
+    }
+
     .categorias-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+        gap: 10px;
+        /* Gap más pequeño para evitar overflow */
+    }
+
+    .categoria-card {
+        padding: 1rem;
+        /* Reducir padding interno de tarjeta */
     }
 
     .productos-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+        gap: 10px;
+        /* Alineado con categorías */
     }
 
     .producto-imagen {
-        height: 180px;
+        height: 160px;
+        /* Ajuste altura imagen */
     }
 
     .producto-info {
-        padding: 1rem;
+        padding: 0.75rem;
     }
 
     .locales-grid {
