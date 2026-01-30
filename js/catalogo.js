@@ -404,10 +404,10 @@ function verDetalle(id) {
     const infoP = window.PromocionesManager ? window.PromocionesManager.calcularPrecio(productoActual.precio, productoActual.id) : { precioFinal: productoActual.precio, tieneDescuento: false };
 
     document.getElementById('contenidoDetalle').innerHTML = `
-        <div class="product-details-premium" style="display: grid; grid-template-columns: 30% 40% 30%; gap: 1.5rem; padding: 3.5rem 2rem 2rem 2rem; height: 100%; overflow: hidden; font-size: 0.95rem;">
+        <div class="product-details-premium">
             
             <!-- COL 1: IMAGEN & VISUAL -->
-            <div class="column-media" style="overflow-y: auto; display:flex; flex-direction:column; align-items:center;">
+            <div class="column-media">
                 <div class="main-image-container" style="position:relative; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.05); margin-bottom: 1rem; width:100%; padding-top: 0 !important;">
                     ${infoP.tieneDescuento ? `<span class="discount-pill" style="position:absolute; top:0.5rem; left:0.5rem; background:#ef4444; color:white; padding:0.25rem 0.75rem; border-radius:15px; font-weight:700; font-size:0.8rem; z-index:10;">-${infoP.porcentajeDescuento}% OFF</span>` : ''}
                     <img src="${productoActual.url_imagen || PLACEHOLDER_LG}" 
@@ -440,7 +440,7 @@ function verDetalle(id) {
             </div>
 
             <!-- COL 2: INFO & COMPRA & SPECS (Center) -->
-            <div class="column-info" style="display:flex; flex-direction:column; overflow-y: auto; padding-right: 0.5rem;">
+            <div class="column-info">
                 <!-- Header Info -->
                 <div class="product-header" style="border-bottom:1px solid #e2e8f0; padding-bottom:1rem; margin-bottom:1rem;">
                     <span class="category-tag" style="background:#fff7ed; color:#ea580c; padding:0.25rem 0.75rem; border-radius:15px; font-size:0.75rem; font-weight:700; text-transform:uppercase;">${productoActual.categoria}</span>
@@ -497,7 +497,7 @@ function verDetalle(id) {
             </div>
 
             <!-- COL 3: SOLO RESEÑAS, CALIFICACION Y COMENTARIOS (Right) -->
-            <div class="column-extras" style="overflow-y: auto; padding-right: 4rem; border-left: 1px solid #f1f5f9; padding-left: 1.5rem; display:flex; flex-direction:column;">
+            <div class="column-extras">
                 
                 <div style="flex:1;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; border-bottom:1px solid #e2e8f0; padding-bottom:1rem;">

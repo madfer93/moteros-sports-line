@@ -1397,11 +1397,15 @@ function toggleMetodo(el) {
     }
 
     // NUEVO: Mostrar/Ocultar sección de voucher
+    // NUEVO: Mostrar/Ocultar sección de voucher
     const seccionVoucher = document.getElementById('seccionVoucher');
     if (seccionVoucher) {
-        const requiereVoucher = [...metodosSeleccionados].some(m => ['Tarjeta', 'Datáfono'].includes(m));
-        seccionVoucher.classList.toggle('visible', requiereVoucher);
-        if (!requiereVoucher) {
+        // Mostrar referencia para todo MENOS Efectivo y Credito Motero
+        const mostrarVoucher = [...metodosSeleccionados].some(m => !['Efectivo', 'Credito Motero'].includes(m));
+
+        seccionVoucher.classList.toggle('visible', mostrarVoucher);
+
+        if (!mostrarVoucher) {
             const vInput = document.getElementById('voucherCode');
             if (vInput) vInput.value = '';
         }
