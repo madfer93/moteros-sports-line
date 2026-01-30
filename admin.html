@@ -561,6 +561,7 @@
                         <a href="#" data-section="compras">🛒 Compras</a>
                         <a href="#" data-section="deudas">📋 Deudas Negocio</a>
                         <a href="#" data-section="creditos">🏍️ Crédito Motero</a>
+                        <a href="#" data-section="servicios-vendidos">🛠️ Servicios Vendidos</a>
                     </div>
                 </div>
 
@@ -630,16 +631,18 @@
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">Principal</div>
                     <a href="#" data-section="dashboard" onclick="toggleMobileMenu()">📊 Dashboard</a>
+                    <a href="#" data-section="metas" onclick="toggleMobileMenu()">🎯 Metas</a>
                     <a href="#" data-section="estadisticas" onclick="toggleMobileMenu()">📈 Estadísticas</a>
                     <a href="#" data-section="reportes" onclick="toggleMobileMenu()">📑 Reportes</a>
                 </div>
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">Ventas</div>
                     <a href="#" data-section="ventas" onclick="toggleMobileMenu()">💰 Gestión Ventas</a>
-                    <a href="tienda-alcala.html" target="_blank">🏪 POS Alcalá</a>
-                    <a href="tienda-01.html" target="_blank">🏬 POS Local 01</a>
-                    <a href="tienda-jordan.html" target="_blank">🏢 POS Jordán</a>
-                    <a href="tienda-digital.html" target="_blank">🌐 Tienda Digital</a>
+                    <a href="pos/tienda-alcala.html" target="_blank">🏪 POS Alcalá</a>
+                    <a href="pos/tienda-01.html" target="_blank">🏬 POS Local 01</a>
+                    <a href="pos/tienda-jordan.html" target="_blank">🏢 POS Jordán</a>
+                    <a href="pos/tienda-digital.html" target="_blank">🌐 Tienda Digital</a>
+                    <a href="pos/tienda-eventos.html" target="_blank">🎉 POS Eventos</a>
                 </div>
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">Catálogo</div>
@@ -647,6 +650,7 @@
                     <a href="#" data-section="categorias" onclick="toggleMobileMenu()">📁 Categorías</a>
                     <a href="#" data-section="destacados" onclick="toggleMobileMenu()">⭐ Destacados</a>
                     <a href="#" data-section="inventario" onclick="toggleMobileMenu()">📋 Inventario</a>
+                    <a href="#" data-section="traslados" onclick="toggleMobileMenu()">🔄 Traslados</a>
                     <a href="#" data-section="contenido" onclick="toggleMobileMenu()">📄 Contenido del Sitio</a>
                     <a href="#" data-section="alertas" onclick="toggleMobileMenu()">⚠️ Alertas Stock</a>
                 </div>
@@ -659,6 +663,8 @@
                     <a href="#" data-section="compras" onclick="toggleMobileMenu()">🛒 Compras</a>
                     <a href="#" data-section="deudas" onclick="toggleMobileMenu()">📋 Deudas Negocio</a>
                     <a href="#" data-section="creditos" onclick="toggleMobileMenu()">🏍️ Crédito Motero</a>
+                    <a href="#" data-section="servicios-vendidos" onclick="toggleMobileMenu()">🛠️ Servicios
+                        Vendidos</a>
                 </div>
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">Marketing</div>
@@ -671,7 +677,11 @@
 
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">Personal</div>
-                    <a href="#" data-section="rrhh" onclick="toggleMobileMenu()">👥 RRHH</a>
+                    <a href="#" data-section="rrhh" onclick="toggleMobileMenu()">👥 Empleados</a>
+                    <a href="#" data-section="nomina" onclick="toggleMobileMenu()">💰 Nómina</a>
+                    <a href="#" data-section="comisiones" onclick="toggleMobileMenu()">📊 Comisiones</a>
+                    <a href="#" data-section="eventos" onclick="toggleMobileMenu()">🎉 Eventos Admin</a>
+                    <a href="pos/tienda-eventos.html" target="_blank">🎟️ POS Eventos</a>
                 </div>
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">Sistema</div>
@@ -1308,9 +1318,71 @@
                                         <th>Cant.</th>
                                         <th>Total</th>
                                         <th>Método</th>
+                                        <th>Ref./Voucher</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyVentasDia"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ SERVICIOS VENDIDOS ═══════════════════ -->
+            <section id="serviciosSection" class="section">
+                <div class="page-header">
+                    <h1>🛠️ Servicios Vendidos</h1>
+                    <p>Historial de servicios y lavados realizados</p>
+                </div>
+
+                <div class="actions-bar">
+                    <div class="date-filter" style="display:flex; align-items:center; gap:0.5rem;">
+                        <input type="date" id="fechaServiciosInicio" class="form-control" style="width: auto;">
+                        <span>a</span>
+                        <input type="date" id="fechaServiciosFin" class="form-control" style="width: auto;">
+                    </div>
+                    <button onclick="cargarServiciosAdmin()" class="btn btn-primary">🔍 Filtrar</button>
+                    <button onclick="exportarServiciosExcel()" class="btn btn-success">📊 Excel</button>
+                </div>
+
+                <div class="stats-grid" style="margin-bottom:2rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon orange">🛠️</div>
+                        <div class="stat-info">
+                            <h3 id="totalServiciosCount">0</h3>
+                            <p>Servicios Realizados</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">💰</div>
+                        <div class="stat-info">
+                            <h3 id="totalServiciosMonto">$0</h3>
+                            <p>Ingresos Totales</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table" id="tablaServiciosAdmin">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Local</th>
+                                        <th>Empleado</th>
+                                        <th>Servicio</th>
+                                        <th>Placa</th>
+                                        <th>Total</th>
+                                        <th>Método</th>
+                                        <th>Ref./Voucher</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyServiciosAdmin">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Cargando servicios técnicos...</td>
+                                    </tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>

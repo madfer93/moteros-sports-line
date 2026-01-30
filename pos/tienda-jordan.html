@@ -23,9 +23,7 @@
 
 <body>
 
-    <!-- •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-     PANTALLA BLOQUEADA - CAJA CERRADA
-     ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• -->
+    <!-- ====== PANTALLA BLOQUEADA - CAJA CERRADA ======== -->
     <div id="lockedScreen" class="locked-screen">
         <div class="locked-content">
             <!-- Resumen de cierre (se muestra después de cerrar caja) -->
@@ -45,15 +43,13 @@
         </div>
     </div>
 
-    <!-- •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-     HEADER
-     ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• -->
+    <!-- ====== HEADER ======== -->
     <header class="header">
         <div class="header-left">
             <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
                 alt="Logo" class="header-logo logo-img">
             <div>
-                <h1>ª Moteros - <span class="tienda-nombre-display">Jordán</span></h1>
+                <h1>🏪 Moteros - <span class="tienda-nombre-display">Jordán</span></h1>
             </div>
         </div>
         <div class="header-info">
@@ -65,7 +61,7 @@
                 Prov.</button>
             <button class="btn btn-secondary" onclick="abrirModalTraslado()" title="Trasladar Mercancía">🚚
                 Traslados</button>
-            <button class="btn btn-primary" onclick="abrirModalAbonoCredito()" title="Abonos Crédito Motero">ï¸ Pago
+            <button class="btn btn-primary" onclick="abrirModalAbonoCredito()" title="Abonos Crédito Motero">🏍️ Pago
                 Crédito</button>
             <button class="btn btn-warning" onclick="abrirModalAdelantoNomina()" title="Adelanto de Nómina">💵
                 Adelanto</button>
@@ -75,18 +71,16 @@
         </div>
     </header>
 
-    <!-- Alertas -->
+    <!-- ====== Alertas ======== -->
     <div id="alertas"></div>
 
-    <!-- •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-     CONTENIDO PRINCIPAL
-     ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• -->
+    <!-- ====== CONTENIDO PRINCIPAL ======== -->
     <div class="container">
         <!-- Panel de Productos -->
         <div class="panel">
             <h3 class="panel-title">📦 Productos</h3>
             <div class="search-box">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="inputBuscar"
                     placeholder="Buscar por nombre, marca o código..." oninput="filtrarProductos()">
             </div>
@@ -108,9 +102,9 @@
 
             <!-- Destino -->
             <div class="seccion">
-                <h4 class="seccion-titulo">📍 Destino de la Venta</h4>
+                <h4 class="seccion-titulo">📍 Destino de la Venta</h4>
                 <select id="selectDestino" onchange="actualizarCredito()">
-                    <option value="tienda">ª Venta en Tienda (cliente se lleva)</option>
+                    <option value="tienda">🏪 Venta en Tienda (cliente se lleva)</option>
                     <option value="digital">📦 Transferir a Tienda Digital (envío)</option>
                 </select>
             </div>
@@ -125,13 +119,13 @@
 
             <!-- Métodos de Pago -->
             <div class="seccion">
-                <h4 class="seccion-titulo">’° Método(s) de Pago</h4>
+                <h4 class="seccion-titulo">💳 Método(s) de Pago</h4>
                 <div class="metodos-grid">
                     <div class="metodo-btn" data-metodo="Efectivo" onclick="toggleMetodo(this)">
                         <span class="icono">💵</span>Efectivo
                     </div>
                     <div class="metodo-btn" data-metodo="Transferencia" onclick="toggleMetodo(this)">
-                        <span class="icono">¦</span>Transferencia
+                        <span class="icono">🏦</span>Transferencia
                     </div>
                     <div class="metodo-btn" data-metodo="Nequi" onclick="toggleMetodo(this)">
                         <span class="icono">📱</span>Nequi
@@ -143,16 +137,16 @@
                         <span class="icono">💳</span>Tarjeta
                     </div>
                     <div class="metodo-btn" data-metodo="Datafono" onclick="toggleMetodo(this)">
-                        <span class="icono">💳</span>Datáfono
+                        <span class="icono">🖥️</span>Datáfono
                     </div>
                     <div class="metodo-btn" data-metodo="Addi" onclick="toggleMetodo(this)">
-                        <span class="icono">🔵</span>Addi
+                        <span class="icono">🅰️</span>Addi
                     </div>
                     <div class="metodo-btn" data-metodo="Sistecredito" onclick="toggleMetodo(this)">
-                        <span class="icono">💳</span>Sistecrédito
+                        <span class="icono">📋</span>Sistecrédito
                     </div>
                     <div class="metodo-btn" data-metodo="Credito Motero" onclick="toggleMetodo(this)">
-                        <span class="icono">ï¸</span>Crédito Motero
+                        <span class="icono">🏍️</span>Crédito Motero
                     </div>
                     <div class="metodo-btn" data-metodo="Fodegas" onclick="toggleMetodo(this)">
                         <span class="icono">📦</span>Fodegas
@@ -161,9 +155,15 @@
                 <div id="metodosSeleccionados" class="metodos-seleccionados"></div>
             </div>
 
+            <!-- Voucher Code (Solo para Tarjeta/Datáfono) -->
+            <div id="seccionVoucher" class="seccion-voucher">
+                <div class="seccion-voucher-titulo">🎫 Código de Comprobante / Voucher</div>
+                <input type="text" id="voucherCode" placeholder="Ingresa el código del voucher terminal/tarjeta">
+            </div>
+
             <!-- Datos de Crédito -->
             <div id="datosCredito" class="datos-credito">
-                <h4>📍 Datos del Cliente (requerido para crédito)</h4>
+                <h4>📝 Datos del Cliente (requerido para crédito)</h4>
                 <input type="text" id="creditoNombre" placeholder="Nombre completo *">
                 <div class="row">
                     <input type="tel" id="creditoTelefono" placeholder="Teléfono *">
@@ -182,7 +182,6 @@
                     <option value="3">3 Cuotas</option>
                     <option value="4">4 Cuotas</option>
                     <option value="6">6 Cuotas</option>
-                    <option value="12">12 Cuotas</option>
                 </select>
             </div>
 
@@ -199,12 +198,10 @@
         </div>
     </div>
 
-    <!-- •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-     MODAL: LOGIN EMPLEADO
-     ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• -->
+    <!-- ====== MODAL: LOGIN EMPLEADO ====== -->
     <div id="modalLoginEmpleado" class="modal-overlay">
         <div class="modal">
-            <h3>🔍 Iniciar Sesión</h3>
+            <h3>🔍 Iniciar Sesión</h3>
             <p style="color:#64748b;font-size:0.9rem;margin-bottom:1.5rem;">Ingresa tus credenciales para acceder al POS
             </p>
             <div class="form-group">
@@ -226,9 +223,7 @@
         </div>
     </div>
 
-    <!-- •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-     MODAL: ABRIR CAJA
-     ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• -->
+    <!-- ====== MODAL: ABRIR CAJA ====== -->
     <div id="modalAbrirCaja" class="modal-overlay">
         <div class="modal">
             <h3>🔓 Abrir Caja</h3>
@@ -252,9 +247,7 @@
         </div>
     </div>
 
-    <!-- •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-     MODAL: CERRAR CAJA
-     ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• -->
+    <!-- ====== MODAL: CERRAR CAJA ====== -->
     <div id="modalCerrarCaja" class="modal-overlay">
         <div class="modal modal-large">
             <h3>🔐 Cierre de Caja</h3>
@@ -270,7 +263,7 @@
                     <input type="number" id="efectivoContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>¦ Transferencias</label>
+                    <label>🏦 Transferencias</label>
                     <input type="number" id="transferenciaContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
@@ -286,15 +279,15 @@
                     <input type="number" id="tarjetaContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>💳 Datáfono</label>
+                    <label>🖥️ Datáfono</label>
                     <input type="number" id="datafonoContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>🔵 Addi</label>
+                    <label>🅰️ Addi</label>
                     <input type="number" id="addiContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>💳 Sistecrédito</label>
+                    <label>📋 Sistecrédito</label>
                     <input type="number" id="sistecreditoContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
@@ -329,7 +322,7 @@
 
             <!-- Observaciones -->
             <div class="form-group">
-                <label>📍 Observaciones (opcional)</label>
+                <label>📝 Observaciones (opcional)</label>
                 <textarea id="observacionesCierre" rows="2" placeholder="Notas adicionales del cierre..."></textarea>
             </div>
 
@@ -340,12 +333,10 @@
         </div>
     </div>
 
-    <!-- •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-     MODAL: EDITAR PRECIO
-     ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• -->
+    <!-- ====== MODAL: EDITAR PRECIO ====== -->
     <div id="modalEditarPrecio" class="modal-overlay">
         <div class="modal">
-            <h3>œï¸ Modificar Precio</h3>
+            <h3>Modificar Precio</h3>
             <p id="nombreProductoEditar" style="font-weight:600; margin-bottom:1rem; color:var(--primary);"></p>
             <div class="form-group">
                 <label>Precio original</label>
@@ -367,9 +358,7 @@
         </div>
     </div>
 
-    <!-- •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-     MODAL: TRASLADOS
-     ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• -->
+    <!-- ====== MODAL: TRASLADOS ====== -->
     <div id="modalTraslado" class="modal-overlay">
         <div class="modal" style="max-width: 450px;">
             <h3>🚚 Trasladar Mercancía</h3>
@@ -408,19 +397,17 @@
         </div>
     </div>
 
-    <!-- •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-     MODAL: PROVEEDORES Y PAGOS
-     ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• -->
+    <!-- ====== MODAL: PROVEEDORES Y PAGOS ====== -->
     <div id="modalProveedoresPOS" class="modal-overlay">
         <div class="modal" style="max-width: 700px;">
             <div class="modal-header"
                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h3 style="margin:0;">­ Proveedores - Cuentas por Pagar</h3>
+                <h3 style="margin:0;">🏭 Proveedores - Cuentas por Pagar</h3>
                 <button class="modal-close" onclick="cerrarModalProveedoresPOS()"
                     style="background:none; border:none; font-size:1.5rem; cursor:pointer;">í—</button>
             </div>
             <div class="search-box" style="margin-bottom:1rem;">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="busquedaProveedorPOS" placeholder="Buscar proveedor..."
                     oninput="filtrarProveedoresPOS()">
             </div>
@@ -475,7 +462,7 @@
                     <select id="abonoMetodoPago" class="form-control">
                         <option value="">Seleccionar...</option>
                         <option value="Efectivo">💵 Efectivo</option>
-                        <option value="Transferencia">¦ Transferencia</option>
+                        <option value="Transferencia">🏭 Transferencia</option>
                         <option value="Nequi">📱 Nequi</option>
                         <option value="Daviplata">📱 Daviplata</option>
                     </select>
@@ -500,7 +487,7 @@
         </div>
     </div>
 
-    <!-- MODAL: REGISTRAR ADELANTO DE Ní📍MINA -->
+    <!-- ===== MODAL: REGISTRAR ADELANTO DE NÓMINA ===== -->
     <div id="modalAdelantoNomina" class="modal-overlay">
         <div class="modal" style="max-width: 500px;">
             <div class="modal-header"
@@ -638,7 +625,7 @@
             <div
                 style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:1rem; margin-bottom:1.5rem;">
                 <h3 style="margin:0; color:var(--dark); display:flex; align-items:center; gap:0.5rem;">
-                    <span style="font-size:1.5rem;">🛠️</span> Nuevo Servicio / Lavado
+                    <span style="font-size:1.5rem;">🛠️</span> Nuevo Servicio / Lavado
                 </h3>
                 <button onclick="cerrarModalServicios()"
                     style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
@@ -654,14 +641,14 @@
                             <option value="Lavado">🧼 Lavado Premium</option>
                             <option value="Tapizado">💺 Tapizado / Forro</option>
                             <option value="Polichado">✨ Polichado / Brillo</option>
-                            <option value="Tallas">📏 Arreglo de Tallas</option>
-                            <option value="Otros">🛠️ Otros Arreglos</option>
+                            <option value="Tallas">📏 Arreglo de Tallas</option>
+                            <option value="Otros">🛠️ Otros Arreglos</option>
                         </select>
                     </div>
                     <div>
                         <label
                             style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">REALIZADO
-                            POR (PARA COMISIí📍N)</label>
+                            POR (PARA COMISIÓN)</label>
                         <select id="servEmpleado" class="search-input" style="height:auto; padding:0.75rem;">
                             <option value="">Seleccionar Empleado...</option>
                             <!-- Se llena dinámicamente -->
@@ -726,7 +713,7 @@
         <div class="modal" style="max-width:700px;">
             <div
                 style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:1rem; margin-bottom:1.5rem;">
-                <h3 style="margin:0; color:var(--dark);">🔍 Seguimiento de Servicios</h3>
+                <h3 style="margin:0; color:var(--dark);">🔍 Seguimiento de Servicios</h3>
                 <button onclick="document.getElementById('modalBuscarServicios').style.display='none'"
                     style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
             </div>
@@ -744,19 +731,14 @@
         </div>
     </div>
 
-    <!-- •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-     SCRIPTS
-     ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••• -->
+    <!-- ====== SCRIPTS ====== -->
     <script src="../js/config.js"></script>
     <script src="../js/security.js"></script>
     <script src="../js/promociones.js"></script>
     <script src="../js/ia-core.js"></script>
     <script src="../js/ai-widget.js"></script>
     <script>
-        // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-        // CONFIGURACIí📍N DE ESTA TIENDA
-        // Cambiar estos valores para cada tienda
-        // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+        // ======= CONFIGURACIÓN DE ESTA TIENDA ===== Cambiar estos valores para cada tienda
         const TIENDA = {
             nombre: 'Jordán',
             tablaInventario: 'inventario_jordan',

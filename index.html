@@ -5,6 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Moteros">
+    <link rel="apple-touch-icon"
+        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="manifest" href="manifest.json">
     <meta name="google-site-verification" content="_JVyhCOFLSXI4bt0PVr3q6W-3d2KDqECW9P62Iej198" />
     <title>Moteros Sport Line | Accesorios para Motociclistas en Villavicencio</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -615,6 +621,56 @@
         });
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-MGGG89S8XM"></script>
+
+    <!-- PWA Installation Guide for iPhone -->
+    <script>
+        window.addEventListener('load', function () {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isStandalone = window.navigator.standalone === true;
+
+            if (isIOS && !isStandalone) {
+                const guide = document.createElement('div');
+                guide.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    left: 20px;
+                    right: 20px;
+                    background: white;
+                    padding: 1rem;
+                    border-radius: 15px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    z-index: 10002;
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    border: 2px solid #ff6b00;
+                    animation: slideUp 0.5s ease;
+                `;
+                guide.innerHTML = `
+                    <div style="font-size: 2rem;">📲</div>
+                    <div style="flex: 1;">
+                        <p style="margin: 0; font-weight: 800; color: #1e293b; font-size: 0.9rem;">Instalar App en iPhone</p>
+                        <p style="margin: 0; font-size: 0.8rem; color: #64748b;">Toca el botón <span style="color: #007aff;">Compartir</span> y luego <span style="font-weight: 700;">'Añadir a pantalla de inicio'</span></p>
+                    </div>
+                    <button onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</button>
+                `;
+                document.body.appendChild(guide);
+            }
+        });
+    </script>
+    <style>
+        @keyframes slideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
 </body>
 
 </html>

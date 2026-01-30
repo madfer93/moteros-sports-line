@@ -2636,8 +2636,10 @@ function renderizarTablaVentas(ventas, statsContainer, tbody) {
 
     if (tbody) {
         if (ventas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--gray-500);">No hay ventas en este periodo</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--gray-500);">No hay ventas en este periodo</td></tr>';
         } else {
+            // Actualizar encabezado si es necesario (asumiendo que está en el HTML)
+            // En admin.html ya lo tiene
             tbody.innerHTML = ventas.map(v => `
                 <tr>
                     <td>
@@ -2649,6 +2651,7 @@ function renderizarTablaVentas(ventas, statsContainer, tbody) {
                     <td>${v.cantidad || 0}</td>
                     <td><strong>$${formatearPrecio(v.total)}</strong></td>
                     <td><span class="badge badge-success">${v.metodo_pago || 'N/A'}</span></td>
+                    <td><small style="font-weight:600; color:var(--primary)">${v.voucher_code || '-'}</small></td>
                 </tr>
             `).join('');
         }
@@ -6845,6 +6848,109 @@ window.cancelarFormDeudor = cancelarFormDeudor;
 window.guardarDeudor = guardarDeudor;
 window.editarDeudor = editarDeudor;
 window.registrarPagoDeudor = registrarPagoDeudor;
+
+// ═══════════════════════════════════════════════════════════════
+// SERVICIOS VENDEDORES (REPORTES)
+// ═══════════════════════════════════════════════════════════════
+let serviciosActuales = [];
+
+async function cargarServiciosAdmin() {
+    const inicio = document.getElementById('fechaServiciosInicio')?.value;
+    const fin = document.getElementById('fechaServiciosFin')?.value;
+    const tbody = document.getElementById('tbodyServiciosAdmin');
+
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-center">Consultando...</td></tr>';
+
+    try {
+        let query = supabaseClient
+            .from('pagos_servicios')
+            .select(`
+                *,
+                servicio:servicios_motero (*)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (inicio) query = query.gte('created_at', new Date(inicio).toISOString());
+        if (fin) {
+            const dFin = new Date(fin);
+            dFin.setHours(23, 59, 59, 999);
+            query = query.lte('created_at', dFin.toISOString());
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        serviciosActuales = data || [];
+        renderizarTablaServicios(serviciosActuales);
+
+    } catch (e) {
+        console.error('Error cargando servicios:', e);
+        showToast('Error al cargar reporte de servicios', 'error');
+    }
+}
+
+function renderizarTablaServicios(datos) {
+    const tbody = document.getElementById('tbodyServiciosAdmin');
+    const totalCountEl = document.getElementById('totalServiciosCount');
+    const totalMontoEl = document.getElementById('totalServiciosMonto');
+
+    const totalMoney = datos.reduce((s, p) => s + (p.monto || 0), 0);
+    if (totalCountEl) totalCountEl.textContent = datos.length;
+    if (totalMontoEl) totalMontoEl.textContent = '$' + formatearPrecio(totalMoney);
+
+    if (!tbody) return;
+
+    if (datos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay servicios en este periodo</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = datos.map(p => `
+        <tr>
+            <td>
+                <div>${new Date(p.created_at).toLocaleDateString('es-CO')}</div>
+                <small style="color:#888">${formatearHora(p.created_at)}</small>
+            </td>
+            <td><strong>${p.local || 'N/A'}</strong></td>
+            <td>${p.servicio?.nombre_empleado || 'N/A'}</td>
+            <td>${p.servicio?.descripcion || 'Servicio'}</td>
+            <td><span class="badge badge-info">${p.servicio?.placa || '-'}</span></td>
+            <td><strong>$${formatearPrecio(p.monto)}</strong></td>
+            <td><span class="badge ${p.metodo_pago === 'Efectivo' ? 'badge-success' : 'badge-primary'}">${p.metodo_pago || 'N/A'}</span></td>
+            <td><small style="font-weight:600; color:var(--primary)">${p.servicio?.voucher_code || p.servicio?.referencia_pago || '-'}</small></td>
+        </tr>
+    `).join('');
+}
+
+function exportarServiciosExcel() {
+    if (serviciosActuales.length === 0) return showToast('No hay datos para exportar', 'warning');
+
+    try {
+        const data = serviciosActuales.map(p => ({
+            'Fecha': new Date(p.created_at).toLocaleDateString('es-CO'),
+            'Hora': formatearHora(p.created_at),
+            'Local': p.local || '',
+            'Empleado': p.servicio?.nombre_empleado || '',
+            'Servicio': p.servicio?.descripcion || '',
+            'Placa': p.servicio?.placa || '',
+            'Monto': p.monto,
+            'Metodo Pago': p.metodo_pago || '',
+            'Voucher/Ref': p.servicio?.voucher_code || p.servicio?.referencia_pago || ''
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'ServiciosTécnicos');
+        XLSX.writeFile(wb, `servicios_vendidos_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showToast('Reporte de servicios exportado', 'success');
+    } catch (e) {
+        console.error(e);
+        showToast('Error al exportar reporte', 'error');
+    }
+}
+
+window.cargarServiciosAdmin = cargarServiciosAdmin;
+window.exportarServiciosExcel = exportarServiciosExcel;
 
 // Deudas
 window.cargarDeudasNegocio = cargarDeudasNegocio;

@@ -160,15 +160,34 @@
 /* Responsive comentarios */
 @media (max-width: 768px) {
     .blog-comments-section {
-        padding: 1.5rem;
-        margin-top: 2rem;
+        padding: 1.25rem;
+        margin-top: 1.5rem;
+        border-radius: 12px;
+    }
+
+    .blog-comments-title {
+        font-size: 1.4rem;
     }
 
     .blog-comment-form {
-        padding: 1.25rem;
+        padding: 1rem;
     }
 
-    .blog-comment-item {
-        padding: 1.25rem;
+    .blog-comment-author {
+        font-size: 1rem;
+    }
+
+    .blog-comment-text {
+        font-size: 0.95rem;
+    }
+
+    .blog-comment-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2rem;
+    }
+
+    .blog-comment-date {
+        font-size: 0.8rem;
     }
 }

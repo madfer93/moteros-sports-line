@@ -1396,6 +1396,17 @@ function toggleMetodo(el) {
         infoEl.classList.remove('visible');
     }
 
+    // NUEVO: Mostrar/Ocultar sección de voucher
+    const seccionVoucher = document.getElementById('seccionVoucher');
+    if (seccionVoucher) {
+        const requiereVoucher = [...metodosSeleccionados].some(m => ['Tarjeta', 'Datáfono'].includes(m));
+        seccionVoucher.classList.toggle('visible', requiereVoucher);
+        if (!requiereVoucher) {
+            const vInput = document.getElementById('voucherCode');
+            if (vInput) vInput.value = '';
+        }
+    }
+
     actualizarCredito();
     actualizarBotonVender();
 }
@@ -1478,6 +1489,8 @@ async function procesarVenta() {
 
             const id_venta = 'V' + timestampId + Math.random().toString(36).substr(2, 5).toUpperCase();
 
+            const voucherCode = document.getElementById('voucherCode')?.value.trim() || null;
+
             const { error: errorVenta } = await db.from('ventas').insert({
                 id_venta: id_venta,
                 local: origenReal,
@@ -1487,6 +1500,7 @@ async function procesarVenta() {
                 precio_unitario: item.precio,
                 total: item.precio * item.cantidad,
                 metodo_pago: metodoPagoStr,
+                voucher_code: voucherCode,
                 usuario: `POS ${TIENDA.nombre}`,
                 id_evento: TIENDA.id_evento || null,
                 created_at: fechaVenta // Fecha histórica o actual
@@ -1649,6 +1663,8 @@ async function procesarVentaDigital() {
 
             const tieneDescuento = item.precio < item.precioOriginal;
 
+            const voucherCode = document.getElementById('voucherCode')?.value.trim() || null;
+
             const ventaData = {
                 id_venta: id_venta,
                 local: 'Digital',
@@ -1658,6 +1674,7 @@ async function procesarVentaDigital() {
                 precio_unitario: item.precio,
                 total: item.precio * item.cantidad,
                 metodo_pago: metodoPagoStr,
+                voucher_code: voucherCode,
                 usuario: 'POS Digital',
                 cliente_nombre: clienteNombre,
                 cliente_telefono: clienteTelefono,
@@ -1774,6 +1791,10 @@ function limpiarDespuesVenta() {
     metodosSeleccionados.clear();
     document.querySelectorAll('.metodo-btn').forEach(m => m.classList.remove('selected'));
     document.getElementById('metodosSeleccionados')?.classList.remove('visible');
+    const sV = document.getElementById('seccionVoucher');
+    if (sV) sV.classList.remove('visible');
+    const vI = document.getElementById('voucherCode');
+    if (vI) vI.value = '';
     limpiarFormCredito();
     renderizarCarrito();
 }
@@ -1784,6 +1805,10 @@ function limpiarDespuesVentaDigital() {
     document.querySelectorAll('.metodo-btn').forEach(m => m.classList.remove('selected'));
     document.getElementById('metodosSeleccionados')?.classList.remove('visible');
     document.getElementById('datosCredito')?.classList.remove('visible');
+    const sV = document.getElementById('seccionVoucher');
+    if (sV) sV.classList.remove('visible');
+    const vI = document.getElementById('voucherCode');
+    if (vI) vI.value = '';
 
     // Limpiar formulario envío
     ['clienteNombre', 'clienteTelefono', 'clienteCedula', 'direccionEnvio', 'ciudadEnvio', 'notasEnvio'].forEach(id => {
