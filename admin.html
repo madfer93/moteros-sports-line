@@ -5400,15 +5400,19 @@
         </div>
     </div>
     <script>
-        // 📱 MOBILE MENU CONTROL (EMERGENCIA)
+        // 📱 MOBILE MENU CONTROL (CORREGIDO)
         function toggleMobileMenu() {
-            const nav = document.querySelector('.header-nav');
+            // Priority: #mobileNav (New) > .header-nav (Legacy)
+            let nav = document.getElementById('mobileNav');
+            if (!nav) nav = document.querySelector('.header-nav');
+
             const overlay = document.querySelector('.nav-overlay') || createNavOverlay();
 
-            nav.classList.toggle('active');
-            overlay.classList.toggle('active');
-
-            document.body.style.overflow = nav.classList.contains('active') ? 'hidden' : '';
+            if (nav) {
+                nav.classList.toggle('active');
+                overlay.classList.toggle('active');
+                document.body.style.overflow = nav.classList.contains('active') ? 'hidden' : '';
+            }
         }
 
         function createNavOverlay() {
