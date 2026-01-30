@@ -711,29 +711,43 @@ button {
 
     .container {
         padding: 0 1rem;
-        /* Reducir padding lateral container */
     }
 
     .categorias-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        /* Gap más pequeño para evitar overflow */
+        /* Mantiene 2 columnas */
+        gap: 8px;
+        /* Gap mínimo */
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .categoria-card {
-        padding: 1rem;
-        /* Reducir padding interno de tarjeta */
+        padding: 0.8rem;
+        overflow: hidden;
+        /* Evita que contenido salga */
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .categoria-icon {
+        font-size: 2rem;
+        /* Icono más pequeño */
+        margin-bottom: 0.5rem;
+    }
+
+    .categoria-card h3 {
+        font-size: 0.9rem;
+        /* Texto más pequeño */
     }
 
     .productos-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        /* Alineado con categorías */
+        gap: 8px;
     }
 
     .producto-imagen {
-        height: 160px;
-        /* Ajuste altura imagen */
+        height: 150px;
     }
 
     .producto-info {
