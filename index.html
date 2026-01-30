@@ -334,8 +334,10 @@
 
         @media (max-width: 768px) {
             .hero {
-                /* Mover foco a la IZQUIERDA (15%) */
-                background-position: 0% center !important;
+                /* Usar imagen específica para móvil */
+                background-image: linear-gradient(to bottom, rgba(15, 23, 42, 0.3) 0%, rgba(15, 23, 42, 0.8) 100%), url('img/hero-movil.jpg') !important;
+                background-position: center center !important;
+                background-size: cover !important;
             }
 
             /* Corrección agresiva para categorías que se desbordan */
