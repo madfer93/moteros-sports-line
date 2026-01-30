@@ -18,6 +18,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/ai-widget.css">
     <style>
         /* 🎨 THEME & UTILS */
         :root {
@@ -496,6 +497,9 @@
         <!-- ═══════════════ HEADER CON MENÚ HORIZONTAL ═══════════════ -->
         <header class="top-header">
             <div class="header-brand">
+                <button class="menu-toggle" id="menuToggleBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <img id="headerLogo"
                     src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
                     alt="Logo" style="height:40px;width:40px;border-radius:50%;object-fit:cover;margin-right:0.75rem;">
@@ -5395,6 +5399,34 @@
             </div>
         </div>
     </div>
+    <script>
+        // 📱 MOBILE MENU CONTROL (EMERGENCIA)
+        function toggleMobileMenu() {
+            const nav = document.querySelector('.header-nav');
+            const overlay = document.querySelector('.nav-overlay') || createNavOverlay();
+
+            nav.classList.toggle('active');
+            overlay.classList.toggle('active');
+
+            document.body.style.overflow = nav.classList.contains('active') ? 'hidden' : '';
+        }
+
+        function createNavOverlay() {
+            const overlay = document.createElement('div');
+            overlay.className = 'nav-overlay';
+            overlay.onclick = toggleMobileMenu;
+            document.body.appendChild(overlay);
+            return overlay;
+        }
+
+        // Auto cerrar al clickear un item
+        document.querySelectorAll('.nav-dropdown-content a').forEach(link => {
+            link.addEventListener('click', () => {
+                const nav = document.querySelector('.header-nav');
+                if (nav.classList.contains('active')) toggleMobileMenu();
+            });
+        });
+    </script>
     <script>
         // 🔄 INICIALIZACIÓN FORZADA DE DATOS (FIX CARGA VACÍA)
         document.addEventListener('DOMContentLoaded', async () => {
