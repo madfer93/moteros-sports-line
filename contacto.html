@@ -665,10 +665,35 @@
                                 </a>
                             </div>
                         </div>
-                        <div class="local-map">
-                            <iframe
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1563.2543014895753!2d-73.61996662018426!3d4.147477936650474!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e3e2dda6fc55e0f%3A0x8dae331fe351f0bd!2sMoteros%20sport%20line!5e0!3m2!1ses-419!2sco!4v1767146373178!5m2!1ses-419!2sco"
-                                allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        <div class="local-map" style="background: none; min-height: auto; height: 100%;">
+                            <a href="https://maps.app.goo.gl/MitBYM19LbGGZ9kz8" target="_blank"
+                                style="display: block; height: 100%; position: relative; overflow: hidden; border-radius: 0 1.5rem 1.5rem 0;">
+                                <img src="img/LOCAL-ALCALA.jpg" alt="Fachada Local Alcala"
+                                    style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;">
+                                <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s;"
+                                    class="map-overlay">
+                                    <span
+                                        style="background: white; padding: 0.5rem 1rem; border-radius: 2rem; font-weight: bold; color: var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                                        <i class="fas fa-map-marked-alt"></i> Ver en Maps
+                                    </span>
+                                </div>
+                            </a>
+                            <style>
+                                .local-map a:hover img {
+                                    transform: scale(1.05);
+                                }
+
+                                .local-map a:hover .map-overlay {
+                                    opacity: 1;
+                                }
+
+                                @media (max-width: 900px) {
+                                    .local-map a {
+                                        border-radius: 1.5rem 1.5rem 0 0 !important;
+                                        min-height: 300px;
+                                    }
+                                }
+                            </style>
                         </div>
                     </div>
                 </div>

@@ -6855,98 +6855,82 @@ window.registrarPagoDeudor = registrarPagoDeudor;
 let serviciosActuales = [];
 
 async function cargarServiciosAdmin() {
-    const inicio = document.getElementById('fechaServiciosInicio')?.value;
-    const fin = document.getElementById('fechaServiciosFin')?.value;
-    const tbody = document.getElementById('tbodyServiciosAdmin');
+    const tbody = document.getElementById('tbodyServiciosVendidos'); // ID corregido según admin.html
+    if (!tbody) return;
 
-    if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-center">Consultando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center">Consultando historial de servicios...</td></tr>';
 
     try {
-        let query = supabaseClient
-            .from('pagos_servicios')
+        // Consultar directamente la tabla operacional
+        const { data, error } = await supabaseClient
+            .from('servicios_motero')
             .select(`
                 *,
-                servicio:servicios_motero (*)
+                empleados_tienda ( nombre )
             `)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(100);
 
-        if (inicio) query = query.gte('created_at', new Date(inicio).toISOString());
-        if (fin) {
-            const dFin = new Date(fin);
-            dFin.setHours(23, 59, 59, 999);
-            query = query.lte('created_at', dFin.toISOString());
-        }
-
-        const { data, error } = await query;
         if (error) throw error;
 
-        serviciosActuales = data || [];
-        renderizarTablaServicios(serviciosActuales);
+        renderizarTablaServicios(data || []);
 
     } catch (e) {
         console.error('Error cargando servicios:', e);
-        showToast('Error al cargar reporte de servicios', 'error');
+        showToast('Error al cargar servicios', 'error');
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-danger">Error al cargar datos.</td></tr>';
     }
 }
 
 function renderizarTablaServicios(datos) {
-    const tbody = document.getElementById('tbodyServiciosAdmin');
-    const totalCountEl = document.getElementById('totalServiciosCount');
-    const totalMontoEl = document.getElementById('totalServiciosMonto');
-
-    const totalMoney = datos.reduce((s, p) => s + (p.monto || 0), 0);
-    if (totalCountEl) totalCountEl.textContent = datos.length;
-    if (totalMontoEl) totalMontoEl.textContent = '$' + formatearPrecio(totalMoney);
-
+    const tbody = document.getElementById('tbodyServiciosVendidos');
     if (!tbody) return;
 
     if (datos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay servicios en este periodo</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center">No hay servicios registrados recientemente.</td></tr>';
         return;
     }
 
-    tbody.innerHTML = datos.map(p => `
+    tbody.innerHTML = datos.map(s => {
+        const saldo = s.saldo_pendiente || 0;
+        const tecnico = s.empleados_tienda?.nombre || 'Desconocido';
+
+        let badgeEstado = 'badge-warning'; // Pendiente
+        if (s.estado === 'listo') badgeEstado = 'badge-primary';
+        if (s.estado === 'entregado') badgeEstado = 'badge-success';
+
+        return `
         <tr>
             <td>
-                <div>${new Date(p.created_at).toLocaleDateString('es-CO')}</div>
-                <small style="color:#888">${formatearHora(p.created_at)}</small>
+                <div>${new Date(s.created_at).toLocaleDateString('es-CO')}</div>
+                <small style="color:#888">${formatearHora(s.created_at)}</small>
             </td>
-            <td><strong>${p.local || 'N/A'}</strong></td>
-            <td>${p.servicio?.nombre_empleado || 'N/A'}</td>
-            <td>${p.servicio?.descripcion || 'Servicio'}</td>
-            <td><span class="badge badge-info">${p.servicio?.placa || '-'}</span></td>
-            <td><strong>$${formatearPrecio(p.monto)}</strong></td>
-            <td><span class="badge ${p.metodo_pago === 'Efectivo' ? 'badge-success' : 'badge-primary'}">${p.metodo_pago || 'N/A'}</span></td>
-            <td><small style="font-weight:600; color:var(--primary)">${p.servicio?.voucher_code || p.servicio?.referencia_pago || '-'}</small></td>
+            <td>
+                <strong>${s.cliente_nombre}</strong><br>
+                <small>📞 ${s.cliente_telefono}</small>
+            </td>
+            <td>
+                <span class="badge badge-info">${s.tipo_servicio}</span><br>
+                <small>${s.local || ''}</small>
+            </td>
+            <td>👤 ${tecnico}</td>
+            <td>${s.casco_prestado ? '🪖 ' + s.casco_prestado : '<span style="color:#ccc;">-</span>'}</td>
+            <td><strong>$${formatearPrecio(s.precio_total)}</strong></td>
+            <td style="color:#10b981;">$${formatearPrecio(s.monto_abonado)}</td>
+            <td style="font-weight:bold; color:${saldo > 0 ? '#ef4444' : '#ccc'};">
+                $${formatearPrecio(saldo)}
+            </td>
+            <td><span class="badge ${badgeEstado}">${s.estado.toUpperCase()}</span></td>
+            <td>
+                <!-- Acciones futuras como ver detalle o anular -->
+                <button class="btn btn-sm btn-secondary" onclick="alert('Detalle próximamente')">👁️</button>
+            </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
 function exportarServiciosExcel() {
-    if (serviciosActuales.length === 0) return showToast('No hay datos para exportar', 'warning');
-
-    try {
-        const data = serviciosActuales.map(p => ({
-            'Fecha': new Date(p.created_at).toLocaleDateString('es-CO'),
-            'Hora': formatearHora(p.created_at),
-            'Local': p.local || '',
-            'Empleado': p.servicio?.nombre_empleado || '',
-            'Servicio': p.servicio?.descripcion || '',
-            'Placa': p.servicio?.placa || '',
-            'Monto': p.monto,
-            'Metodo Pago': p.metodo_pago || '',
-            'Voucher/Ref': p.servicio?.voucher_code || p.servicio?.referencia_pago || ''
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'ServiciosTécnicos');
-        XLSX.writeFile(wb, `servicios_vendidos_${new Date().toISOString().split('T')[0]}.xlsx`);
-        showToast('Reporte de servicios exportado', 'success');
-    } catch (e) {
-        console.error(e);
-        showToast('Error al exportar reporte', 'error');
-    }
+    showToast('Función en mantenimiento para nueva estructura', 'info');
 }
 
 window.cargarServiciosAdmin = cargarServiciosAdmin;
