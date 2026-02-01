@@ -300,7 +300,7 @@ async function cargarSeccion(section) {
         case 'metas':
             await Promise.all([cargarMetas(), cargarMetasProveedores()]);
             break;
-        case 'servicios': await cargarServiciosAdmin(); break;
+        case 'servicios-vendidos': await cargarServiciosAdmin(); break;
     }
 }
 
