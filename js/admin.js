@@ -5550,7 +5550,7 @@ async function cargarGastos() {
         const local = document.getElementById('gastosLocalFiltro')?.value || '';
 
 
-        let query = supabaseClient.from('gastos_tienda').select('*').order('fecha_gasto', { ascending: false }).limit(100);
+        let query = supabaseClient.from('gastos_tienda').select('*, categorias_gastos(nombre)').order('fecha_gasto', { ascending: false }).limit(100);
         if (local) query = query.eq('local', local);
 
         const { data, error } = await query;
@@ -5589,10 +5589,11 @@ async function cargarGastos() {
 
         tbody.innerHTML = data.map(g => {
             const fecha = g.fecha_gasto ? new Date(g.fecha_gasto).toLocaleDateString('es-CO') : '-';
+            const categoriaNombre = g.categorias_gastos?.nombre || g.categoria || 'Sin categoría';
             return `<tr>
                 <td>${fecha}</td>
                 <td><strong>${g.local || '-'}</strong></td>
-                <td><span style="font-size:0.8rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; border:1px solid #e2e8f0;">${g.categoria || g.tipo || g.clasificacion || g.rubro || 'Sin categoría'}</span></td>
+                <td><span style="font-size:0.8rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; border:1px solid #e2e8f0;">${categoriaNombre}</span></td>
                 <td>${g.descripcion || '-'}</td>
                 <td>${g.proveedor || '<span style="color:#cbd5e1;">-</span>'}</td>
                 <td><strong>$${formatearPrecio(g.monto)}</strong></td>
@@ -5711,6 +5712,14 @@ async function guardarGasto() {
         if (res.error) throw res.error;
 
         showToast(id ? '✅ Gasto actualizado' : '✅ Gasto registrado correctamente', 'success');
+
+        // 🔹 HOOK: Si venimos de un recordatorio, marcarlo como pagado
+        if (window.recordatorioPendienteId) {
+            await marcarRecordatorioPagado(window.recordatorioPendienteId, true); // true = sin confirmación
+            window.recordatorioPendienteId = null;
+            showToast('Recordatorio actualizado y alerta desactivada 🔔', 'info');
+        }
+
         cancelarFormGasto();
         await cargarGastos();
 
@@ -5825,202 +5834,364 @@ async function quitarDestacado(id) { try { showToast('Quitando de destacados...'
 
 // REPORTES
 async function cargarReporteMargen() { const body = document.getElementById('bodyReporte'); if (!body) return; document.getElementById('contenidoReporte').style.display = 'block'; document.getElementById('tituloReporte').textContent = '📊 Margen por Categoría'; body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando...</p></div>'; try { const { data, error } = await supabaseClient.from('v_margen_categoria').select('*'); if (error) throw error; if (!data || data.length === 0) { body.innerHTML = '<p class="text-center">No hay datos disponibles</p>'; return; } body.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Categoría</th><th>Productos</th><th>Costo Prom.</th><th>Precio Prom.</th><th>Margen %</th></tr></thead><tbody>${data.map(r => `<tr><td><strong>${r.categoria}</strong></td><td>${r.total_productos}</td><td>$${formatearPrecio(r.costo_promedio)}</td><td>$${formatearPrecio(r.precio_venta_promedio)}</td><td><span class="badge badge-${r.margen_promedio >= 30 ? 'success' : 'warning'}">${r.margen_promedio || 0}%</span></td></tr>`).join('')}</tbody></table></div>`; } catch (error) { if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando reporte:', error); body.innerHTML = '<p class="text-danger">Error al cargar el reporte</p>'; } }
-async function cargarReporteTop() {
+// Variable global para el chart de categorías para poder destruirlo al recargar
+let chartCategoriaInstance = null;
+
+async function cargarReporteTop(periodo = 'historico', metrica = 'cantidad') {
     const body = document.getElementById('bodyReporte');
     if (!body) return;
     document.getElementById('contenidoReporte').style.display = 'block';
 
     // Título profesional
     const tituloContainer = document.getElementById('tituloReporte');
-    tituloContainer.innerHTML = '<i class="fas fa-trophy" style="margin-right:10px; color:#eab308;"></i> Top Productos por Categoría';
+    tituloContainer.innerHTML = '<i class="fas fa-trophy" style="margin-right:10px; color:#eab308;"></i> Top Productos y Tendencias';
 
-    body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Buscando campeones en ventas...</p></div>';
+    // 1. RENDERIZAR CONTROLES (Solo si es la primera carga o reconstrucción)
+    // No sobrescribimos si venimos de un evento interno, pero en este diseño simple re-renderizamos todo el contenedor
+
+    // Calcular fechas para el query
+    let fechaInicio = null;
+    const hoy = new Date();
+
+    if (periodo === '7dias') {
+        const d = new Date(); d.setDate(d.getDate() - 7);
+        fechaInicio = d.toISOString();
+    } else if (periodo === '30dias') {
+        const d = new Date(); d.setDate(d.getDate() - 30);
+        fechaInicio = d.toISOString();
+    } else if (periodo === 'mes') {
+        const d = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        fechaInicio = d.toISOString();
+    }
+    // 'historico' es null (trae todo)
+
+    body.innerHTML = `
+        <div class="report-controls" style="display:flex; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem; background:white; padding:1rem; border-radius:12px; border:1px solid #e2e8f0; align-items:center; justify-content:space-between;">
+            
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+                <label style="font-weight:600; color:#475569; font-size:0.9rem;">📅 Periodo:</label>
+                <select id="filtroPeriodoTop" onchange="cargarReporteTop(this.value, '${metrica}')" style="padding:0.4rem 0.8rem; border-radius:6px; border:1px solid #cbd5e1; font-size:0.9rem; background:#f8fafc; cursor:pointer;">
+                    <option value="7dias" ${periodo === '7dias' ? 'selected' : ''}>Últimos 7 días</option>
+                    <option value="30dias" ${periodo === '30dias' ? 'selected' : ''}>Últimos 30 días</option>
+                    <option value="mes" ${periodo === 'mes' ? 'selected' : ''}>Este Mes</option>
+                    <option value="historico" ${periodo === 'historico' ? 'selected' : ''}>Histórico Completo</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:0.5rem; background:#f1f5f9; padding:4px; border-radius:8px;">
+                <button onclick="cargarReporteTop('${periodo}', 'cantidad')" 
+                    style="border:none; padding:6px 12px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:600; transition:all 0.2s; ${metrica === 'cantidad' ? 'background:white; color:#0f172a; shadow:0 1px 2px rgba(0,0,0,0.1);' : 'background:transparent; color:#64748b;'}">
+                    📦 Unidades
+                </button>
+                <button onclick="cargarReporteTop('${periodo}', 'dinero')" 
+                    style="border:none; padding:6px 12px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:600; transition:all 0.2s; ${metrica === 'dinero' ? 'background:white; color:#0f172a; shadow:0 1px 2px rgba(0,0,0,0.1);' : 'background:transparent; color:#64748b;'}">
+                    💰 Ingresos
+                </button>
+            </div>
+        </div>
+
+        <div id="reporteContentArea">
+            <div class="loading"><div class="spinner"></div><p>Analizando ventas...</p></div>
+        </div>
+    `;
+
+    const contentArea = document.getElementById('reporteContentArea');
 
     try {
-        // Consultar ventas de los últimos 30 días o histórico
-        const { data: ventas, error: errorVentas } = await supabaseClient
+        // Query base
+        let query = supabaseClient
             .from('ventas')
-            .select('id_producto, nombre_producto, cantidad, total, created_at')
-            .order('created_at', { ascending: false }); // Traer todo el historial para ranking global
+            .select('id_producto, nombre_producto, cantidad, total, created_at');
+
+        if (fechaInicio) {
+            query = query.gte('created_at', fechaInicio);
+        }
+
+        // Ordenar por defecto fecha desc
+        query = query.order('created_at', { ascending: false });
+
+        const { data: ventas, error: errorVentas } = await query;
 
         if (errorVentas) throw errorVentas;
 
         if (!ventas || ventas.length === 0) {
-            body.innerHTML = `
+            contentArea.innerHTML = `
                 <div style="text-align:center; padding:3rem;">
-                    <i class="fas fa-box-open" style="font-size:3rem; color:#cbd5e1; margin-bottom:1rem;"></i>
-                    <p style="color:#64748b; font-size:1.1rem;">Aún no hay ventas registradas.</p>
+                    <i class="fas fa-filter" style="font-size:3rem; color:#cbd5e1; margin-bottom:1rem;"></i>
+                    <p style="color:#64748b; font-size:1.1rem;">No se encontraron ventas en este periodo.</p>
+                    <button onclick="cargarReporteTop('historico', 'cantidad')" style="margin-top:1rem; background:transparent; border:1px solid #3b82f6; color:#3b82f6; padding:0.5rem 1rem; border-radius:6px; cursor:pointer;">Ver Histórico</button>
                 </div>`;
             return;
         }
 
-        // Agrupar ventas por producto
+        // Agrupar
         const ranking = {};
 
         ventas.forEach(v => {
             const id = v.id_producto;
             if (!id) return;
-
             if (!ranking[id]) {
-                ranking[id] = {
-                    id: id,
-                    nombre: v.nombre_producto || 'Producto Eliminado',
-                    cantidad: 0,
-                    total: 0
-                };
+                ranking[id] = { id: id, cantidad: 0, total: 0 };
             }
             ranking[id].cantidad += (v.cantidad || 0);
             ranking[id].total += (v.total || 0);
         });
 
-        // Convertir a array y ordenar por Cantidad vendida
-        let topProductos = Object.values(ranking).sort((a, b) => b.cantidad - a.cantidad);
+        // Validar y Ordenar según métrica
+        let rankingArray = Object.values(ranking)
+            .filter(p => p.id && String(p.id).startsWith('PROD') && /^PROD\d+$/.test(String(p.id)));
 
-        // Consultar detalles adicionales (categoría, imagen) para los Top 20
-        const topIds = topProductos.slice(0, 20).map(p => p.id);
-
-        const { data: detalles, error: errorProd } = await supabaseClient
-            .from('productos')
-            .select('id, categoria, imagen')
-            .in('id', topIds);
-
-        if (!errorProd && detalles) {
-            topProductos = topProductos.map(p => {
-                const detalle = detalles.find(d => d.id === p.id);
-                return {
-                    ...p,
-                    categoria: detalle ? detalle.categoria : 'Desconocida',
-                    imagen: detalle ? detalle.imagen : null
-                };
-            });
+        // Ordenamiento dinámico
+        if (metrica === 'dinero') {
+            rankingArray.sort((a, b) => b.total - a.total);
+        } else {
+            rankingArray.sort((a, b) => b.cantidad - a.cantidad);
         }
 
-        // Calcular Categoría Líder
+        if (rankingArray.length === 0) {
+            contentArea.innerHTML = '<div class="text-center p-4">No hay datos válidos tras el filtrado.</div>';
+            return;
+        }
+
+        // Top 20 Candidatos
+        const candidatos = rankingArray.slice(0, 20);
+        const topIds = candidatos.map(p => p.id);
+
+        let topProductos = [];
+
+        try {
+            // Consultar Mapeando por id_producto
+            const { data: detalles, error: errorProd } = await supabaseClient
+                .from('productos')
+                .select('id, id_producto, nombre, categoria, url_imagen')
+                .in('id_producto', topIds);
+
+            if (errorProd) throw errorProd;
+
+            if (detalles && detalles.length > 0) {
+                topProductos = detalles.map(d => {
+                    const stats = candidatos.find(c => c.id === d.id_producto);
+                    return {
+                        id: d.id_producto,
+                        nombre: d.nombre,
+                        categoria: d.categoria || 'Otros',
+                        imagen: d.url_imagen,
+                        cantidad: stats ? stats.cantidad : 0,
+                        total: stats ? stats.total : 0,
+                        metricValue: metrica === 'dinero' ? (stats ? stats.total : 0) : (stats ? stats.cantidad : 0)
+                    };
+                });
+
+                // Ordenar Top Final
+                topProductos.sort((a, b) => b.metricValue - a.metricValue);
+                topProductos = topProductos.slice(0, 5); // Top 5
+            }
+        } catch (detailError) {
+            console.warn('Error Detalles:', detailError);
+            contentArea.innerHTML = `<p class="text-danger text-center">Error cargando detalles: ${detailError.message}</p>`;
+            return;
+        }
+
+        if (topProductos.length === 0) {
+            contentArea.innerHTML = '<div class="text-center p-4">Los productos top no están disponibles en catálogo.</div>';
+            return;
+        }
+
+        // --- CALCULO ESTADISTICAS CATEGORIA ---
+        // (Usamos los Top 5 para la gráfica detallada, o podríamos usar todo el rankingArray si tuviéramos las categorías de todos,
+        // pero para evitar N+1 querys masivos, usamos la muestra del Top + extrapolación simple o solo mostramos el Top)
+        // Para hacerlo bien, agruparemos por categoría solo de los productos visibles en Top 5 para la gráfica de "Distribución del Top"
+
         const catStats = {};
         topProductos.forEach(p => {
             if (!catStats[p.categoria]) catStats[p.categoria] = 0;
-            catStats[p.categoria] += p.total;
+            catStats[p.categoria] += p.metricValue;
         });
-        const topCategoria = Object.keys(catStats).sort((a, b) => catStats[b] - catStats[a])[0];
 
-        // Renderizado
+        // Categoria Líder
+        const topCategoria = Object.keys(catStats).length > 0
+            ? Object.keys(catStats).sort((a, b) => catStats[b] - catStats[a])[0]
+            : '-';
+
         const productoEstrella = topProductos[0];
+        const metricaLabel = metrica === 'dinero' ? 'Ingresos Generados' : 'Unidades Vendidas';
+        const metricaPrefix = metrica === 'dinero' ? '$' : '';
+        const totalTop = topProductos.reduce((sum, p) => sum + p.metricValue, 0);
 
         let html = `
             <div style="display:flex; gap:1.5rem; margin-bottom:2rem; align-items:flex-start; flex-wrap:wrap;">
                 
-                <!-- KPIs -->
-                <div style="flex:1; min-width:300px; display:grid; gap:1rem;">
-                    <div style="background:linear-gradient(135deg, #fffbeb 0%, #fff 100%); padding:1.5rem; border-radius:12px; border:1px solid #fcd34d; display:flex; align-items:center; gap:1.5rem; box-shadow:0 10px 15px -3px rgba(251, 191, 36, 0.1);">
+                <!-- KPIs & Gráfica Dona -->
+                <div style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:1rem;">
+                    
+                    <!-- Tarjeta Producto Estrella -->
+                    <div style="background:linear-gradient(135deg, #fffbeb 0%, #fff 100%); padding:1.25rem; border-radius:12px; border:1px solid #fcd34d; display:flex; align-items:center; gap:1rem; box-shadow:0 4px 6px rgba(251, 191, 36, 0.1);">
                         <div style="position:relative;">
-                             <img src="${productoEstrella.imagen || 'img/placeholder.jpg'}" 
-                                  style="width:80px; height:80px; object-fit:cover; border-radius:12px; border:3px solid white; box-shadow:0 4px 6px rgba(0,0,0,0.1);"
-                                  onerror="this.src='https://via.placeholder.com/80?text=Sin+Img'">
-                             <div style="position:absolute; -10px; right:-10px; background:#eab308; color:white; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white;">1</div>
-                        </div>
-                        <div>
-                            <div style="font-size:0.85rem; color:#b45309; font-weight:700; text-transform:uppercase; margin-bottom:0.25rem;">PRODUCTO ESTRELLA</div>
-                            <div style="font-size:1.25rem; color:#1e293b; font-weight:800; line-height:1.2;">${productoEstrella.nombre}</div>
-                            <div style="margin-top:0.5rem; font-size:0.9rem; color:#78350f;">
-                                <i class="fas fa-shopping-cart"></i> ${productoEstrella.cantidad} unidades vendidas
+                             <img src="${productoEstrella.imagen || PLACEHOLDER_THUMB}" 
+                                   style="width:70px; height:70px; object-fit:cover; border-radius:10px; border:2px solid white; box-shadow:0 2px 4px rgba(0,0,0,0.1);"
+                                   onerror="this.onerror=null; this.src=PLACEHOLDER_THUMB">
+                              <div style="position:absolute; -5px; right:-5px; background:#eab308; color:white; width:24px; height:24px; font-size:0.8rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white;">1</div>
+                         </div>
+                         <div>
+                            <div style="font-size:0.75rem; color:#b45309; font-weight:700; text-transform:uppercase; margin-bottom:0.2rem;">🏆 MÁS VENDIDO (${periodo === 'historico' ? 'HISTÓRICO' : periodo})</div>
+                            <div style="font-size:1.1rem; color:#1e293b; font-weight:800; line-height:1.2; margin-bottom:0.25rem;">${productoEstrella.nombre}</div>
+                            <div style="font-size:0.9rem; color:#78350f; font-weight:600;">
+                                ${metrica === 'dinero' ? '$' + formatearPrecio(productoEstrella.total) : productoEstrella.cantidad + ' Unidades'}
                             </div>
                         </div>
                     </div>
 
-                    <div style="display:flex; gap:1rem;">
-                         <div class="kpi-card" style="flex:1; background:#f8fafc; padding:1rem; border-radius:12px; border-left:4px solid #3b82f6; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                            <div style="font-size:0.85rem; color:#64748b; font-weight:600; text-transform:uppercase;">Categoría Líder</div>
-                            <div style="font-size:1.4rem; color:#1e293b; font-weight:700; margin-top:0.25rem;">${topCategoria || '-'}</div>
-                        </div>
+                    <!-- Chart Categorías -->
+                    <div style="background:white; padding:1rem; border-radius:12px; border:1px solid #e2e8f0; display:flex; gap:1rem; align-items:center;">
+                         <div style="flex:1;">
+                            <h4 style="margin:0 0 0.5rem 0; color:#475569; font-size:0.85rem;">Distribución por Categoría (Top 5)</h4>
+                            <div style="height:140px; width:100%; position:relative;">
+                                <canvas id="chartCategoriasTop"></canvas>
+                            </div>
+                         </div>
+                         <div style="width:120px; font-size:0.8rem; color:#64748b;">
+                            <div style="margin-bottom:0.5rem;"><strong>Líder:</strong><br>${topCategoria}</div>
+                            <div><strong>Total Top:</strong><br>${metrica === 'dinero' ? '$' + formatearPrecio(totalTop) : totalTop}</div>
+                         </div>
                     </div>
+
                 </div>
 
-                <!-- Gráfica Top 5 -->
-                <div style="flex:0 0 400px; background:white; padding:1rem; border-radius:12px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); border:1px solid #e2e8f0;">
-                    <h4 style="margin:0 0 1rem 0; color:#475569; font-size:0.9rem;">Top 5 Productos</h4>
-                    <div id="chartContainerTop" style="position:relative; height:200px; width:100%;">
+                <!-- Gráfica Barras Top 5 -->
+                <div style="flex:1.5; min-width:350px; background:white; padding:1.5rem; border-radius:12px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); border:1px solid #e2e8f0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h4 style="margin:0; color:#475569; font-size:1rem;">Top 5 Productos</h4>
+                        <span style="font-size:0.75rem; background:#f1f5f9; padding:2px 8px; border-radius:4px; color:#64748b;">Por ${metricaLabel}</span>
+                    </div>
+                    <div style="position:relative; height:240px; width:100%;">
                         <canvas id="chartTopProductos"></canvas>
                     </div>
                 </div>
             </div>
 
-            <div class="table-container" style="box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); border-radius:8px; overflow:hidden; border:1px solid #e2e8f0;">
+            <!-- Tabla Detalle -->
+            <div class="table-container" style="box-shadow:0 2px 4px rgba(0,0,0,0.05); border-radius:8px; overflow:hidden; border:1px solid #e2e8f0;">
                 <table class="data-table" style="width:100%; border-collapse:collapse;">
                     <thead>
-                        <tr style="background:#1e293b; color:white;">
-                            <th style="padding:12px 16px; text-align:center;">#</th>
-                            <th style="padding:12px 16px; text-align:left;">Producto</th>
-                            <th style="padding:12px 16px; text-align:left;">Categoría</th>
-                            <th style="padding:12px 16px; text-align:center;">Unidades</th>
-                            <th style="padding:12px 16px; text-align:right;">Ventas Totales</th>
+                        <tr style="background:#f8fafc; color:#475569; border-bottom:1px solid #e2e8f0;">
+                            <th style="padding:10px 16px; text-align:center;">#</th>
+                            <th style="padding:10px 16px; text-align:left;">Producto</th>
+                            <th style="padding:10px 16px; text-align:left;">Categoría</th>
+                            <th style="padding:10px 16px; text-align:center;">${metrica === 'dinero' ? 'Ingresos' : 'Unidades'}</th>
+                            <th style="padding:10px 16px; text-align:center;">% del Top</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${topProductos.map((p, index) => `
-                            <tr style="border-bottom:1px solid #e2e8f0; background:${index % 2 === 0 ? 'white' : '#f8fafc'}; transition:background 0.2s;">
+                        ${topProductos.map((p, index) => {
+            const percent = ((p.metricValue / totalTop) * 100).toFixed(1);
+            return `
+                            <tr style="border-bottom:1px solid #f1f5f9; background:white;">
                                 <td style="padding:12px 16px; text-align:center; font-weight:700; color:${index < 3 ? '#eab308' : '#94a3b8'};">
                                     ${index + 1}
                                 </td>
                                 <td style="padding:12px 16px;">
-                                    <div style="display:flex; align-items:center; gap:12px;">
-                                         <img src="${p.imagen || 'img/placeholder.jpg'}" 
-                                              style="width:40px; height:40px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0;"
-                                              onerror="this.src='https://via.placeholder.com/40?text=IMG'">
-                                         <span style="font-weight:600; color:#334155;">${p.nombre}</span>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                         <img src="${p.imagen || PLACEHOLDER_THUMB}" 
+                                              style="width:36px; height:36px; object-fit:cover; border-radius:6px; background:#f1f5f9;"
+                                              onerror="this.onerror=null; this.src=PLACEHOLDER_THUMB">
+                                         <div style="display:flex; flex-direction:column;">
+                                            <span style="font-weight:600; color:#334155; font-size:0.9rem;">${p.nombre}</span>
+                                            ${index === 0 ? '<span style="font-size:0.7rem; color:#eab308; font-weight:700;">★ Best Seller</span>' : ''}
+                                         </div>
                                     </div>
                                 </td>
                                 <td style="padding:12px 16px;">
-                                    <span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:99px; font-size:0.75rem; font-weight:600;">
+                                    <span style="background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;">
                                         ${p.categoria}
                                     </span>
                                 </td>
-                                <td style="padding:12px 16px; text-align:center; font-weight:600; color:#475569;">${p.cantidad}</td>
-                                <td style="padding:12px 16px; text-align:right; font-weight:600; color:#1e293b;">$${formatearPrecio(p.total)}</td>
+                                <td style="padding:12px 16px; text-align:center; font-weight:700; color:#0f172a;">
+                                    ${metrica === 'dinero' ? '$' + formatearPrecio(p.metricValue) : p.metricValue}
+                                </td>
+                                <td style="padding:12px 16px; text-align:center;">
+                                    <div style="display:flex; align-items:center; gap:0.5rem; justify-content:center;">
+                                        <div style="width:40px; height:4px; background:#f1f5f9; border-radius:2px; overflow:hidden;">
+                                            <div style="width:${percent}%; height:100%; background:${index === 0 ? '#eab308' : '#3b82f6'};"></div>
+                                        </div>
+                                        <span style="font-size:0.75rem; color:#94a3b8;">${percent}%</span>
+                                    </div>
+                                </td>
                             </tr>
-                        `).join('')}
+                        `}).join('')}
                     </tbody>
                 </table>
             </div>
         `;
 
-        body.innerHTML = html;
+        contentArea.innerHTML = html;
 
-        // Guardar datos globales
-        window.datosReporteActual = topProductos;
-        window.tituloReporteActual = 'Top_Productos_Ventas';
+        // --- RENDERIZAR GRÁFICAS ---
+        if (typeof Chart !== 'undefined') {
+            try {
+                // 1. Gráfica Barras Top 5
+                if (window.chartTopInstance) window.chartTopInstance.destroy();
+                const ctxBars = document.getElementById('chartTopProductos').getContext('2d');
 
-        // Inicializar Gráfica Top 5
-        if (window.chartTopInstance) window.chartTopInstance.destroy();
-
-        // Validar Chart
-        if (typeof Chart === 'undefined') return;
-
-        try {
-            const ctx = document.getElementById('chartTopProductos').getContext('2d');
-            const top5 = topProductos.slice(0, 5);
-
-            window.chartTopInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: top5.map(p => p.nombre.substring(0, 15) + '...'),
-                    datasets: [{
-                        label: 'Unidades Vendidas',
-                        data: top5.map(p => p.cantidad),
-                        backgroundColor: '#3b82f6',
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
-                        x: { grid: { display: false } }
+                window.chartTopInstance = new Chart(ctxBars, {
+                    type: 'bar',
+                    data: {
+                        labels: topProductos.map(p => p.nombre.substring(0, 15) + (p.nombre.length > 15 ? '...' : '')),
+                        datasets: [{
+                            label: metricaLabel,
+                            data: topProductos.map(p => p.metricValue),
+                            backgroundColor: topProductos.map((p, i) => i === 0 ? '#eab308' : '#3b82f6'),
+                            borderRadius: 4,
+                            barThickness: 20
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { borderDash: [2, 2] } },
+                            x: { grid: { display: false } }
+                        }
                     }
-                }
-            });
-        } catch (e) { console.error('Error chart top', e); }
+                });
+
+                // 2. Gráfica Dona Categorías
+                if (window.chartCategoriaInstance) window.chartCategoriaInstance.destroy();
+                const ctxDoughnut = document.getElementById('chartCategoriasTop').getContext('2d');
+
+                const catLabels = Object.keys(catStats);
+                const catData = Object.values(catStats);
+
+                window.chartCategoriaInstance = new Chart(ctxDoughnut, {
+                    type: 'doughnut',
+                    data: {
+                        labels: catLabels,
+                        datasets: [{
+                            data: catData,
+                            backgroundColor: ['#3b82f6', '#eab308', '#22c55e', '#ef4444', '#a855f7'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '65%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return context.label + ': ' + (metrica === 'dinero' ? '$' + formatearPrecio(context.raw) : context.raw);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (chartError) {
+                console.error('Error renderizando gráficas:', chartError);
+            }
+        }
 
     } catch (error) {
         if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando reporte top:', error);
@@ -12465,3 +12636,255 @@ function renderizarGraficasIA(logs) {
 window.cargarTelemetriaIA = cargarTelemetriaIA;
 window.agregarMemoriaManual = agregarMemoriaManual;
 window.cargarConfiguracionIA = cargarConfiguracionIA;
+
+// ═══════════════════════════════════════════════════════════════
+// RECORDATORIOS DE PAGO (GASTOS RECURRENTES)
+// ═══════════════════════════════════════════════════════════════
+
+async function abrirModalRecordatorios() {
+    document.getElementById('modalRecordatorios').style.display = 'flex';
+    await cargarRecordatorios();
+}
+
+function cerrarModalRecordatorios() {
+    document.getElementById('modalRecordatorios').style.display = 'none';
+}
+
+async function cargarRecordatorios() {
+    const list = document.getElementById('listaRecordatorios');
+    list.innerHTML = '<div class="text-center text-muted">Cargando...</div>';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('recordatorios_pago')
+            .select('*')
+            .eq('activo', true)
+            .order('dia_pago', { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            list.innerHTML = '<div class="text-center text-muted p-4">No hay recordatorios configurados</div>';
+            return;
+        }
+
+        list.innerHTML = data.map(r => `
+            <div style="background:white; padding:1rem; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-weight:700; color:#1e293b;">${r.titulo}</div>
+                    <div style="font-size:0.85rem; color:#64748b;">
+                        📅 Día ${r.dia_pago} de cada mes • $${formatearPrecio(r.monto_estimado || 0)}
+                    </div>
+                    <div style="font-size:0.8rem; color:#3b82f6; margin-top:0.2rem;">
+                        👤 ${r.responsable_nombre} (${r.responsable_whatsapp})
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminarRecordatorio('${r.id}')">🗑️</button>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error cargando recordatorios:', error);
+        list.innerHTML = '<div class="text-danger p-3">Error al cargar lista</div>';
+    }
+}
+
+async function guardarRecordatorio() {
+    const titulo = document.getElementById('recTitulo').value;
+    const dia = document.getElementById('recDia').value;
+    const monto = document.getElementById('recMonto').value;
+    const nombre = document.getElementById('recNombre').value;
+    const whatsapp = document.getElementById('recWhatsapp').value;
+
+    if (!titulo || !dia || !nombre || !whatsapp) {
+        showToast('Completa los campos obligatorios', 'warning');
+        return;
+    }
+
+    if (dia < 1 || dia > 31) {
+        showToast('Día inválido (1-31)', 'warning');
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient.from('recordatorios_pago').insert({
+            titulo,
+            dia_pago: parseInt(dia),
+            monto_estimado: parseFloat(monto) || 0,
+            responsable_nombre: nombre,
+            responsable_whatsapp: whatsapp.replace(/\D/g, '') // Solo números
+        });
+
+        if (error) throw error;
+
+        showToast('Recordatorio guardado ✅');
+
+        // Limpiar form
+        document.getElementById('recTitulo').value = '';
+        document.getElementById('recDia').value = '';
+        document.getElementById('recMonto').value = '';
+        document.getElementById('recNombre').value = '';
+        document.getElementById('recWhatsapp').value = '';
+
+        cargarRecordatorios();
+        verificarAlertasPago();
+
+    } catch (error) {
+        console.error(error);
+        showToast('Error guardando: ' + error.message, 'error');
+    }
+}
+
+async function eliminarRecordatorio(id) {
+    if (!confirm('¿Borrar este recordatorio?')) return;
+    try {
+        const { error } = await supabaseClient.from('recordatorios_pago').update({ activo: false }).eq('id', id);
+        if (error) throw error;
+        cargarRecordatorios();
+    } catch (error) {
+        showToast('Error eliminando: ' + error.message, 'error');
+    }
+}
+
+// Lógica de Alertas (Se llama al iniciar)
+async function verificarAlertasPago() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('recordatorios_pago')
+            .select('*')
+            .eq('activo', true);
+
+        if (error) throw error;
+        if (!data || data.length === 0) return;
+
+        const hoy = new Date();
+        const diaHoy = hoy.getDate();
+        const alertas = [];
+
+        data.forEach(r => {
+            // Verificar si ya se pagó recientemente (en los últimos 20 días)
+            if (r.fecha_ultimo_pago) {
+                const ultimaFecha = new Date(r.fecha_ultimo_pago + 'T00:00:00'); // Asegurar parsing correcto
+                const diferenciaTiempo = hoy - ultimaFecha;
+                const diasDesdePago = diferenciaTiempo / (1000 * 3600 * 24);
+
+                // Si se pagó hace menos de 20 días, asumimos que es el pago de este ciclo
+                if (diasDesdePago < 25) return;
+            }
+
+            const diferencia = r.dia_pago - diaHoy;
+
+            // Lógica: Mostrar si faltan 5 días o menos 
+            // O si ya pasó (diferencia negativa) pero estamos en los primeros días del mes (handle simple por ahora)
+            // Si dia_pago es 5 y hoy es 28 (diferencia -23). No alerta.
+            // Si dia_pago es 30 y hoy es 25 (diferencia 5). Alerta.
+
+            // Ajuste para fin de mes/inicio de mes:
+            // Si hoy es 28 y vence el 2 del mes SIGUIENTE?
+            // Tendríamos que calcular fecha objetivo real.
+
+            // Simplificación robusta: Solo alertas del mes corriente O vencidos
+            if (diferencia >= 0 && diferencia <= 5) {
+                alertas.push({ ...r, mensaje: `Vence en ${diferencia === 0 ? 'HOY' : diferencia + ' días'}` });
+            } else if (diferencia < 0 && diferencia > -5) {
+                // Se pasó hace menos de 5 días
+                alertas.push({ ...r, mensaje: `Venció hace ${Math.abs(diferencia)} días`, vencido: true });
+            }
+        });
+
+        if (alertas.length > 0) {
+            mostrarPopupAlertas(alertas);
+        } else {
+            document.getElementById('popupAlertasPago').style.display = 'none';
+        }
+
+    } catch (error) {
+        console.error('Error verificando alertas:', error);
+    }
+}
+
+function mostrarPopupAlertas(alertas) {
+    const container = document.getElementById('contenidoAlertasPago');
+    const popup = document.getElementById('popupAlertasPago');
+
+    container.innerHTML = alertas.map(a => {
+        const mensajeWhatsapp = encodeURIComponent(`Hola ${a.responsable_nombre}, te recuerdo realizar el pago de: *${a.titulo}* ($${formatearPrecio(a.monto_estimado)}) que vence el día ${a.dia_pago}. Gracias!`);
+
+        return `
+        <div style="background:#f8fafc; padding:0.8rem; border-radius:8px; border-left:4px solid ${a.vencido ? '#ef4444' : '#f59e0b'}; margin-bottom:0.5rem;">
+            <div style="font-weight:700; font-size:0.9rem; color:#1e293b;">${a.titulo}</div>
+            <div style="font-size:0.8rem; color:${a.vencido ? '#ef4444' : '#b45309'}; margin-bottom:0.5rem;">
+                ⏰ ${a.mensaje} ($${formatearPrecio(a.monto_estimado)})
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+                <button onclick="window.open('https://wa.me/57${a.responsable_whatsapp}?text=${mensajeWhatsapp}', '_blank')" 
+                    style="flex:1; border:none; background:#25D366; color:white; padding:0.4rem; border-radius:4px; font-weight:600; cursor:pointer; font-size:0.85rem; display:flex; align-items:center; justify-content:center;">
+                    📲 Notificar
+                </button>
+                <button onclick="prepararRegistroDesdeRecordatorio('${a.id}', '${a.titulo}', ${a.monto_estimado})" 
+                    style="flex:1; border:none; background:#3b82f6; color:white; padding:0.4rem; border-radius:4px; font-weight:600; cursor:pointer; font-size:0.85rem; display:flex; align-items:center; justify-content:center;">
+                    📝 Registrar Pago
+                </button>
+            </div>
+        </div>
+        `;
+    }).join('');
+
+    popup.style.display = 'block';
+}
+
+async function prepararRegistroDesdeRecordatorio(id, titulo, monto) {
+    // 1. Establecer contexto global
+    window.recordatorioPendienteId = id;
+
+    // 2. Abrir Formulario de Gastos
+    abrirModalGasto(); // Nota: Asegurar que esta función existe o simulamos el clic
+    // Si abrirModalGasto no está expuesta, usamos la UI directa:
+    document.getElementById('formGasto').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 3. Pre-llenar datos
+    document.getElementById('formTituloGasto').textContent = '📝 Registrar Pago Recurrente: ' + titulo;
+    document.getElementById('gastoDescripcion').value = titulo;
+    document.getElementById('gastoMonto').value = monto || '';
+
+    // resetear otros campos
+    document.getElementById('gastoId').value = '';
+    document.getElementById('gastoLocal').value = ''; // Usuario debe elegir
+    document.getElementById('gastoMetodo').value = 'efectivo';
+
+    showToast('Completa el Local y confirma para guardar en historial', 'info');
+}
+
+async function marcarRecordatorioPagado(id, silent = false) {
+    if (!silent && !confirm('¿Confirmar que este gasto ya fue pagado? La alerta desaparecerá.')) return;
+
+    try {
+        const fechaHoy = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const { error } = await supabaseClient
+            .from('recordatorios_pago')
+            .update({ fecha_ultimo_pago: fechaHoy })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // Si no es silencioso (manual), mostrar toast
+        if (!silent) showToast('Gasto marcado como pagado ✅');
+
+        verificarAlertasPago(); // Recargar alertas para que desaparezca
+
+    } catch (error) {
+        console.error(error);
+        if (!silent) showToast('Error al actualizar: ' + error.message, 'error');
+    }
+}
+
+window.abrirModalRecordatorios = abrirModalRecordatorios;
+window.cerrarModalRecordatorios = cerrarModalRecordatorios;
+window.guardarRecordatorio = guardarRecordatorio;
+window.eliminarRecordatorio = eliminarRecordatorio;
+window.verificarAlertasPago = verificarAlertasPago;
+window.marcarRecordatorioPagado = marcarRecordatorioPagado;
+window.prepararRegistroDesdeRecordatorio = prepararRegistroDesdeRecordatorio;
+// Variable Global
+window.recordatorioPendienteId = null;

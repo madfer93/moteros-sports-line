@@ -570,14 +570,28 @@ function verDetalle(id) {
             } else {
                 // MAPA DE COLORES PARA CIRCULOS
                 const colorMap = {
-                    'negro': '#000000', 'blanco': '#ffffff', 'rojo': '#ef4444',
-                    'azul': '#3b82f6', 'verde': '#22c55e', 'amarillo': '#eab308',
-                    'gris': '#64748b', 'morado': '#a855f7', 'rosa': '#ec4899', 'rosado': '#ec4899',
-                    'naranja': '#f97316', 'cafe': '#78350f', 'cian': '#06b6d4',
-                    'mate': '#333333', 'fucsia': '#d946ef', 'fuscia': '#d946ef',
-                    'dorado': '#fbbf24', 'plateado': '#94a3b8', 'beige': '#f5f5dc',
-                    'turquesa': '#2dd4bf', 'vino': '#881337', 'lila': '#c084fc',
-                    'neon': '#ccff00', 'multicolor': 'linear-gradient(45deg, red, blue)'
+                    'negro': '#000000', 'negra': '#000000',
+                    'blanco': '#ffffff', 'blanca': '#ffffff',
+                    'rojo': '#ef4444', 'roja': '#ef4444',
+                    'azul': '#3b82f6',
+                    'verde': '#22c55e',
+                    'amarillo': '#eab308', 'amarilla': '#eab308',
+                    'gris': '#64748b',
+                    'morado': '#a855f7', 'morada': '#a855f7',
+                    'rosa': '#ec4899', 'rosado': '#ec4899', 'rosada': '#ec4899',
+                    'naranja': '#f97316',
+                    'cafe': '#78350f', 'café': '#78350f', 'marron': '#78350f', 'marrón': '#78350f',
+                    'cian': '#06b6d4',
+                    'mate': '#333333',
+                    'fucsia': '#d946ef', 'fuscia': '#d946ef',
+                    'dorado': '#fbbf24', 'dorada': '#fbbf24',
+                    'plateado': '#94a3b8', 'plateada': '#94a3b8',
+                    'beige': '#f5f5dc',
+                    'turquesa': '#2dd4bf',
+                    'vino': '#881337', 'vinotinto': '#881337',
+                    'lila': '#c084fc',
+                    'neon': '#ccff00', 'neón': '#ccff00',
+                    'multicolor': 'linear-gradient(45deg, red, blue)'
                 };
 
                 opciones.forEach(opt => {

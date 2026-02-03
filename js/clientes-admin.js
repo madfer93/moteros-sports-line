@@ -437,7 +437,7 @@ async function cargarReglasGuardadas() {
             .from('configuracion_sistema')
             .select('valor')
             .eq('clave', 'reglas_promociones_clientes')
-            .single();
+            .maybeSingle();
 
         if (error && error.code !== 'PGRST116') throw error; // Ignorar si no existe
 
