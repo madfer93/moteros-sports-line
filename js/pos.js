@@ -40,6 +40,8 @@ let resumenVentas = null;
 let gastosDelDia = [];
 let empleadoLogueado = null; // Datos del empleado con sesión activa
 let productoParaVariante = null; // Variable para manejo de variantes
+let clienteSeleccionado = null; // { id, nombre, telefono, cedula, promocion }
+let tipoClienteActual = 'consumidor'; // 'consumidor' | 'registrado'
 
 // ═══════════════════════════════════════════════════════════════
 // INICIALIZACIÓN
@@ -1289,15 +1291,34 @@ function renderizarCarrito() {
     const totalItems = carrito.reduce((sum, i) => sum + i.cantidad, 0);
     countEl.textContent = totalItems;
 
+    let subtotal = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
+    let descuentoCliente = 0;
+
+    // Aplicar descuento de cliente (si existe)
+    if (clienteSeleccionado && clienteSeleccionado.promocion) {
+        const pct = clienteSeleccionado.promocion.descuento_porcentaje;
+        descuentoCliente = Math.round(subtotal * (pct / 100));
+    }
+
+    const totalFinal = subtotal - descuentoCliente;
+
     if (carrito.length === 0) {
         container.innerHTML = `<div class="carrito-vacio">🛒 ${TIENDA.esDigital ? 'El pedido está vacío' : 'El carrito está vacío'}</div>`;
-        totalEl.textContent = '$0';
+        totalEl.innerHTML = '$0';
         actualizarBotonVender();
         return;
     }
 
-    const total = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
-    totalEl.textContent = '$' + total.toLocaleString('es-CO');
+    // Mostrar Totales
+    if (descuentoCliente > 0) {
+        totalEl.innerHTML = `
+            <div style="font-size:0.6em; text-decoration:line-through; color:#94a3b8;">$${subtotal.toLocaleString('es-CO')}</div>
+            <div style="font-size:0.6em; color:#ef4444;">- $${descuentoCliente.toLocaleString('es-CO')} (${clienteSeleccionado.promocion.descuento_porcentaje}%)</div>
+            $${totalFinal.toLocaleString('es-CO')}
+        `;
+    } else {
+        totalEl.textContent = '$' + totalFinal.toLocaleString('es-CO');
+    }
 
     container.innerHTML = carrito.map((item, idx) => {
         const tieneDescuento = item.precio < item.precioOriginal;
@@ -1443,6 +1464,69 @@ function actualizarBotonVender() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// REGISTRAR CLIENTE AUTOMÁTICAMENTE (TIENDA DIGITAL)
+// ═══════════════════════════════════════════════════════════════
+async function registrarClienteDigital() {
+    // Solo para tienda digital
+    if (!TIENDA.esDigital) return null;
+
+    const nombre = document.getElementById('clienteNombre')?.value.trim();
+    const telefono = document.getElementById('clienteTelefono')?.value.trim();
+    const cedula = document.getElementById('clienteCedula')?.value.trim();
+    const direccion = document.getElementById('direccionEnvio')?.value.trim();
+
+    // Si no hay datos de cliente, retornar consumidor final
+    if (!nombre || !telefono) return null;
+
+    try {
+        // Buscar si el cliente ya existe por cédula o teléfono
+        let { data: clienteExistente } = await db
+            .from('clientes')
+            .select('*')
+            .or(`cedula.eq.${cedula},telefono.eq.${telefono}`)
+            .limit(1)
+            .single();
+
+        if (clienteExistente) {
+            // Cliente ya existe, retornar su ID
+            return clienteExistente;
+        }
+
+        // Cliente nuevo, registrar
+        const { data: nuevoCliente, error } = await db
+            .from('clientes')
+            .insert({
+                nombre: nombre,
+                telefono: telefono,
+                cedula: cedula || null,
+                direccion: direccion || null,
+                email: null,
+                fecha_registro: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // Enviar mensaje de bienvenida por WhatsApp
+        if (nuevoCliente && telefono) {
+            const mensaje = `¡Hola ${nombre}! 👋\n\nGracias por tu compra en *Moteros Sports Line* 🏍️\n\nTu pedido ha sido registrado exitosamente y será procesado para envío.\n\n¿Tienes alguna pregunta? ¡Estamos aquí para ayudarte!\n\n_Moteros Sports Line - Tu tienda de confianza_ ✨`;
+            const urlWhatsApp = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
+
+            // Abrir WhatsApp en nueva ventana (opcional, se puede comentar si no se desea)
+            // window.open(urlWhatsApp, '_blank');
+
+            console.log('Cliente registrado. WhatsApp:', urlWhatsApp);
+        }
+
+        return nuevoCliente;
+    } catch (error) {
+        console.error('Error registrando cliente:', error);
+        return null;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // PROCESAR VENTA (TIENDA FÍSICA)
 // ═══════════════════════════════════════════════════════════════
 async function procesarVenta() {
@@ -1495,19 +1579,44 @@ async function procesarVenta() {
 
             const voucherCode = document.getElementById('voucherCode')?.value.trim() || null;
 
+            // Registrar cliente automáticamente si es tienda digital
+            let clienteDigital = null;
+            if (TIENDA.esDigital) {
+                clienteDigital = await registrarClienteDigital();
+            }
+
+            // Obtener datos del cliente seleccionado o del cliente digital registrado
+            const clienteId = clienteDigital?.id || clienteSeleccionado?.id || 1; // 1 = Consumidor Final
+            // Calcular descuento de cliente
+            let descuentoValor = 0;
+            let descuentoMotivo = null;
+            let totalItem = item.precio * item.cantidad; // Precio base (ya puede tener promo de producto)
+
+            if (clienteSeleccionado?.promocion?.descuento_porcentaje) {
+                const pct = clienteSeleccionado.promocion.descuento_porcentaje;
+                const montoDesc = Math.round(totalItem * (pct / 100));
+                descuentoValor = montoDesc;
+                descuentoMotivo = `Promo Cliente: ${pct}% - ${clienteSeleccionado.promocion.promocion_id}`; // Usar ID o Nombre si se tuviera
+                totalItem = totalItem - descuentoValor;
+            }
+
             const { error: errorVenta } = await db.from('ventas').insert({
                 id_venta: id_venta,
                 local: origenReal,
                 id_producto: item.id_producto,
                 nombre_producto: item.nombre,
                 cantidad: item.cantidad,
-                precio_unitario: item.precio,
-                total: item.precio * item.cantidad,
+                precio_unitario: item.precio, // Precio unitario base de la línea
+                total: totalItem, // Total con descuento aplicado
+                descuento_valor: descuentoValor,
+                descuento_motivo: descuentoMotivo,
                 metodo_pago: metodoPagoStr,
                 voucher_code: voucherCode,
                 usuario: `POS ${TIENDA.nombre}`,
                 id_evento: TIENDA.id_evento || null,
-                created_at: fechaVenta // Fecha histórica o actual
+                created_at: fechaVenta,
+                cliente_id: clienteId,
+                imprime_tirilla: imprimeTirilla
             });
 
             if (errorVenta) throw new Error(errorVenta.message);
@@ -1549,7 +1658,13 @@ async function procesarVenta() {
             }
         }
 
-        const total = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
+        // Calcular TOTAL FINAL (con descuento de cliente aplicado)
+        let subtotalVenta = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
+        let descuentoTotalCliente = 0;
+        if (clienteSeleccionado?.promocion?.descuento_porcentaje) {
+            descuentoTotalCliente = Math.round(subtotalVenta * (clienteSeleccionado.promocion.descuento_porcentaje / 100));
+        }
+        const total = subtotalVenta - descuentoTotalCliente;
 
         // Si es Crédito Motero, registrar en tabla creditos_motero
         if (destino === 'tienda' && metodosSeleccionados.has('Credito Motero')) {
@@ -1608,8 +1723,20 @@ async function procesarVenta() {
         }
 
         mostrarAlerta(msg, 'success');
+
+        // Actualizar estadísticas del cliente si no es Consumidor Final
+        if (clienteId && clienteId !== 1) {
+            await actualizarEstadisticasCliente(clienteId, total);
+        }
+
         limpiarDespuesVenta();
         await cargarProductos();
+
+        // Imprimir tirilla si se solicitó (y si no es digital, aunque digital podría imprimir PDF)
+        if (imprimeTirilla && destino !== 'digital') {
+            const clienteInfo = clienteId && clienteId !== 1 ? (clienteDigital || clienteSeleccionado) : null;
+            imprimirTicketVenta(carrito, total, id_venta, clienteInfo, metodoPagoStr);
+        }
 
     } catch (error) {
         console.error('Error procesando venta:', error);
@@ -1618,6 +1745,77 @@ async function procesarVenta() {
 
     btnVender.innerHTML = ' Procesar Venta';
     actualizarBotonVender();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IMPRIMIR TICKET DE VENTA
+// ═══════════════════════════════════════════════════════════════
+function imprimirTicketVenta(items, total, idVenta, cliente, metodoPago) {
+    if (!window.TicketPrinter) {
+        alert('Error: Módulo de impresión no cargado');
+        return;
+    }
+
+    let htmlCliente = '';
+    if (cliente) {
+        htmlCliente = `
+            <div class="divider"></div>
+            <div><strong>CLIENTE:</strong> ${cliente.nombre}</div>
+            <div><strong>CC/NIT:</strong> ${cliente.cedula || 'N/A'}</div>
+            <div><strong>TEL:</strong> ${cliente.telefono || 'N/A'}</div>
+            ${cliente.direccion ? `<div><strong>DIR:</strong> ${cliente.direccion}</div>` : ''}
+        `;
+    } else {
+        htmlCliente = `
+            <div class="divider"></div>
+            <div><strong>CLIENTE:</strong> CONSUMIDOR FINAL</div>
+        `;
+    }
+
+    let htmlItems = `
+        <table>
+            <thead>
+                <tr>
+                    <th>DESCRIPCION</th>
+                    <th class="text-center">CANT</th>
+                    <th class="text-right">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    items.forEach(item => {
+        htmlItems += `
+            <tr>
+                <td>${item.nombre}</td>
+                <td class="text-center">${item.cantidad}</td>
+                <td class="text-right">$${(item.precio * item.cantidad).toLocaleString('es-CO')}</td>
+            </tr>
+        `;
+    });
+
+    htmlItems += `
+            </tbody>
+        </table>
+        <div class="divider"></div>
+        <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px;">
+            <span>TOTAL A PAGAR:</span>
+            <span>$${total.toLocaleString('es-CO')}</span>
+        </div>
+        <div style="margin-top:5px; font-size:11px;">
+            METODO DE PAGO: ${metodoPago}
+        </div>
+        <div style="font-size:11px;">
+            ${idVenta}
+        </div>
+    `;
+
+    const contenido = htmlCliente + htmlItems;
+
+    // Firma opcional (footer del ticket)
+    const firma = '¡Gracias por su compra!<br>Regrese pronto';
+
+    TicketPrinter.print('FACTURA DE VENTA', contenido, firma);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1800,6 +1998,19 @@ function limpiarDespuesVenta() {
     const vI = document.getElementById('voucherCode');
     if (vI) vI.value = '';
     limpiarFormCredito();
+
+    // Limpiar datos de cliente
+    if (tipoClienteActual === 'registrado') {
+        limpiarInfoCliente();
+        const inputCedula = document.getElementById('inputCedulaCliente');
+        if (inputCedula) inputCedula.value = '';
+    }
+    const checkTirilla = document.getElementById('checkImprimirTirilla');
+    if (checkTirilla) checkTirilla.checked = false;
+
+    // Resetear a Consumidor Final
+    seleccionarTipoCliente('consumidor');
+
     renderizarCarrito();
 }
 
@@ -1844,6 +2055,331 @@ function limpiarFormCredito() {
 
     const datosCredito = document.getElementById('datosCredito');
     if (datosCredito) datosCredito.classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GESTIÓN DE CLIENTES
+// ═══════════════════════════════════════════════════════════════
+
+// Inicializar cliente predeterminado al cargar
+document.addEventListener('DOMContentLoaded', () => {
+    // Establecer Consumidor Final por defecto
+    clienteSeleccionado = { id: 1, nombre: 'Consumidor Final', es_generico: true };
+});
+
+function seleccionarTipoCliente(tipo) {
+    tipoClienteActual = tipo;
+
+    const btnConsumidor = document.getElementById('btnConsumidorFinal');
+    const btnRegistrado = document.getElementById('btnClienteRegistrado');
+    const seccionBuscar = document.getElementById('seccionBuscarCliente');
+    const seccionTirilla = document.getElementById('seccionImprimirTirilla');
+
+    if (tipo === 'consumidor') {
+        btnConsumidor?.classList.add('active');
+        btnRegistrado?.classList.remove('active');
+        if (seccionBuscar) seccionBuscar.style.display = 'none';
+        if (seccionTirilla) seccionTirilla.style.display = 'none';
+        clienteSeleccionado = { id: 1, nombre: 'Consumidor Final', es_generico: true };
+    } else {
+        btnConsumidor?.classList.remove('active');
+        btnRegistrado?.classList.add('active');
+        if (seccionBuscar) seccionBuscar.style.display = 'block';
+        if (seccionTirilla) seccionTirilla.style.display = 'block';
+        clienteSeleccionado = null;
+        limpiarInfoCliente();
+    }
+}
+
+async function buscarCliente() {
+    const cedula = document.getElementById('inputCedulaCliente')?.value.trim();
+    if (!cedula) {
+        mostrarAlerta('Ingresa una cédula para buscar', 'warning');
+        return;
+    }
+
+    try {
+        const { data, error } = await db
+            .from('clientes')
+            .select('*')
+            .eq('cedula', cedula)
+            .eq('activo', true)
+            .single();
+
+        if (error || !data) {
+            mostrarAlerta('Cliente no encontrado. Puedes registrarlo como nuevo.', 'info');
+            limpiarInfoCliente();
+            return;
+        }
+
+        // Buscar promoción activa
+        const { data: promo } = await db
+            .from('promociones_clientes')
+            .select('descuento_porcentaje, promocion_id')
+            .eq('cliente_id', data.id)
+            .eq('activa', true)
+            .gte('fecha_fin', new Date().toISOString().split('T')[0])
+            .single();
+
+        clienteSeleccionado = {
+            id: data.id,
+            nombre: data.nombre,
+            telefono: data.telefono,
+            cedula: data.cedula,
+            numero_compras: data.numero_compras || 0,
+            total_compras: data.total_compras || 0,
+            promocion: promo || null
+        };
+
+        mostrarInfoCliente(data, promo);
+        mostrarAlerta(`✅ Cliente encontrado: ${data.nombre}`, 'success');
+
+        // ════════════ SUGERIR PROMOCIONES ════════════
+        if (window.PromocionesManager) {
+            const sugerencias = await PromocionesManager.sugerirPromocionesCliente(data);
+            if (sugerencias.length > 0) {
+                mostrarBotonSugerencia(sugerencias, data.id);
+            } else {
+                ocultarBotonSugerencia();
+            }
+        }
+
+    } catch (error) {
+        console.error('Error buscando cliente:', error);
+        mostrarAlerta('Error al buscar cliente', 'error');
+    }
+}
+
+function mostrarBotonSugerencia(sugerencias, clienteId) {
+    let container = document.getElementById('containerSugerenciaPromo');
+    if (!container) {
+        const infoDiv = document.querySelector('#infoClienteEncontrado'); // Corrección selector
+        container = document.createElement('div');
+        container.id = 'containerSugerenciaPromo';
+        container.style.marginTop = '10px';
+        infoDiv.appendChild(container);
+    }
+
+    container.innerHTML = `
+        <button onclick='window.abrirModalSugerencia(${JSON.stringify(sugerencias)}, ${clienteId})' 
+                class="btn btn-warning" style="width:100%; animation: pulse 2s infinite;">
+            🎁 ¡Tienes ${sugerencias.length} Oferta(s) Disponible(s)!
+        </button>
+    `;
+    container.style.display = 'block';
+}
+
+function ocultarBotonSugerencia() {
+    const container = document.getElementById('containerSugerenciaPromo');
+    if (container) container.style.display = 'none';
+}
+
+// Global para que funcione en onclick
+window.abrirModalSugerencia = function (sugerencias, clienteId) {
+    const sug = sugerencias[0]; // Por ahora mostramos la primera
+    const confirmacion = confirm(`
+⭐ OFERTA SUGERIDA ⭐
+
+Cliente cumple: ${sug.regla}
+Motivo: ${sug.motivo}
+
+🎁 Promoción: ${sug.promocion.nombre}
+📉 Descuento: ${sug.promocion.descuento}%
+
+¿AUTORIZAR y aplicar esta promoción al cliente?
+(Requiere autorización de Admin)
+    `);
+
+    if (confirmacion) {
+        autorizarPromocion(clienteId, sug.promocion.id_promo);
+    }
+};
+
+async function autorizarPromocion(clienteId, promoId) {
+    // Aquí se podría pedir clave de admin
+    /* const pass = prompt("🔑 Clave de Administrador:");
+       if (pass !== "1234") return alert("Clave incorrecta"); */
+
+    try {
+        await PromocionesManager.asignarPromocionCliente(clienteId, promoId, 'Admin POS');
+        alert("✅ Promoción asignada correctamente. El cliente debe volver a ser cargado.");
+        limpiarInfoCliente(); // Forzar recarga
+        document.getElementById('inputCedulaCliente').value = document.getElementById('clienteCedulaDisplay').textContent.replace('🆔 ', '').trim();
+        buscarCliente(); // Recargar
+    } catch (e) {
+        console.error(e);
+        alert("Error asignando promoción");
+    }
+}
+
+function mostrarInfoCliente(cliente, promocion) {
+    const infoDiv = document.getElementById('infoClienteEncontrado');
+    if (!infoDiv) return;
+
+    document.getElementById('clienteSeleccionadoId').value = cliente.id;
+    document.getElementById('clienteNombreDisplay').textContent = cliente.nombre;
+    document.getElementById('clienteTelefonoDisplay').textContent = `📱 ${cliente.telefono || 'N/A'}`;
+    document.getElementById('clienteCedulaDisplay').textContent = `🆔 ${cliente.cedula || 'N/A'}`;
+
+    // Mostrar estadísticas
+    const estadisticasEl = document.getElementById('clienteEstadisticasDisplay');
+    if (estadisticasEl) {
+        estadisticasEl.textContent = `${cliente.numero_compras || 0} compras | $${(cliente.total_compras || 0).toLocaleString('es-CO')} total`;
+    }
+
+    // Mostrar promoción si existe
+    const promoDiv = document.getElementById('clientePromoDisplay');
+    if (promoDiv) {
+        if (promocion) {
+            document.getElementById('clientePromoDescuento').textContent = `${promocion.descuento_porcentaje}% OFF`;
+            promoDiv.style.display = 'block';
+        } else {
+            promoDiv.style.display = 'none';
+        }
+    }
+
+    infoDiv.style.display = 'block';
+}
+
+function limpiarInfoCliente() {
+    const infoDiv = document.getElementById('infoClienteEncontrado');
+    if (infoDiv) infoDiv.style.display = 'none';
+    const idInput = document.getElementById('clienteSeleccionadoId');
+    if (idInput) idInput.value = '';
+    clienteSeleccionado = null;
+}
+
+function abrirModalRegistroCliente() {
+    const modal = document.getElementById('modalRegistroCliente');
+    if (modal) {
+        modal.classList.add('visible');
+        modal.style.display = 'flex';
+        // Limpiar campos
+        ['nuevoClienteNombre', 'nuevoClienteTelefono', 'nuevoClienteCedula', 'nuevoClienteDireccion', 'nuevoClienteEmail'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        // Focus en nombre
+        setTimeout(() => document.getElementById('nuevoClienteNombre')?.focus(), 100);
+    }
+}
+
+function cerrarModal() {
+    const modal = document.getElementById('modalRegistroCliente');
+    if (modal) {
+        modal.classList.remove('visible');
+        modal.style.display = 'none';
+    }
+}
+
+async function guardarNuevoCliente() {
+    const nombre = document.getElementById('nuevoClienteNombre')?.value.trim();
+    const telefono = document.getElementById('nuevoClienteTelefono')?.value.trim();
+    const cedula = document.getElementById('nuevoClienteCedula')?.value.trim();
+    const direccion = document.getElementById('nuevoClienteDireccion')?.value.trim();
+    const email = document.getElementById('nuevoClienteEmail')?.value.trim();
+
+    // Validar campos obligatorios
+    if (!nombre || !telefono) {
+        mostrarAlerta('Nombre y Teléfono son obligatorios', 'error');
+        return;
+    }
+
+    try {
+        const { data, error } = await db
+            .from('clientes')
+            .insert({
+                nombre,
+                telefono,
+                cedula: cedula || null,
+                direccion: direccion || null,
+                email: email || null,
+                es_generico: false,
+                activo: true,
+                fecha_registro: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        clienteSeleccionado = {
+            id: data.id,
+            nombre: data.nombre,
+            telefono: data.telefono,
+            cedula: data.cedula,
+            numero_compras: 0,
+            total_compras: 0,
+            promocion: null
+        };
+
+        mostrarInfoCliente(data, null);
+        cerrarModal();
+        mostrarAlerta(`✅ Cliente registrado: ${nombre}`, 'success');
+
+        // Limpiar formulario
+        ['nuevoClienteNombre', 'nuevoClienteTelefono', 'nuevoClienteCedula', 'nuevoClienteDireccion', 'nuevoClienteEmail'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+
+        // Enviar mensaje de bienvenida
+        enviarWhatsAppBienvenida(data);
+
+    } catch (error) {
+        console.error('Error guardando cliente:', error);
+        mostrarAlerta('Error al guardar cliente: ' + error.message, 'error');
+    }
+}
+
+function enviarWhatsAppBienvenida(cliente) {
+    const mensaje = `¡Hola ${cliente.nombre}! 👋
+
+¡Bienvenido a Moteros Sports Line! 🏍️
+
+Gracias por tu compra de hoy. Ahora eres parte de nuestra familia motera.
+
+Como cliente registrado disfrutarás de:
+✅ Promociones exclusivas
+✅ Descuentos especiales
+✅ Crédito Motero
+✅ Atención prioritaria
+
+¡Nos vemos pronto!
+
+Moteros Sports Line
+📍 Villavicencio - Meta
+📱 304-578-8873
+🌐 https://moteros-sports-line.vercel.app`;
+
+    const telefonoLimpio = cliente.telefono.replace(/\D/g, '');
+    const url = `https://wa.me/57${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, '_blank');
+}
+
+async function actualizarEstadisticasCliente(clienteId, montoVenta) {
+    if (!clienteId || clienteId === 1) return; // No actualizar para Consumidor Final
+
+    try {
+        const { data: cliente } = await db
+            .from('clientes')
+            .select('total_compras, numero_compras')
+            .eq('id', clienteId)
+            .single();
+
+        if (cliente) {
+            await db
+                .from('clientes')
+                .update({
+                    total_compras: (cliente.total_compras || 0) + montoVenta,
+                    numero_compras: (cliente.numero_compras || 0) + 1,
+                    ultima_compra: new Date().toISOString()
+                })
+                .eq('id', clienteId);
+        }
+    } catch (error) {
+        console.error('Error actualizando estadísticas:', error);
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════

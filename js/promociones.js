@@ -375,6 +375,92 @@ const PromocionesManager = {
             item.descuento = info.descuento;
             item.promocion = info.tienePromo ? info.nombrePromo : null;
         });
+    },
+
+    // ════════════ PROMOCIONES DE CLIENTES (AUTOMÁTICAS) ════════════
+    reglasCliente: [],
+
+    async cargarReglasClientes() {
+        try {
+            const client = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+            if (!client) return;
+
+            const { data } = await client
+                .from('configuracion_sistema')
+                .select('valor')
+                .eq('clave', 'reglas_promociones_clientes')
+                .single();
+
+            if (data && data.valor) {
+                this.reglasCliente = JSON.parse(data.valor);
+            }
+        } catch (e) { console.error('Error cargando reglas clientes:', e); }
+    },
+
+    /**
+     * Evalúa si el cliente es elegible para nuevas promociones
+     * @param {object} cliente - Objeto cliente completo
+     * @returns {array} - Lista de promociones sugeridas
+     */
+    async sugerirPromocionesCliente(cliente) {
+        if (!this.reglasCliente.length) await this.cargarReglasClientes();
+
+        const sugerencias = [];
+        const client = window.supabaseClient || supabaseClient;
+
+        // Obtener promos ya asignadas al cliente para no repetir
+        const { data: asignadas } = await client
+            .from('promociones_clientes')
+            .select('promocion_id')
+            .eq('cliente_id', cliente.id)
+            .eq('activa', true);
+
+        const idsAsignados = asignadas ? asignadas.map(a => a.promocion_id) : [];
+
+        for (const regla of this.reglasCliente) {
+            // Saltarse si ya la tiene
+            if (idsAsignados.includes(regla.promocionId)) continue;
+
+            const cumpleMonto = (cliente.total_compras || 0) >= (regla.metaMonto || 0);
+            const cumpleCompras = (cliente.numero_compras || 0) >= (regla.metaCompras || 0);
+
+            if (cumpleMonto && cumpleCompras) {
+                // Obtener nombre de la promo
+                const promo = this.promociones.find(p => p.id_promo == regla.promocionId);
+                if (promo) {
+                    sugerencias.push({
+                        regla: regla.nombre,
+                        promocion: promo,
+                        motivo: `Compras: $${(cliente.total_compras || 0).toLocaleString()} | Visitas: ${cliente.numero_compras}`
+                    });
+                }
+            }
+        }
+        return sugerencias;
+    },
+
+    /**
+     * Asignar promoción a un cliente (Autorización Admin)
+     */
+    async asignarPromocionCliente(clienteId, promocionId, autorizadoPor = 'Admin') {
+        const client = window.supabaseClient || supabaseClient;
+
+        // Calcular fechas (mes actual por defecto)
+        const inicio = new Date();
+        const fin = new Date();
+        fin.setMonth(fin.getMonth() + 1); // 1 mes de vigencia por defecto
+
+        const { error } = await client.from('promociones_clientes').insert({
+            cliente_id: clienteId,
+            promocion_id: promocionId,
+            fecha_inicio: inicio.toISOString(),
+            fecha_fin: fin.toISOString(),
+            activa: true,
+            autorizado_por: autorizadoPor
+        });
+
+        if (error) throw error;
+        return true;
     }
 };
 

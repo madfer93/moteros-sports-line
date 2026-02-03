@@ -18,6 +18,10 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/admin.css">
+    <!-- Google Charts -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!-- Chart.js (Legacy support if needed) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="css/ai-widget.css">
     <style>
         /* 🎨 THEME & UTILS */
@@ -586,6 +590,7 @@
                     <button class="nav-dropdown-btn">📢 Marketing <span class="arrow">▼</span></button>
                     <div class="nav-dropdown-content">
                         <a href="#" data-section="promociones">🏷️ Promociones</a>
+                        <a href="#" data-section="clientes">👤 Clientes</a>
                         <a href="#" data-section="blog">📝 Blog</a>
                         <a href="#" data-section="alianzas">🤝 Alianzas</a>
                         <a href="#" data-section="leads">👥 Leads IA</a>
@@ -633,14 +638,20 @@
             </div>
             <div class="mobile-nav-content">
                 <div class="mobile-nav-group">
-                    <div class="mobile-nav-title">Principal</div>
+                    <div class="mobile-nav-title">📊 Principal</div>
                     <a href="#" data-section="dashboard" onclick="toggleMobileMenu()">📊 Dashboard</a>
                     <a href="#" data-section="metas" onclick="toggleMobileMenu()">🎯 Metas</a>
                     <a href="#" data-section="estadisticas" onclick="toggleMobileMenu()">📈 Estadísticas</a>
                     <a href="#" data-section="reportes" onclick="toggleMobileMenu()">📑 Reportes</a>
                 </div>
                 <div class="mobile-nav-group">
-                    <div class="mobile-nav-title">Ventas</div>
+                    <div class="mobile-nav-title">📦 Envíos</div>
+                    <a href="#" data-section="envios" onclick="toggleMobileMenu()">📦 Gestión Envíos</a>
+                    <a href="#" data-section="envios-estadisticas" onclick="toggleMobileMenu()">📊 Estadísticas
+                        Envíos</a>
+                </div>
+                <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">💰 Ventas</div>
                     <a href="#" data-section="ventas" onclick="toggleMobileMenu()">💰 Gestión Ventas</a>
                     <a href="pos/tienda-alcala.html" target="_blank">🏪 POS Alcalá</a>
                     <a href="pos/tienda-01.html" target="_blank">🏬 POS Local 01</a>
@@ -649,7 +660,7 @@
                     <a href="pos/tienda-admin.html" target="_blank">🛡️ POS Administrativo</a>
                 </div>
                 <div class="mobile-nav-group">
-                    <div class="mobile-nav-title">Catálogo</div>
+                    <div class="mobile-nav-title">📦 Catálogo</div>
                     <a href="#" data-section="productos" onclick="toggleMobileMenu()">📦 Productos</a>
                     <a href="#" data-section="categorias" onclick="toggleMobileMenu()">📁 Categorías</a>
                     <a href="#" data-section="destacados" onclick="toggleMobileMenu()">⭐ Destacados</a>
@@ -659,7 +670,7 @@
                     <a href="#" data-section="alertas" onclick="toggleMobileMenu()">⚠️ Alertas Stock</a>
                 </div>
                 <div class="mobile-nav-group">
-                    <div class="mobile-nav-title">Finanzas</div>
+                    <div class="mobile-nav-title">💵 Finanzas</div>
                     <a href="#" data-section="cierres" onclick="toggleMobileMenu()">💵 Cierres de Caja</a>
                     <a href="#" data-section="gastos" onclick="toggleMobileMenu()">💸 Gastos</a>
                     <a href="#" data-section="deudores" onclick="toggleMobileMenu()">👥 Deudores</a>
@@ -671,8 +682,9 @@
                         Vendidos</a>
                 </div>
                 <div class="mobile-nav-group">
-                    <div class="mobile-nav-title">Marketing</div>
+                    <div class="mobile-nav-title">📢 Marketing</div>
                     <a href="#" data-section="promociones" onclick="toggleMobileMenu()">🏷️ Promociones</a>
+                    <a href="#" data-section="clientes" onclick="toggleMobileMenu()">👤 Clientes</a>
                     <a href="#" data-section="blog" onclick="toggleMobileMenu()">📝 Blog</a>
                     <a href="#" data-section="alianzas" onclick="toggleMobileMenu()">🤝 Alianzas</a>
                     <a href="#" data-section="leads" onclick="toggleMobileMenu()">👥 Leads IA</a>
@@ -680,7 +692,7 @@
                 </div>
 
                 <div class="mobile-nav-group">
-                    <div class="mobile-nav-title">Personal</div>
+                    <div class="mobile-nav-title">👥 RRHH</div>
                     <a href="#" data-section="rrhh" onclick="toggleMobileMenu()">👥 Empleados</a>
                     <a href="#" data-section="nomina" onclick="toggleMobileMenu()">💰 Nómina</a>
                     <a href="#" data-section="comisiones" onclick="toggleMobileMenu()">📊 Comisiones</a>
@@ -688,7 +700,7 @@
                     <a href="pos/tienda-eventos.html" target="_blank">🎟️ POS Eventos</a>
                 </div>
                 <div class="mobile-nav-group">
-                    <div class="mobile-nav-title">Sistema</div>
+                    <div class="mobile-nav-title">⚙️ Sistema</div>
                     <a href="#" data-section="configuracion" onclick="toggleMobileMenu()">⚙️ Configuración</a>
                     <a href="#" onclick="mostrarCambiarPassword(); toggleMobileMenu()">🔐 Cambiar Contraseña</a>
                     <a href="#" onclick="logout()" class="logout-link">🚪 Cerrar Sesión</a>
@@ -4557,6 +4569,240 @@
                 </div>
             </section>
 
+            <!-- ═══════════════════ CLIENTES ═══════════════════ -->
+            <section id="clientesSection" class="section">
+                <div class="page-header">
+                    <h1>👤 Gestión de Clientes</h1>
+                    <p>Administra tu base de clientes y estadísticas de compra</p>
+                </div>
+
+                <!-- Dashboard de Estadísticas -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">👥</div>
+                        <div class="stat-info">
+                            <h3 id="statTotalClientes">0</h3>
+                            <p>Total Clientes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">🆕</div>
+                        <div class="stat-info">
+                            <h3 id="statClientesNuevos">0</h3>
+                            <p>Nuevos (Mes)</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">⭐</div>
+                        <div class="stat-info">
+                            <h3 id="statClientesFrecuentes">0</h3>
+                            <p>Frecuentes (3+ compras)</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">👑</div>
+                        <div class="stat-info">
+                            <h3 id="statClientesVIP">0</h3>
+                            <p>VIP (10+ compras)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficas de Análisis -->
+                <div class="charts-grid"
+                    style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:1.5rem; margin-top:2rem;">
+                    <!-- Top Clientes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>🏆 Top 10 Mejores Clientes</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="chartTopClientes" style="width:100%; height:300px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Crecimiento de Clientes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📈 Nuevos Clientes (Ultimos 6 Meses)</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="chartCrecimientoClientes" style="width:100%; height:300px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Distribución de Clientes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>📊 Distribución por Tipo de Cliente</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="chartDistribucionClientes" style="width:100%; height:300px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Clientes -->
+                <div class="card" style="margin-top:2rem;">
+                    <div class="card-header">
+                        <h3>📋 Lista de Clientes</h3>
+                        <div class="card-actions" style="display:flex; gap:1rem; align-items:center;">
+                            <input type="text" id="buscarCliente" class="form-control"
+                                placeholder="Buscar por nombre, cédula o teléfono..." style="width:300px;"
+                                oninput="filtrarClientesTabla()">
+                            <select id="filtroTipoCliente" class="form-control" style="width:180px;"
+                                onchange="filtrarClientesTabla()">
+                                <option value="todos">Todos</option>
+                                <option value="frecuentes">Frecuentes (3+)</option>
+                                <option value="vip">VIP (10+)</option>
+                                <option value="nuevos">Nuevos (Mes)</option>
+                            </select>
+                            <button onclick="cargarClientesAdmin()" class="btn btn-secondary">🔄 Actualizar</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Cédula</th>
+                                        <th>Teléfono</th>
+                                        <th>Compras</th>
+                                        <th>Total Gastado</th>
+                                        <th>Última Compra</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyClientes">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Cargando clientes...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Tabla de Clientes -->
+                        <div class="card" style="margin-top:2rem;">
+                            <div class="card-header">
+                                <div style="display:flex; align-items:center; gap:1rem;">
+                                    <h3>📋 Lista de Clientes</h3>
+                                    <button class="btn btn-sm btn-outline-warning"
+                                        onclick="abrirModalReglasPromocion()">
+                                        ⚙️ Reglas de Promoción
+                                    </button>
+                                </div>
+                                <div class="card-actions" style="display:flex; gap:1rem; align-items:center;">
+                                    <input type="text" id="buscarCliente" class="form-control"
+                                        placeholder="Buscar por nombre, cédula o teléfono..." style="width:300px;"
+                                        oninput="filtrarClientesTabla()">
+                                    <select id="filtroTipoCliente" class="form-control" style="width:180px;"
+                                        onchange="filtrarClientesTabla()">
+                                        <option value="todos">Todos</option>
+                                        <option value="frecuentes">Frecuentes (3+)</option>
+                                        <option value="vip">VIP (10+)</option>
+                                        <option value="nuevos">Nuevos (Mes)</option>
+                                    </select>
+                                    <button onclick="cargarClientesAdmin()" class="btn btn-secondary">🔄
+                                        Actualizar</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre</th>
+                                                <th>Cédula</th>
+                                                <th>Teléfono</th>
+                                                <th>Compras</th>
+                                                <th>Total Gastado</th>
+                                                <th>Última Compra</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbodyClientes">
+                                            <tr>
+                                                <td colspan="7" class="text-center">Cargando clientes...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- Paginación -->
+                                <div id="paginacionClientes"
+                                    style="display:flex; justify-content:center; gap:0.5rem; margin-top:1.5rem; flex-wrap:wrap;">
+                                </div>
+                            </div>
+                        </div>
+            </section>
+
+            <!-- ════════════ MODAL: REGLAS DE PROMOCIÓN ════════════ -->
+            <div id="modalReglasPromocion" class="modal-overlay">
+                <div class="modal modal-large">
+                    <div class="modal-header">
+                        <h3>⚙️ Configurar Reglas de Promoción Automática</h3>
+                        <button class="modal-close" onclick="cerrarModalReglas()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <p style="color:#64748b; margin-bottom:1.5rem;">
+                            Define reglas para que el sistema sugiera promociones automáticamente a los clientes basado
+                            en su comportamiento.
+                        </p>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>Nombre de la Regla</label>
+                                <input type="text" id="reglaNombre" placeholder="Ej: Nuevo VIP">
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>Promoción a Sugerir</label>
+                                <select id="reglaPromocionId" class="form-control">
+                                    <option value="">Cargando promociones...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>Condición: Monto Mínimo de Compras ($)</label>
+                                <input type="number" id="reglaMetaMonto" placeholder="0">
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>Condición: Cantidad Mínima de Compras</label>
+                                <input type="number" id="reglaMetaCompras" placeholder="0">
+                            </div>
+                        </div>
+
+                        <div style="display:flex; justify-content:flex-end; margin-bottom:2rem;">
+                            <button class="btn btn-primary" onclick="agregarReglaPromocion()">➕ Agregar Regla</button>
+                        </div>
+
+                        <h4>📜 Reglas Activas</h4>
+                        <div class="table-container" style="max-height:200px; overflow-y:auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Meta Monto ($)</th>
+                                        <th>Meta Compras (#)</th>
+                                        <th>Promo Sugerida</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyReglasPromocion">
+                                    <tr>
+                                        <td colspan="5" class="text-center">No hay reglas definidas</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-botones">
+                        <button class="btn btn-danger" onclick="cerrarModalReglas()">Cerrar</button>
+                        <button class="btn btn-success" onclick="guardarReglasPromocion()">💾 Guardar Cambios</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- ═══════════════════ METAS ═══════════════════ -->
             <section id="metasSection" class="section">
                 <div class="page-header">
@@ -5179,6 +5425,115 @@
         }
     </style>
 
+    <!-- MODAL DETALLE DE CLIENTE -->
+    <div id="modalDetalleCliente" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width:900px;">
+            <div class="modal-header">
+                <h3>👤 Detalle de Cliente</h3>
+                <button onclick="cerrarModalCliente()" class="btn-cerrar">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="clienteDetalleId">
+
+                <!-- Información Personal -->
+                <div class="card" style="margin-bottom:1.5rem;">
+                    <div class="card-header">
+                        <h4>📋 Información Personal</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nombre Completo</label>
+                                <input type="text" id="clienteNombre" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Cédula</label>
+                                <input type="text" id="clienteCedula" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Teléfono / WhatsApp</label>
+                                <input type="tel" id="clienteTelefono" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="clienteEmail" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Dirección</label>
+                            <input type="text" id="clienteDireccion" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estadísticas de Compra -->
+                <div class="stats-grid" style="margin-bottom:1.5rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🛒</div>
+                        <div class="stat-info">
+                            <h3 id="clienteNumCompras">0</h3>
+                            <p>Total Compras</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">💰</div>
+                        <div class="stat-info">
+                            <h3 id="clienteTotalGastado">$0</h3>
+                            <p>Total Gastado</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">📅</div>
+                        <div class="stat-info">
+                            <h3 id="clienteUltimaCompra">-</h3>
+                            <p>Última Compra</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">📊</div>
+                        <div class="stat-info">
+                            <h3 id="clientePromedio">$0</h3>
+                            <p>Ticket Promedio</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historial de Compras -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4>📜 Últimas Compras</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tienda</th>
+                                        <th>Total</th>
+                                        <th>Método Pago</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyHistorialCompras">
+                                    <tr>
+                                        <td colspan="4" class="text-center">Cargando historial...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="enviarWhatsAppCliente()" class="btn btn-success">📱 WhatsApp</button>
+                <button onclick="guardarCambiosCliente()" class="btn btn-primary">💾 Guardar Cambios</button>
+                <button onclick="cerrarModalCliente()" class="btn btn-secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL GESTIÓN INTEGRAL DE EVENTOS -->
     <div id="modalGestionEvento" class="modal-overlay" style="display:none;">
         <div class="modal-content" style="max-width:800px;">
@@ -5444,6 +5799,7 @@
             </div>
         </div>
     </div>
+    <script src="js/clientes-admin.js"></script>
     <script>
         // 📱 MOBILE MENU CONTROL (CORREGIDO)
         function toggleMobileMenu() {
@@ -5510,6 +5866,11 @@
                 // Compras: Cargar lista inicial
                 if (window.cargarCompras) {
                     initPromises.push(cargarCompras());
+                }
+
+                // Clientes: Cargar lista inicial
+                if (window.cargarClientesAdmin) {
+                    initPromises.push(cargarClientesAdmin());
                 }
 
                 await Promise.allSettled(initPromises);

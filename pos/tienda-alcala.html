@@ -117,6 +117,65 @@
                 </select>
             </div>
 
+            <!-- Selector de Cliente -->
+            <div class="seccion">
+                <h4 class="seccion-titulo">👤 Cliente</h4>
+                <div class="cliente-selector">
+                    <button id="btnConsumidorFinal" class="btn-cliente-tipo active"
+                        onclick="seleccionarTipoCliente('consumidor')">
+                        🛒 Consumidor Final
+                    </button>
+                    <button id="btnClienteRegistrado" class="btn-cliente-tipo"
+                        onclick="seleccionarTipoCliente('registrado')">
+                        👤 Cliente Registrado
+                    </button>
+                </div>
+
+                <!-- Búsqueda de cliente (oculto por defecto) -->
+                <div id="seccionBuscarCliente" style="display:none;">
+                    <div class="search-box" style="margin-top:1rem;">
+                        <input type="text" id="inputCedulaCliente" placeholder="Buscar por cédula..."
+                            onkeyup="if(event.key==='Enter') buscarCliente()" style="flex:1;">
+                        <button onclick="buscarCliente()" class="btn btn-primary"
+                            style="padding:0.75rem 1rem;">🔍</button>
+                    </div>
+
+                    <!-- Info del cliente encontrado -->
+                    <div id="infoClienteEncontrado"
+                        style="display:none; margin-top:1rem; padding:1rem; background:#f0f9ff; border-radius:8px;">
+                        <input type="hidden" id="clienteSeleccionadoId">
+                        <div style="font-weight:700; color:#0369a1; font-size:1.1rem;" id="clienteNombreDisplay"></div>
+                        <div style="font-size:0.9rem; color:#64748b; margin-top:0.5rem;">
+                            <span id="clienteTelefonoDisplay"></span> |
+                            <span id="clienteCedulaDisplay"></span>
+                        </div>
+                        <div style="font-size:0.85rem; color:#059669; margin-top:0.3rem;">
+                            <span id="clienteEstadisticasDisplay"></span>
+                        </div>
+                        <div id="clientePromoDisplay"
+                            style="display:none; margin-top:0.75rem; padding:0.75rem; background:#fef3c7; border-radius:6px; font-size:0.9rem; border-left:4px solid #f59e0b;">
+                            🎁 <strong>Descuento activo:</strong> <span id="clientePromoDescuento"
+                                style="color:#d97706; font-weight:700;"></span>
+                        </div>
+                    </div>
+
+                    <button onclick="abrirModalRegistroCliente()" class="btn btn-success"
+                        style="margin-top:1rem; width:100%; padding:0.875rem; font-weight:600;">
+                        ➕ Registrar Nuevo Cliente
+                    </button>
+                </div>
+
+                <!-- Checkbox para imprimir tirilla -->
+                <div id="seccionImprimirTirilla" style="display:none; margin-top:1rem;">
+                    <label
+                        style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; padding:0.75rem; background:#f8fafc; border-radius:6px; border:2px solid #e2e8f0; transition:all 0.2s;">
+                        <input type="checkbox" id="checkImprimirTirilla"
+                            style="width:18px; height:18px; cursor:pointer;">
+                        <span style="font-size:0.9rem; color:#475569;">🖨️ Imprimir tirilla con datos del cliente</span>
+                    </label>
+                </div>
+            </div>
+
             <!-- Métodos de Pago -->
             <div class="seccion">
                 <h4 class="seccion-titulo">💰 Método(s) de Pago</h4>
@@ -731,10 +790,59 @@
         </div>
     </div>
 
+    <!-- MODAL: REGISTRAR CLIENTE -->
+    <div id="modalRegistroCliente" class="modal-overlay">
+        <div class="modal">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #f1f5f9; padding-bottom:1rem; margin-bottom:1.5rem;">
+                <h3 style="margin:0; color:var(--dark);">👤 Registrar Nuevo Cliente</h3>
+                <button onclick="cerrarModal()"
+                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label>Nombre Completo <span style="color:var(--danger);">*</span></label>
+                <input type="text" id="nuevoClienteNombre" placeholder="Nombre completo del cliente"
+                    style="width:100%; padding:0.75rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem;">
+            </div>
+
+            <div class="form-group">
+                <label>Teléfono / WhatsApp <span style="color:var(--danger);">*</span></label>
+                <input type="tel" id="nuevoClienteTelefono" placeholder="3001234567"
+                    style="width:100%; padding:0.75rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem;">
+            </div>
+
+            <div class="form-group">
+                <label>Cédula</label>
+                <input type="text" id="nuevoClienteCedula" placeholder="123456789"
+                    style="width:100%; padding:0.75rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem;">
+            </div>
+
+            <div class="form-group">
+                <label>Dirección</label>
+                <input type="text" id="nuevoClienteDireccion" placeholder="Calle 10 #5-20, Villavicencio"
+                    style="width:100%; padding:0.75rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem;">
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="nuevoClienteEmail" placeholder="cliente@example.com"
+                    style="width:100%; padding:0.75rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem;">
+            </div>
+
+            <div class="modal-botones" style="display:flex; gap:1rem; margin-top:2rem;">
+                <button class="btn btn-danger" onclick="cerrarModal()" style="flex:1; padding:1rem;">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarNuevoCliente()"
+                    style="flex:2; padding:1rem; font-size:1rem;">✅ Guardar y Usar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ==== SCRIPTS ==== -->
     <script src="../js/config.js"></script>
     <script src="../js/security.js"></script>
     <script src="../js/promociones.js"></script>
+    <script src="../js/ticket-printer.js"></script>
     <script src="../js/ia-core.js"></script>
     <script src="../js/ai-widget.js"></script>
     <script>
