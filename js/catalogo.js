@@ -161,7 +161,7 @@ function abrirCarrito() {
                 <div class="carrito-item-info">
                     <div class="carrito-item-nombre"><strong>${item.nombre}</strong></div>
                     <div class="carrito-item-detalles">
-                        ${item.marca} • $${parseInt(item.precio).toLocaleString('es-CO')} c/u
+                        ${item.marca} <span class="precio-carrito-ocultar">• $${parseInt(item.precio).toLocaleString('es-CO')} c/u</span>
                     </div>
                 </div>
                 <div class="carrito-item-controls">
@@ -237,10 +237,9 @@ function enviarPedidoWhatsApp() {
     carrito.forEach(item => {
         const descInfo = item.descuento ? ` (Dto. ${item.descuento}%)` : '';
         const varianteInfo = item.variante ? ` [${item.variante}]` : '';
-        mensaje += `• ${item.cantidad} x ${item.nombre}${varianteInfo}${descInfo}\n  ${item.marca}\n  $${parseInt(item.precio).toLocaleString('es-CO')} c/u\n\n`;
+        mensaje += `• ${item.cantidad} x ${item.nombre}${varianteInfo}\n  ${item.marca}\n\n`;
     });
-    const total = carrito.reduce((s, item) => s + item.precio * item.cantidad, 0);
-    mensaje += `*Total estimado: $${total.toLocaleString('es-CO')}*\n\n¡Gracias! 🙌`;
+    mensaje += `¡Gracias! 🙌`;
 
     window.open(`https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent(mensaje)}`, '_blank');
 }

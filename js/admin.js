@@ -10905,24 +10905,52 @@ function guardarDistribucionAvanzada() {
 // ═══════════════════════════════════════════════════════════════
 
 async function cargarServiciosAdmin() {
-    const estado = document.getElementById('serviciosFiltroEstado').value;
-    const local = document.getElementById('serviciosFiltroLocal').value;
-    const tbody = document.getElementById('listaServiciosAdmin');
+    const estado = document.getElementById('serviciosFiltroEstado')?.value;
+    const local = document.getElementById('serviciosFiltroLocal')?.value;
+    const fechaInicio = document.getElementById('fechaServiciosInicio')?.value;
+    const fechaFin = document.getElementById('fechaServiciosFin')?.value;
+    const tbody = document.getElementById('tbodyServiciosAdmin');
 
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center">Cargando servicios...</td></tr>';
+    if (!tbody) {
+        console.error("tbodyServiciosAdmin no encontrado");
+        return;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center">Cargando servicios (espere)...</td></tr>';
 
     try {
-        let query = supabaseClient.from('servicios_motero').select('*, empleados_tienda(nombre)').order('created_at', { ascending: false });
+        let query = supabaseClient
+            .from('servicios_motero')
+            .select(`
+                *,
+                empleados_tienda (nombre)
+            `)
+            .order('created_at', { ascending: false });
 
         if (estado) query = query.eq('estado', estado);
         if (local) query = query.eq('local', local);
+        if (fechaInicio) query = query.gte('created_at', `${fechaInicio}T00:00:00`);
+        if (fechaFin) query = query.lte('created_at', `${fechaFin}T23:59:59`);
 
         const { data, error } = await query;
         if (error) throw error;
 
-        // Estadísticas rápidas
-        document.getElementById('serviciosPendientesCount').textContent = data.filter(s => s.estado === 'pendiente').length;
-        document.getElementById('serviciosListosCount').textContent = data.filter(s => s.estado === 'listo').length;
+        // Estadísticas
+        const pendientes = data.filter(s => s.estado === 'pendiente').length;
+        const listos = data.filter(s => s.estado === 'listo').length;
+        const total = data.length;
+        const totalIngresos = data.reduce((sum, s) => sum + (parseFloat(s.monto_abonado) || 0), 0);
+
+        // Actualizar UI KPIs con validación
+        const elPend = document.getElementById('serviciosPendientesCount');
+        const elListos = document.getElementById('serviciosListosCount');
+        const elTotal = document.getElementById('totalServiciosCount');
+        const elMonto = document.getElementById('totalServiciosMonto');
+
+        if (elPend) elPend.textContent = pendientes;
+        if (elListos) elListos.textContent = listos;
+        if (elTotal) elTotal.textContent = total;
+        if (elMonto) elMonto.textContent = '$' + formatearPrecio(totalIngresos);
 
         tbody.innerHTML = '';
         if (data.length === 0) {
@@ -10933,30 +10961,31 @@ async function cargarServiciosAdmin() {
         data.forEach(s => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-    < td > #${s.numero_servicio || ''}</td >
+                <td>#${s.numero_servicio || ''}</td>
                 <td style="font-size:0.8rem;">${formatearFecha(s.created_at)}</td>
                 <td>
-                    <div style="font-weight:600;">${s.cliente_nombre}</div>
-                    <div style="font-size:0.8rem; color:#64748b;">${s.cliente_telefono}</div>
+                    <div style="font-weight:600;">${s.cliente_nombre || 'N/A'}</div>
+                    <div style="font-size:0.8rem; color:#64748b;">${s.cliente_telefono || ''}</div>
                 </td>
-                <td><span class="badge" style="background:#f1f5f9; color:#1e293b;">${s.tipo_servicio}</span></td>
+                <td><span class="badge" style="background:#f1f5f9; color:#1e293b;">${s.tipo_servicio || 'Otro'}</span></td>
                 <td>${s.empleados_tienda?.nombre || 'N/A'}</td>
                 <td style="font-weight:600;">$${formatearPrecio(s.precio_total)}</td>
                 <td style="color:${s.saldo_pendiente > 0 ? '#ef4444' : '#10b981'}; font-weight:700;">$${formatearPrecio(s.saldo_pendiente)}</td>
-                <td><span class="badge badge-${s.estado}">${s.estado}</span></td>
+                <td><span class="badge badge-${s.estado}">${s.estado ? s.estado.toUpperCase() : 'N/A'}</span></td>
                 <td>
                     <div style="display:flex; gap:0.4rem;">
                         <button onclick="cambiarEstadoServicioAdmin('${s.id}', 'listo', '${s.cliente_telefono}', '${s.cliente_nombre}')" class="btn btn-sm" title="Marcar como Listo" style="background:#dbeafe; color:#1e40af;">✅</button>
                         <button onclick="cambiarEstadoServicioAdmin('${s.id}', 'entregado')" class="btn btn-sm" title="Marcar como Entregado" style="background:#d1fae5; color:#065f46;">📦</button>
-                        <button onclick="enviarWhatsAppServicio('${s.cliente_telefono}', '${s.cliente_nombre}', '${s.tipo_servicio}', '${s.estado}')" class="btn btn-sm" title="Enviar WhatsApp" style="background:#25d366; color:white;">📱</button>
+                        <button onclick="enviarWhatsAppServicio('${s.cliente_telefono}', '${s.cliente_nombre}', '${s.tipo_servicio}', '${s.estado}')" class="btn btn-sm" title="Envar WhatsApp" style="background:#25d366; color:white;">📱</button>
                     </div>
                 </td>
-`;
+            `;
             tbody.appendChild(tr);
         });
     } catch (e) {
-        console.error(e);
+        console.error("Error cargando servicios:", e);
         showToast('Error al cargar servicios', 'error');
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Error: ${e.message}</td></tr>`;
     }
 }
 
@@ -10980,12 +11009,23 @@ async function cambiarEstadoServicioAdmin(id, nuevoEstado, telefono = null, nomb
 
 function enviarWhatsAppServicio(telefono, nombre, tipo, estado) {
     let mensaje = '';
+    const servicioTexto = tipo ? `de ${tipo}` : '';
+
     if (estado === 'listo') {
-        mensaje = `Hola ${nombre}, te saludamos de Moteros Sports Line. 🛵 ¡Tu servicio ya está listo para ser recogido! Te esperamos.`;
+        mensaje = `Hola ${nombre}, te saludamos de Moteros Sports Line. 🛵 ¡Tu servicio ${servicioTexto} ya está LISTO para ser recogido! Te esperamos.`;
+    } else if (estado === 'entregado') {
+        mensaje = `Hola ${nombre}, gracias por confiar en Moteros Sports Line. 🛵 Esperamos que hayas quedado satisfecho con tu servicio ${servicioTexto}. ¡Vuelve pronto!`;
     } else {
-        mensaje = `Hola ${nombre}, te saludamos de Moteros Sports Line. 🛵 ¿Cómo vas ? Queríamos saludarte y recordarte que estamos trabajando en tu servicio.`;
+        mensaje = `Hola ${nombre}, te saludamos de Moteros Sports Line. 🛵 Tu servicio ${servicioTexto} está en proceso. Te notificaremos apenas esté listo. 🔧`;
     }
-    const url = `https://wa.me/57${telefono.replace(/\s+/g, '')}?text=${encodeURIComponent(mensaje)}`;
+
+    // Auto-formato para números colombianos si falta el prefijo
+    let cleanPhone = telefono.replace(/\D/g, '');
+    if (cleanPhone.length === 10 && !cleanPhone.startsWith('57')) {
+        cleanPhone = '57' + cleanPhone;
+    }
+
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
 }
 

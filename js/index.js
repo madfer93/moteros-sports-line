@@ -378,28 +378,10 @@ function enviarPedidoWhatsApp() {
 
         mensaje += `*${i + 1}. ${item.nombre}*\n`;
         mensaje += `   Marca: ${item.marca}\n`;
-        mensaje += `   Cant: ${item.cantidad}\n`;
-
-        if (item.descuento > 0 || esCombo) {
-            mensaje += `   P.Original: ~$${formatearPrecio(item.precioOriginal)}~\n`;
-            mensaje += `   ${iconEtiqueta} *${item.promocion}* (-${item.descuento}%)\n`;
-            mensaje += `   *P.Final: $${formatearPrecio(item.precioFinal)}*\n`;
-        } else {
-            mensaje += `   Precio: $${formatearPrecio(item.precioFinal)}\n`;
-        }
-        mensaje += `   Subtotal: *$${formatearPrecio(subFinal)}*\n\n`;
+        mensaje += `   Cant: ${item.cantidad}\n\n`;
     });
 
     mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    mensaje += `📋 *RESUMEN*\n\n`;
-    mensaje += `   Subtotal: $${formatearPrecio(subtotal)}\n`;
-
-    if (totalDescuentos > 0) {
-        mensaje += `   🎉 Descuentos: -$${formatearPrecio(totalDescuentos)}\n`;
-    }
-
-    mensaje += `\n   💰 *TOTAL: $${formatearPrecio(totalFinal)}*\n`;
-    mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
     mensaje += `¡Gracias! 🙌`;
 
     const numero = CONFIG.WHATSAPP?.numero || '573113408416';

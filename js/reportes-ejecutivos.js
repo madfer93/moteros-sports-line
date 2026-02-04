@@ -44,6 +44,7 @@ async function cargarReporteEjecutivo() {
         const deudas = await consolidarDeudasNegocio();
         const caja = await consolidarCierresCaja(fechaInicio, fechaFin);
         const deudores = await consolidarDeudores();
+        const servicios = await consolidarServiciosTaller(fechaInicio, fechaFin);
 
         // Calcular KPIs
         datosReporteEjecutivo.ingresos = ingresos.total;
@@ -59,6 +60,7 @@ async function cargarReporteEjecutivo() {
         datosReporteEjecutivo.deudas = deudas;
         datosReporteEjecutivo.caja = caja;
         datosReporteEjecutivo.deudores = deudores;
+        datosReporteEjecutivo.servicios = servicios;
 
         // Actualizar UI
         actualizarKPIs();
@@ -426,6 +428,68 @@ async function consolidarDeudores() {
     return { carteraTotal, carteraVencida, detalleDeudores: detalleDeudores.slice(0, 20) };
 }
 
+async function consolidarServiciosTaller(fechaInicio, fechaFin) {
+    const { data: servicios, error } = await supabaseClient
+        .from('servicios_motero')
+        .select('*')
+        .gte('created_at', fechaInicio + 'T00:00:00')
+        .lte('created_at', fechaFin + 'T23:59:59');
+
+    if (error) {
+        console.error('Error cargando servicios:', error);
+        return null; // O retornar objeto vacío seguro
+    }
+
+    if (!servicios || servicios.length === 0) {
+        return {
+            totalServicios: 0,
+            ingresosTotales: 0,
+            saldoPendiente: 0,
+            detallePorTipo: [],
+            ultimosServicios: []
+        };
+    }
+
+    const totalServicios = servicios.length;
+    // Ingresos reales (monto abonado)
+    const ingresosTotales = servicios.reduce((sum, s) => sum + (parseFloat(s.monto_abonado) || 0), 0);
+    // Saldo pendiente por cobrar
+    const saldoPendiente = servicios.reduce((sum, s) => sum + (parseFloat(s.saldo_pendiente) || 0), 0);
+
+    // Agrupar por Tipo
+    const serviciosPorTipo = {};
+    servicios.forEach(s => {
+        const tipo = s.tipo_servicio || 'Otros';
+        serviciosPorTipo[tipo] = (serviciosPorTipo[tipo] || 0) + 1;
+    });
+
+    const detallePorTipo = Object.keys(serviciosPorTipo).map(tipo => ({
+        tipo: tipo,
+        cantidad: serviciosPorTipo[tipo],
+        porcentaje: ((serviciosPorTipo[tipo] / totalServicios) * 100).toFixed(1)
+    })).sort((a, b) => b.cantidad - a.cantidad);
+
+    // Top 10 Recientes
+    const ultimosServicios = servicios
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 10)
+        .map(s => ({
+            fecha: new Date(s.created_at).toLocaleDateString(),
+            cliente: s.cliente_nombre || 'Cliente Casual',
+            tipo: s.tipo_servicio,
+            total: parseFloat(s.precio_total) || 0,
+            estado: s.estado || 'pendiente'
+        }));
+
+    return {
+        totalServicios,
+        ingresosTotales,
+        saldoPendiente,
+        detallePorTipo,
+        ultimosServicios
+    };
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ACTUALIZAR KPIs EN UI
 // ═══════════════════════════════════════════════════════════════
@@ -459,6 +523,13 @@ function actualizarKPIs() {
     if (datosReporteEjecutivo.deudores) {
         document.getElementById('kpiCarteraTotal').textContent = '$' + formatearPrecio(datosReporteEjecutivo.deudores.carteraTotal);
         document.getElementById('kpiCarteraVencida').textContent = '$' + formatearPrecio(datosReporteEjecutivo.deudores.carteraVencida);
+    }
+
+    // KPIs Servicios (NUEVO)
+    if (datosReporteEjecutivo.servicios) {
+        document.getElementById('kpiTotalServicios').textContent = datosReporteEjecutivo.servicios.totalServicios;
+        document.getElementById('kpiIngresosServicios').textContent = '$' + formatearPrecio(datosReporteEjecutivo.servicios.ingresosTotales);
+        document.getElementById('kpiSaldoPendienteServicios').textContent = '$' + formatearPrecio(datosReporteEjecutivo.servicios.saldoPendiente);
     }
 }
 
@@ -730,6 +801,40 @@ function renderizarGraficosAdicionales() {
             }
         });
     }
+
+    // 4. Gráfico: Tipos de Servicios
+    const ctxServicios = document.getElementById('chartTiposServicios');
+    if (ctxServicios && datosReporteEjecutivo.servicios && datosReporteEjecutivo.servicios.detallePorTipo.length > 0) {
+        if (chartTiposServiciosInstance) chartTiposServiciosInstance.destroy();
+
+        chartTiposServiciosInstance = new Chart(ctxServicios, {
+            type: 'doughnut',
+            data: {
+                labels: datosReporteEjecutivo.servicios.detallePorTipo.map(t => t.tipo),
+                datasets: [{
+                    data: datosReporteEjecutivo.servicios.detallePorTipo.map(t => t.cantidad),
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return context.label + ': ' + context.parsed + ' (' +
+                                    datosReporteEjecutivo.servicios.detallePorTipo[context.dataIndex].porcentaje + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 
@@ -867,6 +972,31 @@ function renderizarTablasDetalladas() {
     } else {
         tbodyDeudores.innerHTML = '<tr><td colspan="5" class="text-center">No hay deudores activos</td></tr>';
     }
+
+    // 9. Tabla: Servicios (NUEVO)
+    const tbodyServicios = document.getElementById('tbodyServiciosEjecutivo');
+    if (tbodyServicios) {
+        if (datosReporteEjecutivo.servicios && datosReporteEjecutivo.servicios.ultimosServicios.length > 0) {
+            tbodyServicios.innerHTML = datosReporteEjecutivo.servicios.ultimosServicios.map(s => {
+                let badgeClass = 'secondary';
+                if (s.estado === 'entregado') badgeClass = 'success';
+                else if (s.estado === 'listo') badgeClass = 'primary';
+                else if (s.estado === 'en_proceso') badgeClass = 'info';
+                else if (s.estado === 'pendiente') badgeClass = 'warning';
+
+                return `
+                <tr>
+                    <td>${s.fecha}</td>
+                    <td>${s.cliente}</td>
+                    <td>${s.tipo}</td>
+                    <td>$${formatearPrecio(s.total)}</td>
+                    <td><span class="badge badge-${badgeClass}">${s.estado.toUpperCase()}</span></td>
+                </tr>
+            `}).join('');
+        } else {
+            tbodyServicios.innerHTML = '<tr><td colspan="5" class="text-center">No hay servicios recientes</td></tr>';
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -979,6 +1109,31 @@ function exportarReporteEjecutivoExcel() {
         }));
         const wsDeudores = XLSX.utils.json_to_sheet(deudoresData);
         XLSX.utils.book_append_sheet(wb, wsDeudores, 'Deudores');
+    }
+
+    // Hoja 9: Servicios (NUEVO)
+    if (datosReporteEjecutivo.servicios && datosReporteEjecutivo.servicios.ultimosServicios.length > 0) {
+        const serviciosData = datosReporteEjecutivo.servicios.ultimosServicios.map(s => ({
+            'Fecha': s.fecha,
+            'Cliente': s.cliente,
+            'Tipo': s.tipo,
+            'Total': s.total,
+            'Estado': s.estado
+        }));
+
+        // Agregar resumen al inicio si es posible, o crear data compuesta
+        const resumenServicios = [
+            { 'Resumen': 'Total Servicios', 'Valor': datosReporteEjecutivo.servicios.totalServicios },
+            { 'Resumen': 'Ingresos Recaudados', 'Valor': datosReporteEjecutivo.servicios.ingresosTotales },
+            { 'Resumen': 'Saldo Pendiente', 'Valor': datosReporteEjecutivo.servicios.saldoPendiente },
+            {} // Espacio
+        ];
+
+        // Combinar
+        // Para simplicidad en sheetjs json_to_sheet, mejor solo la tabla de detalle
+        // O usar aoa_to_sheet para formato libre
+        const wsServicios = XLSX.utils.json_to_sheet(serviciosData);
+        XLSX.utils.book_append_sheet(wb, wsServicios, 'Servicios Taller');
     }
 
     // Descargar usando nombre descriptivo
@@ -1341,6 +1496,41 @@ function exportarReporteEjecutivoPDF() {
                 theme: 'grid',
                 styles: { fontSize: 8, cellPadding: 2 },
                 headStyles: { fillColor: [99, 102, 241], textColor: 255, fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [248, 250, 252] }
+            });
+        }
+
+        // === TABLA 9: Servicios de Taller (NUEVO) ===
+        if (datosReporteEjecutivo.servicios && datosReporteEjecutivo.servicios.ultimosServicios.length > 0) {
+            y = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 12 : y + 12;
+            if (y > 240) {
+                doc.addPage();
+                y = 20;
+            }
+
+            doc.setFontSize(14);
+            doc.setTextColor(30, 41, 59);
+            doc.text('Servicios de Taller', 14, y);
+            y += 7;
+
+            doc.setFontSize(10);
+            doc.text(`Total Servicios: ${datosReporteEjecutivo.servicios.totalServicios}`, 14, y);
+            doc.text(`Ingresos: $${formatearPrecio(datosReporteEjecutivo.servicios.ingresosTotales)}`, 70, y);
+            doc.text(`Pendiente: $${formatearPrecio(datosReporteEjecutivo.servicios.saldoPendiente)}`, 130, y);
+
+            doc.autoTable({
+                startY: y + 5,
+                head: [['Fecha', 'Cliente', 'Tipo', 'Total', 'Estado']],
+                body: datosReporteEjecutivo.servicios.ultimosServicios.map(s => [
+                    s.fecha,
+                    s.cliente,
+                    s.tipo,
+                    `$${formatearPrecio(s.total)}`,
+                    s.estado.toUpperCase()
+                ]),
+                theme: 'grid',
+                styles: { fontSize: 9, cellPadding: 3 },
+                headStyles: { fillColor: [75, 85, 99], textColor: 255, fontStyle: 'bold' },
                 alternateRowStyles: { fillColor: [248, 250, 252] }
             });
         }

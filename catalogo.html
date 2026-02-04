@@ -555,6 +555,21 @@
         }
     </style>
     <style>
+        /* OCULTAR PRECIOS TEMPORALMENTE (Solicitud Admin) */
+        .producto-precio,
+        /* Grid */
+        .current-price,
+        /* Modal Detalle */
+        .precio-carrito-ocultar,
+        /* Carrito Item */
+        .carrito-total-container
+
+        /* Carrito Total */
+            {
+            display: none !important;
+        }
+    </style>
+    <style>
         /* Preloader */
         .preloader {
             position: fixed;
@@ -766,13 +781,13 @@
                     <option value="Camaras">Cámaras</option>
                     <option value="Accesorios">Accesorios</option>
                 </select>
-                <select id="filtroPrecio" onchange="aplicarFiltros()">
+                <!-- <select id="filtroPrecio" onchange="aplicarFiltros()">
                     <option value="">Todos los precios</option>
                     <option value="0-200000">Hasta $200.000</option>
                     <option value="200000-500000">$200.000 - $500.000</option>
                     <option value="500000-1000000">$500.000 - $1.000.000</option>
                     <option value="1000000-99999999">Más de $1.000.000</option>
-                </select>
+                </select>-->
                 <select id="filtroCalificacion" onchange="aplicarFiltros()">
                     <option value="">Todas las calificaciones</option>
                     <option value="4">⭐⭐⭐⭐⭐ 4+ Estrellas</option>
@@ -809,7 +824,8 @@
                 <h2 style="text-align:center; color: var(--primary); margin-bottom: 2rem; font-size: 2rem;">🛒 Mi
                     Carrito</h2>
                 <div id="listaCarrito" style="max-height:400px; overflow-y:auto; margin:2rem 0;"></div>
-                <div style="text-align:center; padding:2rem; background:#f8f9fa; border-radius:15px; margin:2rem 0;">
+                <div class="carrito-total-container"
+                    style="text-align:center; padding:2rem; background:#f8f9fa; border-radius:15px; margin:2rem 0;">
                     <strong style="font-size:2rem;">Total: $<span id="totalCarrito">0</span></strong>
                 </div>
                 <!-- Checkbox Habeas Data -->

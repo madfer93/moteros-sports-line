@@ -1436,6 +1436,73 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Tabla: Servicios de Taller -->
+                <div class="card" style="margin-top: 2rem;">
+                    <div class="card-header">
+                        <h3>🛠️ Servicios de Taller</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- KPIs de Servicios -->
+                        <div class="stats-grid"
+                            style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #4b5563 0%, #374151 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">🔧</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiTotalServicios" style="color: white;">0</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">Total Servicios</p>
+                                </div>
+                            </div>
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">💰</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiIngresosServicios" style="color: white;">$0</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">Ingresos (Recaudo)</p>
+                                </div>
+                            </div>
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">⚠️</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiSaldoPendienteServicios" style="color: white;">$0</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">Saldo Pendiente</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Servicios -->
+                        <div class="card" style="margin-bottom: 1.5rem;">
+                            <div class="card-header">
+                                <h3>📊 Dist. Tipos de Servicios</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartTiposServicios" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de Servicios Recientes -->
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Cliente</th>
+                                        <th>Tipo</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyServiciosEjecutivo">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Genera un reporte para ver datos</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- ═══════════════════ PRODUCTOS ═══════════════════ -->
@@ -1767,7 +1834,7 @@
             </section>
 
             <!-- ═══════════════════ SERVICIOS VENDIDOS ═══════════════════ -->
-            <section id="serviciosSection" class="section">
+            <section id="servicios-vendidosSection" class="section">
                 <div class="page-header">
                     <h1>🛠️ Servicios Vendidos</h1>
                     <p>Historial de servicios y lavados realizados</p>
@@ -1776,14 +1843,33 @@
                 <div class="actions-bar">
                     <div class="date-filter" style="display:flex; align-items:center; gap:0.5rem;">
                         <input type="date" id="fechaServiciosInicio" class="form-control" style="width: auto;">
-                        <span>a</span>
+                        <span style="color:var(--text-light)">a</span>
                         <input type="date" id="fechaServiciosFin" class="form-control" style="width: auto;">
                     </div>
+
+                    <select id="serviciosFiltroLocal" class="form-control" style="width: 150px;">
+                        <option value="">🏠 Todos los Locales</option>
+                        <option value="Local 01">Local 01</option>
+                        <option value="Alcalá">Alcalá</option>
+                        <option value="Jordán">Jordán</option>
+                        <option value="Digital">Digital</option>
+                        <option value="Administrativo">Administrativo</option>
+                    </select>
+
+                    <select id="serviciosFiltroEstado" class="form-control" style="width: 150px;">
+                        <option value="">Estado: Todos</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en_proceso">En Proceso</option>
+                        <option value="listo">Listo</option>
+                        <option value="entregado">Entregado</option>
+                    </select>
+
                     <button onclick="cargarServiciosAdmin()" class="btn btn-primary">🔍 Filtrar</button>
                     <button onclick="exportarServiciosExcel()" class="btn btn-success">📊 Excel</button>
                 </div>
 
-                <div class="stats-grid" style="margin-bottom:2rem;">
+                <div class="stats-grid"
+                    style="margin-bottom:2rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                     <div class="stat-card">
                         <div class="stat-icon orange">🛠️</div>
                         <div class="stat-info">
@@ -1798,6 +1884,20 @@
                             <p>Ingresos Totales</p>
                         </div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">⏳</div>
+                        <div class="stat-info">
+                            <h3 id="serviciosPendientesCount">0</h3>
+                            <p>Servicios Pendientes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">✅</div>
+                        <div class="stat-info">
+                            <h3 id="serviciosListosCount">0</h3>
+                            <p>Servicios Listos</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -1806,14 +1906,15 @@
                             <table class="data-table" id="tablaServiciosAdmin">
                                 <thead>
                                     <tr>
+                                        <th>#</th>
                                         <th>Fecha</th>
-                                        <th>Local</th>
-                                        <th>Empleado</th>
-                                        <th>Servicio</th>
-                                        <th>Placa</th>
-                                        <th>Total</th>
-                                        <th>Método</th>
-                                        <th>Ref./Voucher</th>
+                                        <th>Cliente / Teléfono</th>
+                                        <th>Tipo Servicio</th>
+                                        <th>Responsable</th>
+                                        <th>Valor Total</th>
+                                        <th>Saldo Pendiente</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyServiciosAdmin">
@@ -3369,50 +3470,7 @@
                 </div>
             </section>
 
-            <!-- ═══════════════════ SERVICIOS VENDIDOS ═══════════════════ -->
-            <section id="servicios-vendidosSection" class="section">
-                <div class="page-header">
-                    <h1>🛠️ Servicios Vendidos</h1>
-                    <p>Registro y control de servicios técnicos realizados</p>
-                </div>
 
-                <div class="actions-bar">
-                    <button class="btn btn-primary" onclick="alert('Próximamente funcional')">➕ Registrar
-                        Servicio</button>
-                    <button class="btn btn-secondary" onclick="alert('Próximamente funcional')">🔄 Recargar</button>
-                </div>
-
-                <div class="card" style="margin-top:1rem;">
-                    <div class="card-header">
-                        <h3>📋 Historial de Servicios</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-container">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Cliente / Teléfono</th>
-                                        <th>Tipo Servicio</th>
-                                        <th>Técnico / Responsable</th>
-                                        <th>Casco Prestado</th>
-                                        <th>Valor Total</th>
-                                        <th>Abonado</th>
-                                        <th>Saldo Pendiente</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbodyServiciosVendidos">
-                                    <tr>
-                                        <td colspan="10" class="text-center">Cargando historial de servicios...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             <!-- ═══════════════════ PROMOCIONES ═══════════════════ -->
             <section id="promocionesSection" class="section">
