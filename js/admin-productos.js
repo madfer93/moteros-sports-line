@@ -133,6 +133,7 @@ function renderizarProductos(lista) {
                 </div>
                 <div class="producto-actions">
                     <button onclick="editarProducto('${p.id}')" class="btn-icon" title="Editar">✏️</button>
+                    <button onclick="duplicarProducto('${p.id}')" class="btn-icon" title="Duplicar" style="background:#06b6d4;">📑</button>
                     <button onclick="eliminarProducto('${p.id}')" class="btn-icon delete" title="Eliminar">🗑️</button>
                 </div>
             </div>
@@ -722,6 +723,49 @@ async function editarProducto(id) {
     document.getElementById('stockDigital').value = p.stock_digital || p.stock_tiendas?.digital || 0;
 }
 
+async function duplicarProducto(id) {
+    const p = productosCache.find(x => x.id === id);
+    if (!p) {
+        showToast('Producto no encontrado', 'error');
+        return;
+    }
+
+    await mostrarFormProducto();
+    document.getElementById('formTituloProducto').textContent = '📑 Duplicar Producto';
+    document.getElementById('productoId').value = ''; // CRÍTICO: vacío para crear nuevo
+
+    // Copiar todos los datos excepto el ID
+    document.getElementById('productoNombre').value = p.nombre + ' (Copia)';
+    document.getElementById('productoReferencia').value = p.referencia || '';
+    document.getElementById('productoCategoria').value = p.categoria;
+    document.getElementById('productoMarca').value = p.marca;
+
+    await cargarProveedoresEnSelectProducto(p.proveedor_id);
+
+    if (p.variantes && Array.isArray(p.variantes)) {
+        document.getElementById('productoVariantes').value = p.variantes.join(', ');
+    }
+
+    document.getElementById('productoPrecio').value = p.precio;
+    document.getElementById('productoPrecioCompra').value = p.precio_compra || 0;
+
+    const m = p.precio > 0 ? ((p.precio - (p.precio_compra || 0)) / p.precio) * 100 : 0;
+    document.getElementById('productoMargen').value = m.toFixed(1) + '%';
+
+    document.getElementById('productoEstado').value = p.estado;
+    document.getElementById('productoDescCorta').value = p.descripcion_corta || '';
+    document.getElementById('productoDescTecnica').value = p.descripcion_tecnica || '';
+    document.getElementById('productoImagen').value = p.url_imagen || '';
+
+    // Stock en 0 para el duplicado
+    document.getElementById('stockAlcala').value = 0;
+    document.getElementById('stockLocal01').value = 0;
+    document.getElementById('stockJordan').value = 0;
+    document.getElementById('stockDigital').value = 0;
+
+    showToast('Datos copiados. Modifica y guarda.', 'info');
+}
+
 async function eliminarProducto(id) {
     if (!confirm('¿Eliminar permanente?')) return;
     try {
@@ -744,6 +788,7 @@ window.mostrarFormProducto = mostrarFormProducto;
 window.cancelarFormProducto = cancelarFormProducto;
 window.guardarProducto = guardarProducto;
 window.editarProducto = editarProducto;
+window.duplicarProducto = duplicarProducto;
 window.eliminarProducto = eliminarProducto;
 window.filtrarProductosAdmin = filtrarProductosAdmin;
 window.exportarProductosExcel = exportarProductosExcel;

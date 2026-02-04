@@ -5,30 +5,31 @@
 // ═══════════════════════════════════════════════════════════════
 
 // El cliente de Supabase ahora viene globalmente desde config.js
-const supabaseClient = window.supabaseClient;
+// El cliente de Supabase ya está disponible globalmente
 
+// ═══════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════
 // ESTADO GLOBAL
 // ═══════════════════════════════════════════════════════════════
-let productos = [];
-let inventarios = { alcala: [], local01: [], jordan: [] };
-let promociones = [];
-let posts = [];
-let ventas = [];
-let comprasData = [];
-let enviosData = []; // Cache de envíos para acceso rápido
-let chartStockLocales = null;
-let chartCategorias = null;
-let chartMetodosPago = null;
-let chartVentasLocales = null;
-let archivosTemporal = { producto: null, post: null, logo: null };
-const MAX_DESTACADOS = 8;
-let productosDestacadosFiltrados = [];
-let productosSeleccionadosPromo = [];
-let productosPromoFiltrados = [];
-let todosDeudores = [];
-let todosProveedores = [];
-let leadsIAData = [];
+var productos = productos || [];
+var inventarios = inventarios || { alcala: [], local01: [], jordan: [] };
+var promociones = promociones || [];
+var posts = posts || [];
+var ventas = ventas || [];
+var comprasData = comprasData || [];
+var enviosData = enviosData || []; // Cache de envíos para acceso rápido
+var chartStockLocales = chartStockLocales || null;
+var chartCategorias = chartCategorias || null;
+var chartMetodosPago = chartMetodosPago || null;
+var chartVentasLocales = chartVentasLocales || null;
+var archivosTemporal = archivosTemporal || { producto: null, post: null, logo: null };
+var MAX_DESTACADOS = 8;
+var productosDestacadosFiltrados = productosDestacadosFiltrados || [];
+var productosSeleccionadosPromo = productosSeleccionadosPromo || [];
+var productosPromoFiltrados = productosPromoFiltrados || [];
+var todosDeudores = todosDeudores || [];
+var todosProveedores = todosProveedores || [];
+var leadsIAData = leadsIAData || [];
 
 // ═══════════════════════════════════════════════════════════════
 // UTILIDADES
@@ -322,8 +323,8 @@ async function inicializarAdmin() {
 // COMPRAS AVANZADAS (NUEVO SISTEMA FASE 3)
 // ═══════════════════════════════════════════════════════════════
 
-let itemsCompra = []; // Array temporal para items
-let compraActualId = null;
+var itemsCompra = itemsCompra || []; // Array temporal para items
+var compraActualId = compraActualId || null;
 
 // Funciones de Proveedores para Compra
 async function cargarProveedoresDatalist() {
@@ -1767,7 +1768,7 @@ function calcularEstadisticasLocal(inventario) {
 // ═══════════════════════════════════════════════════════════════
 
 // Variable global para almacenar los datos del reporte actual (para exportación)
-let datosReporteActual = [];
+var datosReporteActual = datosReporteActual || [];
 let columnasReporteActual = [];
 let tituloReporteActual = '';
 
@@ -2256,8 +2257,9 @@ function renderizarProductos(lista) {
                      </button>
                 </div>
                 <div class="producto-admin-actions">
-                    <button onclick="editarProducto('${p.id}')" class="btn btn-secondary btn-sm">✏️ Editar</button>
-                    <button onclick="eliminarProducto('${p.id}')" class="btn btn-danger btn-sm">🗑️ Eliminar</button>
+                    <button onclick="editarProducto('${p.id}')" class="btn btn-secondary btn-sm" title="Editar">✏️</button>
+                    <button onclick="duplicarProducto('${p.id}')" class="btn btn-info btn-sm" title="Duplicar">📑</button>
+                    <button onclick="eliminarProducto('${p.id}')" class="btn btn-danger btn-sm" title="Eliminar">🗑️</button>
                 </div>
             </div>
         </div>`;
@@ -2370,6 +2372,53 @@ async function editarProducto(id) {
         document.getElementById('formProducto').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
+}
+
+async function duplicarProducto(id) {
+    try {
+        const { data, error } = await supabaseClient.from('productos').select('*').eq('id', id).single();
+        if (error || !data) { showToast('Error al cargar datos para duplicar', 'error'); return; }
+
+        await cargarCategoriasEnFormulario();
+
+        // Llenar formulario igual que editar, PERO limpiar IDs
+        document.getElementById('productoId').value = ''; // CRÍTICO: Vacío para crear nuevo
+        document.getElementById('productoIdProducto').value = ''; // CRÍTICO: Vacío para generar nuevo PROD...
+
+        document.getElementById('productoNombre').value = (data.nombre || '') + ' (Copia)';
+        document.getElementById('productoReferencia').value = data.referencia || ''; // Se mantiene referencia
+        document.getElementById('productoCategoria').value = data.categoria || '';
+        document.getElementById('productoMarca').value = data.marca || '';
+        document.getElementById('productoVariantes').value = Array.isArray(data.variantes) ? data.variantes.join(', ') : '';
+        document.getElementById('productoPrecioCompra').value = data.precio_compra || '';
+        document.getElementById('productoPrecio').value = data.precio || '';
+        document.getElementById('productoDescCorta').value = data.descripcion_corta || '';
+        document.getElementById('productoDescTecnica').value = data.descripcion_tecnica || '';
+        document.getElementById('productoImagen').value = data.url_imagen || '';
+        document.getElementById('productoEstado').value = data.estado || 'Activo';
+
+        calcularMargen();
+
+        // Mostrar preview imagen
+        if (data.url_imagen) {
+            const preview = document.getElementById('previewProducto');
+            const container = document.getElementById('previewContainerProducto');
+            if (preview && container) {
+                preview.src = data.url_imagen;
+                container.style.display = 'inline-block';
+            }
+        }
+
+        // No cargamos stock de tiendas para duplicado; empieza en 0 o el usuario lo define
+        cargarStockTiendas(null);
+
+        document.getElementById('formTituloProducto').textContent = '📑 Duplicar Producto';
+        document.getElementById('formProducto').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        showToast('Datos duplicados. Verifica y guarda.', 'info');
+
+    } catch (err) { showToast('Error al duplicar: ' + err.message, 'error'); }
 }
 
 async function cargarStockTiendas(idProducto) {
@@ -5834,8 +5883,7 @@ async function quitarDestacado(id) { try { showToast('Quitando de destacados...'
 
 // REPORTES
 async function cargarReporteMargen() { const body = document.getElementById('bodyReporte'); if (!body) return; document.getElementById('contenidoReporte').style.display = 'block'; document.getElementById('tituloReporte').textContent = '📊 Margen por Categoría'; body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando...</p></div>'; try { const { data, error } = await supabaseClient.from('v_margen_categoria').select('*'); if (error) throw error; if (!data || data.length === 0) { body.innerHTML = '<p class="text-center">No hay datos disponibles</p>'; return; } body.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Categoría</th><th>Productos</th><th>Costo Prom.</th><th>Precio Prom.</th><th>Margen %</th></tr></thead><tbody>${data.map(r => `<tr><td><strong>${r.categoria}</strong></td><td>${r.total_productos}</td><td>$${formatearPrecio(r.costo_promedio)}</td><td>$${formatearPrecio(r.precio_venta_promedio)}</td><td><span class="badge badge-${r.margen_promedio >= 30 ? 'success' : 'warning'}">${r.margen_promedio || 0}%</span></td></tr>`).join('')}</tbody></table></div>`; } catch (error) { if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando reporte:', error); body.innerHTML = '<p class="text-danger">Error al cargar el reporte</p>'; } }
-// Variable global para el chart de categorías para poder destruirlo al recargar
-let chartCategoriaInstance = null;
+
 
 async function cargarReporteTop(periodo = 'historico', metrica = 'cantidad') {
     const body = document.getElementById('bodyReporte');

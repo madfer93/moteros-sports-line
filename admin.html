@@ -562,6 +562,7 @@
                 <div class="nav-dropdown">
                     <button class="nav-dropdown-btn">💵 Finanzas <span class="arrow">▼</span></button>
                     <div class="nav-dropdown-content">
+                        <a href="#" data-section="reportes-ejecutivos">📈 Reportes Ejecutivos</a>
                         <a href="#" data-section="cierres">💵 Cierres de Caja</a>
                         <a href="#" data-section="gastos">💸 Gastos</a>
                         <a href="#" data-section="deudores">👥 Deudores</a>
@@ -671,6 +672,8 @@
                 </div>
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">💵 Finanzas</div>
+                    <a href="#" data-section="reportes-ejecutivos" onclick="toggleMobileMenu()">📈 Reportes
+                        Ejecutivos</a>
                     <a href="#" data-section="cierres" onclick="toggleMobileMenu()">💵 Cierres de Caja</a>
                     <a href="#" data-section="gastos" onclick="toggleMobileMenu()">💸 Gastos</a>
                     <a href="#" data-section="deudores" onclick="toggleMobileMenu()">👥 Deudores</a>
@@ -1008,6 +1011,425 @@
                                 <tbody id="tbodyCategorias">
                                     <tr>
                                         <td colspan="3" class="text-center">Cargando categorías...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ REPORTES EJECUTIVOS ═══════════════════ -->
+            <section id="reportes-ejecutivosSection" class="section">
+                <div class="page-header">
+                    <h1>📈 Reportes Ejecutivos</h1>
+                    <p>Dashboard consolidado de finanzas y metas</p>
+                </div>
+
+                <!-- Filtros de Fecha -->
+                <div class="actions-bar" style="margin-bottom: 2rem;">
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <label style="font-weight: 600; color: #1e293b;">Período:</label>
+                        <input type="date" id="reporteFechaInicio" class="form-control" style="width: auto;">
+                        <span style="color: #64748b;">hasta</span>
+                        <input type="date" id="reporteFechaFin" class="form-control" style="width: auto;">
+                        <button onclick="cargarReporteEjecutivo()" class="btn btn-primary">🔍 Generar Reporte</button>
+                        <button onclick="exportarReporteEjecutivoExcel()" class="btn btn-success">📊 Excel</button>
+                        <button onclick="exportarReporteEjecutivoPDF()" class="btn btn-danger">📄 PDF</button>
+                    </div>
+                </div>
+
+                <!-- KPIs Principales -->
+                <div class="stats-grid"
+                    style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-bottom: 2rem;">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
+                        <div class="stat-icon" style="background: rgba(255,255,255,0.2);">💰</div>
+                        <div class="stat-info">
+                            <h3 id="kpiIngresos" style="color: white; font-size: 2rem;">$0</h3>
+                            <p style="color: rgba(255,255,255,0.9);">Ingresos Totales</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                        <div class="stat-icon" style="background: rgba(255,255,255,0.2);">💸</div>
+                        <div class="stat-info">
+                            <h3 id="kpiEgresos" style="color: white; font-size: 2rem;">$0</h3>
+                            <p style="color: rgba(255,255,255,0.9);">Egresos Totales</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                        <div class="stat-icon" style="background: rgba(255,255,255,0.2);">📈</div>
+                        <div class="stat-info">
+                            <h3 id="kpiUtilidad" style="color: white; font-size: 2rem;">$0</h3>
+                            <p style="color: rgba(255,255,255,0.9);">Utilidad Neta</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        <div class="stat-icon" style="background: rgba(255,255,255,0.2);">🎯</div>
+                        <div class="stat-info">
+                            <h3 id="kpiProgresoMetas" style="color: white; font-size: 2rem;">0%</h3>
+                            <p style="color: rgba(255,255,255,0.9);">Progreso vs Metas</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                    <!-- Gráfico: Ingresos vs Egresos -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>💰 Ingresos vs Egresos</h3>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="chartIngresosEgresos" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico: Distribución de Gastos -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>💸 Distribución de Gastos</h3>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="chartDistribucionGastos" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico: Metas vs Ventas por Tienda -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🎯 Metas vs Ventas por Tienda</h3>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="chartMetasVentas" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico: Tendencia de Ventas -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📈 Tendencia de Ventas</h3>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="chartTendenciaVentas" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla: Ingresos Detallados -->
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <h3>💰 Ingresos Detallados por Tienda</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tienda</th>
+                                        <th>Ventas</th>
+                                        <th>Eventos</th>
+                                        <th>Otros</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyIngresosDetallados">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Selecciona un período para ver datos</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla: Egresos Detallados -->
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <h3>💸 Egresos Detallados por Categoría</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Categoría</th>
+                                        <th>Monto</th>
+                                        <th>% del Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyEgresosDetallados">
+                                    <tr>
+                                        <td colspan="3" class="text-center">Selecciona un período para ver datos</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla: Análisis por Tienda -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🎯 Análisis de Metas por Tienda</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tienda</th>
+                                        <th>Meta Mensual</th>
+                                        <th>Ventas Reales</th>
+                                        <th>Progreso</th>
+                                        <th>Falta</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyAnalisisTiendas">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Genera un reporte para ver datos</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla: Metas de Proveedores -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🏭 Análisis de Metas por Proveedor</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Proveedor</th>
+                                        <th>Meta Mensual</th>
+                                        <th>Compras Reales</th>
+                                        <th>Progreso</th>
+                                        <th>Falta</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyMetasProveedores">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Genera un reporte para ver datos</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla: Créditos Moteros -->
+                <div class="card" style="margin-top: 2rem;">
+                    <div class="card-header">
+                        <h3>💳 Análisis de Créditos Moteros</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- KPIs de Créditos -->
+                        <div class="stats-grid"
+                            style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">💰</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiCreditosOtorgados" style="color: white;">$0</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">Total Otorgado</p>
+                                </div>
+                            </div>
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">📊</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiCarteraActiva" style="color: white;">$0</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">Cartera Activa</p>
+                                </div>
+                            </div>
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">⚠️</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiCarteraMora" style="color: white;">$0</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">En Mora</p>
+                                </div>
+                            </div>
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">✅</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiTasaRecuperacion" style="color: white;">0%</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">Tasa Recuperación</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Gráfico de Distribución de Cartera -->
+                        <div class="card" style="margin-bottom: 1.5rem;">
+                            <div class="card-header">
+                                <h3>📊 Distribución de Cartera</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartCarteraCreditos" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+                        <!-- Tabla de Créditos por Estado -->
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Estado</th>
+                                        <th>Cantidad</th>
+                                        <th>% del Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyCreditosEstado">
+                                    <tr>
+                                        <td colspan="3" class="text-center">Genera un reporte para ver datos</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla: Deudas del Negocio -->
+                <div class="card" style="margin-top: 2rem;">
+                    <div class="card-header">
+                        <h3>📋 Deudas y Obligaciones del Negocio</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- KPI de Deudas -->
+                        <div class="stats-grid" style="grid-template-columns: 1fr; margin-bottom: 1.5rem;">
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">💳</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiTotalPasivos" style="color: white; font-size: 2rem;">$0</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">Total Pasivos</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Gráfico de Distribución de Pasivos -->
+                        <div class="card" style="margin-bottom: 1.5rem;">
+                            <div class="card-header">
+                                <h3>📊 Distribución de Pasivos</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartDistribucionPasivos" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+                        <!-- Tabla de Deudas -->
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Concepto</th>
+                                        <th>Acreedor</th>
+                                        <th>Monto Original</th>
+                                        <th>Saldo Actual</th>
+                                        <th>% Pagado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyDeudas">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Genera un reporte para ver datos</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla: Cierres de Caja -->
+                <div class="card" style="margin-top: 2rem;">
+                    <div class="card-header">
+                        <h3>💰 Efectivo en Cajas</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- KPI de Efectivo -->
+                        <div class="stats-grid" style="grid-template-columns: 1fr; margin-bottom: 1.5rem;">
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">💵</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiTotalEfectivo" style="color: white; font-size: 2rem;">$0</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">Total Efectivo Disponible</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tabla de Caja por Tienda -->
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tienda</th>
+                                        <th>Efectivo Real</th>
+                                        <th>Base Inicial</th>
+                                        <th>Diferencia</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyCierresCaja">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Genera un reporte para ver datos</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla: Deudores -->
+                <div class="card" style="margin-top: 2rem;">
+                    <div class="card-header">
+                        <h3>👥 Cartera de Deudores</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- KPIs de Deudores -->
+                        <div class="stats-grid"
+                            style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-bottom: 1.5rem;">
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">💰</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiCarteraTotal" style="color: white;">$0</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">Cartera Total</p>
+                                </div>
+                            </div>
+                            <div class="stat-card"
+                                style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);">
+                                <div class="stat-icon" style="background: rgba(255,255,255,0.2);">⏰</div>
+                                <div class="stat-info">
+                                    <h3 id="kpiCarteraVencida" style="color: white;">$0</h3>
+                                    <p style="color: rgba(255,255,255,0.9);">Cartera Vencida (+30 días)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Gráfico de Antigüedad de Cartera -->
+                        <div class="card" style="margin-bottom: 1.5rem;">
+                            <div class="card-header">
+                                <h3>📊 Antigüedad de Cartera</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartAntiguedadCartera" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+                        <!-- Tabla de Top Deudores -->
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Saldo</th>
+                                        <th>Días Mora</th>
+                                        <th>Tienda</th>
+                                        <th>Teléfono</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyDeudores">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Genera un reporte para ver datos</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -5945,6 +6367,11 @@
         </div>
     </div>
 
+    <!-- jsPDF para exportación a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="js/reportes-ejecutivos.js"></script>
 </body>
 
 </html>
