@@ -12921,15 +12921,21 @@ function mostrarPopupAlertas(alertas) {
     popup.style.display = 'block';
 }
 
+function abrirModalGasto() {
+    const formGasto = document.getElementById('formGasto');
+    if (formGasto) {
+        formGasto.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+window.abrirModalGasto = abrirModalGasto;
+
 async function prepararRegistroDesdeRecordatorio(id, titulo, monto) {
     // 1. Establecer contexto global
     window.recordatorioPendienteId = id;
 
     // 2. Abrir Formulario de Gastos
-    abrirModalGasto(); // Nota: Asegurar que esta función existe o simulamos el clic
-    // Si abrirModalGasto no está expuesta, usamos la UI directa:
-    document.getElementById('formGasto').style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    abrirModalGasto();
 
     // 3. Pre-llenar datos
     document.getElementById('formTituloGasto').textContent = '📝 Registrar Pago Recurrente: ' + titulo;
