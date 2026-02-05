@@ -302,7 +302,8 @@ async function cargarProductos() {
 
 function aplicarFiltros() {
     const cat = document.getElementById('filtroCategoria').value;
-    const pre = document.getElementById('filtroPrecio').value;
+    const preEl = document.getElementById('filtroPrecio');
+    const pre = preEl ? preEl.value : '';
     const rate = document.getElementById('filtroCalificacion') ? document.getElementById('filtroCalificacion').value : '';
     const bus = document.getElementById('buscarProducto').value.toLowerCase();
 
@@ -333,7 +334,8 @@ function aplicarFiltros() {
 
 function limpiarFiltros() {
     document.getElementById('filtroCategoria').value = '';
-    document.getElementById('filtroPrecio').value = '';
+    const preEl = document.getElementById('filtroPrecio');
+    if (preEl) preEl.value = '';
     if (document.getElementById('filtroCalificacion')) document.getElementById('filtroCalificacion').value = '';
     document.getElementById('buscarProducto').value = '';
     aplicarFiltros();
