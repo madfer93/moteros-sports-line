@@ -652,6 +652,7 @@ function renderizarGraficosEjecutivos(ingresos, egresos, metas) {
 let chartCarteraCreditosInstance = null;
 let chartDistribucionPasivosInstance = null;
 let chartAntiguedadCarteraInstance = null;
+let chartTiposServiciosInstance = null;
 
 // ═══════════════════════════════════════════════════════════════
 // RENDERIZAR GRÁFICOS ADICIONALES (NUEVOS)
