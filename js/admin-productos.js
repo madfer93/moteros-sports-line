@@ -586,6 +586,12 @@ async function guardarProducto() {
         url_imagen: urlImagen
     };
 
+    // Si es un nuevo producto (no tiene id), generar id_producto
+    if (!id) {
+        // Generar un ID numérico único basado en timestamp
+        data.id_producto = Date.now();
+    }
+
     try {
         let result;
         if (id) {
