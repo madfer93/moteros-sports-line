@@ -586,21 +586,83 @@ async function guardarProducto() {
         url_imagen: urlImagen
     };
 
-    // Si es un nuevo producto (no tiene id), generar id_producto
+    // Si es un nuevo producto, generar id_producto en formato texto
     if (!id) {
-        // Generar un ID numérico único basado en timestamp
-        data.id_producto = Date.now();
+        data.id_producto = 'PROD' + Date.now();
     }
 
     try {
         let result;
+        let productoIdFinal;
+
         if (id) {
+            // Actualización: usamos el ID existente
             result = await supabaseClient.from('productos').update(data).eq('id', id);
+            productoIdFinal = id;
         } else {
-            result = await supabaseClient.from('productos').insert(data);
+            // Inserción: necesitamos obtener el ID generado
+            result = await supabaseClient.from('productos').insert(data).select();
+            productoIdFinal = result.data?.[0]?.id;
         }
 
         if (result.error) throw result.error;
+
+        // Obtener el id_producto para las tablas de inventario
+        let idProducto = data.id_producto; // Para productos nuevos
+
+        if (id && !idProducto) {
+            // Para productos existentes, obtener el id_producto de la BD
+            const { data: productoData } = await supabaseClient
+                .from('productos')
+                .select('id_producto')
+                .eq('id', id)
+                .single();
+            idProducto = productoData?.id_producto;
+        }
+
+        // Guardar cantidades de stock en las tablas de inventario
+        const stockAlcala = parseInt(document.getElementById('stockAlcala')?.value) || 0;
+        const stockLocal01 = parseInt(document.getElementById('stockLocal01')?.value) || 0;
+        const stockJordan = parseInt(document.getElementById('stockJordan')?.value) || 0;
+
+        // Usar upsert para actualizar o crear registros de inventario
+        const inventarioPromises = [];
+
+        if (stockAlcala >= 0) {
+            inventarioPromises.push(
+                supabaseClient.from('inventario_alcala').upsert({
+                    id_producto: idProducto,
+                    cantidad: stockAlcala
+                }, { onConflict: 'id_producto' })
+            );
+        }
+
+        if (stockLocal01 >= 0) {
+            inventarioPromises.push(
+                supabaseClient.from('inventario_01').upsert({
+                    id_producto: idProducto,
+                    cantidad: stockLocal01
+                }, { onConflict: 'id_producto' })
+            );
+        }
+
+        if (stockJordan >= 0) {
+            inventarioPromises.push(
+                supabaseClient.from('inventario_jordan').upsert({
+                    id_producto: idProducto,
+                    cantidad: stockJordan
+                }, { onConflict: 'id_producto' })
+            );
+        }
+
+        // Ejecutar todas las actualizaciones de inventario en paralelo
+        const inventarioResults = await Promise.all(inventarioPromises);
+
+        // Verificar si hubo errores en las actualizaciones de inventario
+        const inventarioErrors = inventarioResults.filter(r => r.error);
+        if (inventarioErrors.length > 0) {
+            showToast('Producto guardado pero hubo errores al actualizar inventario', 'warning');
+        }
 
         showToast('Producto guardado', 'success');
         removerPreview('producto'); // Limpiar imagen temporal
