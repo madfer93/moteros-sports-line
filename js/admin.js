@@ -1,16 +1,16 @@
-﻿// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // MOTEROS SPORTS LINE - ADMIN PANEL JS
 // Versión: 4.1 | Fecha: 27/12/2025
 // Con formulario de compras corregido y modal completo
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 // El cliente de Supabase ahora viene globalmente desde config.js
 // El cliente de Supabase ya está disponible globalmente
 
-// ═══════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
 // ESTADO GLOBAL
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 var productos = productos || [];
 var inventarios = inventarios || { alcala: [], local01: [], jordan: [] };
 var promociones = promociones || [];
@@ -31,9 +31,9 @@ var todosDeudores = todosDeudores || [];
 var todosProveedores = todosProveedores || [];
 var leadsIAData = leadsIAData || [];
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // UTILIDADES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 function showToast(message, type = 'success') {
     const container = document.getElementById('toastContainer');
     if (!container) return;
@@ -88,9 +88,9 @@ window.activarMenu = function (sectionId) {
     }
 };
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // LOGIN / LOGOUT CON SUPABASE AUTH (SEGURIDAD FULL)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function checkSession() {
     try {
@@ -142,7 +142,7 @@ async function loginAdmin() {
     const loginBtn = document.querySelector('.login-btn');
 
     if (!email || !password) {
-        document.getElementById('loginError').textContent = '❌ Ingresa correo y contraseña';
+        document.getElementById('loginError').textContent = '📧 Ingresa correo y contraseña';
         document.getElementById('loginError').style.display = 'block';
         return;
     }
@@ -157,21 +157,21 @@ async function loginAdmin() {
 
         if (error) throw error;
 
-        // Login exitoso - onAuthStateChange manejará la UI
-        showToast('¡Bienvenido al panel de administración!', 'success');
+        // Login exitoso - onAuthStateChange manejar la UI
+        showToast('!Bienvenido al panel de administración!', 'success');
 
     } catch (err) {
         console.error('Login error:', err);
         const msg = err.message === 'Invalid login credentials' ? 'Credenciales inválidas' : err.message;
-        document.getElementById('loginError').textContent = `❌ Error: ${msg}`;
+        document.getElementById('loginError').textContent = `❌​ Error: ${msg}`;
         document.getElementById('loginError').style.display = 'block';
     } finally {
-        if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Iniciar Sesión'; }
+        if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Iniciar sesión'; }
     }
 }
 
 async function logout() {
-    if (confirm('¿Cerrar sesión?')) {
+    if (confirm('🚪​ Cerrar sesión?')) {
         await supabaseClient.auth.signOut();
         // UI se actualiza via onAuthStateChange
     }
@@ -211,7 +211,7 @@ async function cambiarPassword() {
 
         if (error) throw error;
 
-        showToast('¡Contraseña actualizada correctamente!', 'success');
+        showToast('!contraseña actualizada correctamente!', 'success');
         cerrarModalPassword();
 
         // Opcional: Cerrar sesión para obligar a entrar con nueva clave
@@ -230,9 +230,9 @@ function toggleSidebar() {
     if (overlay) overlay.classList.toggle('active');
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // NAVEGACIÓN
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 function setupNavigation() {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function () {
@@ -319,9 +319,9 @@ async function inicializarAdmin() {
 
 
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // COMPRAS AVANZADAS (NUEVO SISTEMA FASE 3)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 var itemsCompra = itemsCompra || []; // Array temporal para items
 var compraActualId = compraActualId || null;
@@ -373,7 +373,7 @@ function mostrarFormCompra() {
         el.style.display = 'flex';
         el.classList.add('active');
     }
-    document.getElementById('formTituloCompra').textContent = '➕ Nueva Compra a Proveedor';
+    document.getElementById('formTituloCompra').textContent = '🛒​ Nueva Compra a Proveedor';
 }
 
 function cerrarFormCompra() {
@@ -443,7 +443,7 @@ function agregarFilaCompra(itemData = null) {
         </td>
         
         <td><strong id="subtotal-${index}">$${formatearPrecio(item.subtotal)}</strong></td>
-        <td><button class="btn btn-sm btn-danger" onclick="eliminarFilaCompra(${index})">×</button></td>
+        <td><button class="btn btn-sm btn-danger" onclick="eliminarFilaCompra(${index})">❌</button></td>
     `;
 
     tbody.appendChild(tr);
@@ -520,7 +520,7 @@ function calcFila(index) {
     // Ahora leemos el total directamente
     let cantidadTotal = parseInt(document.getElementById(`cant-total-${index}`).value) || 0;
 
-    // Si hay distribución guardada, sus sumas deberían coincidir idealmente, pero permitimos edición
+    // Si hay distribución guíardada, sus sumas deberían coincidir idealmente, pero permitimos edición
     // Si edita el total, "desincroniza" la distribución hasta que vuelva a abrir el modal.
     // No sobreescribimos cantidadTotal basado en distribución aquí, porque el usuario está escribiendo.
 
@@ -690,7 +690,7 @@ async function cargarCompras() {
     } catch (error) {
         console.error('Error cargando compras:', error);
         if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando compras:', error);
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-danger">Error al cargar compras. Verifica conexión.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-danger">❌​ Error al cargar compras. Verifica conexión.</td></tr>';
     }
 }
 
@@ -728,9 +728,9 @@ function renderizarTablaCompras(lista) {
     }).join('');
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // HISTORIAL Y REPORTE DE PROVEEDORES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function abrirModalHistorialProveedor(id, nombre) {
     // Crear modal dinámicamente si no existe
@@ -1004,7 +1004,7 @@ function actualizarStatsCompras(lista) {
 }
 
 async function eliminarCompra(id) {
-    if (!confirm('¿Estás seguro de eliminar esta compra?\n\nEsto no revertirá el inventario automáticamente por seguridad.')) return;
+    if (!confirm('🚨​ estás seguro de eliminar esta compra?\n\nEsto no revertirá el inventario automáticamente por seguridad.')) return;
     try {
         const { error } = await supabaseClient.from('compras_proveedor').delete().eq('id', id);
         if (error) throw error;
@@ -1087,8 +1087,8 @@ async function abrirModalPagoManualCompra(id) {
                             <div>
                                 <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:#374151;">Método de Pago *</label>
                                 <select id="pagoManual_metodo" class="form-control">
-                                    <option value="EFECTIVO">💵 Efectivo</option>
-                                    <option value="TRANSFERENCIA">📱 Transferencia</option>
+                                    <option value="EFECTIVO">💵​ Efectivo</option>
+                                    <option value="TRANSFERENCIA">📱​ Transferencia</option>
                                     <option value="CONSIGNACION">🏦 Consignación</option>
                                     <option value="TARJETA">💳 Tarjeta</option>
                                     <option value="OTRO">✨ Otro</option>
@@ -1113,8 +1113,8 @@ async function abrirModalPagoManualCompra(id) {
                         </div>
                     </div>
                     <div class="modal-footer" style="padding:1.5rem; background:#f9fafb; display:flex; gap:1rem; border-top:1px solid #e5e7eb;">
-                        <button onclick="document.getElementById('modalPagoManualCompra').remove()" style="flex:1; padding:0.75rem; background:white; border:1px solid #d1d5db; border-radius:0.5rem; font-weight:600; cursor:pointer; color:#4b5563;">Cancelar</button>
-                        <button onclick="guardarPagoManualCompra()" style="flex:2; padding:0.75rem; background:#10b981; color:white; border:none; border-radius:0.5rem; font-weight:700; cursor:pointer; transition:background 0.2s;">✅ Confirmar Pago</button>
+                        <button onclick="document.getElementById('modalPagoManualCompra').remove()" style="flex:1; padding:0.75rem; background:white; border:1px solid #d1d5db; border-radius:0.5rem; font-weight:600; cursor:pointer; color:#4b5563;">❌​ Cancelar</button>
+                        <button onclick="guardarPagoManualCompra()" style="flex:2; padding:0.75rem; background:#10b981; color:white; border:none; border-radius:0.5rem; font-weight:700; cursor:pointer; transition:background 0.2s;">💵 Confirmar Pago</button>
                     </div>
                 </div>
             </div>`;
@@ -1130,7 +1130,7 @@ async function abrirModalPagoManualCompra(id) {
 
 
     } catch (error) {
-        console.error("🔥 Error en abrirModalPagoManualCompra:", error);
+        console.error("🔥​ Error en abrirModalPagoManualCompra:", error);
         showToast(error.message, 'error');
     }
 }
@@ -1190,7 +1190,7 @@ async function guardarPagoManualCompra() {
 
         if (errUpdate) throw errUpdate;
 
-        showToast('✅ Pago registrado correctamente', 'success');
+        showToast('✅​ Pago registrado correctamente', 'success');
         document.getElementById('modalPagoManualCompra')?.remove();
         cargarCompras();
 
@@ -1230,9 +1230,9 @@ async function guardarPagoCompra() {
 
 function registrarPagoCompra(id) { mostrarModalPago(id); }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // DRAG & DROP IMÁGENES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 function setupDropzones() {
     ['Producto', 'Post', 'Logo'].forEach(tipo => {
         const dropzone = document.getElementById('dropzone' + tipo);
@@ -1252,7 +1252,7 @@ function handleFileSelect(event, tipo) { const file = event.target.files[0]; if 
 
 function procesarArchivo(file, tipo) {
     if (file.size > 5 * 1024 * 1024) { showToast('Imagen muy grande. Máximo 5MB.', 'error'); return; }
-    if (!file.type.startsWith('image/')) { showToast('Solo se permiten imágenes', 'error'); return; }
+    if (!file.type.startsWith('image/')) { showToast('Solo se permiten imagenes', 'error'); return; }
     archivosTemporal[tipo] = file;
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1300,9 +1300,9 @@ function getVideoEmbed(url) {
     return `<a href="${url}" target="_blank" class="btn btn-secondary">🔗 Ver Video</a>`;
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // DASHBOARD
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 async function cargarDashboard() {
     const productosActivos = productos.filter(p => p.estado && p.estado.toLowerCase() === 'activo').length;
     const statProd = document.getElementById('statProductos');
@@ -1391,13 +1391,13 @@ async function cargarDashboard() {
         if (containerAdicional) {
             containerAdicional.innerHTML = `
                 <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 10px 15px; border-radius: 8px; margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
-                    <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #1e40af; font-weight: 700;">📈 Promedio Diario (30d)</span>
+                    <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #1e40af; font-weight: 700;">📈​ Promedio Diario (30d)</span>
                     <span style="font-size: 1.1rem; font-weight: 800; color: #1e3a8a;">$${formatearPrecio(promedioDiario)}</span>
                 </div>
             `;
         }
 
-        // Preparar Datos para Gráficos
+        // Preparar Datos para gráficos
 
         // Leads Mes
         const { count: leadsMes } = await supabaseClient
@@ -1412,7 +1412,7 @@ async function cargarDashboard() {
     } catch (e) { if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando stats leads:', e); }
 
 
-    // renderizarChartsDashboard(); // ⚠️ DESACTIVADO: Usar lógica centralizada en admin-productos.js
+    // renderizarChartsDashboard(); // ⚠️ DESACTIVADO: Usar Lógica centralizada en admin-productos.js
 }
 
 function renderizarChartsDashboard() {
@@ -1427,7 +1427,7 @@ function renderizarChartsDashboard() {
         });
     }
 
-    // 2. Categorías
+    // 2. Categoías
     const ctx2 = document.getElementById('chartCategorias');
     if (ctx2) {
         if (chartCategorias) chartCategorias.destroy();
@@ -1482,7 +1482,7 @@ function renderizarChartsDashboard() {
         });
     }
 
-    // 4. Ventas Últimos 7 Días - NUEVO
+    // 4. Ventas últimos 7 Días - NUEVO
     const ctx4 = document.getElementById('chartVentas7Dias');
     if (ctx4 && window.dashboardData?.ventasMesList) {
         // Procesar ultimos 7 dias desde 'ventasMesList' (que trae 30 dias)
@@ -1527,9 +1527,9 @@ function renderizarChartsDashboard() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // INVENTARIOS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 async function cargarTodosLosInventarios() {
     try {
         const [alcala, local01, jordan] = await Promise.all([
@@ -1563,7 +1563,7 @@ async function cargarInventarioLocal() {
 }
 
 async function ajustarStock(tabla, id, actual) {
-    // Buscar información del producto
+    // Buscar Información del producto
     const inventario = tabla === 'inventario_alcala' ? inventarios.alcala
         : tabla === 'inventario_01' ? inventarios.local01
             : inventarios.jordan;
@@ -1594,7 +1594,7 @@ async function ajustarStock(tabla, id, actual) {
                         <div style="font-size:0.8rem;color:#92400e;font-weight:600;">STOCK ACTUAL</div>
                         <div style="font-size:2rem;font-weight:800;color:#d97706;">${actual}</div>
                     </div>
-                    <div style="font-size:1.5rem;color:#94a3b8;">→</div>
+                    <div style="font-size:1.5rem;color:#94a3b8;">?</div>
                     <div style="flex:1;text-align:center;padding:1rem;background:#dcfce7;border-radius:10px;">
                         <div style="font-size:0.8rem;color:#166534;font-weight:600;">NUEVO STOCK</div>
                         <input type="number" id="nuevoStockCantidad" value="${actual}" min="0"
@@ -1667,9 +1667,9 @@ function descargarCSV(contenido, nombre) {
     showToast('CSV descargado');
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // ESTADÍSTICAS LOCALES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 async function cargarEstadisticasLocales() {
     await cargarTodosLosInventarios();
     const totalProd = document.getElementById('totalProductosGlobal'); if (totalProd) totalProd.textContent = productos.filter(p => p.estado === 'Activo').length;
@@ -1721,10 +1721,10 @@ async function cargarEstadisticasLocales() {
         `;
     }
 
-    // Llenar distribución por categoría
+    // Llenar Distribución por categoría
     const tbodyCat = document.getElementById('tbodyDistribucionCategorias');
     if (tbodyCat) {
-        // FIX: Normalizar categorías a mayúsculas para evitar duplicados en la tabla
+        // FIX: Normalizar Categoías a mayúsculas para evitar duplicados en la tabla
         const categorias = [...new Set(productos.filter(p => p.estado === 'Activo').map(p => (p.categoria || 'SIN CATEGORÍA').toUpperCase()))].filter(Boolean).sort();
 
         const getCantidadCategoria = (inv, cat) => {
@@ -1763,9 +1763,9 @@ function calcularEstadisticasLocal(inventario) {
     return { stockTotal: inventario.reduce((s, i) => s + (i.cantidad || 0), 0), productos: inventario.length, stockBajo: inventario.filter(i => i.cantidad > 0 && i.cantidad <= (i.stock_minimo || 5)).length, agotados: inventario.filter(i => i.cantidad === 0).length, valor };
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // REPORTES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 // Variable global para almacenar los datos del reporte actual (para exportación)
 var datosReporteActual = datosReporteActual || [];
@@ -1840,14 +1840,14 @@ async function cargarReporteMargen() {
 
         // Guardar para exportar
         datosReporteActual = filas.map(f => ({
-            Categoría: f.categoria,
+            Categoria: f.categoria,
             'Cant. Vendida': f.cantidad,
             'Costo Total': f.costo,
             'Venta Total': f.venta,
             'Utilidad $': f.margen,
             'Margen %': f.porc.toFixed(2) + '%'
         }));
-        columnasReporteActual = ['Categoría', 'Cant. Vendida', 'Costo Total', 'Venta Total', 'Utilidad $', 'Margen %'];
+        columnasReporteActual = ['Categoria', 'Cant. Vendida', 'Costo Total', 'Venta Total', 'Utilidad $', 'Margen %'];
 
         // Renderizar Tabla
         body.innerHTML = `
@@ -2083,7 +2083,7 @@ async function cargarReportePromedioVentas() {
                 </div>
             </div>
             
-            <h4>Distribución por Día de la Semana</h4>
+            <h4>Distribucíon por D́a de la Semana</h4>
             <div style="height:300px; margin-top:1rem;">
                 <canvas id="chartDiasSemana"></canvas>
             </div>
@@ -2117,17 +2117,17 @@ function exportarReporte() {
         return;
     }
 
-    // Crear modal de selección
+    // Crear modal de seleccíon
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
         <div class="modal-content" style="max-width:400px;">
             <div class="modal-header">
                 <h3>📥 Exportar Reporte</h3>
-                <button onclick="this.closest('.modal-overlay').remove()" class="btn-cerrar">×</button>
+                <button onclick="this.closest('.modal-overlay').remove()" class="btn-cerrar">❎</button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom:1.5rem; color:#64748b;">Selecciona el formato de exportación:</p>
+                <p style="margin-bottom:1.5rem; color:#64748b;">Selecciona el formato de exportacín:</p>
                 <div style="display:flex; flex-direction:column; gap:1rem;">
                     <button onclick="exportarReporteExcel(); this.closest('.modal-overlay').remove();" 
                         class="btn btn-success" style="width:100%; justify-content:center;">
@@ -2195,11 +2195,11 @@ function exportarReportePDF() {
     showToast('✅ Reporte PDF descargado');
 }
 
-// (Bloque de categorías duplicado eliminado - Se usa la versión unificada al final del archivo)
+// (Bloque de categoŕas duplicado eliminado - Se usa la versíon unificada al final del archivo)
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // PRODUCTOS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 async function cargarProductos() {
     const lista = document.getElementById('listaProductos'); if (lista) lista.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando...</p></div>';
     try {
@@ -2207,7 +2207,7 @@ async function cargarProductos() {
         if (error) throw error;
         productos = data || [];
 
-        // Cargar reseñas para calificación
+        // Cargar resénas para calificacíon
         const { data: resenas } = await supabaseClient.from('producto_resenas').select('id_producto, estrellas');
         const calificaciones = {};
         if (resenas) {
@@ -2219,7 +2219,7 @@ async function cargarProductos() {
             });
         }
 
-        // Adjuntar calificación a productos
+        // Adjuntar calificacíon a productos
         productos.forEach(p => {
             const cal = calificaciones[p.id] || calificaciones[p.id_producto];
             p.rating = cal ? (cal.sum / cal.count).toFixed(1) : 0;
@@ -2258,7 +2258,7 @@ function renderizarProductos(lista) {
                 </div>
                 <div class="producto-admin-actions">
                     <button onclick="editarProducto('${p.id}')" class="btn btn-secondary btn-sm" title="Editar">✏️</button>
-                    <button onclick="duplicarProducto('${p.id}')" class="btn btn-info btn-sm" title="Duplicar">📑</button>
+                    <button onclick="duplicarProducto('${p.id}')" class="btn btn-info btn-sm" title="Duplicar">📑r</button>
                     <button onclick="eliminarProducto('${p.id}')" class="btn btn-danger btn-sm" title="Eliminar">🗑️</button>
                 </div>
             </div>
@@ -2290,7 +2290,7 @@ function mostrarFormProducto() {
     document.getElementById('productoPrecio').value = '0'; // Default
 
     cargarStockTiendas(null);
-    cargarCategoriasEnFormulario(); // Cargar categorías dinámicamente
+    cargarCategoriasEnFormulario(); // Cargar categorías dinámicas
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2326,7 +2326,7 @@ async function cargarCategoriasEnFormulario() {
         }
 
     } catch (e) {
-        console.error('Error cargando categorías al formulario:', e);
+        console.error('Error cargando Categoías al formulario:', e);
         // Fallback silencioso o alert
     }
 }
@@ -2349,7 +2349,7 @@ async function editarProducto(id) {
         const { data, error } = await supabaseClient.from('productos').select('*').eq('id', id).single();
         if (error || !data) { showToast('Error al cargar producto', 'error'); return; }
 
-        // Cargar categorías antes de asignar valores para que el select coincida
+        // Cargar Categoías antes de asignar valores para que el select coincida
         await cargarCategoriasEnFormulario();
 
         document.getElementById('productoId').value = data.id;
@@ -2416,7 +2416,7 @@ async function duplicarProducto(id) {
         document.getElementById('formProducto').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        showToast('Datos duplicados. Verifica y guarda.', 'info');
+        showToast('Datos duplicados. Verifica y guíarda.', 'info');
 
     } catch (err) { showToast('Error al duplicar: ' + err.message, 'error'); }
 }
@@ -2553,12 +2553,12 @@ async function toggleDestacado(id, valor) {
 }
 window.toggleDestacado = toggleDestacado;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // VENTAS
-// ═══════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
 // VENTAS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 let ventasActuales = []; // Variable global para almacenar ventas cargadas
 let rangoActual = 'dia';
 
@@ -2629,7 +2629,7 @@ async function cargarVentasRango(rango) {
         // Consulta Supabase con rangos correctos
         // Ajustamos fechas a ISO string formato local si es posible, o UTC
         // Supabase usa UTC. created_at es timestamptz?
-        // En migraciones vi TIMESTAMP DEFAULT NOW(). Asumo que guarda UTC.
+        // En migraciones vi TIMESTAMP DEFAULT NOW(). Asumo que guíarda UTC.
 
         const { data, error } = await supabaseClient
             .from('ventas')
@@ -2714,9 +2714,9 @@ function exportarVentasDia() {
     descargarCSV(csv, `ventas_${new Date().toISOString().split('T')[0]}.csv`);
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // ALERTAS DE STOCK
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 async function cargarAlertasStock() {
     await cargarTodosLosInventarios();
     const alertas = [];
@@ -2728,9 +2728,9 @@ async function cargarAlertasStock() {
     contenido.innerHTML = `<div class="card-header"><h3>⚠️ ${alertas.length} alertas</h3></div><div class="table-container"><table class="data-table"><thead><tr><th>Estado</th><th>Local</th><th>Producto</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody>${alertas.map(a => `<tr><td><span class="badge ${a.tipo === 'agotado' ? 'badge-danger' : 'badge-warning'}">${a.tipo === 'agotado' ? '❌ AGOTADO' : '⚠️ BAJO'}</span></td><td>${a.local}</td><td><strong>${a.producto}</strong></td><td style="font-weight:700; color:${a.tipo === 'agotado' ? 'var(--danger)' : 'var(--warning)'}">${a.cantidad}</td><td>${a.stockMin}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // DEUDORES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 async function cargarDeudores() {
     try {
         const estado = document.getElementById('deudoresEstadoFiltro')?.value || 'ABIERTO';
@@ -2768,9 +2768,9 @@ function buscarDeudores() {
     renderizarDeudores(todosDeudores.filter(d => d.nombre_completo?.toLowerCase().includes(query) || d.telefono?.includes(query)));
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // PRODUCTOS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 
 async function cargarProductos() {
@@ -2801,7 +2801,7 @@ async function cargarProductos() {
         // Actualizar stats dashboard si existen
         if (document.getElementById('statProductos')) document.getElementById('statProductos').textContent = productos.length;
 
-        // También intentar renderizar categorias en charts si existen
+        // Tambien intentar renderizar categorias en charts si existen
         if (typeof renderizarChartsDashboard === 'function') renderizarChartsDashboard();
 
     } catch (e) {
@@ -2855,9 +2855,9 @@ function renderizarProductosAdmin(lista = productos) {
     }).join('');
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // METAS DE VENTAS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarMetas() {
     const tbody = document.getElementById('listaMetas');
@@ -2898,7 +2898,7 @@ async function cargarMetas() {
             // Calcular ventas reales para este mes/local
             let alcanzado = 0;
             // *Nota: Esto debería hacerse en backend o con una query optimizada, no en loop aquí.
-            // Por ahora, mostraré 0 en alcanzado o la almacenada si tuviéramos campo cached.
+            // Por ahora, mostrar 0 en alcanzado o la almacenada si tuviéramos campo cached.
 
             // Query simple para ventas del mes/local específico
             const inicioMes = new Date(m.anio, m.mes - 1, 1).toISOString();
@@ -2924,7 +2924,7 @@ async function cargarMetas() {
                 </td>
                 <td><span class="badge badge-warning">EN PROCESO</span></td>
                 <td>
-                    <button onclick="eliminarMeta('${m.id}')" class="btn btn-sm btn-outline-danger">🗑️</button>
+                    <button onclick="eliminarMeta('${m.id}')" class="btn btn-sm btn-outline-danger">❌</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -2979,7 +2979,7 @@ async function guardarMeta() {
 }
 
 async function eliminarMeta(id) {
-    if (!confirm('¿Estás seguro de eliminar esta meta?')) return;
+    if (!confirm('Estás seguro de eliminar esta meta?')) return;
     try {
         const { error } = await supabaseClient.from('metas_locales').delete().eq('id', id);
         if (error) throw error;
@@ -3027,7 +3027,7 @@ function mostrarFormDeudor() {
 
     // Titulo default
     const tituloEl = document.getElementById('formTituloDeudor');
-    if (tituloEl) tituloEl.textContent = '➕ Nuevo Deudor';
+    if (tituloEl) tituloEl.textContent = '? Nuevo Deudor';
 
     // Mostrar Modal
     const modal = document.getElementById('modalDeudor');
@@ -3089,23 +3089,25 @@ async function registrarPagoDeudor(id) {
 
 
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // DEUDAS DEL NEGOCIO, CRÉDITOS, BODEGAS, ALIANZAS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 async function cargarDeudasNegocio() {
+    const tbody = document.getElementById('tbodyDeudasNegocio');
 
-    const tbody = document.getElementById('tbodyDeudas');
-    if (!tbody) { if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ No se encontró tbodyDeudas'); return; }
+    if (!tbody) {
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ No se encontró tbodyDeudasNegocio');
+        return;
+    }
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">Cargando...</td></tr>';
 
     try {
         const { data, error } = await supabaseClient.from('deudas_negocio').select('*').order('saldo_actual', { ascending: false });
-        if (error) { if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error Supabase:', error); throw error; }
-
-
+        if (error) { if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌​ Error Supabase:', error); throw error; }
 
         // Calcular estadísticas
         const lista = data || [];
+        console.log('Total registros:', lista.length);
         const totalOriginal = lista.reduce((s, d) => s + parseFloat(d.monto_original || 0), 0);
         const totalSaldo = lista.reduce((s, d) => s + parseFloat(d.saldo_actual || 0), 0);
         const totalPagado = totalOriginal - totalSaldo;
@@ -3134,14 +3136,15 @@ async function cargarDeudasNegocio() {
             <td><strong class="${(d.saldo_actual || 0) > 0 ? 'text-danger' : 'text-success'}">$${formatearPrecio(d.saldo_actual || 0)}</strong></td>
             <td><span class="badge ${d.estado === 'ABIERTO' ? 'badge-danger' : 'badge-success'}">${d.estado}</span></td>
             <td>
+                <button onclick="verDetallesDeuda('${d.id}')" class="btn btn-sm btn-secondary" title="Ver Detalles">👁️</button>
                 <button onclick="editarDeudaNegocio('${d.id}')" class="btn btn-sm btn-info" title="Editar">✏️</button>
-                <button onclick="registrarPagoDeuda('${d.id}')" class="btn btn-sm btn-success" ${d.saldo_actual <= 0 ? 'disabled' : ''} title="Registrar Pago">💰</button>
+                <button onclick="registrarPagoDeuda('${d.id}')" class="btn btn-sm btn-success" ${d.saldo_actual <= 0 ? 'disabled' : ''} title="Registrar Pago">🤑</button>
             </td>
         </tr>`).join('');
 
 
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error cargando deudas:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌​ Error cargando deudas:', error);
         tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error: ${error.message}</td></tr>`;
         showToast('Error al cargar deudas: ' + error.message, 'error');
     }
@@ -3330,7 +3333,7 @@ async function confirmarPagoDeuda(id) {
 
     const totalPerc = pAlcala + pLocal01 + pJordan;
     if (Math.abs(totalPerc - 100) > 0.5) {
-        if (!confirm(`La distribución total es de ${totalPerc.toFixed(1)}%. Se recomienda que sea 100%. ¿Deseas continuar de todos modos?`)) {
+        if (!confirm(`La Distribución total es de ${totalPerc.toFixed(1)}%. Se recomienda que sea 100%. ¿Deseas continuar de todos modos?`)) {
             return;
         }
     }
@@ -3478,10 +3481,10 @@ async function cargarCreditos() {
                 let msgWA = '';
                 let tipWA = '';
                 if (esPagado(c.estado)) {
-                    msgWA = `🌟 ¡Hola ${nombre.split(' ')[0]}! 🏍️\n\nEn **MOTEROS SPORT LINE** valoramos tu compromiso y te agradecemos por ser un excelente cliente. 🙌\n\nDuebido a tu impecable historial de pagos, nos complace informarte que ¡tienes disponible un **NUEVO CRÉDITO** para que sigas rodando con lo mejor! 🚀\n\n¡Te esperamos en nuestras sedes para estrenar hoy mismo! 🫶\n\n📲 Contáctanos al 311 340 8416\n¡Gracias por ser parte de nuestra familia! 🙌`;
+                    msgWA = `🌟 Hola ${nombre.split(' ')[0]}! 🏍️\n\nEn MOTEROS SPORT LINE valoramos tu compromiso y te agradecemos por ser un excelente cliente. 🙌\n\nDuebido a tu impecable historial de pagos, nos complace informarte que tienes disponible un NUEVO CRÉDITO para que sigas rodando con lo mejor! 🚀\n\nTe esperamos en nuestras sedes para estrenar hoy mismo! 🫶\n\n📲 Contactanos al 311 340 8416\nGracias por ser parte de nuestra familia! 🙌`;
                     tipWA = 'Ofrecer nuevo crédito';
                 } else {
-                    msgWA = `📌 Recordatorio MOTEROS SPORT LINE 🏍️\n\nEstimad@ ${nombre}, te recordamos que tienes un saldo pendiente con Nosotros 😁 Realiza tus abonos para seguir disfrutando de todos nuestros beneficios 🫶\n\nSi ya realizaste el pago, por favor ignora este mensaje. 🤗\n📲Para más información contáctanos al 311 340 8416\n\n¡Gracias por ser parte de la familia MOTEROS SPORT LINE! 🙌\n\nAtt.: Área de cartera.`;
+                    msgWA = `📌 Recordatorio MOTEROS SPORT LINE 🏍️\n\nEstimad@ ${nombre}, te recordamos que tienes un saldo pendiente con Nosotros 😁 Realiza tus abonos para seguir disfrutando de todos nuestros beneficios 🫶\n\nSi ya realizaste el pago, por favor ignora este mensaje. 🤗\n📲 Para más información contactanos al 311 340 8416\n\nGracias por ser parte de la familia MOTEROS SPORT LINE! 🙌\n\nAtt.: Área de cartera.`;
                     tipWA = 'Enviar recordatorio de pago';
                 }
 
@@ -3497,8 +3500,8 @@ async function cargarCreditos() {
                     <td style="white-space:nowrap;">
                         <button onclick="editarNombreCredito('${c.id}', '${nombre.replace(/'/g, "\\'")}')" class="btn btn-sm btn-info" title="Editar nombre de cliente">✏️</button>
                         <button onclick="verDetalleCredito('${c.id}')" class="btn btn-sm btn-secondary" title="Ver detalle e imprimir">👁️</button>
-                        ${c.saldo_pendiente > 0 ? `<button onclick="registrarPagoCredito('${c.id}')" class="btn btn-sm btn-success" title="Registrar abono">💰</button>` : ''}
-                        ${telefono ? `<a href="https://wa.me/57${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(msgWA)}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;" title="${tipWA}">📱</a>` : ''}
+                        ${c.saldo_pendiente > 0 ? `<button onclick="registrarPagoCredito('${c.id}')" class="btn btn-sm btn-success" title="Registrar abono">🤑​</button>` : ''}
+                        ${telefono ? `<a href="https://wa.me/57${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(msgWA)}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;" title="${tipWA}">💬</a>` : ''}
                     </td>
                 </tr>`;
             }).join('');
@@ -3532,7 +3535,7 @@ async function editarNombreCredito(id, nombreActual) {
             </div>
             <div class="modal-footer" style="padding:1.5rem;background:#f8fafc;display:flex;gap:1rem;">
                 <button id="btnGuardarNombre" class="btn btn-primary" style="flex:2;padding:0.875rem;border-radius:0.75rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:0.5rem;">
-                    <span>✓</span> Guardar Cambios
+                    <span>?</span> Guardar Cambios
                 </button>
                 <button onclick="document.getElementById('modalEditarNombre').remove()" class="btn btn-secondary" style="flex:1;padding:0.875rem;border-radius:0.75rem;font-weight:600;background:#e2e8f0;color:#475569;border:none;">
                     Cancelar
@@ -3596,7 +3599,7 @@ async function editarNombreCredito(id, nombreActual) {
             console.error('Error al editar nombre:', e);
             showToast('Error: ' + e.message, 'error');
             btn.disabled = false;
-            btn.innerHTML = '<span>✓</span> Guardar Cambios';
+            btn.innerHTML = '<span>?</span> Guardar Cambios';
         }
     };
 }
@@ -3718,16 +3721,19 @@ async function verDetalleCredito(id) {
 }
 
 function imprimirTicketCredito() {
-    const ticket = document.getElementById('ticketImprimir').innerHTML;
-    const ventana = window.open('', 'PRINT', 'height=600,width=400');
-    ventana.document.write('<html><head><title>Imprimir Ticket</title>');
-    ventana.document.write('<style>body { font-family: monospace; font-size:12px; margin:0; padding:10px; width:300px; }</style>');
-    ventana.document.write('</head><body>');
-    ventana.document.write(ticket);
-    ventana.document.write('</body></html>');
-    ventana.document.close();
-    ventana.focus();
-    setTimeout(() => { ventana.print(); ventana.close(); }, 500);
+    const ticketContent = document.getElementById('ticketImprimir').innerHTML;
+    if (window.TicketPrinter) {
+        TicketPrinter.print("BOLETA DE CRÉDITO", ticketContent);
+    } else {
+        // Fallback simple si no carga el script
+        const ventana = window.open('', 'PRINT', 'height=600,width=400');
+        ventana.document.write('<html><head><title>🖨️​ Imprimir Ticket</title></head><body>');
+        ventana.document.write(ticketContent);
+        ventana.document.write('</body></html>');
+        ventana.document.close();
+        ventana.focus();
+        setTimeout(() => { ventana.print(); ventana.close(); }, 500);
+    }
 }
 
 
@@ -3992,14 +3998,14 @@ async function guardarEdicionAlianza(id) {
         showToast('Alianza actualizada correctamente', 'success');
         cargarAlianzas();
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error guardando alianza:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error guíardando alianza:', error);
         showToast('Error: ' + error.message, 'error');
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PROMOCIONES, BLOG, CONFIGURACIÓN, CIERRES, GASTOS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// PROMOCIONES, BLOG, CONFIGURACIóN, CIERRES, GASTOS
+// ---------------------------------------------------------------
 async function cargarPromociones() { try { const { data, error } = await supabaseClient.from('promociones').select('*').order('id_promo'); if (error) throw error; promociones = data || []; renderizarPromociones(); } catch (error) { const container = document.getElementById('listaPromociones'); if (container) container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`; } }
 function renderizarPromociones() {
     const container = document.getElementById('listaPromociones');
@@ -4009,7 +4015,7 @@ function renderizarPromociones() {
     container.innerHTML = `
         <div class="card">
             <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>🏷️ Promociones (${promociones.length})</h3>
+                <h3>🏷️​ Promociones (${promociones.length})</h3>
                 <button onclick="renombrarPromosCombo()" class="btn btn-outline-warning btn-sm" title="Convertir a Combos Estrictos">🔄 Validar Combos</button>
             </div>
             <div class="table-container">
@@ -4029,7 +4035,7 @@ function renderizarPromociones() {
                                 <td style="white-space:nowrap;">
                                     <button onclick="editarPromocion('${p.id_promo}')" class="btn btn-secondary btn-sm" title="Editar">✏️</button>
                                     <button onclick="duplicarPromocion('${p.id_promo}')" class="btn btn-primary btn-sm" title="Duplicar">📋</button>
-                                    <button onclick="eliminarPromocion('${p.id_promo}')" class="btn btn-danger btn-sm" title="Eliminar">🗑️</button>
+                                    <button onclick="eliminarPromocion('${p.id_promo}')" class="btn btn-danger btn-sm" title="Eliminar">❌​</button>
                                 </td>
                             </tr>`;
     }).join('')}
@@ -4070,7 +4076,7 @@ async function editarPromocion(id) {
     document.getElementById('promocionLocales').value = promo.locales_aplicables || '';
     document.getElementById('promocionEstado').value = promo.estado || 'Activa';
     document.getElementById('formTituloPromocion').textContent = '✏️ Editar Promoción';
-    // Cargar productos seleccionados de la promoción
+    // Cargar productos seleccionados de la Promoción
     productosSeleccionadosPromo = promo.productos_incluidos ? promo.productos_incluidos.split(',').filter(p => p.trim()) : [];
     const form = document.getElementById('formPromocion');
     if (form) form.style.display = 'flex';
@@ -4085,7 +4091,7 @@ async function editarPromocion(id) {
     await cargarProductosParaPromocion();
 }
 async function guardarPromocion() { const idOriginal = document.getElementById('promocionIdOriginal').value; const idPromo = document.getElementById('promocionId').value.trim(); const nombre = document.getElementById('promocionNombre').value.trim(); if (!idPromo || !nombre) { showToast('ID y Nombre son requeridos', 'warning'); return; } const promo = { id_promo: idPromo, nombre, descuento: parseFloat(document.getElementById('promocionDescuento').value) || 0, productos_incluidos: productosSeleccionadosPromo.join(','), fecha_inicio: document.getElementById('promocionInicio').value.trim(), fecha_fin: document.getElementById('promocionFin').value.trim(), locales_aplicables: document.getElementById('promocionLocales').value.trim() || 'Todos', estado: document.getElementById('promocionEstado').value }; try { if (idOriginal) { const { error } = await supabaseClient.from('promociones').update(promo).eq('id_promo', idOriginal); if (error) throw error; showToast('Promoción actualizada'); } else { const { error } = await supabaseClient.from('promociones').insert(promo); if (error) throw error; showToast('Promoción creada'); } cancelarFormPromocion(); await cargarPromociones(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
-async function eliminarPromocion(id) { if (!confirm('¿Eliminar esta promoción?')) return; try { const { error } = await supabaseClient.from('promociones').delete().eq('id_promo', id); if (error) throw error; showToast('Promoción eliminada'); await cargarPromociones(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
+async function eliminarPromocion(id) { if (!confirm('¿Eliminar esta Promoción?')) return; try { const { error } = await supabaseClient.from('promociones').delete().eq('id_promo', id); if (error) throw error; showToast('Promoción eliminada'); await cargarPromociones(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
 
 async function duplicarPromocion(id) {
     const promo = promociones.find(p => p.id_promo === id);
@@ -4118,7 +4124,7 @@ async function duplicarPromocion(id) {
     }
 }
 
-// Cargar productos para seleccionar en promoción
+// Cargar productos para seleccionar en Promoción
 async function cargarProductosParaPromocion() {
     const container = document.getElementById('listaProductosPromo');
     if (!container) return;
@@ -4145,7 +4151,7 @@ function renderizarProductosPromo(lista) {
     const seleccionados = productos.filter(p => productosSeleccionadosPromo.includes(p.id_producto));
     const valorBusqueda = document.getElementById('buscarProductoPromo')?.value || '';
 
-    // Obtener categorías únicas
+    // Obtener Categorías únicas
     const categorias = [...new Set(productos.filter(p => p.estado === 'Activo').map(p => p.categoria))].filter(Boolean).sort();
     const categoriaActual = document.getElementById('filtroCategoria')?.value || '';
 
@@ -4156,7 +4162,7 @@ function renderizarProductosPromo(lista) {
                 <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
                     <input type="text" id="buscarProductoPromo" class="form-control" placeholder="🔍 Buscar..." oninput="filtrarProductosPromo()" value="${valorBusqueda}" style="flex:1;min-width:150px;max-width:250px;">
                     <select id="filtroCategoria" class="form-control" onchange="filtrarProductosPromo()" style="min-width:140px;max-width:180px;">
-                        <option value="">📁 Todas las categorías</option>
+                        <option value="">📁 Todas las Categoías</option>
                         ${categorias.map(c => `<option value="${c}" ${c === categoriaActual ? 'selected' : ''}>${c}</option>`).join('')}
                     </select>
                     <span style="background:${seleccionados.length > 0 ? '#10b981' : '#94a3b8'};color:white;padding:0.5rem 1rem;border-radius:2rem;font-size:0.9rem;font-weight:600;">✅ ${seleccionados.length}</span>
@@ -4202,7 +4208,7 @@ function renderizarProductosPromo(lista) {
             <!-- Footer -->
             <div style="padding:0.75rem 1rem;background:#f1f5f9;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;">
                 <span style="color:#64748b;">Mostrando ${lista.length} productos</span>
-                <span style="color:#1e293b;font-weight:600;">Total en promoción: ${seleccionados.length}</span>
+                <span style="color:#1e293b;font-weight:600;">Total en Promoción: ${seleccionados.length}</span>
             </div>
         </div>
     `;
@@ -4320,9 +4326,9 @@ async function editarPost(id) { try { const { data, error } = await supabaseClie
 async function guardarPost() { const id = document.getElementById('postId').value; const titulo = document.getElementById('postTitulo').value.trim(); const contenido = document.getElementById('postContenido').value.trim(); if (!titulo || !contenido) { showToast('Título y contenido son requeridos', 'warning'); return; } let imagenUrl = document.getElementById('postImagenUrl').value.trim(); if (archivosTemporal.post) { showToast('Subiendo imagen...', 'info'); const urlSubida = await subirImagen(archivosTemporal.post, 'blog-imagenes'); if (urlSubida) { imagenUrl = urlSubida; archivosTemporal.post = null; } } const post = { titulo, contenido, imagen_url: imagenUrl, video_url: document.getElementById('postVideo').value.trim() }; try { if (id) { post.updated_at = new Date().toISOString(); const { error } = await supabaseClient.from('posts').update(post).eq('id', id); if (error) throw error; showToast('Publicación actualizada'); } else { const { error } = await supabaseClient.from('posts').insert(post); if (error) throw error; showToast('Publicación creada'); } cancelarFormPost(); await cargarPosts(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
 async function eliminarPost(id) { if (!confirm('¿Eliminar esta publicación?')) return; try { const { error } = await supabaseClient.from('posts').delete().eq('id', id); if (error) throw error; showToast('Publicación eliminada'); await cargarPosts(); } catch (error) { showToast('Error: ' + error.message, 'error'); } }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // NÓMINA Y GESTIÓN HUMANA
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarNomina() {
     const tbody = document.getElementById('tbodyNomina');
@@ -4462,7 +4468,7 @@ async function cargarEventos() {
 
 
 async function devolverProductosEvento(eventoId) {
-    if (!confirm('¿Estás seguro de que deseas retornar el stock actual a sus sedes de origen? Esto finalizará el evento.')) return;
+    if (!confirm('¿estás seguro de que deseas retornar el stock actual a sus sedes de origen? Esto finalizará el evento.')) return;
 
     try {
         showToast('Analizando orígenes y procesando retorno inteligente...', 'info');
@@ -4615,7 +4621,7 @@ async function exportarEventoPDF(eventoId) {
         doc.text(`Total Ventas en Evento: $${formatearPrecio(totalVentas)}`, 20, 85);
 
         doc.save(`Reporte_Evento_${ev.nombre_evento.replace(/\s+/g, '_')}.pdf`);
-        showToast('📄 PDF generado con éxito');
+        showToast('PDF generado con éxito');
     } catch (err) {
         showToast('Error al generar PDF: ' + err.message, 'error');
     }
@@ -4627,7 +4633,7 @@ async function cargarComisiones() {
     showToast('Módulo de Comisiones en desarrollo', 'info');
 }
 
-// (Función antigua eliminada - Se usa la versión nueva definida al final del archivo)
+// (Función antígua eliminada - Se usa la versión nueva definida al final del archivo)
 
 async function cargarEmpleadosAlSelect(selectId) {
     const { data } = await supabaseClient.from('empleados_tienda').select('id, nombre').eq('activo', true);
@@ -4682,9 +4688,9 @@ async function procesarLiquidacion() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // CONFIGURACIÓN
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 async function cargarConfiguracion() {
     try {
         const { data, error } = await supabaseClient.from('configuracion_sistema').select('*');
@@ -4816,9 +4822,9 @@ async function cargarLogsIA() {
 window.cargarLogsIA = cargarLogsIA;
 
 // CIERRES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // CIERRES DE CAJA (NUEVO SISTEMA)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 let cierreLocalActual = 'alcala';
 let cierreFechaActual = new Date().toISOString().split('T')[0];
 let cierreDatosGuardados = null; // Para saber si estamos editando
@@ -4882,7 +4888,7 @@ async function cargarCierreFecha() {
 
         // Calcular totales sistema
         const totalVentas = ventas.reduce((sum, v) => sum + (v.total || 0), 0);
-        // Asumimos que 'Efectivo' es el método pago para efectivo esperado
+        // Asumimos que 'Efectivo' es el Método pago para efectivo esperado
         const efectivoEsperado = ventas
             .filter(v => (v.metodo_pago || '').toLowerCase().includes('efectivo'))
             .reduce((sum, v) => sum + (v.total || 0), 0);
@@ -4894,7 +4900,7 @@ async function cargarCierreFecha() {
         document.getElementById('efectivoSistema').dataset.valor = efectivoEsperado;
 
         // 2. Obtener Gastos de ese día y local
-        // TODO: Si hay módulo de gastos, sumar aquí. Por ahora 0 o lo que guarde el cierre.
+        // TODO: Si hay módulo de gastos, sumar aquí. Por ahora 0 o lo que guíarde el cierre.
 
         // 3. Buscar si ya existe un cierre guardado
         const { data: cierre, error: errCierre } = await supabaseClient
@@ -4939,7 +4945,7 @@ function cargarDatosEnFormulario(cierre) {
     document.getElementById('dineroSobrante').value = formatearMonedaInput(cierre.dinero_sobrante);
     document.getElementById('observacionesCierre').value = cierre.observaciones || '';
 
-    // Gastos si se guardan en el cierre
+    // Gastos si se guíardan en el cierre
     document.getElementById('gastosRegistrados').textContent = '$' + formatearPrecio(cierre.gastos_total || 0);
 }
 
@@ -4960,7 +4966,7 @@ function calcularDiferenciaCierre() {
     const ventasEfectivoReal = efectivoReal - base;
 
     // Diferencia = (Ventas Efectivo Real + Gastos) - Efectivo Sistema
-    // Si pagué gastos con efectivo de caja, ese dinero no está, así que lo sumo para "justificarlo"
+    // Si paguá gastos con efectivo de caja, ese dinero no está, así que lo sumo para "justificarlo"
 
     const diferencia = (ventasEfectivoReal + gastos) - efectivoSistema; // + sobrante? Sobrante es informativo o suma?
 
@@ -5012,7 +5018,7 @@ async function guardarCierreCaja() {
     };
 
     // TODO: Validar si tabla de cierres tiene estas columnas. Si no, agregar en migración.
-    // Asumiendo migracion_fase2.sql creó tabla cierres_de_caja o similar.
+    // Asumiendo migracion_fase2.sql creé tabla cierres_de_caja o similar.
     // Verificando SQL anterior... cierres_caja existe?
 
     try {
@@ -5272,7 +5278,7 @@ async function verDetalleCierre(id) {
 
                         <!-- Bloque Otros Ingresos -->
                         <div style="background:#eff6ff; padding:1.5rem; border-radius:1.25rem; border:1px solid #dbeafe; border-left:6px solid #3b82f6;">
-                            <h4 style="margin:0 0 1rem 0; font-size:0.85rem; color:#1e40af; display:flex; align-items:center; gap:0.5rem;">💳 OTROS INGRESOS</h4>
+                            <h4 style="margin:0 0 1rem 0; font-size:0.85rem; color:#1e40af; display:flex; align-items:center; gap:0.5rem;">💰 OTROS INGRESOS</h4>
                             <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.9rem;">
                                 <span style="color:#64748b;">Abonos / Servicios:</span>
                                 <span style="font-weight:700; color:#1e293b;">$${formatearPrecio((data.abonos_credito_sistema || 0) + (data.ingresos_servicios_sistema || 0))}</span>
@@ -5421,8 +5427,7 @@ async function editarCierre(id) {
                 </div>
 
                 <div style="margin-bottom:1rem;">
-                    <label style="display:block;margin-bottom:0.5rem;">Observaciones / Justificación</label>
-                    <textarea id="editObservaciones" rows="3" style="width:100%;padding:0.75rem;border:1px solid #ccc;border-radius:0.5rem;">${data.observaciones || ''}</textarea>
+                    <label style="display:block;margin-bottom:0.5rem;">Observaciones / Justificación</label>  <textarea id="editObservaciones" rows="3" style="width:100%;padding:0.75rem;border:1px solid #ccc;border-radius:0.5rem;">${data.observaciones || ''}</textarea>
                 </div>
 
                 <div style="display:flex;gap:1rem;margin-top:2rem;">
@@ -5483,7 +5488,7 @@ async function guardarEdicionCierre(id, base, ventasEfecSist, totalVentasSist, g
         if (error) throw error;
 
         document.getElementById('modalEditarCierre').remove();
-        showToast('✅ Cierre corregido exitosamente', 'success');
+        showToast('Cierre corregido exitosamente', 'success');
         cargarCierresCaja(); // Recargar tabla
 
     } catch (e) {
@@ -5527,7 +5532,7 @@ async function exportarCierres() {
 
         if (window.ReportExporter) {
             window.ReportExporter.toExcel(dataExport, `Cierres_Caja_${cierreLocalActual}_${new Date().toISOString().split('T')[0]}.xlsx`);
-            showToast('✅ Reporte exportado con éxito');
+            showToast('Reporte exportado con éxito');
         } else {
             console.error('ReportExporter no encontrado');
             showToast('Error: Módulo de exportación no cargado', 'error');
@@ -5603,7 +5608,7 @@ async function cargarGastos() {
         if (local) query = query.eq('local', local);
 
         const { data, error } = await query;
-        if (error) { if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error Supabase:', error); throw error; }
+        if (error) { if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌​ Error Supabase:', error); throw error; }
 
 
         gastosData = data || [];
@@ -5657,7 +5662,7 @@ async function cargarGastos() {
         }).join('');
 
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error cargando gastos:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌​ Error cargando gastos:', error);
         tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error: ${error.message}</td></tr>`;
         showToast('Error al cargar gastos: ' + error.message, 'error');
     }
@@ -5678,7 +5683,7 @@ async function cargarProveedoresParaGastos() {
 
 function mostrarFormGasto() {
     document.getElementById('formGasto').style.display = 'block';
-    document.getElementById('formTituloGasto').textContent = '➕ Nuevo Gasto';
+    document.getElementById('formTituloGasto').textContent = '? Nuevo Gasto';
     ['gastoId', 'gastoDescripcion', 'gastoMonto', 'gastoProveedor', 'gastoFactura', 'gastoNotas', 'gastoRegistradoPor'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
@@ -5766,7 +5771,7 @@ async function guardarGasto() {
         if (window.recordatorioPendienteId) {
             await marcarRecordatorioPagado(window.recordatorioPendienteId, true); // true = sin confirmación
             window.recordatorioPendienteId = null;
-            showToast('Recordatorio actualizado y alerta desactivada 🔔', 'info');
+            showToast('Recordatorio actualizado y alerta desactivada ✅', 'info');
         }
 
         cancelarFormGasto();
@@ -5774,12 +5779,12 @@ async function guardarGasto() {
 
     } catch (error) {
         console.error('Error crítico guardando gasto:', error);
-        showToast(`❌ Error: ${error.message}${error.details ? ' - ' + error.details : ''}`, 'error');
+        showToast(`❌​ Error: ${error.message}${error.details ? ' - ' + error.details : ''}`, 'error');
     }
 }
 
 async function eliminarGasto(id) {
-    if (!confirm('¿Eliminar este gasto?')) return;
+    if (!confirm('❌ Eliminar este gasto?')) return;
 
 
     try {
@@ -5789,7 +5794,7 @@ async function eliminarGasto(id) {
         showToast('Gasto eliminado', 'success');
         await cargarGastos();
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error eliminando gasto:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌​ Error eliminando gasto:', error);
         showToast('Error: ' + error.message, 'error');
     }
 }
@@ -6046,7 +6051,7 @@ async function cargarReporteTop(periodo = 'historico', metrica = 'cantidad') {
         }
 
         // --- CALCULO ESTADISTICAS CATEGORIA ---
-        // (Usamos los Top 5 para la gráfica detallada, o podríamos usar todo el rankingArray si tuviéramos las categorías de todos,
+        // (Usamos los Top 5 para la gráfica detallada, o podríamos usar todo el rankingArray si tuviéramos las Categoías de todos,
         // pero para evitar N+1 querys masivos, usamos la muestra del Top + extrapolación simple o solo mostramos el Top)
         // Para hacerlo bien, agruparemos por categoría solo de los productos visibles en Top 5 para la gráfica de "Distribución del Top"
 
@@ -6089,10 +6094,10 @@ async function cargarReporteTop(periodo = 'historico', metrica = 'cantidad') {
                         </div>
                     </div>
 
-                    <!-- Chart Categorías -->
+                    <!-- Chart Categoías -->
                     <div style="background:white; padding:1rem; border-radius:12px; border:1px solid #e2e8f0; display:flex; gap:1rem; align-items:center;">
                          <div style="flex:1;">
-                            <h4 style="margin:0 0 0.5rem 0; color:#475569; font-size:0.85rem;">Distribución por Categoría (Top 5)</h4>
+                            <h4 style="margin:0 0 0.5rem 0; color:#475569; font-size:0.85rem;">Distribución por CategorÍa (Top 5)</h4>
                             <div style="height:140px; width:100%; position:relative;">
                                 <canvas id="chartCategoriasTop"></canvas>
                             </div>
@@ -6173,7 +6178,7 @@ async function cargarReporteTop(periodo = 'historico', metrica = 'cantidad') {
 
         contentArea.innerHTML = html;
 
-        // --- RENDERIZAR GRÁFICAS ---
+        // --- RENDERIZAR GRáFICAS ---
         if (typeof Chart !== 'undefined') {
             try {
                 // 1. Gráfica Barras Top 5
@@ -6203,7 +6208,7 @@ async function cargarReporteTop(periodo = 'historico', metrica = 'cantidad') {
                     }
                 });
 
-                // 2. Gráfica Dona Categorías
+                // 2. Gráfica Dona Categoías
                 if (window.chartCategoriaInstance) window.chartCategoriaInstance.destroy();
                 const ctxDoughnut = document.getElementById('chartCategoriasTop').getContext('2d');
 
@@ -6286,7 +6291,7 @@ async function cargarReporteMetodos() {
         let totalTransacciones = 0;
 
         data.forEach(venta => {
-            // Normalizar método (ej: "Nequi + Efectivo" -> contar como principal o separar? Por ahora string exacto)
+            // Normalizar Método (ej: "Nequi + Efectivo" -> contar como principal o separar? Por ahora string exacto)
             // Si es null, categorizar como "Sin Especificar"
             let metodo = venta.metodo_pago ? venta.metodo_pago.trim() : 'Sin Especificar';
 
@@ -6412,7 +6417,7 @@ async function cargarReporteMetodos() {
         window.tituloReporteActual = 'Ventas_Por_Metodo';
 
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando reporte métodos:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando reporte Métodos:', error);
         body.innerHTML = `
             <div style="padding:2rem; text-align:center; background:#fef2f2; border:1px solid #fee2e2; border-radius:8px;">
                 <p style="color:#ef4444; font-weight:600; margin-bottom:0.5rem;">Error al cargar el reporte</p>
@@ -6648,7 +6653,7 @@ function exportarVentasPDF() {
     }
     // ... (Lógica PDF existente pero usando dataVentas)
     // Para simplificar, asumimos que ReportExporter.toPDF ya existe o usamos jsPDF directo como estaba
-    // Mantenemos lógica original adaptada:
+    // Mantenemos Lógica original adaptada:
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('landscape');
@@ -6680,7 +6685,7 @@ function exportarVentasPDF() {
     }
 }
 
-// NUEVAS FUNCIONES DE EXPORTACIÓN GRANULAR
+// NUEVAS FUNCIONES DE EXPORTACIóN GRANULAR
 function exportarReporteMetodos(formato) {
     const dataVentas = getVentasData();
     if (dataVentas.length === 0) return showToast('Sin datos', 'warning');
@@ -6856,9 +6861,9 @@ function exportarInventarioPDF() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// BÚSQUEDA GLOBAL
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// BúSQUEDA GLOBAL
+// ---------------------------------------------------------------
 let resultadosBusquedaGlobal = [];
 
 function busquedaGlobalAdmin(termino) {
@@ -6967,9 +6972,9 @@ function ocultarResultadosBusqueda() {
     if (container) container.style.display = 'none';
 }
 
-// ═══════════════════════════════════════════════════════════════
-// INICIALIZACIÓN
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// Inicialización
+// ---------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
 
     setupNavigation();
@@ -6981,7 +6986,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
         inicializarAdmin();
-        showToast('¡Sesión restaurada!', 'success');
+        showToast('!Sesión restaurada!', 'success');
     }
 
     // Event listeners
@@ -7000,9 +7005,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // EXPORTAR FUNCIONES GLOBALES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // Login
 window.loginAdmin = loginAdmin;
 window.logout = logout;
@@ -7068,9 +7073,9 @@ window.guardarDeudor = guardarDeudor;
 window.editarDeudor = editarDeudor;
 window.registrarPagoDeudor = registrarPagoDeudor;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // SERVICIOS VENDEDORES (REPORTES)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 let serviciosActuales = [];
 
 async function cargarServiciosAdmin() {
@@ -7132,7 +7137,7 @@ function renderizarTablaServicios(datos) {
                 <span class="badge badge-info">${s.tipo_servicio}</span><br>
                 <small>${s.local || ''}</small>
             </td>
-            <td>👤 ${tecnico}</td>
+            <td>👨‍🔧 ${tecnico}</td>
             <td>${s.casco_prestado ? '🪖 ' + s.casco_prestado : '<span style="color:#ccc;">-</span>'}</td>
             <td><strong>$${formatearPrecio(s.precio_total)}</strong></td>
             <td style="color:#10b981;">$${formatearPrecio(s.monto_abonado)}</td>
@@ -7149,7 +7154,7 @@ function renderizarTablaServicios(datos) {
 }
 
 function exportarServiciosExcel() {
-    showToast('Función en mantenimiento para nueva estructura', 'info');
+    showToast('función en mantenimiento para nueva estructura', 'info');
 }
 
 window.cargarServiciosAdmin = cargarServiciosAdmin;
@@ -7224,10 +7229,10 @@ window.guardarMeta = guardarMeta;
 window.eliminarMeta = eliminarMeta;
 window.exportarMetasPDF = exportarMetasPDF;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 // REPORTES ADICIONALES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarReportePromedioVentas() {
     const contenido = document.getElementById('contenidoReporte');
@@ -7281,7 +7286,7 @@ async function cargarReportePromedioVentas() {
         contenido.querySelector('.card-body').innerHTML = `
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:2rem;">
                 <div style="background:#f0f9ff; padding:1.5rem; border-radius:1rem; border:1px solid #bae6fd; text-align:center;">
-                    <div style="font-size:0.8rem; color:#0369a1; font-weight:700; text-transform:uppercase; margin-bottom:0.5rem;">Promedio Diario (90d)</div>
+                    <div style="font-size:0.8rem; color:#0369a1; font-weight:700; text-transform:uppercase; margin-bottom:0.5rem;">📈 Promedio Diario (90d)</div>
                     <div style="font-size:1.5rem; font-weight:800; color:#0c4a6e;">$${formatearPrecio(promedioGeneral)}</div>
                 </div>
                 <div style="background:#f0fdf4; padding:1.5rem; border-radius:1rem; border:1px solid #bbf7d0; text-align:center;">
@@ -7318,7 +7323,7 @@ async function cargarReportePromedioVentas() {
                                     <td>${Object.keys(ventasPorDia[f].porLocal).join(', ')}</td>
                                     <td>
                                         <span style="color:${color}; font-weight:700;">
-                                            ${diff >= 0 ? '▲' : '▼'} ${Math.abs(diffPerc)}%
+                                            ${diff >= 0 ? '?' : '?'} ${Math.abs(diffPerc)}%
                                         </span>
                                     </td>
                                 </tr>
@@ -7433,7 +7438,7 @@ window.exportarReporte = exportarReporte;
 window.cargarDashboard = cargarDashboard;
 window.cargarEstadisticasLocales = cargarEstadisticasLocales;
 
-// ═══════════════════ ENVÍOS ═══════════════════
+// ------------------- ENVÍOS -------------------
 
 
 async function cargarEnvios() {
@@ -7469,7 +7474,7 @@ async function cargarEnvios() {
 
         // Actualizar stats (Dashboard simple)
         // Nota: Para los contadores totales preferimos una consulta separada si queremos ver TODOS, 
-        // pero para UX consistente, los contadores de arriba suelen reflejar "Estado Actual del Sistema" (pendientes, en tránsito)
+        // pero para UX consistente, los contadores de arriba suelen reflejar "Estado Actual del Sistema" (pendientes, en TRÁNSITO)
         // independientemente del filtro de fecha histórico.
         // Haremos un fetch ligero de conteo por estados vivos.
         actualizarContadoresEnviosRapidos();
@@ -7562,7 +7567,7 @@ async function enviarGuia(id) {
             .select();
 
         if (error) {
-            if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error Supabase:', error);
+            if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Supabase:', error);
             throw error;
         }
 
@@ -7577,7 +7582,7 @@ async function enviarGuia(id) {
             notificarClienteWhatsApp(id);
         }
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error asignando guía:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ asignando guía:', error);
         showToast('Error: ' + error.message, 'error');
     }
 }
@@ -7604,7 +7609,7 @@ async function actualizarEstadoEnvio(id, nuevoEstado) {
             .select();
 
         if (error) {
-            if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error Supabase:', error);
+            if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Supabase:', error);
             throw error;
         }
 
@@ -7612,7 +7617,7 @@ async function actualizarEstadoEnvio(id, nuevoEstado) {
         showToast('Estado actualizado a: ' + nuevoEstado, 'success');
         await cargarEnvios();
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error actualizando estado:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ actualizando estado:', error);
         showToast('Error: ' + error.message, 'error');
     }
 }
@@ -7620,7 +7625,7 @@ async function actualizarEstadoEnvio(id, nuevoEstado) {
 function notificarClienteWhatsApp(id, guia = null, transportadora = null) {
     const envio = enviosData.find(e => e.id === id);
     if (!envio) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Envío no encontrado:', id);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '? Envío no encontrado:', id);
         showToast('Envío no encontrado', 'error');
         return;
     }
@@ -7641,7 +7646,7 @@ function notificarClienteWhatsApp(id, guia = null, transportadora = null) {
         // MENSAJE DESPACHADO / EN TRÁNSITO
         mensaje += `Estimad@ *${nombreCliente}*, cliente premium, te informamos que tu pedido *${numeroPedido}* ya va por excelente camino 😁 Muy pronto podrás disfrutar de tus productos 🫶\n\n`;
         mensaje += `📦 *Transportadora:* ${envio.transportadora || transportadora || 'Por definir'}\n`;
-        mensaje += `🔢 *Número de guía:* ${envio.numero_guia || guia}\n`;
+        mensaje += `🔢 *número de guía:* ${envio.numero_guia || guia}\n`;
         if (envio.url_tracking || (envio.transportadora === 'Servientrega' && guia)) {
             const url = envio.url_tracking || `https://www.servientrega.com/wps/portal/Colombia/transaccional/rastreo-envios?id=${guia || envio.numero_guia}`;
             mensaje += `🔗 *Tracking:* ${url}\n`;
@@ -7651,7 +7656,7 @@ function notificarClienteWhatsApp(id, guia = null, transportadora = null) {
         mensaje += `Estimad@ *${nombreCliente}*, cliente premium, te informamos que tu pedido *${numeroPedido}* ya se está preparando con la mejor energía 😁 Muy pronto estará en manos de la transportadora 🫶\n`;
     }
 
-    mensaje += `\n¡Gracias por ser parte de la familia MOTEROS SPORT LINE! 🙌\n`;
+    mensaje += `\n!Gracias por ser parte de la familia MOTEROS SPORT LINE! 🙌\n`;
 
     const url = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
@@ -7723,7 +7728,7 @@ async function guardarEnvioModal(notificar = false) {
             .select();
 
         if (error) {
-            if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error Supabase:', error);
+            if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Supabase:', error);
             throw error;
         }
 
@@ -7737,7 +7742,7 @@ async function guardarEnvioModal(notificar = false) {
 
         await cargarEnvios();
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ Error guardando envío:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", '❌ guardando envío:', error);
         showToast('Error: ' + error.message, 'error');
     }
 }
@@ -7945,9 +7950,9 @@ window.guardarEnvio = guardarEnvio;
 window.guardarEnvioModal = guardarEnvioModal;
 window.cerrarModalHistorial = cerrarModalHistorial;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // GESTIÓN DE EMPLEADOS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 let empleados = [];
 let empleadosTablaExiste = true; // Flag para evitar reintentos innecesarios
@@ -7986,7 +7991,7 @@ async function cargarEmpleados() {
             if (window.registrarLogSistema) window.registrarLogSistema("warn_sistema", 'Empleados: No se pudo cargar la tabla empleados_tienda');
             empleadosTablaExiste = false;
         }
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#f59e0b;">⚠️ Error al cargar empleados. La tabla puede no existir.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#f59e0b;">?❌ al cargar empleados. La tabla puede no existir.</td></tr>';
     }
 }
 
@@ -8024,7 +8029,7 @@ function renderizarEmpleados() {
 
 function mostrarModalEmpleado() {
     if (!empleadosTablaExiste) {
-        alert('⚠️ La tabla de empleados no está configurada en la base de datos.\n\nContacta al administrador para crear la tabla "empleados_tienda" en Supabase.');
+        alert('❌​ La tabla de empleados no está configurada en la base de datos.\n\nContacta al administrador para crear la tabla "empleados_tienda" en Supabase.');
         return;
     }
     document.getElementById('tituloModalEmpleado').textContent = '➕ Nuevo Empleado';
@@ -8125,7 +8130,7 @@ async function guardarEmpleado() {
         cerrarModalEmpleado();
         cargarEmpleados();
     } catch (e) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error guardando empleado:', e);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error guíardando empleado:', e);
         alert('Error al guardar: ' + (e.message || 'desconocido'));
     }
 }
@@ -8176,7 +8181,7 @@ async function eliminarEmpleado(id) {
     const emp = empleados.find(e => e.id === id);
     if (!emp) return;
 
-    if (!confirm(`¿Eliminar al empleado "${emp.nombre}"?\n\nEsta acción no se puede deshacer.`)) {
+    if (!confirm(`❌​ Eliminar al empleado "${emp.nombre}"?\n\nEsta acción no se puede deshacer.`)) {
         return;
     }
 
@@ -8187,7 +8192,7 @@ async function eliminarEmpleado(id) {
             .eq('id', id);
 
         if (error) throw error;
-        alert('✅ Empleado eliminado');
+        alert('? Empleado eliminado');
         cargarEmpleados();
     } catch (e) {
         if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error eliminando empleado:', e);
@@ -8204,9 +8209,9 @@ window.guardarEmpleado = guardarEmpleado;
 window.editarEmpleado = editarEmpleado;
 window.eliminarEmpleado = eliminarEmpleado;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // MÉTODOS DE PAGO (CONFIGURACIÓN WEB)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 function cargarMetodosPagoConfig() {
     try {
@@ -8246,7 +8251,7 @@ async function guardarMetodosPago() {
             if (window.registrarLogSistema) window.registrarLogSistema("warn_sistema", 'No se pudo guardar en Supabase:', e);
         }
 
-        alert('✅ Métodos de pago guardados correctamente');
+        alert('? Métodos de pago guardados correctamente');
     } catch (e) {
         if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error guardando métodos de pago:', e);
         alert('Error al guardar: ' + (e.message || 'desconocido'));
@@ -8255,9 +8260,9 @@ async function guardarMetodosPago() {
 
 window.guardarMetodosPago = guardarMetodosPago;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // CONTENIDO DEL SITIO - Cargar y Guardar
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 const tiposContenido = [
     'hero_imagen', // Nuevo
@@ -8344,7 +8349,7 @@ async function guardarContenidoSitio() {
             if (error) throw error;
         }
 
-        showToast('✅ Contenido guardado correctamente', 'success');
+        showToast('Contenido guardado correctamente', 'success');
 
     } catch (error) {
         if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error guardando contenido:', error);
@@ -8371,9 +8376,9 @@ document.addEventListener('DOMContentLoaded', () => {
 window.cargarContenidoSitio = cargarContenidoSitio;
 window.guardarContenidoSitio = guardarContenidoSitio;
 
-// ═══════════════════════════════════════════════════════════════
-// GESTIÓN DE PROMOCIONES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// GESTIóN DE PROMOCIONES
+// ---------------------------------------------------------------
 
 
 
@@ -8458,7 +8463,7 @@ function renderizarPromociones() {
 }
 
 function mostrarFormPromocion() {
-    document.getElementById('formTituloPromocion').textContent = '➕ Nueva Promoción';
+    document.getElementById('formTituloPromocion').textContent = '? Nueva Promoción';
     document.getElementById('promocionIdOriginal').value = '';
     document.getElementById('promocionId').value = 'PROMO' + Date.now().toString().slice(-4);
     document.getElementById('promocionNombre').value = '';
@@ -8516,13 +8521,13 @@ async function guardarPromocion() {
                 .update(datos)
                 .eq('id_promo', idOriginal);
             if (error) throw error;
-            showToast('✅ Promoción actualizada', 'success');
+            showToast('? Promoción actualizada', 'success');
         } else {
             const { error } = await supabaseClient
                 .from('promociones')
                 .insert(datos);
             if (error) throw error;
-            showToast('✅ Promoción creada', 'success');
+            showToast('? Promoción creada', 'success');
         }
 
         cancelarFormPromocion();
@@ -8579,7 +8584,7 @@ function editarPromocion(id) {
 }
 
 async function eliminarPromocion(id) {
-    if (!confirm('¿Estás seguro de eliminar esta promoción?')) return;
+    if (!confirm('¿estás seguro de eliminar esta Promoción?')) return;
 
     try {
         const { error } = await supabaseClient
@@ -8588,7 +8593,7 @@ async function eliminarPromocion(id) {
             .eq('id_promo', id);
 
         if (error) throw error;
-        showToast('✅ Promoción eliminada', 'success');
+        showToast('? Promoción eliminada', 'success');
         cargarPromociones();
     } catch (e) {
         if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error eliminando promocion:', e);
@@ -8640,7 +8645,7 @@ function renderizarProductosPromo() {
                             </div>
                         </div>
                         <div style="width:24px; height:24px; border-radius:6px; border:2px solid ${isSelected ? '#ff6b00' : '#cbd5e1'}; display:flex; align-items:center; justify-content:center; background:${isSelected ? '#ff6b00' : 'transparent'}; transition:all 0.2s;">
-                            ${isSelected ? '<span style="color:white; font-size:0.9rem; font-weight:bold;">✓</span>' : ''}
+                            ${isSelected ? '<span style="color:white; font-size:0.9rem; font-weight:bold;">?</span>' : ''}
                         </div>
                     </div>
                 `;
@@ -8755,9 +8760,9 @@ window.filtrarProductosPromo = filtrarProductosPromo;
 window.limpiarSeleccionPromo = limpiarSeleccionPromo;
 window.actualizarPreviewPromo = actualizarPreviewPromo;
 
-// ═══════════════════════════════════════════════════════════════
-// GESTIÓN DE CATEGORÍAS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// GESTIóN DE Categoías
+// ---------------------------------------------------------------
 
 async function cargarCategorias() {
     try {
@@ -8778,13 +8783,13 @@ async function cargarCategorias() {
         if (!tbody) return;
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="padding:2rem;">📂 No hay categorías registradas.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="padding:2rem;">📂 No hay Categoías registradas.</td></tr>';
             return;
         }
 
         tbody.innerHTML = data.map(cat => `
             <tr>
-                <td style="font-size: 1.5rem; text-align:center;">${cat.icono || '📁'}</td>
+                <td style="font-size: 1.5rem; text-align:center;">${cat.icono || '📂'}</td>
                 <td style="font-weight: 600;">${cat.nombre}</td>
                 <td style="text-align:right;">
                     <div class="btn-group">
@@ -8798,8 +8803,8 @@ async function cargarCategorias() {
         actualizarSelectsCategorias(data);
 
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando categorías:', error);
-        showToast('Error al cargar categorías', 'error');
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando Categoías:', error);
+        showToast('Error al cargar Categoías', 'error');
     }
 }
 
@@ -8860,13 +8865,13 @@ async function guardarCategoria() {
         cargarCategorias();
 
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error guardando categoría:', error);
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error guíardando categoría:', error);
         showToast('Error al guardar la categoría', 'error');
     }
 }
 
 async function eliminarCategoria(id, nombre) {
-    if (!confirm(`¿Estás seguro de eliminar la categoría "${nombre}"?`)) return;
+    if (!confirm(`¿estás seguro de eliminar la categoría "${nombre}"?`)) return;
 
     try {
         const { error } = await supabaseClient.from('categorias').delete().eq('id', id);
@@ -8903,12 +8908,12 @@ window.guardarCategoria = guardarCategoria;
 window.editarCategoria = editarCategoria;
 window.eliminarCategoria = eliminarCategoria;
 window.cargarCategorias = cargarCategorias;
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // Redundant Leads IA implementation removed. Management consolidated at the end of the file.
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // TRASLADOS, COMENTARIOS Y RESEÑAS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarTraslados() {
     try {
@@ -8976,7 +8981,7 @@ async function cargarFeedback() {
 
 async function cargarComentarios() {
     try {
-        // Cargar comentarios con información del post
+        // Cargar comentarios con Información del post
         const { data: comentarios, error } = await supabaseClient
             .from('blog_comentarios')
             .select('*')
@@ -9013,10 +9018,10 @@ async function cargarComentarios() {
                 <td><strong>${c.nombre_usuario || 'Anónimo'}</strong></td>
                 <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis;">${c.comentario || ''}</td>
                 <td style="font-size:0.85rem; color:#666;">${tituloPost}</td>
-                <td><span class="badge ${estaAprobado ? 'badge-success' : 'badge-warning'}">${estaAprobado ? '✅ Aprobado' : '⏳ Pendiente'}</span></td>
+                <td><span class="badge ${estaAprobado ? 'badge-success' : 'badge-warning'}">${estaAprobado ? '? Aprobado' : '? Pendiente'}</span></td>
                 <td>
                     <div style="display:flex; gap:0.3rem;">
-                        ${!estaAprobado ? `<button class="btn btn-sm btn-success" onclick="aprobarComentario('${c.id}')" title="Aprobar">✅</button>` : ''}
+                        ${!estaAprobado ? `<button class="btn btn-sm btn-success" onclick="aprobarComentario('${c.id}')" title="Aprobar">?</button>` : ''}
                         <button class="btn btn-sm btn-danger" onclick="eliminarComentario('${c.id}')" title="Eliminar">🗑️</button>
                     </div>
                 </td>
@@ -9061,7 +9066,7 @@ async function cargarResenas() {
                 <td>${new Date(r.created_at).toLocaleDateString()}</td>
                 <td>${r.nombre_cliente}</td>
                 <td>${r.id_producto || 'Sitio'}</td>
-                <td>${'⭐'.repeat(r.estrellas)}</td>
+                <td>${'?'.repeat(r.estrellas)}</td>
                 <td>${r.comentario}</td>
             </tr>
         `).join('');
@@ -9099,7 +9104,7 @@ window.calcularPorcentajesLocales = calcularPorcentajesLocales;
 
 window.actualizarSelectsCategorias = actualizarSelectsCategorias;
 
-// Función helper restaurada de admin-helpers.js
+// función helper restaurada de admin-helpers.js
 // Variables globales para instancias de gráficos de ventas (sección dedicada)
 let chartVentasMetodosInstance = null;
 let chartVentasLocalesInstance = null;
@@ -9210,9 +9215,9 @@ function actualizarGraficosVentas(datos) {
 }
 window.actualizarGraficosVentas = actualizarGraficosVentas;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // GESTIÓN DE PROVEEDORES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarProveedores() {
     try {
@@ -9346,9 +9351,9 @@ async function eliminarProveedor(id, nombre) {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // GESTIÓN DE EMPLEADOS (RRHH)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarEmpleados() {
     try {
@@ -9410,7 +9415,7 @@ async function cargarEmpleados() {
 
 function mostrarModalEmpleado() {
     document.getElementById('formEmpleado').style.display = 'block';
-    document.getElementById('formTituloEmpleado').textContent = '➕ Nuevo Empleado';
+    document.getElementById('formTituloEmpleado').textContent = '? Nuevo Empleado';
     limpiarFormEmpleado();
 }
 
@@ -9569,9 +9574,9 @@ window.cancelarFormEmpleado = cancelarFormEmpleado;
 
 // Redundant Leads IA implementation removed from middle of file. Consistently managed at the end.
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // ALERTAS DE STOCK
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarAlertasStock() {
     try {
@@ -9620,7 +9625,7 @@ async function cargarAlertasStock() {
         if (!contenedor) return;
 
         if (alertas.length === 0) {
-            contenedor.innerHTML = '<div class="alert alert-success">✅ Todo el inventario está saludable.</div>';
+            contenedor.innerHTML = '<div class="alert alert-success">? Todo el inventario está saludable.</div>';
             return;
         }
 
@@ -9658,9 +9663,9 @@ async function cargarAlertasStock() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // GESTIÓN DE COMENTARIOS (ADMIN)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 async function cargarComentariosAdmin() {
     try {
         const tbody = document.getElementById('tbodyComentarios');
@@ -9749,9 +9754,9 @@ window.eliminarComentario = eliminarComentario;
 
 window.cargarAlertasStock = cargarAlertasStock;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // COMISIONES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarComisiones() {
     try {
@@ -9760,7 +9765,7 @@ async function cargarComisiones() {
 
         tbody.innerHTML = '<tr><td colspan="6" class="text-center">Cargando comisiones...</td></tr>';
 
-        // TODO: Implementar lógica completa de comisiones
+        // TODO: Implementar Lógica completa de comisiones
         // Por ahora mostrar mensaje de desarrollo
         tbody.innerHTML = `
             <tr>
@@ -9815,9 +9820,9 @@ window.cargarComisiones = cargarComisiones;
 window.filtrarEmpleados = filtrarEmpleados;
 window.filtrarComisiones = filtrarComisiones;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // SISTEMA DE LOGS IA Y ERRORES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 function registrarLogSistema(tipo, mensaje, detalle = '') {
     const log = {
@@ -9872,9 +9877,9 @@ function cargarLogsIA() {
 
 window.registrarLogSistema = registrarLogSistema;
 
-// ═══════════════════════════════════════════════════════════════
-// GESTIÓN DE EVENTOS (NUEVA LÓGICA)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// GESTIÓN DE EVENTOS (NUEVA Lógica)
+// ---------------------------------------------------------------
 
 // --- 1. Multi-empleados ---
 let empleadosDisponiblesCache = [];
@@ -10036,13 +10041,13 @@ window.guardarNuevoEvento = async function () {
             }
         }
 
-        alert('✅ Evento guardado correctamente');
+        alert('Evento guardado correctamente');
         cerrarModalNuevoEvento();
         cargarEventos();
 
     } catch (e) {
         console.error(e);
-        alert('❌ Error al guardar evento');
+        alert('Error al guardar evento');
     }
 }
 
@@ -10243,7 +10248,7 @@ window.exportarEventoPDF = async function (id, dataPrevia = null) {
 
                 <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:2rem;">
                     <div>
-                        <h3>📦 Productos Vendidos</h3>
+                        <h3>Productos Vendidos</h3>
                         <table><thead><tr><th>Producto</th><th class="text-right">Cant</th><th class="text-right">Unit.</th><th class="text-right">Total</th></tr></thead><tbody>
                             ${Object.values(productosVendidos).sort((a, b) => b.total - a.total).map(p => `
                                 <tr>
@@ -10255,7 +10260,7 @@ window.exportarEventoPDF = async function (id, dataPrevia = null) {
                         </tbody></table>
                     </div>
                     <div>
-                        <h3>👥 Personal en sitio</h3>
+                        <h3>Personal en sitio</h3>
                         <table><thead><tr><th>Nombre</th><th class="text-right">Pago</th></tr></thead><tbody>
                             ${(personal || []).map(p => `
                                 <tr>
@@ -10283,7 +10288,7 @@ window.exportarEventoPDF = async function (id, dataPrevia = null) {
 
 
 
-// ════════════ MODAL FUNCTIONS - FIX UI/UX ════════════
+// ------------ MODAL FUNCTIONS - FIX UI/UX ------------
 
 // La función principal mostrarFormCompra está definida arriba.
 // window.mostrarFormCompra = ... se eliminó para evitar duplicidad.
@@ -10306,9 +10311,9 @@ window.cerrarFormDeuda = function () {
 }
 window.cancelarFormDeuda = window.cerrarFormDeuda; // Alias legacy
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // LIQUIDACIÓN DE NÓMINA (Lógica Completa)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 let empleadosCache = [];
 
@@ -10517,7 +10522,7 @@ window.guardarLiquidacionNomina = async function () {
         const { error } = await supabaseClient.from('nomina_pagos').insert([payload]);
         if (error) throw error;
 
-        showToast('✅ Pago de nómina registrado correctamente', 'success');
+        showToast('Pago de nómina registrado correctamente', 'success');
         cerrarModalLiquidarNomina();
         // Here we could reload a history table if it existed
     } catch (e) {
@@ -10538,9 +10543,9 @@ window.verDetallesEvento = verDetallesEvento;
 window.exportarEventoPDF = exportarEventoPDF;
 window.cargarEventos = cargarEventos;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // LOGICA DE VARIANTES EN COMPRAS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 let variantePendiente = null; // { index, producto, variantes_info }
 
@@ -10604,7 +10609,7 @@ function agregarFilaVariante() {
         <td><input type="number" class="form-control form-control-sm input-local01" min="0" value="0"></td>
         <td><input type="number" class="form-control form-control-sm input-jordan" min="0" value="0"></td>
         <td><input type="number" class="form-control form-control-sm input-digital" min="0" value="0"></td>
-        <td><button class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">×</button></td>
+        <td><button class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">-</button></td>
 `;
 
     tr.innerHTML = html;
@@ -10709,9 +10714,9 @@ async function actualizarStockVariantes(item, tabla, cantidad, tiendaKey) {
     }).eq('id_producto', item.producto_id);
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // DISTRIBUCIÓN AVANZADA (SPRINT 2.2 - NUEVO)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 // Estado temporal para el modal de dist
 var distribucionActualIndex = null;
@@ -10734,7 +10739,7 @@ function abrirDistribucionAvanzada(index) {
     document.getElementById('distCantidadTotal').textContent = cantidadTotal;
 
     // Init Data
-    // Si ya existe data guardada en el item, usarla. Si no, iniciar vacía o con default.
+    // Si ya existe data guíardada en el item, usarla. Si no, iniciar vacía o con default.
     if (item.distribucion && item.distribucion.length > 0) {
         distribucionTempData = JSON.parse(JSON.stringify(item.distribucion));
     } else {
@@ -10900,9 +10905,9 @@ function guardarDistribucionAvanzada() {
 }
 
 
-// ═══════════════════════════════════════════════════════════════
-// MÓDULO DE SERVICIOS - ADMIN
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// Módulo de SERVICIOS - ADMIN
+// ---------------------------------------------------------------
 
 async function cargarServiciosAdmin() {
     const estado = document.getElementById('serviciosFiltroEstado')?.value;
@@ -10998,7 +11003,7 @@ async function cambiarEstadoServicioAdmin(id, nuevoEstado, telefono = null, nomb
         cargarServiciosAdmin();
 
         if (nuevoEstado === 'listo' && telefono) {
-            if (confirm(`¿Deseas notificar a ${nombre} por WhatsApp que su servicio está listo ? `)) {
+            if (confirm(`¿¿Deseas notificar a ${nombre} por WhatsApp que su servicio esté listo ? `)) {
                 enviarWhatsAppServicio(telefono, nombre, '', 'listo');
             }
         }
@@ -11012,9 +11017,9 @@ function enviarWhatsAppServicio(telefono, nombre, tipo, estado) {
     const servicioTexto = tipo ? `de ${tipo}` : '';
 
     if (estado === 'listo') {
-        mensaje = `Hola ${nombre}, te saludamos de Moteros Sports Line. 🛵 ¡Tu servicio ${servicioTexto} ya está LISTO para ser recogido! Te esperamos.`;
+        mensaje = `Hola ${nombre}, te saludamos de Moteros Sports Line. 🛵 Tu servicio ${servicioTexto} ya está LISTO para ser recogido! Te esperamos.`;
     } else if (estado === 'entregado') {
-        mensaje = `Hola ${nombre}, gracias por confiar en Moteros Sports Line. 🛵 Esperamos que hayas quedado satisfecho con tu servicio ${servicioTexto}. ¡Vuelve pronto!`;
+        mensaje = `Hola ${nombre}, gracias por confiar en Moteros Sports Line. 🛵 Esperamos que hayas quedado satisfecho con tu servicio ${servicioTexto}. Vuelve pronto!`;
     } else {
         mensaje = `Hola ${nombre}, te saludamos de Moteros Sports Line. 🛵 Tu servicio ${servicioTexto} está en proceso. Te notificaremos apenas esté listo. 🔧`;
     }
@@ -11029,9 +11034,9 @@ function enviarWhatsAppServicio(telefono, nombre, tipo, estado) {
     window.open(url, '_blank');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MÓDULO DE METAS - ADMIN
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// Módulo de METAS - ADMIN
+// ---------------------------------------------------------------
 
 async function cargarMetas() {
     const tbody = document.getElementById('listaMetas');
@@ -11129,7 +11134,7 @@ async function guardarMeta() {
 }
 
 async function eliminarMeta(id) {
-    if (!confirm('¿Estás seguro de eliminar esta meta?')) return;
+    if (!confirm('¿estás seguro de eliminar esta meta?')) return;
     try {
         const { error } = await supabaseClient.from('metas_locales').delete().eq('id', id);
         if (error) throw error;
@@ -11167,9 +11172,9 @@ async function exportarMetasPDF() {
     doc.save(`Metas_Ventas_Moteros_${new Date().getMonth() + 1}_${new Date().getFullYear()}.pdf`);
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // GESTIÓN DE RESEÑAS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarResenas() {
     const tbody = document.getElementById('tbodyResenas');
@@ -11212,7 +11217,7 @@ async function cargarResenas() {
                 <td>${new Date(r.created_at).toLocaleDateString('es-CO')}</td>
                 <td>${r.nombre_cliente || 'Anónimo'}</td>
                 <td>${mapProductos[r.id_producto] || 'Producto no encontrado'}</td>
-                <td style="color:#f59e0b;">${'★'.repeat(r.estrellas)}${'☆'.repeat(5 - r.estrellas)}</td>
+                <td style="color:#f59e0b;">${'?'.repeat(r.estrellas)}${'?'.repeat(5 - r.estrellas)}</td>
                 <td style="max-width: 300px; font-size:0.9rem;">${r.comentario || ''}</td>
                 <td>
                     <button onclick="toggleAprobacionResena('${r.id}', ${!r.aprobado})" class="btn btn-sm ${r.aprobado ? 'btn-success' : 'btn-outline-secondary'}" title="${r.aprobado ? 'Aprobado' : 'Aprobar'}">
@@ -11242,7 +11247,7 @@ async function toggleAprobacionResena(id, nuevoEstado) {
 window.toggleAprobacionResena = toggleAprobacionResena;
 
 async function eliminarResena(id) {
-    if (!confirm('¿Estás seguro de eliminar esta reseña permanentemente?')) return;
+    if (!confirm('Estás seguro de eliminar esta reseña permanentemente?')) return;
     try {
         const { error } = await supabaseClient.from('producto_resenas').delete().eq('id', id);
         if (error) throw error;
@@ -11265,9 +11270,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // METAS PROVEEDORES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarMetasProveedores() {
     const tbody = document.getElementById('listaMetasProveedores');
@@ -11344,7 +11349,7 @@ async function guardarMetaProveedor() {
             proveedor, descripcion, valor_meta: monto, unidades_meta: unidades, fecha_inicio: inicio || null, fecha_fin: fin || null, premio
         });
         if (error) throw error;
-        showToast('Acuerdo guardado');
+        showToast('Acuerdo guíardado');
         cerrarModalMetaProveedor();
         cargarMetasProveedores();
     } catch (e) { showToast('Error al guardar: ' + e.message, 'error'); }
@@ -11356,9 +11361,9 @@ async function eliminarMetaProveedor(id) {
     if (!error) { showToast('Eliminado'); cargarMetasProveedores(); }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // REPORTES - FIX CATEGORIAS (Sobreescritura)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarReporteMargen() {
     const contenedor = document.getElementById('bodyReporte');
@@ -11431,9 +11436,9 @@ async function cargarReporteMargen() {
 }
 window.cargarReporteMargen = cargarReporteMargen;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // GESTIÓN DE DEUDORES
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 let deudoresData = [];
 let deudoresPage = 1;
@@ -11533,9 +11538,9 @@ async function cargarDeudores(page = 1) {
                 </td>
                 <td>
                     <div style="display:flex; gap:0.5rem;">
-                        <button onclick="verDetalleDeudor('${d.id}')" class="btn btn-sm btn-info" title="Ver Historial">👁️</button>
+                        <button onclick="verDetalleDeudor('${d.id}')" class="btn btn-sm btn-info" title="Ver Historial">👁️​</button>
                         ${d.estado === 'activo' ? `<button onclick="abrirAbonar('${d.id}')" class="btn btn-sm btn-success" title="Registrar Abono">💵</button>` : ''}
-                        <button onclick="editarDeudor('${d.id}')" class="btn btn-sm btn-secondary" title="Editar">✏️</button>
+                        <button onclick="editarDeudor('${d.id}')" class="btn btn-sm btn-secondary" title="Editar">💵</button>
                     </div>
                 </td>
             </tr>`;
@@ -11549,6 +11554,52 @@ async function cargarDeudores(page = 1) {
     }
 }
 window.cargarDeudores = cargarDeudores;
+
+// Función para renderizar Top Deudores en el Dashboard
+async function cargarTopDeudores() {
+    const tbody = document.getElementById('tbodyTopDeudores');
+    if (!tbody) return;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('deudores')
+            .select('*')
+            .eq('estado', 'activo')
+            .order('saldo_actual', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">No hay deudores activos</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(d => {
+            const fechaRef = d.ultimo_pago || d.fecha_compra;
+            let diasMora = 0;
+            if (fechaRef) {
+                diasMora = Math.floor((new Date() - new Date(fechaRef)) / (1000 * 60 * 60 * 24));
+            }
+
+            return `
+                <tr>
+                    <td><strong>${d.nombre_completo}</strong></td>
+                    <td style="font-weight:bold; color:#ef4444;">$${formatearPrecio(d.saldo_actual)}</td>
+                    <td>${diasMora} días</td>
+                    <td><span class="badge badge-info">${d.sede_venta || 'General'}</span></td>
+                    <td>${d.telefono || '-'}</td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error cargando top deudores:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar datos</td></tr>';
+    }
+}
+window.cargarTopDeudores = cargarTopDeudores;
+
 
 function renderPaginacionDeudores(totalPages, currentPage) {
     const container = document.getElementById('paginacionDeudores');
@@ -11582,7 +11633,7 @@ function mostrarFormDeudor() {
     const modal = document.getElementById('modalDeudor');
     if (modal) modal.style.display = 'flex';
 
-    document.getElementById('formTituloDeudor').textContent = '➕ Nuevo Deudor';
+    document.getElementById('formTituloDeudor').textContent = '? Nuevo Deudor';
     document.getElementById('deudorId').value = '';
 
     ['deudorNombre', 'deudorTelefono', 'deudorSede', 'deudorFecha', 'deudorDescripcion', 'deudorMontoOriginal', 'deudorSaldo', 'deudorReferencia'].forEach(id => {
@@ -11646,13 +11697,13 @@ async function guardarDeudor() {
         cargarDeudores();
 
     } catch (e) {
-        console.error('Error guardando deudor:', e);
+        console.error('Error guíardando deudor:', e);
         showToast('Error: ' + e.message, 'error');
     }
 }
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // PROVEEDORES (NUEVO MÓDULO)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 let proveedoresData = [];
 
@@ -11673,7 +11724,7 @@ async function cargarProveedores() {
         updateProveedoresStats();
 
     } catch (e) {
-        console.error('💥 Error CRÍTICO cargando proveedores:', e);
+        console.error('❌ CRÍTICO cargando proveedores:', e);
         if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error: ${e.message}</td></tr>`;
     }
 }
@@ -11824,7 +11875,7 @@ async function guardarProveedor() {
         cargarProveedoresDatalist();
 
     } catch (e) {
-        console.error('Error guardando proveedor:', e);
+        console.error('Error guíardando proveedor:', e);
         showToast('Error: ' + e.message, 'error');
     }
 }
@@ -11862,7 +11913,7 @@ function editarProveedor(id) {
 window.editarProveedor = editarProveedor;
 
 async function eliminarProveedor(id) {
-    if (!confirm('¿Estás seguro de eliminar este proveedor?')) return;
+    if (!confirm('Estás seguro de eliminar este proveedor?')) return;
 
     try {
         const { error } = await supabaseClient.from('proveedores').delete().eq('id', id);
@@ -12026,9 +12077,9 @@ async function cargarDatosHistorial(id) {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // ABONOS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 function abrirAbonar(id) {
     const deudor = deudoresData.find(d => d.id === id);
@@ -12106,9 +12157,9 @@ async function guardarAbono() {
 }
 window.guardarAbono = guardarAbono;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // EXTRAS: WHATSAPP & EXPORT
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 function enviarWhatsAppCobro() {
     if (!currentDeudorHistorial) return;
@@ -12126,7 +12177,7 @@ function enviarWhatsAppFelicitacion() {
     const tel = limpiarTelefono(currentDeudorHistorial.telefono);
     if (!tel) return showToast('El cliente no tiene teléfono válido', 'warning');
 
-    const msg = `¡Hola ${currentDeudorHistorial.nombre_completo}! Muchas gracias por tu pago. Nos alegra informarte que tu cuenta está al día. ¡Apreciamos tu compromiso!`;
+    const msg = `Hola ${currentDeudorHistorial.nombre_completo}! Muchas gracias por tu pago. Nos alegra informarte que tu cuenta está al día. Apreciamos tu compromiso!`;
     window.open(`https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 window.enviarWhatsAppFelicitacion = enviarWhatsAppFelicitacion;
@@ -12136,7 +12187,7 @@ function enviarWhatsAppInvitacion() {
     const tel = limpiarTelefono(currentDeudorHistorial.telefono);
     if (!tel) return showToast('El cliente no tiene teléfono válido', 'warning');
 
-    const msg = `Hola ${currentDeudorHistorial.nombre_completo}. Gracias a tu excelente historial, tienes pre-aprobado un nuevo crédito con nosotros. ¡Visítanos para ver lo nuevo!`;
+    const msg = `Hola ${currentDeudorHistorial.nombre_completo}. Gracias a tu excelente historial, tienes pre-aprobado un nuevo crédito con nosotros. Visítanos para ver lo nuevo!`;
     window.open(`https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 window.enviarWhatsAppInvitacion = enviarWhatsAppInvitacion;
@@ -12203,9 +12254,9 @@ function switchTabHistorial(tab) {
 }
 window.switchTabHistorial = switchTabHistorial;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // ANALYTICS & GRÁFICAS
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 let chartsDeudores = {}; // Store chart instances
 
@@ -12308,9 +12359,9 @@ function renderChart(canvasId, type, data, title) {
 // MÓDULO DE COMPRAS MOVIDO A admin-compras.js
 
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // GESTIÓN DE LEADS IA
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function cargarLeadsIA() {
     const tbody = document.getElementById('tbodyLeadsIA');
@@ -12358,7 +12409,7 @@ function renderTablaLeads(leads) {
                 <td><span class="badge ${badgeColor}">${(lead.estado || 'Nuevo').toUpperCase()}</span></td>
                 <td>
                     <div style="display:flex; gap:0.5rem;">
-                        <button onclick='verDetalleLead("${lead.id}")' class="btn btn-sm btn-info" title="Ver historial completo">👁️</button>
+                        <button onclick='verDetalleLead("${lead.id}")' class="btn btn-sm btn-info" title="Ver historial completo">👁️​</button>
                         ${waClean ? `
                             <button onclick='contactarLeadWA("${lead.id}", "${waClean}", "${lead.nombre || 'Cliente'}")' class="btn btn-sm btn-success" title="Contactar por WhatsApp">📱</button>
                         ` : ''}
@@ -12384,7 +12435,7 @@ async function contactarLeadWA(id, wa, nombre) {
     let cleanWA = wa.replace(/\D/g, '');
     if (cleanWA.length === 10) cleanWA = '57' + cleanWA;
 
-    const mensaje = encodeURIComponent(`¡Hola ${nombre}! Te contactamos de Moteros Sports Line. Vimos tu interés por nuestros productos en nuestro asistente virtual. ¿En qué podemos ayudarte hoy?`);
+    const mensaje = encodeURIComponent(`Hola ${nombre}! Te contactamos de Moteros Sports Line. Vimos tu interés por nuestros productos en nuestro asistente virtual. En qué podemos ayudarte hoy?`);
     window.open(`https://wa.me/${cleanWA}?text=${mensaje}`, '_blank');
 
     // 2. Cambiar estado a 'contactado' en Supabase si es nuevo
@@ -12476,7 +12527,7 @@ function filtrarLeadsAdmin() {
 }
 
 async function eliminarLead(id, nombre) {
-    if (!confirm(`¿Estás seguro de eliminar el lead de "${nombre}"?`)) return;
+    if (!confirm(`Estás seguro de eliminar el lead de "${nombre}"?`)) return;
 
     try {
         const { error } = await supabaseClient
@@ -12503,9 +12554,9 @@ window.filtrarLeadsAdmin = filtrarLeadsAdmin;
 window.eliminarLead = eliminarLead;
 
 
-// ═══════════════════════════════════════════════════════════════
-// CONFIGURACIÓN Y MEMORIA DE IA
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
+// CONFIGURACIoN Y MEMORIA DE IA
+// ---------------------------------------------------------------
 
 async function cargarConfiguracionIA() {
     const logDiv = document.getElementById('logMemoriaIA');
@@ -12560,7 +12611,7 @@ async function guardarConfiguracionIA() {
         const { error } = await supabaseClient.from('config_ia').upsert(payload, { onConflict: 'modulo' });
         if (error) throw error;
 
-        showToast('Configuración de IA guardada', 'success');
+        showToast('Configuración de IA guíardada', 'success');
         if (window.moterosIA) window.moterosIA.sincronizarKeys();
     } catch (e) {
         showToast('Error al guardar llaves: ' + e.message, 'error');
@@ -12606,7 +12657,7 @@ async function cargarTelemetriaIA() {
     if (!window.supabaseClient) return;
 
     try {
-        // 1. Obtener logs de uso (Últimas 24h)
+        // 1. Obtener logs de uso (últimas 24h)
         const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data: logs, error: errLogs } = await window.supabaseClient
             .from('ia_log_usage')
@@ -12725,9 +12776,9 @@ window.cargarTelemetriaIA = cargarTelemetriaIA;
 window.agregarMemoriaManual = agregarMemoriaManual;
 window.cargarConfiguracionIA = cargarConfiguracionIA;
 
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 // RECORDATORIOS DE PAGO (GASTOS RECURRENTES)
-// ═══════════════════════════════════════════════════════════════
+// ---------------------------------------------------------------
 
 async function abrirModalRecordatorios() {
     document.getElementById('modalRecordatorios').style.display = 'flex';
@@ -12761,7 +12812,7 @@ async function cargarRecordatorios() {
                 <div>
                     <div style="font-weight:700; color:#1e293b;">${r.titulo}</div>
                     <div style="font-size:0.85rem; color:#64748b;">
-                        📅 Día ${r.dia_pago} de cada mes • $${formatearPrecio(r.monto_estimado || 0)}
+                        📅 Día ${r.dia_pago} de cada mes $${formatearPrecio(r.monto_estimado || 0)}
                     </div>
                     <div style="font-size:0.8rem; color:#3b82f6; margin-top:0.2rem;">
                         👤 ${r.responsable_nombre} (${r.responsable_whatsapp})
@@ -12805,7 +12856,7 @@ async function guardarRecordatorio() {
 
         if (error) throw error;
 
-        showToast('Recordatorio guardado ✅');
+        showToast('Recordatorio guardado ?');
 
         // Limpiar form
         document.getElementById('recTitulo').value = '';
@@ -12876,7 +12927,7 @@ async function verificarAlertasPago() {
                 alertas.push({ ...r, mensaje: `Vence en ${diferencia === 0 ? 'HOY' : diferencia + ' días'}` });
             } else if (diferencia < 0 && diferencia > -5) {
                 // Se pasó hace menos de 5 días
-                alertas.push({ ...r, mensaje: `Venció hace ${Math.abs(diferencia)} días`, vencido: true });
+                alertas.push({ ...r, mensaje: `Vencido hace ${Math.abs(diferencia)} días`, vencido: true });
             }
         });
 
@@ -12951,7 +13002,7 @@ async function prepararRegistroDesdeRecordatorio(id, titulo, monto) {
 }
 
 async function marcarRecordatorioPagado(id, silent = false) {
-    if (!silent && !confirm('¿Confirmar que este gasto ya fue pagado? La alerta desaparecerá.')) return;
+    if (!silent && !confirm('Confirmar que este gasto ya fue pagado? La alerta desaparecerá.')) return;
 
     try {
         const fechaHoy = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -12963,7 +13014,7 @@ async function marcarRecordatorioPagado(id, silent = false) {
         if (error) throw error;
 
         // Si no es silencioso (manual), mostrar toast
-        if (!silent) showToast('Gasto marcado como pagado ✅');
+        if (!silent) showToast('Gasto marcado como pagado ?');
 
         verificarAlertasPago(); // Recargar alertas para que desaparezca
 
@@ -12982,3 +13033,803 @@ window.marcarRecordatorioPagado = marcarRecordatorioPagado;
 window.prepararRegistroDesdeRecordatorio = prepararRegistroDesdeRecordatorio;
 // Variable Global
 window.recordatorioPendienteId = null;
+
+// ---------------------------------------------------------------
+// FUNCIONES PARA DASHBOARD - TOP DEUDORES Y DEUDAS
+// ---------------------------------------------------------------
+
+// Función para renderizar Top Deudores en el Dashboard
+async function cargarTopDeudores() {
+    const tbody = document.getElementById('tbodyTopDeudores');
+    if (!tbody) return;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('deudores')
+            .select('*')
+            .eq('estado', 'activo')
+            .order('saldo_actual', { ascending: false })
+            .limit(5);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">No hay deudores activos</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(d => {
+            const fechaRef = d.ultimo_pago || d.fecha_compra;
+            let diasMora = 0;
+            if (fechaRef) {
+                diasMora = Math.floor((new Date() - new Date(fechaRef)) / (1000 * 60 * 60 * 24));
+            }
+
+            return `
+                <tr>
+                    <td><strong>${d.nombre_completo}</strong></td>
+                    <td style="font-weight:bold; color:#ef4444;">$${formatearPrecio(d.saldo_actual)}</td>
+                    <td>${diasMora} días</td>
+                    <td><span class="badge badge-info">${d.sede_venta || 'General'}</span></td>
+                    <td>${d.telefono || '-'}</td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error cargando top deudores:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar datos</td></tr>';
+    }
+}
+window.cargarTopDeudores = cargarTopDeudores;
+
+
+// Función para renderizar Top Deudas del Negocio en el Dashboard
+async function cargarTopDeudas() {
+    const tbody = document.getElementById('tbodyTopDeudas');
+    if (!tbody) return;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('deudas_negocio')
+            .select('*')
+            .eq('estado', 'activo')
+            .order('saldo_actual', { ascending: false })
+            .limit(5);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">No hay deudas activas</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(d => {
+            const porcentajePagado = d.monto_original >
+                0 ? Math.round(((d.monto_original - d.saldo_actual) / d.monto_original) * 100)
+                : 0;
+
+            return `
+                <tr>
+                    <td><strong>${d.concepto}</strong></td>
+                    <td>${d.acreedor || '-'}</td>
+                    <td>$${formatearPrecio(d.monto_original)}</td>
+                    <td style="font-weight:bold; color:#f97316;">$${formatearPrecio(d.saldo_actual)}</td>
+                    <td>${porcentajePagado}%</td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error cargando top deudas:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar datos</td></tr>';
+    }
+}
+window.cargarTopDeudas = cargarTopDeudas;
+
+// ---------------------------------------------------------------
+// FUNCIÓN PARA CARGAR DEUDAS DEL NEGOCIO (SECCIÓN PRINCIPAL)
+// ---------------------------------------------------------------
+
+
+
+// ---------------------------------------------------------------
+// FUNCIONES CRUD PARA DEUDAS DEL NEGOCIO
+// ---------------------------------------------------------------
+
+function mostrarFormDeuda() {
+    const modal = document.getElementById('formDeuda');
+    if (modal) {
+        // Limpiar formulario
+        document.getElementById('deudaId').value = '';
+        document.getElementById('deudaConcepto').value = '';
+        document.getElementById('deudaFactura').value = '';
+        document.getElementById('deudaAcreedor').value = '';
+        document.getElementById('deudaMontoOriginal').value = '';
+        document.getElementById('deudaSaldo').value = '';
+
+        modal.style.display = 'flex';
+    }
+}
+window.mostrarFormDeuda = mostrarFormDeuda;
+
+async function editarDeuda(id) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('deudas_negocio')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        if (data) {
+            document.getElementById('deudaId').value = data.id;
+            document.getElementById('deudaConcepto').value = data.concepto || '';
+            document.getElementById('deudaFactura').value = data.numero_factura || '';
+            document.getElementById('deudaAcreedor').value = data.acreedor || '';
+            document.getElementById('deudaMontoOriginal').value = data.monto_original || '';
+            document.getElementById('deudaSaldo').value = data.saldo_actual || '';
+
+            const modal = document.getElementById('formDeuda');
+            if (modal) modal.style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Error cargando deuda:', error);
+        showToast('Error al cargar deuda: ' + error.message, 'error');
+    }
+}
+window.editarDeuda = editarDeuda;
+
+async function abonarDeuda(id) {
+    const monto = prompt('Cuánto deseas abonar a esta deuda?');
+    if (!monto || isNaN(monto) || parseFloat(monto) <= 0) {
+        showToast('Monto inválido', 'warning');
+        return;
+    }
+
+    try {
+        // Obtener deuda actual
+        const { data: deuda, error: errorGet } = await supabaseClient
+            .from('deudas_negocio')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (errorGet) throw errorGet;
+
+        const nuevoSaldo = parseFloat(deuda.saldo_actual) - parseFloat(monto);
+        const nuevoEstado = nuevoSaldo <= 0 ? 'pagada' : deuda.estado;
+
+        // Actualizar deuda
+        const { error: errorUpdate } = await supabaseClient
+            .from('deudas_negocio')
+            .update({
+                saldo_actual: Math.max(0, nuevoSaldo),
+                estado: nuevoEstado,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (errorUpdate) throw errorUpdate;
+
+        showToast('Abono registrado correctamente', 'success');
+        cargarDeudasNegocio();
+        cargarTopDeudas();
+    } catch (error) {
+        console.error('Error abonando deuda:', error);
+        showToast('Error al registrar abono: ' + error.message, 'error');
+    }
+}
+window.abonarDeuda = abonarDeuda;
+
+async function eliminarDeuda(id) {
+    if (!confirm('Estás seguro de eliminar esta deuda?')) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from('deudas_negocio')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        showToast('Deuda eliminada correctamente', 'success');
+        cargarDeudasNegocio();
+        cargarTopDeudas();
+    } catch (error) {
+        console.error('Error eliminando deuda:', error);
+        showToast('Error al eliminar deuda: ' + error.message, 'error');
+    }
+}
+window.eliminarDeuda = eliminarDeuda;
+
+async function verDetallesDeuda(id) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('deudas_negocio')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        if (data) {
+            const porcentajePagado = data.monto_original >
+                0 ? Math.round(((data.monto_original - data.saldo_actual) / data.monto_original) * 100)
+                : 0;
+
+            const montoPagado = data.monto_original - data.saldo_actual;
+            const fechaCreacion = data.created_at ? new Date(data.created_at).toLocaleDateString('es-CO') : 'N/A';
+            const fechaActualizacion = data.updated_at ? new Date(data.updated_at).toLocaleDateString('es-CO') : 'N/A';
+            const fechaDeuda = data.fecha_deuda ? new Date(data.fecha_deuda).toLocaleDateString('es-CO') : 'N/A';
+
+            const esActiva = (data.estado === 'activo' || data.estado === 'ABIERTO');
+            const estadoBadge = esActiva
+                ? '<span class="badge badge-warning">ACTIVO</span>'
+                : '<span class="badge badge-success">PAGADA</span>';
+
+            const contenidoHTML = `
+                <div style="display: grid; gap: 1.5rem;">
+                    <!-- Información Principal -->
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 12px; color: white;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 1.25rem;">${data.concepto}</h4>
+                        <p style="margin: 0; opacity: 0.9;">
+                            <strong>Factura:</strong> ${data.numero_factura || 'N/A'} | 
+                            <strong>Acreedor:</strong> ${data.acreedor || 'N/A'}
+                        </p>
+                    </div>
+
+                    <!-- Información Financiera -->
+                    <div style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #f97316;">
+                        <h5 style="margin: 0 0 1rem 0; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
+                            Información Financiera
+                        </h5>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            <div>
+                                <p style="margin: 0; font-size: 0.875rem; color: #64748b;">Monto Original</p>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 1.25rem; font-weight: bold; color: #1e293b;">
+                                    $${formatearPrecio(data.monto_original)}
+                                </p>
+                            </div>
+                            <div>
+                                <p style="margin: 0; font-size: 0.875rem; color: #64748b;">Saldo Actual</p>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 1.25rem; font-weight: bold; color: ${esActiva ? '#f97316' : '#22c55e'};">
+                                    $${formatearPrecio(data.saldo_actual)}
+                                </p>
+                            </div>
+                            <div>
+                                <p style="margin: 0; font-size: 0.875rem; color: #64748b;">Monto Pagado</p>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 1.25rem; font-weight: bold; color: #22c55e;">
+                                    $${formatearPrecio(montoPagado)}
+                                </p>
+                            </div>
+                            <div>
+                                <p style="margin: 0; font-size: 0.875rem; color: #64748b;">Progreso</p>
+                                <div style="margin-top: 0.5rem;">
+                                    <div style="background: #e2e8f0; border-radius: 999px; height: 8px; overflow: hidden;">
+                                        <div style="background: linear-gradient(90deg, #22c55e, #10b981); height: 100%; width: ${porcentajePagado}%; transition: width 0.3s;"></div>
+                                    </div>
+                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; font-weight: 600; color: #1e293b;">
+                                        ${porcentajePagado}% Pagado
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fechas y Estado -->
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 0.875rem; color: #64748b;">📅 Fecha de Deuda</p>
+                            <p style="margin: 0.25rem 0 0 0; font-weight: 600; color: #1e293b;">${fechaDeuda}</p>
+                        </div>
+                        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 0.875rem; color: #64748b;">🔄 Estado</p>
+                            <p style="margin: 0.25rem 0 0 0;">${estadoBadge}</p>
+                        </div>
+                        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 0.875rem; color: #64748b;">📅 Fecha de Registro</p>
+                            <p style="margin: 0.25rem 0 0 0; font-weight: 600; color: #1e293b;">${fechaCreacion}</p>
+                        </div>
+                        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 0.875rem; color: #64748b;">🔃 Última Actualización</p>
+                            <p style="margin: 0.25rem 0 0 0; font-weight: 600; color: #1e293b;">${fechaActualizacion}</p>
+                        </div>
+                    </div>
+
+                    ${data.notas ? `
+                    <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                        <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #92400e;">📃 Notas</p>
+                        <p style="margin: 0; color: #78350f; white-space: pre-wrap;">${data.notas}</p>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+
+            document.getElementById('detallesDeudaContent').innerHTML = contenidoHTML;
+            document.getElementById('modalDetallesDeuda').style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Error cargando detalles de deuda:', error);
+        showToast('Error al cargar detalles: ' + error.message, 'error');
+    }
+}
+window.verDetallesDeuda = verDetallesDeuda;
+
+function cerrarModalDetalles() {
+    document.getElementById('modalDetallesDeuda').style.display = 'none';
+}
+window.cerrarModalDetalles = cerrarModalDetalles;
+
+// ---------------------------------------------------------------
+// CRUD DEUDAS DEL NEGOCIO (FALTANTES)
+// ---------------------------------------------------------------
+
+function mostrarFormDeuda() {
+    document.getElementById('deudaId').value = '';
+    document.getElementById('deudaConcepto').value = '';
+    document.getElementById('deudaFactura').value = '';
+    document.getElementById('deudaAcreedor').value = '';
+    document.getElementById('deudaMontoOriginal').value = '';
+    document.getElementById('deudaSaldo').value = '';
+    document.getElementById('deudaNotas').value = '';
+    document.getElementById('formDeuda').style.display = 'flex';
+}
+
+function cancelarFormDeuda() {
+    document.getElementById('formDeuda').style.display = 'none';
+}
+
+async function guardarDeudaNegocio() {
+    const id = document.getElementById('deudaId').value;
+    const concepto = document.getElementById('deudaConcepto').value;
+    const factura = document.getElementById('deudaFactura').value;
+    const acreedor = document.getElementById('deudaAcreedor').value;
+    const monto = document.getElementById('deudaMontoOriginal').value;
+    const saldo = document.getElementById('deudaSaldo').value;
+    const notas = document.getElementById('deudaNotas').value;
+
+    if (!concepto || !monto || !saldo) {
+        showToast('Por favor complete los campos obligatorios', 'error');
+        return;
+    }
+
+    const deudaData = {
+        concepto: concepto,
+        numero_factura: factura,
+        acreedor: acreedor,
+        monto_original: parseFloat(monto),
+        saldo_actual: parseFloat(saldo),
+        notas: notas,
+        estado: parseFloat(saldo) > 0 ? 'ABIERTO' : 'PAGADO',
+        updated_at: new Date()
+    };
+
+    try {
+        let error;
+        if (id) {
+            // Actualizar
+            const { error: updateError } = await supabaseClient
+                .from('deudas_negocio')
+                .update(deudaData)
+                .eq('id', id);
+            error = updateError;
+        } else {
+            // Crear
+            deudaData.created_at = new Date();
+            const { error: insertError } = await supabaseClient
+                .from('deudas_negocio')
+                .insert([deudaData]);
+            error = insertError;
+        }
+
+        if (error) throw error;
+
+        showToast('Deuda guardada correctamente', 'success');
+        cancelarFormDeuda();
+        if (window.cargarDeudasNegocio) window.cargarDeudasNegocio();
+
+    } catch (error) {
+        console.error('Error guardando deuda:', error);
+        showToast('Error al guardar deuda: ' + error.message, 'error');
+    }
+}
+
+async function editarDeudaNegocio(id) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('deudas_negocio')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        if (data) {
+            document.getElementById('deudaId').value = data.id;
+            document.getElementById('deudaConcepto').value = data.concepto;
+            document.getElementById('deudaFactura').value = data.numero_factura || '';
+            document.getElementById('deudaAcreedor').value = data.acreedor || '';
+            document.getElementById('deudaMontoOriginal').value = data.monto_original;
+            document.getElementById('deudaSaldo').value = data.saldo_actual;
+            document.getElementById('deudaNotas').value = data.notas || '';
+            document.getElementById('formDeuda').style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Error cargando deuda para editar:', error);
+        showToast('Error al cargar datos: ' + error.message, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOGICA DE ABONOS Y PAGOS (MODULO DEUDAS) - CLASIFICACION CORREGIDA
+// ═══════════════════════════════════════════════════════════════
+
+// Función faltante reclamada por admin.html
+window.verificarAlertasPago = async function () {
+    console.log('Verificando alertas de pago...');
+    // Implementar lógica real si es necesario
+};
+
+let deudaActualSaldo = 0;
+
+async function abonarDeuda(id) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('deudas_negocio')
+            .select('saldo_actual')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        deudaActualSaldo = parseFloat(data.saldo_actual);
+
+        document.getElementById('abonoDeudaId').value = id;
+        document.getElementById('abonoSaldoActual').textContent = '$' + formatearPrecio(deudaActualSaldo);
+        document.getElementById('abonoMonto').value = '';
+
+        // Reset Inputs Porcentajes (3 Sedes)
+        ['alcala', 'local01', 'jordan'].forEach(sede => {
+            if (document.getElementById('porcentaje_' + sede)) document.getElementById('porcentaje_' + sede).value = '';
+            if (document.getElementById('val_' + sede)) document.getElementById('val_' + sede).value = '';
+        });
+
+        if (document.getElementById('labelTotalPorcentaje'))
+            document.getElementById('labelTotalPorcentaje').textContent = 'Total: 0%';
+
+        document.getElementById('modalAbonoDeuda').style.display = 'flex';
+
+        setTimeout(() => {
+            const el = document.getElementById('abonoMonto');
+            if (el) el.focus();
+        }, 100);
+
+    } catch (error) {
+        console.error('Error modal abono:', error);
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+// Compatibilidad
+window.registrarPagoDeuda = abonarDeuda;
+window.abonarDeuda = abonarDeuda;
+
+function cerrarModalAbono() {
+    document.getElementById('modalAbonoDeuda').style.display = 'none';
+}
+window.cerrarModalAbono = cerrarModalAbono;
+
+function setMontoTotal() {
+    const el = document.getElementById('abonoMonto');
+    if (el) {
+        el.value = deudaActualSaldo;
+        if (window.calcularPorcentajesLocales) window.calcularPorcentajesLocales();
+    }
+}
+window.setMontoTotal = setMontoTotal;
+
+function setMontoMitad() {
+    const el = document.getElementById('abonoMonto');
+    if (el) {
+        el.value = Math.floor(deudaActualSaldo / 2);
+        if (window.calcularPorcentajesLocales) window.calcularPorcentajesLocales();
+    }
+}
+window.setMontoMitad = setMontoMitad;
+
+window.calcularPorcentajesLocales = function () {
+    console.log('Calculando porcentajes...');
+    const inputMonto = document.getElementById('abonoMonto');
+    // Si es type=number, value es limpio. Si es text, usar limpiarMoneda.
+    const rawVal = inputMonto.value;
+    const montoTotal = inputMonto.type === 'number' ? (parseFloat(rawVal) || 0) : limpiarMoneda(rawVal);
+
+    console.log('Monto Total:', montoTotal);
+
+    // 3 Sedes: Alcala, Local 01, Jordan
+    const pAlcala = parseFloat(document.getElementById('porcentaje_alcala')?.value) || 0;
+    const pLocal01 = parseFloat(document.getElementById('porcentaje_local01')?.value) || 0;
+    const pJordan = parseFloat(document.getElementById('porcentaje_jordan')?.value) || 0;
+
+    console.log('Porcentajes:', pAlcala, pLocal01, pJordan);
+
+    const totalP = pAlcala + pLocal01 + pJordan;
+
+    // Actualizar etiqueta total
+    const lbl = document.getElementById('labelTotalPorcentaje');
+    if (lbl) {
+        lbl.textContent = 'Total: ' + totalP.toFixed(1) + '%';
+        lbl.style.color = Math.abs(totalP - 100) < 0.1 ? 'green' : (totalP > 100 ? 'red' : 'orange');
+    }
+
+    // Calcular valores y formatear
+    const valAlcala = Math.round(montoTotal * (pAlcala / 100));
+    const valLocal01 = Math.round(montoTotal * (pLocal01 / 100));
+    const valJordan = Math.round(montoTotal * (pJordan / 100));
+
+    console.log('Valores Calculados:', valAlcala, valLocal01, valJordan);
+
+    // Se quita el signo $ para evitar confusión "no son dollar" y se deja solo el número formateado
+    if (document.getElementById('val_alcala')) document.getElementById('val_alcala').value = formatearPrecio(valAlcala);
+    if (document.getElementById('val_local01')) document.getElementById('val_local01').value = formatearPrecio(valLocal01);
+    if (document.getElementById('val_jordan')) document.getElementById('val_jordan').value = formatearPrecio(valJordan);
+};
+
+async function confirmarAbono() {
+    const id = document.getElementById('abonoDeudaId').value;
+    const montoStr = document.getElementById('abonoMonto').value;
+    const monto = parseFloat(montoStr);
+
+    if (isNaN(monto) || monto <= 0) {
+        showToast('Por favor ingrese un monto válido', 'warning');
+        return;
+    }
+
+    // Validación de saldo (con margen de $1000)
+    if (monto > (deudaActualSaldo + 1000)) {
+        showToast('El abono excede el saldo actual', 'warning');
+        return;
+    }
+
+    // Construir nota con distribución
+    const pAlcala = document.getElementById('porcentaje_alcala')?.value;
+    const vAlcala = document.getElementById('val_alcala')?.value;
+    const pLocal01 = document.getElementById('porcentaje_local01')?.value;
+    const vLocal01 = document.getElementById('val_local01')?.value;
+    const pJordan = document.getElementById('porcentaje_jordan')?.value;
+    const vJordan = document.getElementById('val_jordan')?.value;
+
+    let notas = 'Abono realizado desde panel admin.';
+    let detalles = [];
+    // Valores ya tienen $ por el formateo visual
+    if (pAlcala) detalles.push(`Alcala: ${pAlcala}% (${vAlcala})`);
+    if (pLocal01) detalles.push(`Local 01: ${pLocal01}% (${vLocal01})`);
+    if (pJordan) detalles.push(`Jordan: ${pJordan}% (${vJordan})`);
+
+    if (detalles.length > 0) notas += ' Distribución: ' + detalles.join(', ');
+
+    try {
+        showToast('Registrando abono...', 'info');
+
+        // 1. Insertar en historial de pagos
+        const { error: errPago } = await supabaseClient
+            .from('pagos_deuda_negocio')
+            .insert([{
+                deuda_id: id,
+                monto: monto,
+                fecha_pago: new Date().toISOString(),
+                metodo_pago: 'Efectivo',
+                notas: notas
+            }]);
+
+        if (errPago) throw errPago;
+
+        // 2. Actualizar Deuda
+        const nuevoSaldo = Math.max(0, deudaActualSaldo - monto); // Evitar negativos
+        const nuevoEstado = nuevoSaldo <= 100 ? 'PAGADO' : 'ABIERTO'; // Margen $100
+
+        const { error: errDeuda } = await supabaseClient
+            .from('deudas_negocio')
+            .update({
+                saldo_actual: nuevoSaldo,
+                estado: nuevoEstado,
+                updated_at: new Date()
+            })
+            .eq('id', id);
+
+        if (errDeuda) throw errDeuda;
+
+        showToast(`Abono de $${formatearPrecio(monto)} registrado.`, 'success');
+        cerrarModalAbono();
+        if (window.cargarDeudasNegocio) window.cargarDeudasNegocio();
+
+    } catch (e) {
+        console.error(e);
+        showToast('Error al abonar: ' + e.message, 'error');
+    }
+}
+window.confirmarAbono = confirmarAbono;
+
+// ═══════════════════════════════════════════════════════════════
+// OVERWRITE VER DETALLES DEUDA PARA INCLUIR HISTORIAL
+// ═══════════════════════════════════════════════════════════════
+
+async function verDetallesDeuda(id) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('deudas_negocio')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        // Calcular porcentaje pagado
+        const montoTotal = parseFloat(data.monto_original) || 0;
+        const saldo = parseFloat(data.saldo_actual) || 0;
+        const montoPagado = montoTotal - saldo;
+        let porcentajePagado = 0;
+        if (montoTotal > 0) {
+            porcentajePagado = ((montoPagado / montoTotal) * 100).toFixed(1);
+        }
+
+        const fechaCreacion = new Date(data.created_at).toLocaleDateString();
+
+        let estadoClass = '';
+        if (data.estado === 'ABIERTO') {
+            estadoClass = 'bg-yellow-100 text-yellow-800';
+        } else if (data.estado === 'PAGADO') {
+            estadoClass = 'bg-green-100 text-green-800';
+        } else {
+            estadoClass = 'bg-gray-100 text-gray-800';
+        }
+
+        const estadoBadge = `<span class='px-2 py-1 rounded-full text-xs font-semibold ${estadoClass}'>${data.estado}</span>`;
+
+        const contenidoHTML = `
+            <div style='padding: 2rem;'>
+                <!-- Header Card -->
+                <div style='background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 1.5rem; border-radius: 12px; color: white; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);'>
+                    <h3 style='margin: 0; font-size: 1.25rem; font-weight: bold;'>${data.concepto}</h3>
+                    <div style='display: flex; gap: 1rem; margin-top: 0.5rem; opacity: 0.9; font-size: 0.9rem;'>
+                        <span>Factura: <strong>${data.numero_factura || 'N/A'}</strong></span>
+                        <span>|</span>
+                        <span>Acreedor: <strong>${data.acreedor || 'N/A'}</strong></span>
+                    </div>
+                </div>
+
+                <!-- Info Financiera -->
+                <div style='background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;'>
+                    <div style='display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;'>
+                        <span style='font-size: 1.2rem;'>💰</span>
+                        <h4 style='margin: 0; font-size: 1.1rem; color: #1e293b;'>Información Financiera</h4>
+                    </div>
+
+                    <div style='display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;'>
+                        <div>
+                            <p style='margin: 0; font-size: 0.875rem; color: #64748b;'>Monto Original</p>
+                            <p style='margin: 0.25rem 0 0 0; font-size: 1.25rem; font-weight: bold; color: #1e293b;'>$${formatearPrecio(montoTotal)}</p>
+                            <div style='height: 1rem;'></div>
+                            <p style='margin: 0; font-size: 0.875rem; color: #64748b;'>Monto Pagado</p>
+                            <p style='margin: 0.25rem 0 0 0; font-size: 1.25rem; font-weight: bold; color: #22c55e;'>$${formatearPrecio(montoPagado)}</p>
+                        </div>
+                        <div>
+                            <p style='margin: 0; font-size: 0.875rem; color: #64748b;'>Saldo Actual</p>
+                            <p style='margin: 0.25rem 0 0 0; font-size: 1.25rem; font-weight: bold; color: #f97316;'>$${formatearPrecio(saldo)}</p>
+                            <div style='height: 1rem;'></div>
+                            <p style='margin: 0; font-size: 0.875rem; color: #64748b;'>Progreso</p>
+                            <div style='margin-top: 0.5rem;'>
+                                <div style='background: #e2e8f0; border-radius: 999px; height: 8px; overflow: hidden;'>
+                                    <div style='background: linear-gradient(90deg, #22c55e, #10b981); height: 100%; width: ${porcentajePagado}%; transition: width 0.3s;'></div>
+                                </div>
+                                <p style='margin: 0.25rem 0 0 0; font-size: 0.875rem; font-weight: 600; color: #1e293b;'>${porcentajePagado}% Pagado</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HISTORIAL DE ABONOS -->
+                <div id='containerHistorialAbonos' style='margin-bottom: 1.5rem; display:none;'>
+                   <h5 style='color: #475569; font-size: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem;'>📜 Historial de Abonos</h5>
+                   <div style='max-height: 200px; overflow-y: auto;'>
+                       <table style='width: 100%; font-size: 0.85rem; border-collapse: collapse;'>
+                           <thead style='background: #f8fafc; color: #64748b;'>
+                               <tr>
+                                   <th style='padding: 0.5rem; text-align: left;'>Fecha</th>
+                                   <th style='padding: 0.5rem; text-align: left;'>Monto</th>
+                                   <th style='padding: 0.5rem; text-align: left;'>Notas</th>
+                               </tr>
+                           </thead>
+                           <tbody id='tablaHistorialAbonos'></tbody>
+                       </table>
+                   </div>
+                </div>
+
+                <!-- Fechas y Estado -->
+                <div style='display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;'>
+                     <div style='background: #f8fafc; padding: 1rem; border-radius: 8px;'>
+                        <p style='margin: 0; font-size: 0.875rem; color: #64748b;'>📅 Fecha</p>
+                        <p style='margin: 0.25rem 0 0 0; font-weight: 600; color: #1e293b;'>${fechaCreacion}</p>
+                    </div>
+                    <div style='background: #f8fafc; padding: 1rem; border-radius: 8px;'>
+                        <p style='margin: 0; font-size: 0.875rem; color: #64748b;'>📌 Estado</p>
+                        <p style='margin: 0.25rem 0 0 0;'>${estadoBadge}</p>
+                    </div>
+                </div>
+
+                <!-- Botón Imprimir -->
+                <div style="margin-top: 2rem; text-align: center; border-top: 1px dashed #e2e8f0; padding-top: 1.5rem;">
+                    <button onclick="imprimirTicketDeuda('${id}')" class="btn btn-primary" style="background:#6366f1; border:none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: bold; width: 100%;">
+                        🖨️ Imprimir Detalle
+                    </button>
+                </div>
+
+                <!-- Ticket Oculto para Impresión -->
+                <div id="ticketDeudaImprimir" style="display:none;">
+                    <div style="text-align:center; font-family: monospace;">
+                        <h3 style="margin:0;">COMPROBANTE DE DEUDA</h3>
+                        <p style="margin:0;"># ${data.numero_factura || 'S/N'}</p>
+                        <hr style="border-top: 1px dashed #000;">
+                        <div style="text-align:left;">
+                            <p><strong>Concepto:</strong> ${data.concepto}</p>
+                            <p><strong>Acreedor:</strong> ${data.acreedor || 'N/A'}</p>
+                            <p><strong>Fecha:</strong> ${fechaCreacion}</p>
+                        </div>
+                        <hr style="border-top: 1px dashed #000;">
+                        <table style="width:100%; text-align:left;">
+                            <tr><td>Valor Original:</td><td style="text-align:right;">$${formatearPrecio(montoTotal)}</td></tr>
+                            <tr><td>Total Pagado:</td><td style="text-align:right;">$${formatearPrecio(montoPagado)}</td></tr>
+                            <tr><td><strong>Saldo Pendiente:</strong></td><td style="text-align:right;"><strong>$${formatearPrecio(saldo)}</strong></td></tr>
+                        </table>
+                         <hr style="border-top: 1px dashed #000;">
+                        <p style="text-align:center; font-weight:bold;">HISTORIAL DE ABONOS</p>
+                        <div id="ticketHistorialBody"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('detallesDeudaContent').innerHTML = contenidoHTML;
+        document.getElementById('modalDetallesDeuda').style.display = 'flex';
+
+        // Función auxiliar para imprimir
+        window.imprimirTicketDeuda = function (id) {
+            const contenido = document.getElementById('ticketDeudaImprimir').innerHTML;
+            // Clonar el historial visual al ticket oculto antes de imprimir
+            const historialVisual = document.getElementById('tablaHistorialAbonos').innerHTML;
+            // Convertir las filas de la tabla visual a formato simplificado para ticket si es necesario
+            // O simplemente inyectarlo. Para simplificar, usaremos el mismo html de filas pero sin estilos complejos
+            document.getElementById('ticketHistorialBody').innerHTML = `<table style="width:100%; font-size:10px;">${historialVisual}</table>`;
+
+            if (window.TicketPrinter) {
+                TicketPrinter.print("COMPROBANTE DE DEUDA", document.getElementById('ticketDeudaImprimir').innerHTML);
+            }
+        };
+
+        // Fetch Historial
+        const { data: pagos, error: errPagos } = await supabaseClient
+            .from('pagos_deuda_negocio')
+            .select('*')
+            .eq('deuda_id', id)
+            .order('fecha_pago', { ascending: false });
+
+        if (pagos && pagos.length > 0) {
+            document.getElementById('containerHistorialAbonos').style.display = 'block';
+            const tbody = document.getElementById('tablaHistorialAbonos');
+            tbody.innerHTML = pagos.map(p => `
+                <tr style='border-bottom: 1px solid #f1f5f9;'>
+                    <td style='padding: 0.5rem;'>${new Date(p.fecha_pago).toLocaleDateString()}</td>
+                    <td style='padding: 0.5rem; color: #16a34a; font-weight: bold;'>$${formatearPrecio(p.monto)}</td>
+                     <td style='padding: 0.5rem; color: #64748b;'>${p.notas || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+    } catch (error) {
+        console.error('Error cargando detalles:', error);
+        showToast('Error al cargar detalles: ' + error.message, 'error');
+    }
+}
+window.verDetallesDeuda = verDetallesDeuda;
+
