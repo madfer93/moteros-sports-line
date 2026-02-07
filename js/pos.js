@@ -834,9 +834,9 @@ function mostrarResumenFinal(efectivoContado, diferenciaEfectivo, diferenciaTota
             <h2>📊 Caja Cerrada</h2>
             <p class="numero-cierre">Cierre guardado exitosamente</p>
             <div class="resumen-cierre">
-                <div class="resumen-row"><span class="label">📅 Fecha</span><span class="value">${new Date().toLocaleDateString('es-CO')}</span></div>
+                <div class="resumen-row"><span class="label">📅 Fecha</span><span class="value">${new Date().toLocaleDateString('es-CO')}</span></div>
                 <div class="resumen-row"><span class="label">🏪 Tienda</span><span class="value">${TIENDA.nombre}</span></div>
-                <div class="resumen-row"><span class="label">👤 Vendedor</span><span class="value">${datosCaja?.vendedor || 'N/A'}</span></div>
+                <div class="resumen-row"><span class="label">👤 Vendedor</span><span class="value">${datosCaja?.vendedor || 'N/A'}</span></div>
                 <div class="resumen-row"><span class="label">🛒 Transacciones</span><span class="value">${resumenVentas?.numTransacciones || 0}</span></div>
                 <div class="resumen-row"><span class="label"> Unidades</span><span class="value">${resumenVentas?.totalUnidades || 0}</span></div>
                 <div class="resumen-row"><span class="label">💰 Total Ventas</span><span class="value">$${(resumenVentas?.totalGeneral || 0).toLocaleString('es-CO')}</span></div>
@@ -1334,7 +1334,7 @@ function renderizarCarrito() {
                 </div>
                 <div class="carrito-item-acciones">
                     <button class="btn-editar-precio" onclick="abrirEditarPrecio(${idx})">✏️</button>
-                    <button class="btn-cantidad-menos" onclick="cambiarCantidad(${idx}, -1)">ˆ’</button>
+                    <button class="btn-cantidad-menos" onclick="cambiarCantidad(${idx}, -1)">-</button>
                     <span class="cantidad-display">${item.cantidad}</span>
                     <button class="btn-cantidad-mas" onclick="cambiarCantidad(${idx}, 1)">+</button>
                     <button class="btn-quitar" onclick="quitarDelCarrito(${idx})">×</button>
