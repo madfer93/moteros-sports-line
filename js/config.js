@@ -75,10 +75,10 @@ const CONFIG = {
   // CONFIGURACIÓN INTELIGENCIA ARTIFICIAL (GROQ)
   // ═══════════════════════════════════════════════════════════════
   AI_KEYS: {
-    INDEX: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_INDEX) || 'GROQ_KEY_INDEX_AQUI',
-    TIENDA: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_TIENDA) || 'GROQ_KEY_TIENDA_AQUI',
-    ADMIN: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_ADMIN) || 'GROQ_KEY_ADMIN_AQUI',
-    POS: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_POS) || 'GROQ_KEY_POS_AQUI'
+    INDEX: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_INDEX) || '',
+    TIENDA: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_TIENDA) || '',
+    ADMIN: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_ADMIN) || '',
+    POS: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_POS) || ''
   },
   AI_MODEL: (typeof process !== 'undefined' && process.env?.AI_MODEL) || 'llama-3.3-70b-versatile'
 };

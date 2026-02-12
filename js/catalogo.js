@@ -285,6 +285,7 @@ async function cargarProductos() {
 
         mostrarProductos();
         await cargarCategoriasFiltro();
+        cargarTallasFiltro(); // Nueva función para llenar el filtro de tallas
         actualizarContadorCarrito();
 
     } catch (err) {
@@ -302,8 +303,8 @@ async function cargarProductos() {
 
 function aplicarFiltros() {
     const cat = document.getElementById('filtroCategoria').value;
-    const preEl = document.getElementById('filtroPrecio');
-    const pre = preEl ? preEl.value : '';
+    const talEl = document.getElementById('filtroTalla'); // Nuevo filtro
+    const tal = talEl ? talEl.value : '';
     const rate = document.getElementById('filtroCalificacion') ? document.getElementById('filtroCalificacion').value : '';
     const bus = document.getElementById('buscarProducto').value.toLowerCase();
 
@@ -315,9 +316,16 @@ function aplicarFiltros() {
             if (catProd !== catFiltro) return false;
         }
 
-        if (pre) {
-            const [min, max] = pre.split('-').map(Number);
-            if (p.precio < min || p.precio > max) return false;
+        if (tal) {
+            let pTallas = [];
+            if (Array.isArray(p.tallas)) pTallas = p.tallas;
+            else if (typeof p.tallas === 'string') pTallas = p.tallas.split(',').map(t => t.trim());
+
+            // Si el producto no tiene tallas definidas, no pasa el filtro si se seleccionó una talla
+            if (pTallas.length === 0) return false;
+
+            // Verificar si incluye la talla seleccionada (exact match)
+            if (!pTallas.includes(tal)) return false;
         }
         if (rate) {
             if (parseFloat(p.rating || 0) < parseInt(rate)) return false;
@@ -334,8 +342,8 @@ function aplicarFiltros() {
 
 function limpiarFiltros() {
     document.getElementById('filtroCategoria').value = '';
-    const preEl = document.getElementById('filtroPrecio');
-    if (preEl) preEl.value = '';
+    const talEl = document.getElementById('filtroTalla');
+    if (talEl) talEl.value = '';
     if (document.getElementById('filtroCalificacion')) document.getElementById('filtroCalificacion').value = '';
     document.getElementById('buscarProducto').value = '';
     aplicarFiltros();
@@ -359,6 +367,27 @@ function mostrarProductos() {
     }
 
     grid.innerHTML = productosFiltrados.map(p => {
+        // Lógica para mostrar tallas en la tarjeta
+        let tallasHTML = '';
+        if (p.tallas) {
+            let tallasArr = Array.isArray(p.tallas) ? p.tallas : (typeof p.tallas === 'string' ? p.tallas.split(',').map(t => t.trim()) : []);
+
+            // FILTRO VISUAL: No mostrar "Única", "Unica", "U", "N/A"
+            tallasArr = tallasArr.filter(t => {
+                const clean = t.toLowerCase().replace(/[^a-z0-9]/g, '');
+                return !['unica', 'u', 'na', 'n/a', 'undefined'].includes(clean);
+            });
+
+            if (tallasArr.length > 0) {
+                // Inline style for proper alignment in footer
+                tallasHTML = `
+                 <div style="display:flex; gap:3px; flex-wrap:wrap; align-items:center;">
+                    ${tallasArr.slice(0, 4).map(t => `<span style="font-size:0.7rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b; border:1px solid #cbd5e1; font-weight:600;">${t}</span>`).join('')}
+                    ${tallasArr.length > 4 ? '<span style="font-size:0.7rem; color:#94a3b8;">+</span>' : ''}
+                 </div>`;
+            }
+        }
+
         return `
         <div class="producto-card" onclick="verDetalle('${p.id}')">
             <div class="producto-imagen-wrapper">
@@ -376,9 +405,10 @@ function mostrarProductos() {
                 </div>
                 <p class="producto-marca">${p.marca}</p>
                 <p class="producto-descripcion">${p.descripcion_corta || 'Producto de alta calidad'}</p>
-                <div class="producto-footer" style="flex-direction: column; gap: 1rem; align-items: stretch;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="producto-precio">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
+                <div class="producto-footer" style="flex-direction: column; gap: 0.5rem; align-items: stretch;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; min-height: 38px;">
+                        <span class="producto-precio" style="display:none;">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
+                        ${tallasHTML}
                         <button class="btn-agregar-inline" onclick="event.stopPropagation(); agregarAlCarritoRapido('${p.id}')">
                             <span>🛒 Agregar</span>
                         </button>
@@ -1112,3 +1142,46 @@ async function cargarResenasProductoV2(idProducto, reset = true) {
     }
 }
 window.cargarResenasProducto = cargarResenasProductoV2;
+
+function cargarTallasFiltro() {
+    const select = document.getElementById('filtroTalla');
+    if (!select) return;
+
+    // Obtener todas las tallas únicas de todos los productos
+    const tallasSet = new Set();
+    todosLosProductos.forEach(p => {
+        if (p.tallas) {
+            let arr = Array.isArray(p.tallas) ? p.tallas : (typeof p.tallas === 'string' ? p.tallas.split(',').map(t => t.trim()) : []);
+            arr.forEach(t => {
+                if (t) tallasSet.add(t);
+            });
+        }
+    });
+
+    // Ordenar tallas (lógica simple: intentar numérico, luego alfabético)
+    const ordenTallas = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+    const tallasArray = Array.from(tallasSet).sort((a, b) => {
+        const idxA = ordenTallas.indexOf(a.toUpperCase());
+        const idxB = ordenTallas.indexOf(b.toUpperCase());
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        // Si son números
+        const numA = parseFloat(a);
+        const numB = parseFloat(b);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return a.localeCompare(b);
+    });
+
+    // Limpiar opciones excepto la primera
+    while (select.options.length > 1) {
+        select.remove(1);
+    }
+
+    tallasArray.forEach(t => {
+        const option = document.createElement('option');
+        option.value = t;
+        option.textContent = t;
+        select.appendChild(option);
+    });
+}

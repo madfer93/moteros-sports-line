@@ -507,7 +507,7 @@ async function mostrarFormProducto() {
     });
 
     await cargarProveedoresEnSelectProducto();
-    await cargarCategorias();
+    await cargarCategoriasSelect();
 }
 
 async function cargarProveedoresEnSelectProducto(seleccionado = null) {
@@ -545,7 +545,7 @@ function agregarOption(select, value, text, selectedVal) {
 // NUEVO: Cargar Categorías Dinámicas
 const categoriasCache = [];
 
-async function cargarCategorias(seleccionado = null) {
+async function cargarCategoriasSelect(seleccionado = null) {
     const select = document.getElementById('productoCategoria');
     if (!select) return;
 
@@ -580,7 +580,58 @@ async function cargarCategorias(seleccionado = null) {
         if (cat === seleccionado) opt.selected = true;
         select.appendChild(opt);
     });
+
+    // Trigger para actualizar UI
+    actualizarFormularioPorCategoria();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// LOGICA CATEGORIAS (UI DINAMICA)
+// ═══════════════════════════════════════════════════════════════
+const CATEGORIAS_CON_TALLA = [
+    'CASCOS', 'GUANTES', 'TRAJES DE PROTECCION', 'TRAJES DE PROTECCIÓN',
+    'IMPERMEABLES Y BOTAS', 'MALETEROS', 'IMPERMEABLES', 'BOTAS'
+];
+const CATEGORIAS_MALETEROS = ['MALETEROS'];
+
+function actualizarFormularioPorCategoria() {
+    const catInput = document.getElementById('productoCategoria');
+    const container = document.getElementById('containerTallasStock');
+
+    if (!catInput || !container) return;
+
+    const cat = catInput.value.trim().toUpperCase();
+
+    // 1. Mostrar/Ocultar Tabla de Tallas
+    const usaTalla = CATEGORIAS_CON_TALLA.includes(cat);
+
+    if (usaTalla) {
+        container.style.display = 'block';
+
+        // 2. Personalizar Header (Talla vs Capacidad)
+        const thTalla = document.querySelector('#tablaTallasStock th:first-child');
+        const placeholders = document.querySelectorAll('.input-talla');
+
+        if (CATEGORIAS_MALETEROS.includes(cat)) {
+            if (thTalla) thTalla.textContent = 'Capacidad (Litros)';
+            placeholders.forEach(i => i.placeholder = 'Ej: 30L, 45L...');
+        } else {
+            if (thTalla) thTalla.textContent = 'Talla';
+            placeholders.forEach(i => i.placeholder = 'Ej: S, M, 40...');
+        }
+    } else {
+        container.style.display = 'none';
+        // Si se oculta, asumimos que internamente será "Única" al guardar
+    }
+}
+
+// Listener para cambios
+document.addEventListener('DOMContentLoaded', () => {
+    const catSelect = document.getElementById('productoCategoria');
+    if (catSelect) {
+        catSelect.addEventListener('change', actualizarFormularioPorCategoria);
+    }
+});
 
 function cancelarFormProducto() {
     const modal = document.getElementById('formProducto');
@@ -596,8 +647,13 @@ window.agregarFilaTalla = function (talla = '', stockA = 0, stockL = 0, stockJ =
     const tbody = document.getElementById('tbodyTallasStock');
     if (!tbody) return;
     const tr = document.createElement('tr');
+    // Detectar placeholder según categoría actual
+    const cat = document.getElementById('productoCategoria')?.value?.toUpperCase() || '';
+    const esMaletero = CATEGORIAS_MALETEROS.includes(cat);
+    const place = esMaletero ? 'Ej: 30L' : 'Ej: S, 40...';
+
     tr.innerHTML = `
-        <td><input type="text" class="form-control input-talla" value="${talla}" placeholder="Ej: S, 40..."></td>
+        <td><input type="text" class="form-control input-talla" value="${talla}" placeholder="${place}"></td>
         <td><input type="number" class="form-control input-stock-alcala" value="${stockA}" min="0"></td>
         <td><input type="number" class="form-control input-stock-local01" value="${stockL}" min="0"></td>
         <td><input type="number" class="form-control input-stock-jordan" value="${stockJ}" min="0"></td>
@@ -672,15 +728,34 @@ async function guardarProducto() {
 
         // Si no se definieron tallas, crear una "Única" por defecto con 0 stock
         // Si no se definieron tallas, usar los inputs generales como "Única"
-        if (tallasData.length === 0) {
-            const sA = parseInt(document.getElementById('stockAlcala')?.value) || 0;
-            const sL = parseInt(document.getElementById('stockLocal01')?.value) || 0;
-            const sJ = parseInt(document.getElementById('stockJordan')?.value) || 0;
+        // Check for "Phantom Unica": Table has 1 row ("Única") with 0 stock, but simple inputs have values.
+        const sA_simple = parseInt(document.getElementById('stockAlcala')?.value) || 0;
+        const sL_simple = parseInt(document.getElementById('stockLocal01')?.value) || 0;
+        const sJ_simple = parseInt(document.getElementById('stockJordan')?.value) || 0;
+        const simpleHasValue = (sA_simple + sL_simple + sJ_simple) > 0;
 
-            tallasData.push({ talla: 'Única', alcala: sA, local01: sL, jordan: sJ });
-            totalStockAlcala = sA;
-            totalStock01 = sL;
-            totalStockJordan = sJ;
+        if (tallasData.length === 1 && simpleHasValue) {
+            const t = tallasData[0];
+            const isUnica = ['única', 'unica', '', 'u'].includes(t.talla.toLowerCase());
+            const isZero = (t.alcala + t.local01 + t.jordan) === 0;
+
+            if (isUnica && isZero) {
+                // Override with simple values
+                tallasData[0].alcala = sA_simple;
+                tallasData[0].local01 = sL_simple;
+                tallasData[0].jordan = sJ_simple;
+                totalStockAlcala = sA_simple;
+                totalStock01 = sL_simple;
+                totalStockJordan = sJ_simple;
+            }
+        }
+
+        // Si no se definieron tallas, crear una "Única" por defecto con los valores simples
+        if (tallasData.length === 0) {
+            tallasData.push({ talla: 'Única', alcala: sA_simple, local01: sL_simple, jordan: sJ_simple });
+            totalStockAlcala = sA_simple;
+            totalStock01 = sL_simple;
+            totalStockJordan = sJ_simple;
         }
 
         const productoData = {
@@ -772,7 +847,7 @@ async function guardarProducto() {
         cargarProductos();
 
         // Refrescar categorías por si acaso cambió el nombre de una o se añadió nueva
-        if (typeof cargarCategorias === 'function') cargarCategorias();
+        if (typeof cargarCategoriasSelect === 'function') cargarCategoriasSelect();
 
     } catch (e) {
         console.error(e);
@@ -869,6 +944,8 @@ async function editarProducto(id) {
     document.getElementById('productoNombre').value = p.nombre;
     document.getElementById('productoReferencia').value = p.referencia || '';
     document.getElementById('productoCategoria').value = p.categoria;
+    // Trigger update UI for category
+    actualizarFormularioPorCategoria();
     document.getElementById('productoMarca').value = p.marca;
 
     await cargarProveedoresEnSelectProducto(p.proveedor);
@@ -1021,4 +1098,59 @@ window.eliminarProducto = eliminarProducto;
 window.filtrarProductosAdmin = filtrarProductosAdmin;
 window.exportarProductosExcel = exportarProductosExcel;
 window.exportarProductosPDF = exportarProductosPDF;
+window.exportarProductosExcel = exportarProductosExcel;
+window.exportarProductosPDF = exportarProductosPDF;
+// window.actualizarStatsDashboard = actualizarStatsDashboard; // duplicated line? ensuring cleanup if needed but keeping structure
+// Replacing global export to new name
+window.cargarCategoriasSelect = cargarCategoriasSelect;
+
 window.actualizarStatsDashboard = actualizarStatsDashboard;
+
+// ═══════════════════════════════════════════════════════════════
+// SINCRONIZACIÓN STOCK SIMPLE <-> TABLA (UX MEJORADA)
+// ═══════════════════════════════════════════════════════════════
+function initStockSync() {
+    const inputs = ['stockAlcala', 'stockLocal01', 'stockJordan', 'stockDigital']; // Digital is mostly read-only/separate but good to include
+    const mapClass = {
+        'stockAlcala': '.input-stock-alcala',
+        'stockLocal01': '.input-stock-local01',
+        'stockJordan': '.input-stock-jordan'
+        // Digital not in table row usually
+    };
+
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', function () {
+                const val = this.value;
+                const tbody = document.getElementById('tbodyTallasStock');
+                if (!tbody) return;
+                const rows = tbody.querySelectorAll('tr');
+
+                // Solo sincronizar si hay una única fila (caso producto simple)
+                if (rows.length === 1) {
+                    const row = rows[0];
+                    const tallaInput = row.querySelector('.input-talla');
+                    if (tallaInput) {
+                        const tVal = tallaInput.value.trim().toLowerCase();
+                        // Si es talla única o vacía
+                        if (['única', 'unica', '', 'u'].includes(tVal)) {
+                            const targetClass = mapClass[id];
+                            if (targetClass) {
+                                const targetInput = row.querySelector(targetClass);
+                                if (targetInput) targetInput.value = val;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+}
+
+// Inicializar listeners cuando el DOM esté listo (o al cargar este script si ya lo está)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initStockSync);
+} else {
+    initStockSync();
+}

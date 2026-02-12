@@ -13833,3 +13833,18 @@ async function verDetallesDeuda(id) {
 }
 window.verDetallesDeuda = verDetallesDeuda;
 
+// ═══════════════════════════════════════════════════════════════
+// AUTO-INIT CATEGORÍAS
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    // Si estamos en la sección de categorías, cargar automáticamente
+    // Solo si no se ha cargado ya (por si acaso)
+    const tbody = document.getElementById('tbodyCategorias');
+    if (tbody && typeof cargarCategorias === 'function') {
+        // Pequeño delay para asegurar que supabaseClient esté listo
+        setTimeout(() => {
+            if (tbody.innerHTML.includes('Cargando')) cargarCategorias();
+        }, 500);
+    }
+});
+
