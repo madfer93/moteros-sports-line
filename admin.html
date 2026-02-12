@@ -1566,16 +1566,6 @@
                                 <label>Categoría <span class="required">*</span></label>
                                 <select id="productoCategoria" class="form-control">
                                     <option value="">Seleccionar...</option>
-                                    <option value="Cascos">Cascos</option>
-                                    <option value="Guantes">Guantes</option>
-                                    <option value="Chaquetas">Chaquetas</option>
-                                    <option value="Botas">Botas</option>
-                                    <option value="Maleteros">Maleteros</option>
-                                    <option value="Impermeables">Impermeables</option>
-                                    <option value="Intercomunicadores">Intercomunicadores</option>
-                                    <option value="Camaras">Cámaras</option>
-                                    <option value="Accesorios">Accesorios</option>
-                                    <option value="Protecciones">Protecciones</option>
                                 </select>
                             </div>
                             <div class="form-group"><label>Marca <span class="required">*</span></label><input
@@ -1589,9 +1579,46 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Variantes / Tallas</label>
+                            <label>Color</label>
                             <input type="text" id="productoVariantes" class="form-control"
-                                placeholder="Ej: S, M, L, XL (separar por comas)">
+                                placeholder="Ej: Rojo, Azul Negro, Verde Militar">
+                            <small class="form-text text-muted">Ingrese los colores disponibles separados por
+                                comas.</small>
+                        </div>
+
+                        <div class="form-group"
+                            style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
+                            <label style="font-weight: 600; color: #2c3e50;">📏 Gestión de Tallas y Stock</label>
+                            <p style="font-size: 0.85rem; color: #6c757d; margin-bottom: 10px;">Agregue las tallas
+                                disponibles y asigne el inventario para cada sede.</p>
+
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm" id="tablaTallasStock"
+                                    style="background: white;">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th style="width: 20%">Talla</th>
+                                            <th style="width: 20%">Alcalá</th>
+                                            <th style="width: 20%">Local 01</th>
+                                            <th style="width: 20%">Jordán</th>
+                                            <th style="width: 10%">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyTallasStock">
+                                        <!-- Filas dinámicas -->
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="5" class="text-right">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    onclick="agregarFilaTalla()">
+                                                    + Agregar Talla
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">

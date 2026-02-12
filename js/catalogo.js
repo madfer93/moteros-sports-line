@@ -417,14 +417,28 @@ function verDetalle(id) {
                          onerror="this.src='${PLACEHOLDER_LG}'">
                 </div>
                 
-                <!-- NUEVO UBICACIÓN: Variantes (Debajo de la imagen en columna izquierda) -->
-                ${productoActual.variantes && productoActual.variantes.length > 0 ? `
-                <div class="variantes-section" style="width:100%; margin-bottom: 1rem; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0; text-align: left;">
-                    <h5 style="margin-bottom: 0.5rem; font-weight: 700; color: #334155; font-size:0.9rem;">Colores disponibles:</h5>
-                    <div id="contenedorVariantes" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
-                    <input type="hidden" id="varianteSeleccionada" value="">
+                <!-- FILA DE SELECTORES (COLORES Y TALLAS) - SIDE BY SIDE -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                    
+                    <!-- 1. COLORES (VARIANTES) -->
+                    <div class="variantes-section" style="flex: 1; min-width: 200px; background:#f8fafc; padding:0.8rem; border-radius:8px; border:1px solid #e2e8f0;">
+                         <h5 style="margin-bottom: 0.5rem; font-weight: 700; color: #334155; font-size:0.85rem;">Colores:</h5>
+                         ${productoActual.variantes && productoActual.variantes.length > 0 ? `
+                            <div id="contenedorVariantes" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-start; align-items: center;"></div>
+                         ` : '<div style="color:#94a3b8; font-size:0.8rem;">N/A</div>'}
+                         <input type="hidden" id="varianteSeleccionada" value="">
+                    </div>
+
+                    <!-- 2. TALLAS -->
+                    <div class="variantes-section" style="flex: 1; min-width: 200px; background:#f8fafc; padding:0.8rem; border-radius:8px; border:1px solid #e2e8f0;">
+                        <h5 style="margin-bottom: 0.5rem; font-weight: 700; color: #334155; font-size:0.85rem;">Tallas:</h5>
+                        ${(productoActual.tallas && productoActual.tallas.length > 0) || (productoActual.tallas && typeof productoActual.tallas === 'string') ? `
+                            <div id="contenedorTallas" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-start; align-items: center;"></div>
+                        ` : '<div style="color:#94a3b8; font-size:0.8rem;">Única</div>'}
+                        <input type="hidden" id="tallaSeleccionada" value="">
+                    </div>
+
                 </div>
-                ` : ''}
 
                 <!-- Trust Badges -->
                 <div class="product-trust-badges" style="width:100%; display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; background:#f8fafc; padding:0.75rem; border-radius:8px;">
@@ -674,17 +688,87 @@ function verDetalle(id) {
                             btn.style.color = '#ea580c';
                         }
 
-                        document.getElementById('varianteSeleccionada').value = label;
+                        // Actualizar input COLOR (Hidden original) para persistencia
+                        // Pero OJO: ahora 'varianteSeleccionada' sera la combinacion final?
+                        // Mejor: guardamos el color en un attribute o variable, y llamamos update.
+                        // Para minima invasion: dejamos que viarignteSeleccionada sea el COMBINADO
+
+                        // Buscamos si hay talla seleccionada
+                        const tallaVal = document.getElementById('tallaSeleccionada')?.value || '';
+                        const colorVal = label;
+
+                        const final = tallaVal ? `${colorVal} | Talla: ${tallaVal}` : colorVal;
+                        document.getElementById('varianteSeleccionada').value = final;
+
+                        // Guardar el color raw en dataset del input para referencia futura
+                        document.getElementById('varianteSeleccionada').dataset.color = colorVal;
 
                         // --- Actualizar botón WhatsApp con la selección ---
-                        const waBtn = document.getElementById('btnWhatsappDetalle');
                         if (waBtn) {
-                            const text = `¡Hola! Me interesa este producto: ${productoActual.nombre} (${productoActual.marca}) - Variante: ${label}`;
+                            const text = `¡Hola! Me interesa este producto: ${productoActual.nombre} (${productoActual.marca}) - ${document.getElementById('varianteSeleccionada').value}`;
                             waBtn.href = `https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent(text)}`;
                         }
                     };
                     container.appendChild(btn);
                 });
+            }
+        }
+    }
+    // Renderizar opciones de TALLAS
+    if (productoActual.tallas && (productoActual.tallas.length > 0 || typeof productoActual.tallas === 'string')) {
+        const container = document.getElementById('contenedorTallas');
+        if (container) {
+            container.innerHTML = ''; // Limpiar previo
+            let tallas = productoActual.tallas;
+            // Parsear si viene como string JSON o string simple
+            if (typeof tallas === 'string') {
+                try { tallas = JSON.parse(tallas); }
+                catch (e) { tallas = tallas.split(',').map(s => s.trim()); }
+            }
+            if (!Array.isArray(tallas)) tallas = [];
+
+            if (tallas.length === 0) {
+                container.innerHTML = '<span style="color:#64748b; font-size:0.9rem;">Agotado.</span>';
+            } else {
+                tallas.forEach(t => {
+                    // Ignorar "Única" si se prefiere no mostrar, o mostrarla como chip
+                    if (t === 'Única') return;
+
+                    const btn = document.createElement('button');
+                    btn.className = 'variant-chip talla-chip'; // Clase identificadora
+                    btn.textContent = t;
+                    btn.style.cssText = `
+                        padding: 0.5rem 1rem;
+                        border: 2px solid #e2e8f0;
+                        border-radius: 8px;
+                        background: white;
+                        cursor: pointer;
+                        font-size: 0.9rem;
+                        transition: all 0.2s;
+                        min-width: 40px;
+                        text-align: center;
+                     `;
+
+                    btn.onclick = () => {
+                        // Reset visual selection tallas
+                        document.querySelectorAll('#contenedorTallas .talla-chip').forEach(b => {
+                            b.style.borderColor = '#e2e8f0';
+                            b.style.background = 'white';
+                            b.style.color = 'black';
+                        });
+                        // Select clicked
+                        btn.style.borderColor = '#ea580c';
+                        btn.style.background = '#fff7ed';
+                        btn.style.color = '#ea580c';
+
+                        document.getElementById('tallaSeleccionada').value = t;
+                        actualizarVarianteCombinada();
+                    };
+                    container.appendChild(btn);
+                });
+
+                // Mensaje si solo había Única y se ocultó, o vacio
+                if (container.children.length === 0) container.innerHTML = '<span style="color:#64748b; font-size:0.9rem;">Estándar</span>';
             }
         }
     }
@@ -765,7 +849,57 @@ function checkUrlParams() {
             }
         }
     }
+
 }
+
+function actualizarVarianteCombinada() {
+    const inputVar = document.getElementById('varianteSeleccionada');
+    const inputTalla = document.getElementById('tallaSeleccionada');
+    if (!inputVar) return;
+
+    // Intentar obtener el color desde el dataset (guardado al hacer click en color)
+    let color = inputVar.dataset.color || 'Variante';
+
+    // Si no hay dataset.color, verificar si el valor actual es un color limpio (sin "| Talla:")
+    if ((!inputVar.dataset.color) && inputVar.value && !inputVar.value.includes('| Talla:')) {
+        color = inputVar.value;
+    }
+
+    // Si color sigue siendo 'Variante', intentar buscar visualmente el chip seleccionado (fallback)
+    if (color === 'Variante') {
+        const colorChip = document.querySelector('#contenedorVariantes .variant-chip[style*="rgb(234, 88, 12)"]'); // Buscando borde naranja
+        // Esto es frágil, pero útil si no hay dataset
+        if (colorChip) {
+            // El texto del chip puede tener stock entre parentesis "(5)", hay que limpiarlo
+            // Pero el chip de color no tiene texto.
+            // Si es chip de TEXTO (no color), tiene texto.
+            // Asumimos que si no hay color seleccionado explícitamente, está vacío.
+            color = '';
+        } else {
+            color = '';
+        }
+    }
+
+    const talla = inputTalla ? inputTalla.value : '';
+
+    if (color && talla) {
+        inputVar.value = `${color} | Talla: ${talla}`;
+    } else if (talla) {
+        inputVar.value = `Talla: ${talla}`;
+    } else if (color) {
+        inputVar.value = color;
+    } else {
+        inputVar.value = '';
+    }
+
+    // Actualizar botón WhatsApp
+    const waBtn = document.getElementById('btnWhatsappDetalle');
+    if (waBtn && typeof productoActual !== 'undefined') {
+        const text = `¡Hola! Me interesa este producto: ${productoActual.nombre} (${productoActual.marca}) - ${inputVar.value}`;
+        waBtn.href = `https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent(text)}`;
+    }
+}
+
 
 // Exponer globalmente
 window.cargarCategoriasFiltro = cargarCategoriasFiltro;

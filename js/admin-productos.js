@@ -507,6 +507,7 @@ async function mostrarFormProducto() {
     });
 
     await cargarProveedoresEnSelectProducto();
+    await cargarCategorias();
 }
 
 async function cargarProveedoresEnSelectProducto(seleccionado = null) {
@@ -541,127 +542,228 @@ function agregarOption(select, value, text, selectedVal) {
     select.appendChild(opt);
 }
 
+// NUEVO: Cargar Categorías Dinámicas
+const categoriasCache = [];
+
+async function cargarCategorias(seleccionado = null) {
+    const select = document.getElementById('productoCategoria');
+    if (!select) return;
+
+    // Guardar selección actual si no se pasa explícitamente y el select ya tiene valor
+    if (!seleccionado && select.value) seleccionado = select.value;
+
+    select.innerHTML = '<option value="">Seleccionar...</option>';
+
+    if (categoriasCache.length === 0) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('categorias')
+                .select('nombre')
+                .order('nombre');
+
+            if (error) throw error;
+
+            if (data) {
+                data.forEach(c => categoriasCache.push(c.nombre));
+            }
+        } catch (err) {
+            console.error('Error cargando categorías:', err);
+            // Fallback a las básicas si falla la DB
+            ['Cascos', 'Guantes', 'Protecciones', 'Accesorios'].forEach(c => categoriasCache.push(c));
+        }
+    }
+
+    categoriasCache.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        if (cat === seleccionado) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
 function cancelarFormProducto() {
     const modal = document.getElementById('formProducto');
     if (modal) modal.style.display = 'none';
     if (modal) modal.classList.remove('active');
 }
 
-async function guardarProducto() {
-    const id = document.getElementById('productoId').value;
-    const nombre = document.getElementById('productoNombre').value;
-    const precio = parseFloat(document.getElementById('productoPrecio').value) || 0;
-    const precioCompra = parseFloat(document.getElementById('productoPrecioCompra').value) || 0;
+// ═══════════════════════════════════════════════════════════════
+// GESTIÓN DE TALLAS Y STOCK (NUEVO)
+// ═══════════════════════════════════════════════════════════════
 
-    if (!nombre || precio <= 0) {
-        showToast('Nombre y Precio validados', 'warning');
+window.agregarFilaTalla = function (talla = '', stockA = 0, stockL = 0, stockJ = 0) {
+    const tbody = document.getElementById('tbodyTallasStock');
+    if (!tbody) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td><input type="text" class="form-control input-talla" value="${talla}" placeholder="Ej: S, 40..."></td>
+        <td><input type="number" class="form-control input-stock-alcala" value="${stockA}" min="0"></td>
+        <td><input type="number" class="form-control input-stock-local01" value="${stockL}" min="0"></td>
+        <td><input type="number" class="form-control input-stock-jordan" value="${stockJ}" min="0"></td>
+        <td><button type="button" class="btn-icon btn-danger" onclick="this.closest('tr').remove()" title="Eliminar Variantes">🗑️</button></td>
+    `;
+    tbody.appendChild(tr);
+};
+
+// ═══════════════════════════════════════════════════════════════
+// GUARDAR / EDITAR
+// ═══════════════════════════════════════════════════════════════
+
+async function guardarProducto() {
+    const id = document.getElementById('productoId').value; // Original ID for update
+    const nombre = document.getElementById('productoNombre').value.trim();
+    const categoria = document.getElementById('productoCategoria').value;
+    const precio = document.getElementById('productoPrecio').value; // Precio Venta
+    const precioCompra = document.getElementById('productoPrecioCompra').value || 0; // Costo
+    const marca = document.getElementById('productoMarca').value.trim();
+    const proveedorId = document.getElementById('productoProveedor').value || null;
+    const estado = document.getElementById('productoEstado').value;
+    const referencia = document.getElementById('productoReferencia').value;
+    const descripcionCorta = document.getElementById('productoDescCorta').value;
+    const descripcionTecnica = document.getElementById('productoDescTecnica').value;
+    let urlImagen = document.getElementById('productoImagen').value; // Existing URL or manual input
+
+    if (!nombre || parseFloat(precio) <= 0) {
+        showToast('Nombre y Precio son obligatorios', 'warning');
         return;
     }
 
-    // 1. Manejar subida de imagen si existe archivo temporal
-    let urlImagen = document.getElementById('productoImagen').value;
-    if (archivosTemporal.producto) {
-        try {
-            showToast('Subiendo imagen...', 'info');
-            const urlSubida = await subirImagenSupabase(archivosTemporal.producto, 'productos-imagenes');
-            if (urlSubida) urlImagen = urlSubida;
-        } catch (err) {
-            console.error('Error subiendo imagen:', err);
-            showToast('Error al subir imagen, se usará URL manual si existe', 'warning');
-        }
-    }
-
-    const data = {
-        nombre: nombre,
-        referencia: document.getElementById('productoReferencia').value,
-        categoria: document.getElementById('productoCategoria').value,
-        marca: document.getElementById('productoMarca').value,
-        proveedor: document.getElementById('productoProveedor').value || null,
-        variantes: document.getElementById('productoVariantes').value.split(',').map(s => s.trim()).filter(Boolean),
-        precio: precio,
-        precio_compra: precioCompra,
-        estado: document.getElementById('productoEstado').value,
-        descripcion_corta: document.getElementById('productoDescCorta').value,
-        descripcion_tecnica: document.getElementById('productoDescTecnica').value,
-        url_imagen: urlImagen
-    };
-
-    // Si es un nuevo producto, generar id_producto en formato texto
-    if (!id) {
-        data.id_producto = 'PROD' + Date.now();
-    }
+    const btnGuardar = document.querySelector('button[onclick="guardarProducto()"]');
+    if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...'; }
 
     try {
-        let result;
-        let productoIdFinal;
-
-        if (id) {
-            // Actualización: usamos el ID existente
-            result = await supabaseClient.from('productos').update(data).eq('id', id);
-            productoIdFinal = id;
-        } else {
-            // Inserción: necesitamos obtener el ID generado
-            result = await supabaseClient.from('productos').insert(data).select();
-            productoIdFinal = result.data?.[0]?.id;
+        // 1. Manejar subida de imagen si existe archivo temporal
+        if (archivosTemporal.producto) {
+            try {
+                showToast('Subiendo imagen...', 'info');
+                const urlSubida = await subirImagenSupabase(archivosTemporal.producto, 'productos-imagenes');
+                if (urlSubida) urlImagen = urlSubida;
+            } catch (err) {
+                console.error('Error subiendo imagen:', err);
+                showToast('Error al subir imagen, se usará URL manual si existe', 'warning');
+            }
         }
 
-        if (result.error) throw result.error;
+        // VARIANTES: Ahora es COLOR
+        const coloresInput = document.getElementById('productoVariantes').value;
+        const arrayColores = coloresInput.split(',').map(s => s.trim()).filter(Boolean);
 
-        // Obtener el id_producto para las tablas de inventario
-        let idProducto = data.id_producto; // Para productos nuevos
+        // TALLAS Y STOCK
+        const filasTallas = document.querySelectorAll('#tbodyTallasStock tr');
+        const tallasData = [];
+        let totalStockAlcala = 0;
+        let totalStock01 = 0;
+        let totalStockJordan = 0;
 
-        if (id && !idProducto) {
-            // Para productos existentes, obtener el id_producto de la BD
-            const { data: productoData } = await supabaseClient
+        filasTallas.forEach(row => {
+            const t = row.querySelector('.input-talla').value.trim();
+            const sA = parseInt(row.querySelector('.input-stock-alcala').value) || 0;
+            const sL = parseInt(row.querySelector('.input-stock-local01').value) || 0;
+            const sJ = parseInt(row.querySelector('.input-stock-jordan').value) || 0;
+
+            if (t) {
+                tallasData.push({ talla: t, alcala: sA, local01: sL, jordan: sJ });
+                totalStockAlcala += sA;
+                totalStock01 += sL;
+                totalStockJordan += sJ;
+            }
+        });
+
+        // Si no se definieron tallas, crear una "Única" por defecto con 0 stock
+        // Si no se definieron tallas, usar los inputs generales como "Única"
+        if (tallasData.length === 0) {
+            const sA = parseInt(document.getElementById('stockAlcala')?.value) || 0;
+            const sL = parseInt(document.getElementById('stockLocal01')?.value) || 0;
+            const sJ = parseInt(document.getElementById('stockJordan')?.value) || 0;
+
+            tallasData.push({ talla: 'Única', alcala: sA, local01: sL, jordan: sJ });
+            totalStockAlcala = sA;
+            totalStock01 = sL;
+            totalStockJordan = sJ;
+        }
+
+        const productoData = {
+            nombre,
+            referencia,
+            categoria,
+            marca,
+            proveedor: proveedorId,
+            variantes: arrayColores,
+            tallas: tallasData.map(t => t.talla), // Guardar tallas en array para el catálogo
+            precio: parseFloat(precio),
+            precio_compra: parseFloat(precioCompra),
+            estado,
+            descripcion_corta: descripcionCorta,
+            descripcion_tecnica: descripcionTecnica,
+            url_imagen: urlImagen,
+            url_imagen: urlImagen
+            // Stock ahora solo vive en tablas de inventario
+        };
+
+        let prodTextId; // El ID de texto (PROD...) que usa el inventario
+
+        // INSERT o UPDATE Producto Base
+        if (id) { // UPDATE
+            // No enviamos id_producto en update para no cambiarlo, pero lo necesitamos de vuelta
+            const { data, error } = await supabaseClient
                 .from('productos')
-                .select('id_producto')
+                .update(productoData)
                 .eq('id', id)
-                .single();
-            idProducto = productoData?.id_producto;
+                .select(); // Importante: .select() para recuperar el id_producto
+            if (error) throw error;
+            prodTextId = data[0].id_producto;
+        } else { // INSERT
+            // Generar id_producto para nuevos
+            productoData.id_producto = 'PROD' + Date.now() + Math.floor(Math.random() * 1000);
+
+            const { data, error } = await supabaseClient
+                .from('productos')
+                .insert(productoData)
+                .select();
+            if (error) throw error;
+            prodTextId = data[0].id_producto;
         }
 
-        // Guardar cantidades de stock en las tablas de inventario
-        const stockAlcala = parseInt(document.getElementById('stockAlcala')?.value) || 0;
-        const stockLocal01 = parseInt(document.getElementById('stockLocal01')?.value) || 0;
-        const stockJordan = parseInt(document.getElementById('stockJordan')?.value) || 0;
+        // GUARDAR INVENTARIO DETALLADO POR TALLA
+        // Estrategia: Upsert para cada talla en cada tabla de inventario
+        // IMPORTANTE: Usamos prodTextId (ej: PROD123...), no el UUID.
 
-        // Usar upsert para actualizar o crear registros de inventario
-        const inventarioPromises = [];
-
-        if (stockAlcala >= 0) {
-            inventarioPromises.push(
-                supabaseClient.from('inventario_alcala').upsert({
-                    id_producto: idProducto,
-                    cantidad: stockAlcala
-                }, { onConflict: 'id_producto' })
-            );
+        // 1. Alcalá
+        const opsAlcala = tallasData.map(t => ({
+            id_producto: prodTextId,
+            talla: t.talla,
+            cantidad: t.alcala
+            // local: 'Alcalá' // REMOVIDO: No existe en tabla
+        }));
+        // Upsert conflict on (id_producto, talla)
+        if (opsAlcala.length > 0) {
+            const { error: errA } = await supabaseClient.from('inventario_alcala').upsert(opsAlcala, { onConflict: 'id_producto, talla' });
+            if (errA) console.error('Error stock Alcalá', errA);
         }
 
-        if (stockLocal01 >= 0) {
-            inventarioPromises.push(
-                supabaseClient.from('inventario_01').upsert({
-                    id_producto: idProducto,
-                    cantidad: stockLocal01
-                }, { onConflict: 'id_producto' })
-            );
+        // 2. Local 01
+        const ops01 = tallasData.map(t => ({
+            id_producto: prodTextId,
+            talla: t.talla,
+            cantidad: t.local01
+            // local: 'Local 01' // REMOVIDO
+        }));
+        if (ops01.length > 0) {
+            const { error: err01 } = await supabaseClient.from('inventario_01').upsert(ops01, { onConflict: 'id_producto, talla' });
+            if (err01) console.error('Error stock 01', err01);
         }
 
-        if (stockJordan >= 0) {
-            inventarioPromises.push(
-                supabaseClient.from('inventario_jordan').upsert({
-                    id_producto: idProducto,
-                    cantidad: stockJordan
-                }, { onConflict: 'id_producto' })
-            );
-        }
-
-        // Ejecutar todas las actualizaciones de inventario en paralelo
-        const inventarioResults = await Promise.all(inventarioPromises);
-
-        // Verificar si hubo errores en las actualizaciones de inventario
-        const inventarioErrors = inventarioResults.filter(r => r.error);
-        if (inventarioErrors.length > 0) {
-            showToast('Producto guardado pero hubo errores al actualizar inventario', 'warning');
+        // 3. Jordán
+        const opsJordan = tallasData.map(t => ({
+            id_producto: prodTextId,
+            talla: t.talla,
+            cantidad: t.jordan
+            // local: 'Jordán' // REMOVIDO
+        }));
+        if (opsJordan.length > 0) {
+            const { error: errJ } = await supabaseClient.from('inventario_jordan').upsert(opsJordan, { onConflict: 'id_producto, talla' });
+            if (errJ) console.error('Error stock Jordán', errJ);
         }
 
         showToast('Producto guardado', 'success');
@@ -675,6 +777,8 @@ async function guardarProducto() {
     } catch (e) {
         console.error(e);
         showToast('Error guardar: ' + e.message, 'error');
+    } finally {
+        if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerHTML = 'Guardar Producto'; }
     }
 }
 
@@ -758,7 +862,7 @@ async function editarProducto(id) {
     const p = productosCache.find(x => x.id === id);
     if (!p) return;
 
-    await mostrarFormProducto();
+    await mostrarFormProducto(); // This function now also clears the form and sets title
     document.getElementById('formTituloProducto').textContent = '✏️ Editar Producto';
     document.getElementById('productoId').value = p.id;
 
@@ -767,7 +871,7 @@ async function editarProducto(id) {
     document.getElementById('productoCategoria').value = p.categoria;
     document.getElementById('productoMarca').value = p.marca;
 
-    await cargarProveedoresEnSelectProducto(p.proveedor_id);
+    await cargarProveedoresEnSelectProducto(p.proveedor);
 
     if (p.variantes && Array.isArray(p.variantes)) {
         document.getElementById('productoVariantes').value = p.variantes.join(', ');
@@ -784,11 +888,67 @@ async function editarProducto(id) {
     document.getElementById('productoDescTecnica').value = p.descripcion_tecnica || '';
     document.getElementById('productoImagen').value = p.url_imagen || '';
 
-    // Stocks
-    document.getElementById('stockAlcala').value = p.stock_alcala || p.stock_tiendas?.alcala || 0;
-    document.getElementById('stockLocal01').value = p.stock_local01 || p.stock_tiendas?.local01 || 0;
-    document.getElementById('stockJordan').value = p.stock_jordan || p.stock_tiendas?.jordan || 0;
-    document.getElementById('stockDigital').value = p.stock_digital || p.stock_tiendas?.digital || 0;
+    const preview = document.getElementById('previewImgProducto');
+    const container = document.getElementById('previewContainerProducto');
+    if (preview && container) {
+        if (p.url_imagen) {
+            preview.src = p.url_imagen;
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    // CARGAR TALLAS Y STOCK
+    // Consultamos las tablas de inventario para este producto
+    document.getElementById('tbodyTallasStock').innerHTML = '<tr><td colspan="5" class="text-center">Cargando inventario...</td></tr>';
+
+    try {
+        // Obtenemos id_producto (texto) si existe, o usamos el ID numérico/UUID como fallback
+        const idProd = p.id_producto || p.id;
+
+        const [invA, invL, invJ] = await Promise.all([
+            supabaseClient.from('inventario_alcala').select('talla, cantidad').eq('id_producto', idProd),
+            supabaseClient.from('inventario_01').select('talla, cantidad').eq('id_producto', idProd),
+            supabaseClient.from('inventario_jordan').select('talla, cantidad').eq('id_producto', idProd)
+        ]);
+
+        // Unificar tallas
+        const tallasMap = new Set();
+        let totalA = 0, totalL = 0, totalJ = 0;
+
+        (invA.data || []).forEach(i => { tallasMap.add(i.talla); totalA += (i.cantidad || 0); });
+        (invL.data || []).forEach(i => { tallasMap.add(i.talla); totalL += (i.cantidad || 0); });
+        (invJ.data || []).forEach(i => { tallasMap.add(i.talla); totalJ += (i.cantidad || 0); });
+
+        // Llenar inputs legacy para referencia visual
+        if (document.getElementById('stockAlcala')) document.getElementById('stockAlcala').value = totalA;
+        if (document.getElementById('stockLocal01')) document.getElementById('stockLocal01').value = totalL;
+        if (document.getElementById('stockJordan')) document.getElementById('stockJordan').value = totalJ;
+
+        document.getElementById('tbodyTallasStock').innerHTML = '';
+
+        if (tallasMap.size === 0) {
+            // Si no hay datos detallados de tallas, asumimos que es un producto "Único" o legado
+            // y usamos los totales encontrados.
+            // Si todo es 0, igual mostramos la fila para que puedan agregar stock.
+            agregarFilaTalla('Única', totalA, totalL, totalJ);
+        } else {
+            // Ordenar tallas si es posible (alfabético o numérico)
+            const tallasOrdenadas = Array.from(tallasMap).sort();
+
+            tallasOrdenadas.forEach(talla => {
+                const sA = (invA.data || []).find(i => i.talla === talla)?.cantidad || 0;
+                const sL = (invL.data || []).find(i => i.talla === talla)?.cantidad || 0;
+                const sJ = (invJ.data || []).find(i => i.talla === talla)?.cantidad || 0;
+                agregarFilaTalla(talla, sA, sL, sJ);
+            });
+        }
+
+    } catch (e) {
+        console.error('Error cargando stock detallado:', e);
+        document.getElementById('tbodyTallasStock').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error cargando stock</td></tr>';
+    }
 }
 
 async function duplicarProducto(id) {
@@ -823,14 +983,14 @@ async function duplicarProducto(id) {
     document.getElementById('productoEstado').value = p.estado;
     document.getElementById('productoDescCorta').value = p.descripcion_corta || '';
     document.getElementById('productoDescTecnica').value = p.descripcion_tecnica || '';
-    document.getElementById('productoImagen').value = p.url_imagen || '';
+    document.getElementById('productoImagen').value = '';
+    removerPreview('producto');
 
-    // Stock en 0 para el duplicado
-    document.getElementById('stockAlcala').value = 0;
-    document.getElementById('stockLocal01').value = 0;
-    document.getElementById('stockJordan').value = 0;
-    document.getElementById('stockDigital').value = 0;
+    document.getElementById('stockDigital').value = p.stock_digital || p.stock_tiendas?.digital || 0;
 
+    // Limpiar tabla de tallas para el duplicado (o podríamos copiar la estructura sin stock, pero mejor limpiar)
+    document.getElementById('tbodyTallasStock').innerHTML = '';
+    agregarFilaTalla(); // Agregar fila vacía
     showToast('Datos copiados. Modifica y guarda.', 'info');
 }
 
