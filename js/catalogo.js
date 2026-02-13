@@ -301,6 +301,31 @@ async function cargarProductos() {
     }
 }
 
+// Calcula relevancia de un producto respecto al término de búsqueda
+function calcularRelevancia(producto, termino) {
+    let score = 0;
+    const nombre = (producto.nombre || '').toLowerCase();
+    const marca = (producto.marca || '').toLowerCase();
+    const categoria = (producto.categoria || '').toLowerCase();
+    const desc = (producto.descripcion_corta || '').toLowerCase();
+
+    // Nombre empieza con el término → máxima relevancia
+    if (nombre.startsWith(termino)) score += 10;
+    // Nombre contiene el término (como palabra)
+    else if (nombre.includes(termino)) score += 6;
+
+    // Categoría coincide
+    if (categoria.includes(termino)) score += 5;
+
+    // Marca coincide
+    if (marca.includes(termino)) score += 3;
+
+    // Solo descripción → baja relevancia
+    if (score === 0 && desc.includes(termino)) score += 1;
+
+    return score;
+}
+
 function aplicarFiltros() {
     const cat = document.getElementById('filtroCategoria').value;
     const talEl = document.getElementById('filtroTalla'); // Nuevo filtro
@@ -331,11 +356,20 @@ function aplicarFiltros() {
             if (parseFloat(p.rating || 0) < parseInt(rate)) return false;
         }
         if (bus) {
-            const busqueda = `${p.nombre} ${p.marca} ${p.descripcion_corta || ''}`.toLowerCase();
+            const busqueda = `${p.nombre} ${p.marca} ${p.categoria || ''} ${p.descripcion_corta || ''}`.toLowerCase();
             if (!busqueda.includes(bus)) return false;
         }
         return true;
     });
+
+    // Ordenar por relevancia si hay búsqueda de texto
+    if (bus) {
+        productosFiltrados.sort((a, b) => {
+            const scoreA = calcularRelevancia(a, bus);
+            const scoreB = calcularRelevancia(b, bus);
+            return scoreB - scoreA; // Mayor score primero
+        });
+    }
 
     mostrarProductos();
 }

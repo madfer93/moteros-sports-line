@@ -244,7 +244,7 @@ body {
 
 .container {
     display: grid;
-    grid-template-columns: 1fr 420px;
+    grid-template-columns: 1fr 480px;
     gap: 1.5rem;
     padding: 1.5rem;
     max-width: 1400px;
@@ -313,6 +313,7 @@ body {
     max-height: 65vh;
     overflow-y: auto;
     padding-right: 0.5rem;
+    padding-bottom: 1rem;
 }
 
 .productos-lista::-webkit-scrollbar {
@@ -333,10 +334,10 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.9rem;
+    padding: 0.6rem 0.8rem;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.4rem;
     cursor: pointer;
     transition: all 0.2s;
     overflow: hidden;
@@ -344,9 +345,9 @@ body {
 }
 
 .producto-img {
-    width: 60px;
-    height: 60px;
-    margin-right: 12px;
+    width: 48px;
+    height: 48px;
+    margin-right: 10px;
     border-radius: 8px;
     overflow: hidden;
     flex-shrink: 0;
@@ -364,8 +365,8 @@ body {
 }
 
 .producto-info h4 {
-    font-size: 0.95rem;
-    margin-bottom: 0.25rem;
+    font-size: 0.88rem;
+    margin-bottom: 0.2rem;
     color: var(--dark);
 }
 
@@ -1479,6 +1480,28 @@ body {
     display: block;
 }
 
+/* Pago Proveedor inline panel */
+.seccion-pago-proveedor {
+    background: #f0f9ff;
+    border: 2px solid #bae6fd;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .seccion-voucher-titulo {
     font-size: 0.85rem;
     font-weight: 700;
@@ -1516,4 +1539,146 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ESTILOS POS DIGITAL (Stock Global Colorido)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Re-estilo del item de producto */
+.producto.digital {
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    background: white;
+    margin-bottom: 0.8rem;
+    align-items: flex-start;
+    border-radius: 12px;
+}
+
+.producto.digital:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e1;
+}
+
+/* Botones de Stock Global */
+.btn-stock-tienda {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 65px;
+    height: 50px;
+    gap: 0;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-stock-tienda:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.btn-stock-tienda:active {
+    transform: translateY(0);
+}
+
+.btn-stock-tienda .tienda-name {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 800;
+    opacity: 1;
+    line-height: 1;
+    margin-bottom: 2px;
+    /* Hereda color negro del padre */
+}
+
+.btn-stock-tienda .talla-qty {
+    font-size: 1.1rem;
+    font-weight: 900;
+    line-height: 1;
+    /* Hereda color negro del padre */
+}
+
+/* COLORES POR TIENDA (Alto Contraste: Fondo Claro + Texto Negro) */
+
+/* Alcalá - Azul */
+.btn-stock-alcala {
+    background: #dbeafe;
+    /* Azul muy claro */
+    color: #000000;
+    /* Negro puro */
+    border: 2px solid #2563eb;
+}
+
+.btn-stock-alcala .tienda-name {
+    color: #1e3a8a;
+}
+
+/* Azul oscuro para nombre */
+
+/* Local 01 - Verde */
+.btn-stock-local01 {
+    background: #d1fae5;
+    /* Verde muy claro */
+    color: #000000;
+    border: 2px solid #059669;
+}
+
+.btn-stock-local01 .tienda-name {
+    color: #064e3b;
+}
+
+/* Verde oscuro */
+
+/* Jordán - Naranja */
+.btn-stock-jordan {
+    background: #ffedd5;
+    /* Naranja muy claro */
+    color: #000000;
+    border: 2px solid #ea580c;
+}
+
+.btn-stock-jordan .tienda-name {
+    color: #7c2d12;
+}
+
+/* Naranja oscuro */
+
+/* Digital / Admin - Gris */
+.btn-stock-digital,
+.btn-stock-admin {
+    background: #f1f5f9;
+    color: #000000;
+    border: 2px solid #64748b;
+}
+
+.btn-stock-digital .tienda-name {
+    color: #334155;
+}
+
+/* Evento - Rosa */
+.btn-stock-evento {
+    background: #ffe4e6;
+    color: #000000;
+    border: 2px solid #be123c;
+}
+
+.btn-stock-evento .tienda-name {
+    color: #881337;
+}
+
+/* Defecto */
+.btn-stock-defecto {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #cbd5e1;
 }

@@ -299,7 +299,7 @@ async function cargarSeccion(section) {
         case 'traslados': await cargarTraslados(); break;
         case 'feedback': await cargarFeedback(); break;
         case 'metas':
-            await Promise.all([cargarMetas(), cargarMetasProveedores()]);
+            await cargarMetas();
             break;
         case 'servicios-vendidos': await cargarServiciosAdmin(); break;
     }
@@ -5340,6 +5340,46 @@ async function verDetalleCierre(id) {
                         </table>
                     </div>
 
+                    </div>
+
+                    <!-- ════════════ DETALLE DE PRODUCTOS (NUEVO) ════════════ -->
+                    <div style="background:white; border:1px solid #e2e8f0; border-radius:1rem; overflow:hidden; margin-bottom:1.5rem; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+                         <div style="padding:1rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                            <h4 style="margin:0; font-size:0.9rem; color:#475569; font-weight:700; text-transform:uppercase;">📦 Desglose de Productos Vendidos</h4>
+                            <span style="font-size:0.8rem; color:#64748b;">${(data.detalles_cierre || []).length} ítems</span>
+                        </div>
+                        <div style="max-height:300px; overflow-y:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                                <thead style="position:sticky; top:0; background:#fff; z-index:1;">
+                                    <tr style="border-bottom:1px solid #e2e8f0; color:#64748b;">
+                                        <th style="padding:0.75rem 1rem; text-align:left;">Producto</th>
+                                        <th style="padding:0.75rem 1rem; text-align:center;">Cant.</th>
+                                        <th style="padding:0.75rem 1rem; text-align:right;">Precio</th>
+                                        <th style="padding:0.75rem 1rem; text-align:right;">Total</th>
+                                        <th style="padding:0.75rem 1rem; text-align:left;">Pago</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${(data.detalles_cierre && data.detalles_cierre.length > 0) ?
+                data.detalles_cierre.map(p => `
+                                            <tr style="border-bottom:1px solid #f1f5f9; hover:background:#f8fafc;">
+                                                <td style="padding:0.75rem 1rem; color:#1e293b;">
+                                                    <div style="font-weight:600;">${p.producto || p.nombre || 'Item'}</div>
+                                                    ${p.variante ? `<div style="font-size:0.75rem; color:#64748b;">${p.variante.nombre || p.variante}</div>` : ''}
+                                                </td>
+                                                <td style="padding:0.75rem 1rem; text-align:center;">${p.cantidad}</td>
+                                                <td style="padding:0.75rem 1rem; text-align:right;">$${formatearPrecio(p.precio_final || p.precio_venta || p.precio || 0)}</td>
+                                                <td style="padding:0.75rem 1rem; text-align:right; font-weight:700;">$${formatearPrecio(p.total || 0)}</td>
+                                                <td style="padding:0.75rem 1rem; color:#64748b;">${p.metodo_pago || '-'}</td>
+                                            </tr>
+                                        `).join('')
+                : '<tr><td colspan="5" style="padding:1.5rem; text-align:center; color:#94a3b8;">No hay desglose de productos disponible para este cierre.</td></tr>'
+            }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Observaciones y Detalles Avanzados -->
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
                         <div style="background:#f8fafc; padding:1.5rem; border-radius:1.25rem; border:1px solid #e2e8f0;">
@@ -9229,6 +9269,17 @@ async function cargarProveedores() {
         if (error) throw error;
         todosProveedores = data || [];
         renderizarProveedores(todosProveedores);
+
+        // Actualizar stats cards
+        const totalEl = document.getElementById('proveedoresTotal');
+        const activosEl = document.getElementById('proveedoresActivos');
+        const saldoEl = document.getElementById('proveedoresSaldoPendiente');
+        if (totalEl) totalEl.textContent = todosProveedores.length;
+        if (activosEl) activosEl.textContent = todosProveedores.filter(p => p.activo).length;
+        if (saldoEl) {
+            const totalSaldo = todosProveedores.reduce((sum, p) => sum + parseFloat(p.saldo_pendiente || 0), 0);
+            saldoEl.textContent = '$' + formatearPrecio(totalSaldo);
+        }
     } catch (e) {
         console.error(e);
         showToast('Error cargando proveedores', 'error');
@@ -11927,7 +11978,16 @@ async function eliminarProveedor(id) {
 window.eliminarProveedor = eliminarProveedor;
 
 function updateProveedoresStats() {
-    // Calculamos stats simples para el header de la sección si existiera
+    const lista = proveedoresData || [];
+    const totalEl = document.getElementById('proveedoresTotal');
+    const activosEl = document.getElementById('proveedoresActivos');
+    const saldoEl = document.getElementById('proveedoresSaldoPendiente');
+    if (totalEl) totalEl.textContent = lista.length;
+    if (activosEl) activosEl.textContent = lista.filter(p => p.activo).length;
+    if (saldoEl) {
+        const totalSaldo = lista.reduce((sum, p) => sum + parseFloat(p.saldo_pendiente || 0), 0);
+        saldoEl.textContent = '$' + formatearPrecio(totalSaldo);
+    }
 }
 
 window.guardarDeudor = guardarDeudor;
@@ -13848,3 +13908,81 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+/* DUPLICATE REMOVED */
+// async function verDetalleCierre(id) {
+/* try {
+    const { data: cierre, error } = await supabaseClient
+        .from('cierres_caja')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) throw error;
+
+    const modal = document.getElementById('modalDetallesCierre');
+    const tbody = document.getElementById('tbodyDetalleCierreItems');
+    const cabecera = document.getElementById('infoCierreCabecera');
+    const totalFooter = document.getElementById('totalDetalleCierreItems');
+
+    if (!modal || !tbody) return;
+
+    // Limpiar tabla
+    tbody.innerHTML = '';
+
+    // Info Cabecera
+    cabecera.innerHTML = `
+            <strong>Cierre:</strong> ${cierre.numero_cierre} <br>
+            <strong>Local:</strong> ${cierre.local} | <strong>Fecha:</strong> ${new Date(cierre.fecha).toLocaleDateString()} <br>
+            <strong>Estado:</strong> <span class="badge ${cierre.estado === 'cerrado' ? 'badge-success' : 'badge-warning'}">${(cierre.estado || '').toUpperCase()}</span>
+        `;
+
+    const detalles = cierre.detalles_cierre || [];
+
+    if (detalles.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay desglose de productos guardado para este cierre.</td></tr>';
+        totalFooter.textContent = '$0';
+    } else {
+        let totalGeneral = 0;
+
+        tbody.innerHTML = detalles.map(item => {
+            const nombre = item.producto || item.nombre || 'Item sin nombre';
+            const variante = item.variante ? `<span class="badge badge-info">${item.variante.nombre || item.variante}</span>` : '-';
+            const cantidad = item.cantidad || 0;
+            const precio = item.precio_final || item.precio_venta || item.precio || 0;
+            const total = item.total || (cantidad * precio);
+            const metodo = item.metodo_pago || '-';
+
+            totalGeneral += total;
+
+            return `
+                    <tr>
+                        <td>${nombre}</td>
+                        <td>${variante}</td>
+                        <td class="text-center">${cantidad}</td>
+                        <td class="text-right">$${formatearPrecio(precio)}</td>
+                        <td class="text-right"><strong>$${formatearPrecio(total)}</strong></td>
+                        <td>${metodo}</td>
+                    </tr>
+                `;
+        }).join('');
+
+        totalFooter.textContent = '$' + formatearPrecio(totalGeneral);
+    }
+
+    modal.style.display = 'flex';
+
+} catch (e) {
+    console.error('Error cargando detalle cierre:', e);
+    alert('Error al cargar el detalle del cierre.');
+}
+}
+
+function cerrarModalDetallesCierre() {
+    const modal = document.getElementById('modalDetallesCierre');
+    if (modal) modal.style.display = 'none';
+}
+
+*/
+// window.verDetalleCierre = verDetalleCierre;
+// window.cerrarModalDetallesCierre = cerrarModalDetallesCierre;

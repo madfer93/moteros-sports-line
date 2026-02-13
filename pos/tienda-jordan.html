@@ -55,10 +55,8 @@
         <div class="header-info">
             <span id="vendedorBadge" class="badge badge-vendedor hidden">👤 Vendedor</span>
             <span id="cajaBadge" class="badge badge-cerrada">🔒 Cerrada</span>
-            <button class="btn btn-warning" onclick="abrirModalServicios()" title="Servicios (Lavados, Arreglos)">🛠️
+            <button class="btn btn-warning" onclick="abrirModalServicios()" title="Servicios (Lavados, Arreglos)">🛠️
                 Servicios</button>
-            <button class="btn btn-info" onclick="abrirModalProveedoresPOS()" title="Pagos a Proveedores">🧾 Pagos
-                Prov.</button>
             <button class="btn btn-secondary" onclick="abrirModalTraslado()" title="Trasladar Mercancía">🚚
                 Traslados</button>
             <button class="btn btn-primary" onclick="abrirModalAbonoCredito()" title="Abonos Crédito Motero">🏍️ Pago
@@ -192,8 +190,8 @@
                     <div class="metodo-btn" data-metodo="Daviplata" onclick="toggleMetodo(this)">
                         <span class="icono">📱</span>Daviplata
                     </div>
-                    <div class="metodo-btn" data-metodo="Tarjeta" onclick="toggleMetodo(this)">
-                        <span class="icono">💳</span>Tarjeta
+                    <div class="metodo-btn" data-metodo="Pago Proveedor" onclick="toggleMetodo(this)">
+                        <span class="icono">🏭</span>Pago Proveedor
                     </div>
                     <div class="metodo-btn" data-metodo="Datafono" onclick="toggleMetodo(this)">
                         <span class="icono">🖥️</span>Datáfono
@@ -212,6 +210,56 @@
                     </div>
                 </div>
                 <div id="metodosSeleccionados" class="metodos-seleccionados"></div>
+            </div>
+
+            <!-- Panel inline Pago a Proveedor -->
+            <div id="seccionPagoProveedor" class="seccion-pago-proveedor" style="display:none;">
+                <h4 style="margin:0 0 0.8rem; color:#0369a1; display:flex; align-items:center; gap:0.5rem;">🏭 Pago a
+                    Proveedor</h4>
+                <div class="form-group" style="margin-bottom:0.8rem;">
+                    <label style="font-weight:600; font-size:0.85rem; color:#475569;">Proveedor *</label>
+                    <select id="selectProveedorPago" class="form-control" onchange="mostrarInfoProveedorInline()"
+                        style="width:100%; padding:0.6rem; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem;">
+                        <option value="">Seleccionar proveedor...</option>
+                    </select>
+                </div>
+                <div id="infoProveedorInline"
+                    style="display:none; background:#f0f9ff; padding:0.8rem; border-radius:8px; border:1px solid #bae6fd; margin-bottom:0.8rem;">
+                    <div style="font-weight:700; color:#0369a1; font-size:0.95rem;" id="provInlineNombre"></div>
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:0.3rem;">🏦 <span
+                            id="provInlineBanco"></span> - <span id="provInlineTipoCuenta"></span></div>
+                    <div style="font-size:0.9rem; font-weight:600; color:#0f172a; margin-top:0.2rem;">📋 Cuenta: <span
+                            id="provInlineCuenta"></span></div>
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:0.2rem;">👤 Titular: <span
+                            id="provInlineTitular"></span></div>
+                    <div style="font-size:0.9rem; font-weight:700; color:#ef4444; margin-top:0.3rem;">💰 Saldo
+                        Pendiente: <span id="provInlineSaldo"></span></div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.8rem;">
+                    <div class="form-group">
+                        <label style="font-weight:600; font-size:0.85rem; color:#475569;">Monto *</label>
+                        <input type="number" id="montoPagoProveedor" placeholder="$0"
+                            style="width:100%; padding:0.6rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1.1rem; font-weight:700;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight:600; font-size:0.85rem; color:#475569;">Referencia</label>
+                        <input type="text" id="refPagoProveedor" placeholder="Nro comprobante"
+                            style="width:100%; padding:0.6rem; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0.8rem;">
+                    <label style="font-weight:600; font-size:0.85rem; color:#475569;">📸 Foto del Comprobante</label>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <input type="file" id="fotoPagoProveedor" accept="image/*" capture="environment"
+                            style="flex:1; font-size:0.85rem;">
+                        <img id="previewFotoPago" src="" alt=""
+                            style="display:none; width:50px; height:50px; object-fit:cover; border-radius:6px; border:2px solid #e2e8f0;">
+                    </div>
+                </div>
+                <button class="btn btn-success btn-full" onclick="confirmarPagoProveedorInline()"
+                    style="padding:0.8rem; font-size:0.95rem; font-weight:700;">
+                    ✅ Confirmar Pago a Proveedor
+                </button>
             </div>
 
             <!-- Voucher Code (Solo para Tarjeta/Datáfono) -->

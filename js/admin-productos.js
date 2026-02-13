@@ -31,12 +31,18 @@ async function cargarProductos() {
             supabaseClient.from('inventario_jordan').select('id_producto, cantidad')
         ]);
 
-        // Helpers de mapeo rápido
-        // NOTA: Algunas tablas usan UUID y otras ID numérico antiguo. 
-        // Creamos Map stringify para asegurar match.
-        const mapAlcala = new Map(invAlcala.data?.map(i => [String(i.id_producto), i.cantidad]) || []);
-        const mapLocal01 = new Map(invLocal01.data?.map(i => [String(i.id_producto), i.cantidad]) || []);
-        const mapJordan = new Map(invJordan.data?.map(i => [String(i.id_producto), i.cantidad]) || []);
+        // Helpers de mapeo rápido — SUMAMOS cantidades por id_producto (un producto puede tener múltiples filas/tallas)
+        function sumarPorProducto(items) {
+            const map = new Map();
+            (items || []).forEach(i => {
+                const key = String(i.id_producto);
+                map.set(key, (map.get(key) || 0) + (i.cantidad || 0));
+            });
+            return map;
+        }
+        const mapAlcala = sumarPorProducto(invAlcala.data);
+        const mapLocal01 = sumarPorProducto(invLocal01.data);
+        const mapJordan = sumarPorProducto(invJordan.data);
 
         // 4. Merge de datos
         productosCache = (productosBase || []).map(p => {
@@ -771,7 +777,6 @@ async function guardarProducto() {
             estado,
             descripcion_corta: descripcionCorta,
             descripcion_tecnica: descripcionTecnica,
-            url_imagen: urlImagen,
             url_imagen: urlImagen
             // Stock ahora solo vive en tablas de inventario
         };
@@ -801,20 +806,49 @@ async function guardarProducto() {
         }
 
         // GUARDAR INVENTARIO DETALLADO POR TALLA
-        // Estrategia: Upsert para cada talla en cada tabla de inventario
+        // Estrategia: 1) Borrar filas huérfanas, 2) Upsert las actuales
         // IMPORTANTE: Usamos prodTextId (ej: PROD123...), no el UUID.
+
+        const tallasActuales = tallasData.map(t => t.talla);
+
+        // 0. Eliminar tallas que ya no existen (filas huérfanas)
+        const tablas = ['inventario_alcala', 'inventario_01', 'inventario_jordan'];
+        for (const tabla of tablas) {
+            try {
+                // Obtener tallas existentes en DB para este producto
+                const { data: existentes } = await supabaseClient
+                    .from(tabla)
+                    .select('talla')
+                    .eq('id_producto', prodTextId);
+
+                if (existentes && existentes.length > 0) {
+                    const tallasAEliminar = existentes
+                        .map(r => r.talla)
+                        .filter(t => !tallasActuales.includes(t));
+
+                    if (tallasAEliminar.length > 0) {
+                        const { error: errDel } = await supabaseClient
+                            .from(tabla)
+                            .delete()
+                            .eq('id_producto', prodTextId)
+                            .in('talla', tallasAEliminar);
+                        if (errDel) console.error(`Error eliminando tallas huérfanas en ${tabla}:`, errDel);
+                    }
+                }
+            } catch (e) {
+                console.error(`Error limpiando ${tabla}:`, e);
+            }
+        }
 
         // 1. Alcalá
         const opsAlcala = tallasData.map(t => ({
             id_producto: prodTextId,
             talla: t.talla,
             cantidad: t.alcala
-            // local: 'Alcalá' // REMOVIDO: No existe en tabla
         }));
-        // Upsert conflict on (id_producto, talla)
         if (opsAlcala.length > 0) {
             const { error: errA } = await supabaseClient.from('inventario_alcala').upsert(opsAlcala, { onConflict: 'id_producto, talla' });
-            if (errA) console.error('Error stock Alcalá', errA);
+            if (errA) { console.error('Error stock Alcalá', errA); showToast('Error guardando stock Alcalá', 'warning'); }
         }
 
         // 2. Local 01
@@ -822,11 +856,10 @@ async function guardarProducto() {
             id_producto: prodTextId,
             talla: t.talla,
             cantidad: t.local01
-            // local: 'Local 01' // REMOVIDO
         }));
         if (ops01.length > 0) {
             const { error: err01 } = await supabaseClient.from('inventario_01').upsert(ops01, { onConflict: 'id_producto, talla' });
-            if (err01) console.error('Error stock 01', err01);
+            if (err01) { console.error('Error stock 01', err01); showToast('Error guardando stock Local 01', 'warning'); }
         }
 
         // 3. Jordán
@@ -834,11 +867,10 @@ async function guardarProducto() {
             id_producto: prodTextId,
             talla: t.talla,
             cantidad: t.jordan
-            // local: 'Jordán' // REMOVIDO
         }));
         if (opsJordan.length > 0) {
             const { error: errJ } = await supabaseClient.from('inventario_jordan').upsert(opsJordan, { onConflict: 'id_producto, talla' });
-            if (errJ) console.error('Error stock Jordán', errJ);
+            if (errJ) { console.error('Error stock Jordán', errJ); showToast('Error guardando stock Jordán', 'warning'); }
         }
 
         showToast('Producto guardado', 'success');

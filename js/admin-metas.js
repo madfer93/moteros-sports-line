@@ -33,11 +33,15 @@ async function cargarMetas(activarVista = true) {
         fechaSeleccionadaMetas = new Date(ano, mes - 1, 1);
     }
 
-    await Promise.all([
-        cargarMetasLocales(),
-        cargarMetasProveedores(),
-        cargarProyeccionesMetas()
-    ]);
+    try {
+        await Promise.allSettled([
+            cargarMetasLocales(),
+            cargarMetasProveedores(),
+            cargarProyeccionesMetas()
+        ]);
+    } catch (e) {
+        console.error('Error global cargando metas:', e);
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -552,7 +552,8 @@ async function mostrarModalCerrarCaja() {
             totalAbonosServicios,
             totalAbonosDeudores,
             efectivoEsperado,
-            totalGeneralCierre: totalGeneralVentas + totalAbonosCreditos + totalAbonosServicios + totalAbonosDeudores
+            totalGeneralCierre: totalGeneralVentas + totalAbonosCreditos + totalAbonosServicios + totalAbonosDeudores,
+            ventasDelDia: ventas || []
         };
 
         // Renderizar resumen ultra-detallado
@@ -597,6 +598,9 @@ async function mostrarModalCerrarCaja() {
                     </div>
                 </div>
             </div>
+            
+            <!-- Desglose de productos PRE-CIERRE -->
+            ${generarDesgloseProductos(true) || ''}
         `;
 
         document.getElementById('resumenCierreModal').innerHTML = resumenHTML;
@@ -709,6 +713,7 @@ async function confirmarCerrarCaja() {
                 diferencia_total: Math.round(diferenciaTotal),
                 total_gastos_dia: totalGastos + resumenVentas.totalAdelantos + resumenVentas.totalAbonosProv,
                 observaciones: observacionesFinal + ` || Desglose: Ventas Productos: $${resumenVentas.totalGeneralVentas} | Abonos: $${resumenVentas.totalAbonosCreditos + resumenVentas.totalAbonosDeudores} | Servicios: $${resumenVentas.totalAbonosServicios} | Adelantos: $${resumenVentas.totalAdelantos} | Pagos Prov: $${resumenVentas.totalAbonosProv}`,
+                detalles_cierre: resumenVentas.ventasDelDia || [],
                 estado: 'cerrado'
             })
             .eq('numero_cierre', datosCaja?.numeroCierre);
@@ -723,6 +728,8 @@ async function confirmarCerrarCaja() {
                 diferencia: diferenciaTotal
             });
         }
+        // Generar desglose de productos vendidos
+        window._productosCierreHTML = generarDesgloseProductos();
         mostrarResumenFinal(efectivoContado, diferenciaEfectivo, diferenciaTotal, totalGastos);
 
         localStorage.removeItem(TIENDA.storageKey);
@@ -774,6 +781,7 @@ async function confirmarCerrarCajaDigital() {
                 fodegas_contado: fodegasContado,
                 diferencia_total: Math.round(diferenciaTotal),
                 observaciones: observaciones + ` || Desglose Digital: Ventas: $${resumenVentas.totalGeneralVentas} | Abonos: $${resumenVentas.totalAbonosCreditos + resumenVentas.totalAbonosDeudores} | Servicios: $${resumenVentas.totalAbonosServicios}`,
+                detalles_cierre: resumenVentas.ventasDelDia || [],
                 estado: 'cerrado'
             })
             .eq('numero_cierre', datosCaja?.numeroCierre);
@@ -787,6 +795,8 @@ async function confirmarCerrarCajaDigital() {
                 diferencia: diferenciaTotal
             });
         }
+        // Generar desglose de productos vendidos
+        window._productosCierreHTML = generarDesgloseProductos();
         mostrarResumenFinalDigital(totalContado, diferenciaTotal);
 
         localStorage.removeItem(TIENDA.storageKey);
@@ -826,6 +836,7 @@ function mostrarResumenFinal(efectivoContado, diferenciaEfectivo, diferenciaTota
                 <div class="resumen-row"><span class="label">📊 Dif. Efectivo</span><span class="value ${difEfClass}">$${diferenciaEfectivo.toLocaleString('es-CO')}</span></div>
                 <div class="resumen-row total"><span class="label">Dif. Total</span><span class="value ${difTotClass}">$${diferenciaTotal.toLocaleString('es-CO')}</span></div>
             </div>
+            ${window._productosCierreHTML || ''}
             <button class="btn btn-success btn-large btn-full mt-1" onclick="reiniciarPantallaCaja()">🔄 Abrir Nueva Caja</button>
         </div>
     `;
@@ -849,6 +860,7 @@ function mostrarResumenFinalDigital(totalContado, diferenciaTotal) {
                 <div class="resumen-row"><span class="label">💰 Total Contado</span><span class="value">$${totalContado.toLocaleString('es-CO')}</span></div>
                 <div class="resumen-row total"><span class="label">Diferencia</span><span class="value ${difTotClass}">$${diferenciaTotal.toLocaleString('es-CO')}</span></div>
             </div>
+            ${window._productosCierreHTML || ''}
             <button class="btn btn-success btn-large btn-full mt-1" onclick="reiniciarPantallaCaja()">🔄 Abrir Nueva Caja</button>
         </div>
     `;
@@ -1017,19 +1029,30 @@ async function cargarProductos() {
             let stockTotal = 0;
             let stockPorTalla = {}; // { "S": 5, "M": 0 }
             let tieneTallas = false;
+            let stocksGlobales = {}; // Estructura: { 'Alcalá': { 'S': 5, 'M': 3 }, '01': { ... } }
 
             if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
-                // Lógica Digital: Sumar todo (Simplificado para este ejemplo, idealmente desglosar por tienda y talla)
-                // Por ahora, sumamos el stock total de todas las tallas en todas las tiendas
-                ['alcala', 'local01', 'jordan'].forEach(tienda => {
-                    const items = inventarios[tienda] || [];
-                    items.forEach(item => {
-                        // Comparación flexible (algunos id_producto son numéricos en string)
-                        if (String(item.id_producto) === pId) {
-                            stockTotal += (item.cantidad || 0);
-                            // Podríamos guardar desglose complejo aquí si Digital lo requiere
-                        }
-                    });
+                // Lógica Digital: Desglosar por tienda y talla
+                const tiendasKeys = [
+                    { key: 'alcala', nombre: 'Alcalá' },
+                    { key: 'local01', nombre: '01' },
+                    { key: 'jordan', nombre: 'Jordán' }
+                ];
+
+                tiendasKeys.forEach(t => {
+                    const items = inventarios[t.key] || [];
+                    const itemsProducto = items.filter(i => String(i.id_producto) === pId);
+
+                    if (itemsProducto.length > 0) {
+                        stocksGlobales[t.nombre] = {};
+                        itemsProducto.forEach(item => {
+                            const cant = item.cantidad || 0;
+                            const talla = item.talla || 'Única';
+
+                            stockTotal += cant;
+                            stocksGlobales[t.nombre][talla] = (stocksGlobales[t.nombre][talla] || 0) + cant;
+                        });
+                    }
                 });
             } else {
                 // Lógica Tienda Física: Stock de esta tienda desglosado por talla
@@ -1061,7 +1084,8 @@ async function cargarProductos() {
                 id_producto: p.id, // Unificar uso de ID
                 stock: stockTotal,
                 tiene_tallas: tieneTallas || (Object.keys(stockPorTalla).length > 1), // O si hay varios registros
-                stock_por_talla: stockPorTalla
+                stock_por_talla: stockPorTalla,
+                stocks_globales: stocksGlobales // Nuevo campo para Digital/Admin
             };
         });
 
@@ -1099,25 +1123,47 @@ function renderizarProductos() {
         const agotado = p.stock <= 0;
 
         if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
-            // Renderizado especial para Digital y Admin (Botones por tienda)
+            // Renderizado especial para Digital y Admin (Botones por tienda y talla)
+            let htmlStock = '';
+            if (p.stocks_globales && Object.keys(p.stocks_globales).length > 0) {
+                Object.entries(p.stocks_globales).forEach(([tienda, tallasObj]) => {
+
+                    // Determinar clase de color según tienda
+                    let claseTienda = 'btn-stock-defecto';
+                    if (tienda.includes('Alcalá')) claseTienda = 'btn-stock-alcala';
+                    else if (tienda.includes('01')) claseTienda = 'btn-stock-local01';
+                    else if (tienda.includes('Jordán')) claseTienda = 'btn-stock-jordan';
+                    else if (tienda.includes('Digital')) claseTienda = 'btn-stock-digital';
+
+                    Object.entries(tallasObj).forEach(([talla, cant]) => {
+                        if (cant > 0) {
+                            // En digital, al hacer click, agregamos al carrito con Tienda y Talla
+                            htmlStock += `
+                            <button class="btn-stock-tienda ${claseTienda} activo"
+                                onclick="agregarAlCarrito('${p.id_producto}', '${tienda}', '${talla}')"
+                                title="Vender de ${tienda} - Talla ${talla}">
+                                <span class="tienda-name">${tienda}</span>
+                                <span class="talla-qty">${talla === 'Única' ? 'ÚNICA' : talla} (${cant})</span>
+                            </button>`;
+                        }
+                    });
+                });
+            } else {
+                htmlStock = '<span class="text-muted" style="font-size:0.8rem; padding:5px;">Sin stock global</span>';
+            }
+
             return `
-            <div class="producto digital ${agotado ? 'agotado' : ''}">
+            <div class="producto digital ${agotado ? 'agotado' : ''}" style="border-left: 5px solid ${agotado ? '#cbd5e1' : '#3b82f6'};">
                 ${p.url_imagen ? `<div class="producto-img"><img src="${p.url_imagen}" alt="${p.nombre}" onerror="this.style.display='none'"></div>` : ''}
                 <div class="producto-info">
-                    <h4>${p.nombre}</h4>
-                    <small>${p.marca || 'Sin marca'} • ${p.id_producto}</small>
-                    <div class="stock-breakdown">
-                        ${Object.entries(p.stocks || {}).map(([tienda, cant]) => `
-                            <button class="btn-stock-tienda ${cant > 0 ? 'activo' : 'disabled'}"
-                                onclick="${cant > 0 ? `agregarAlCarrito('${p.id_producto}', '${tienda}')` : ''}"
-                                title="${cant > 0 ? 'Vender de ' + tienda : 'Sin stock'}">
-                                ${tienda.substring(0, 3)}: ${cant}
-                            </button>
-                        `).join('')}
+                    <h4 style="font-size:1rem; color:#1e293b; margin-bottom:4px;">${p.nombre}</h4>
+                    <small style="display:block; margin-bottom:8px; color:#64748b;">${p.marca || 'Sin marca'} • ${p.id_producto}</small>
+                    <div class="stock-breakdown" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+                        ${htmlStock}
                     </div>
                 </div>
-                <div class="producto-precio">
-                    <span class="precio">$${(p.precio || 0).toLocaleString('es-CO')}</span>
+                <div class="producto-precio" style="align-self: flex-start;">
+                    <span class="precio" style="font-size:1.1rem; color:#1e293b;">$${(p.precio || 0).toLocaleString('es-CO')}</span>
                 </div>
             </div>`;
         } else {
@@ -1302,23 +1348,36 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null) {
     // LÓGICA DIGITAL
     else {
         const tiendaOrigen = arg2;
+        const tallaDigital = arg3 || 'Única'; // Recibimos la talla o asumimos única
         if (!tiendaOrigen) return mostrarAlerta('Error: tienda origen no definida', 'error');
 
-        const stockDisp = prod.stocks ? prod.stocks[tiendaOrigen] : 0;
+        // Búsqueda de stock más precisa usando stocks_globales
+        let stockDisp = 0;
+        if (prod.stocks_globales && prod.stocks_globales[tiendaOrigen]) {
+            stockDisp = prod.stocks_globales[tiendaOrigen][tallaDigital] || 0;
+        } else if (prod.stocks && prod.stocks[tiendaOrigen]) {
+            // Fallback antigua lógica (solo si no hay stocks_globales)
+            stockDisp = prod.stocks[tiendaOrigen];
+        }
 
-        if (stockDisp <= 0) return mostrarAlerta(`Sin stock en ${tiendaOrigen} `, 'error');
+        if (stockDisp <= 0) return mostrarAlerta(`Sin stock de talla ${tallaDigital} en ${tiendaOrigen} `, 'error');
 
-        const existe = carrito.find(i => i.id_producto == idProducto && i.tiendaOrigen === tiendaOrigen);
+        const existe = carrito.find(i =>
+            i.id_producto == idProducto &&
+            i.tiendaOrigen === tiendaOrigen &&
+            i.variante === tallaDigital // Importante: Diferenciar por talla en el carrito
+        );
+
         if (existe) {
             if (existe.cantidad >= stockDisp) {
-                mostrarAlerta(`Stock máximo de ${tiendaOrigen} alcanzado`, 'warning');
+                mostrarAlerta(`Stock máximo de ${tallaDigital} en ${tiendaOrigen} alcanzado`, 'warning');
                 return;
             }
             existe.cantidad++;
         } else {
             carrito.push({
                 id_producto: prod.id_producto,
-                nombre: `${prod.nombre} (${tiendaOrigen})`,
+                nombre: `${prod.nombre} (${tiendaOrigen}) [${tallaDigital}]`,
                 nombreBase: prod.nombre,
                 marca: prod.marca,
                 precioOriginal: prod.precio,
@@ -1326,6 +1385,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null) {
                 cantidad: 1,
                 stockMax: stockDisp,
                 tiendaOrigen: tiendaOrigen,
+                variante: tallaDigital, // Guardamos la talla
                 motivo: motivo
             });
         }
@@ -1485,6 +1545,14 @@ function toggleMetodo(el) {
 
     actualizarCredito();
     actualizarBotonVender();
+
+    // Mostrar/Ocultar sección de pago a proveedor
+    const seccionProv = document.getElementById('seccionPagoProveedor');
+    if (seccionProv) {
+        const mostrarProv = metodosSeleccionados.has('Pago Proveedor');
+        seccionProv.style.display = mostrarProv ? 'block' : 'none';
+        if (mostrarProv) cargarProveedoresInline();
+    }
 }
 
 // Alias para compatibilidad con tienda digital
@@ -2578,10 +2646,10 @@ async function abrirModalTraslado() {
     if (!cajaAbierta) return mostrarAlerta('⚠️ Abre la caja primero', 'error');
 
     try {
-        // 1. Cargar inventario con cantidad > 0
+        // 1. Cargar inventario con cantidad > 0 (Incluyendo Talla)
         const { data: inventario, error: errorInv } = await db
             .from(TIENDA.tablaInventario)
-            .select('id_producto, cantidad')
+            .select('id, id_producto, cantidad, talla') // Seleccionamos ID fila y Talla
             .gt('cantidad', 0);
 
         if (errorInv) throw errorInv;
@@ -2607,7 +2675,9 @@ async function abrirModalTraslado() {
         const itemsCombinados = inventario.map(item => {
             const prod = productosMap[item.id_producto];
             return {
+                id_inventario: item.id, // Usamos ID de fila para identificar unívocamente (prod + talla)
                 id_producto: item.id_producto,
+                talla: item.talla || 'Única',
                 cantidad: item.cantidad,
                 nombre: prod ? prod.nombre : 'Producto ' + item.id_producto,
                 marca: prod ? prod.marca : ''
@@ -2616,8 +2686,13 @@ async function abrirModalTraslado() {
 
         itemsCombinados.forEach(item => {
             const option = document.createElement('option');
-            option.value = item.id_producto;
-            option.textContent = `${item.nombre} (${item.marca}) - Stock: ${item.cantidad}`;
+            // Usamos un valor compuesto para pasar todos los datos necesarios al procesar
+            option.value = JSON.stringify({
+                id_inventario: item.id_inventario,
+                id_producto: item.id_producto,
+                talla: item.talla
+            });
+            option.textContent = `${item.nombre} (${item.marca}) [${item.talla}] - Stock: ${item.cantidad}`;
             option.dataset.stock = item.cantidad;
             select.appendChild(option);
         });
@@ -2665,13 +2740,23 @@ async function abrirModalTraslado() {
 }
 
 async function procesarTraslado() {
-    const productoId = document.getElementById('trasladoProducto').value;
+    const productoDataRaw = document.getElementById('trasladoProducto').value;
     const destino = document.getElementById('trasladoDestino').value;
     const cantidad = parseInt(document.getElementById('trasladoCantidad').value);
 
-    if (!productoId || !destino || !cantidad || cantidad <= 0) {
+    if (!productoDataRaw || !destino || !cantidad || cantidad <= 0) {
         return mostrarAlerta(' Completa todos los campos', 'error');
     }
+
+    // Parsear datos del producto seleccionado
+    let productoData;
+    try {
+        productoData = JSON.parse(productoDataRaw);
+    } catch (e) {
+        return mostrarAlerta('Error en datos del producto', 'error');
+    }
+
+    const { id_inventario, id_producto, talla } = productoData;
 
     // Validar stock
     const selectProd = document.getElementById('trasladoProducto');
@@ -2699,40 +2784,59 @@ async function procesarTraslado() {
 
         if (!tablaDestino) return mostrarAlerta('Destino no válido', 'error');
 
-        // 1. Descontar de inventario origen
+        // 1. Descontar de inventario origen (Usando ID de fila específico para seguridad)
+        // re-verificamos stock DB por seguridad
         const { data: stockOrigen } = await db
             .from(TIENDA.tablaInventario)
             .select('cantidad, productos(nombre)')
-            .eq('id_producto', productoId)
+            .eq('id', id_inventario)
             .single();
 
         if (!stockOrigen) throw new Error('Producto no encontrado en inventario origen');
+        if (stockOrigen.cantidad < cantidad) throw new Error('Stock insuficiente en BD');
 
         await db.from(TIENDA.tablaInventario)
             .update({ cantidad: stockOrigen.cantidad - cantidad })
-            .eq('id_producto', productoId);
+            .eq('id', id_inventario);
 
-        // 2. Sumar a inventario destino
-        const { data: stockDestino } = await db.from(tablaDestino).select('cantidad').eq('id_producto', productoId).single();
+        // 2. Sumar a inventario destino (Buscando por producto AND talla)
+        const { data: stockDestino } = await db
+            .from(tablaDestino)
+            .select('id, cantidad')
+            .eq('id_producto', id_producto)
+            .eq('talla', talla) // Importante: Coincidir talla
+            .maybeSingle();
+
         if (stockDestino) {
-            await db.from(tablaDestino).update({ cantidad: stockDestino.cantidad + cantidad }).eq('id_producto', productoId);
+            await db.from(tablaDestino).update({ cantidad: stockDestino.cantidad + cantidad }).eq('id', stockDestino.id);
         } else {
-            await db.from(tablaDestino).insert({ id_producto: productoId, cantidad: cantidad, stock_minimo: 0 });
+            // Si no existe, creamos el registro con la talla correcta
+            await db.from(tablaDestino).insert({
+                id_producto: id_producto,
+                cantidad: cantidad,
+                talla: talla,
+                stock_minimo: 0
+            });
         }
 
-        // 3. Registrar en tabla movimientos_transferencia
+        // 3. Registrar en tabla movimientos_transferencia (TABLA CORRECTA)
         try {
-            await db.from('movimientos_transferencia').insert({
-                id_producto: productoId,
+            const { error: errorTraslado } = await db.from('movimientos_transferencia').insert({
+                id_producto: id_producto, // PROD...
                 nombre_producto: stockOrigen.productos?.nombre || 'Producto',
                 cantidad: cantidad,
                 origen: TIENDA.nombre,
                 destino: destino.includes(':') ? document.getElementById('trasladoDestino').selectedOptions[0].textContent : destino,
                 usuario: (empleadoLogueado?.nombre || 'Usuario POS'),
-                notas: `Traslado desde ${TIENDA.nombre}` + (eventoActivoId ? ` para Evento ID ${eventoActivoId}` : '')
+                notas: 'Traslado desde POS ' + TIENDA.nombre,
+                fecha: new Date().toISOString()
             });
+
+            if (errorTraslado) throw errorTraslado;
+
         } catch (eLog) {
-            console.error('Error logueando traslado:', eLog);
+            console.error('Error logueando traslado en movimientos_transferencia:', eLog);
+            mostrarAlerta('Traslado realizado pero error al guardar historial', 'warning');
         }
 
         mostrarAlerta('✅ Traslado realizado con éxito', 'success');
@@ -3483,3 +3587,300 @@ async function registrarAbonoServicio(id, saldo) {
         mostrarAlerta('Error al registrar abono.', 'error');
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// PAGO PROVEEDOR INLINE (desde grilla de métodos de pago)
+// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// PAGO PROVEEDOR INLINE (desde grilla de métodos de pago)
+// ═══════════════════════════════════════════════════════════════
+let _proveedoresInlineCache = [];
+
+async function cargarProveedoresInline() {
+    try {
+        // Consultar a través de compras_proveedor para obtener el saldo real pendiente
+        // (Igual que en cargarProveedoresConSaldo)
+        const { data, error } = await db
+            .from('compras_proveedor')
+            .select(`
+                proveedor_id,
+                saldo_pendiente,
+                proveedores (
+                    id,
+                    razon_social,
+                    banco,
+                    tipo_cuenta,
+                    numero_cuenta,
+                    titular_cuenta
+                )
+            `)
+            .gt('saldo_pendiente', 0);
+
+        if (error) throw error;
+
+        // Agrupar por proveedor
+        const proveedoresMap = {};
+        (data || []).forEach(compra => {
+            const p = compra.proveedores;
+            if (!p) return;
+
+            if (!proveedoresMap[p.id]) {
+                proveedoresMap[p.id] = {
+                    id: p.id,
+                    razon_social: p.razon_social,
+                    banco: p.banco,
+                    tipo_cuenta: p.tipo_cuenta,
+                    numero_cuenta: p.numero_cuenta,
+                    titular_cuenta: p.titular_cuenta,
+                    saldo_pendiente: 0
+                };
+            }
+            proveedoresMap[p.id].saldo_pendiente += parseFloat(compra.saldo_pendiente || 0);
+        });
+
+        _proveedoresInlineCache = Object.values(proveedoresMap).sort((a, b) => a.razon_social.localeCompare(b.razon_social));
+
+        const select = document.getElementById('selectProveedorPago');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Seleccionar proveedor...</option>';
+        _proveedoresInlineCache.forEach(p => {
+            select.innerHTML += `<option value="${p.id}">${p.razon_social} — $${(p.saldo_pendiente || 0).toLocaleString('es-CO')}</option>`;
+        });
+    } catch (e) {
+        console.error('Error cargando proveedores inline:', e);
+        mostrarAlerta('Error cargando proveedores', 'error');
+    }
+}
+
+function mostrarInfoProveedorInline() {
+    const select = document.getElementById('selectProveedorPago');
+    const info = document.getElementById('infoProveedorInline');
+    if (!select || !info) return;
+
+    const id = parseInt(select.value);
+    const prov = _proveedoresInlineCache.find(p => p.id === id);
+
+    if (!prov) {
+        info.style.display = 'none';
+        return;
+    }
+
+    info.style.display = 'block';
+    document.getElementById('provInlineNombre').textContent = prov.razon_social;
+    document.getElementById('provInlineBanco').textContent = prov.banco || 'Sin banco';
+    document.getElementById('provInlineTipoCuenta').textContent = prov.tipo_cuenta || '-';
+    document.getElementById('provInlineCuenta').textContent = prov.numero_cuenta || '-';
+    document.getElementById('provInlineTitular').textContent = prov.titular_cuenta || prov.razon_social;
+    document.getElementById('provInlineSaldo').textContent = `$${(prov.saldo_pendiente || 0).toLocaleString('es-CO')}`;
+}
+
+async function confirmarPagoProveedorInline() {
+    const select = document.getElementById('selectProveedorPago');
+    const montoInput = document.getElementById('montoPagoProveedor');
+    const refInput = document.getElementById('refPagoProveedor');
+    const fotoInput = document.getElementById('fotoPagoProveedor');
+
+    if (!select?.value) return mostrarAlerta('Selecciona un proveedor', 'warning');
+    const monto = parseFloat(montoInput?.value) || 0;
+    if (monto <= 0) return mostrarAlerta('Ingresa un monto válido', 'warning');
+
+    const id = parseInt(select.value);
+    const prov = _proveedoresInlineCache.find(p => p.id === id);
+    if (!prov) return mostrarAlerta('Proveedor no encontrado', 'error');
+
+    const referencia = refInput?.value.trim() || '';
+
+    try {
+        // 1. Subir foto del comprobante (USANDO BUCKET EXISTENTE: productos-imagenes)
+        let comprobanteUrl = null;
+        if (fotoInput?.files?.length > 0) {
+            const file = fotoInput.files[0];
+            const timestamp = Date.now();
+            const ext = file.name.split('.').pop();
+            const nombreArchivo = `comprobante_prov_${id}_${timestamp}.${ext}`;
+            const rutaArchivo = `comprobantes/${nombreArchivo}`;
+
+            try {
+                // Subir al bucket 'productos-imagenes' en la carpeta 'comprobantes'
+                const { data: uploadData, error: uploadError } = await db.storage
+                    .from('productos-imagenes')
+                    .upload(rutaArchivo, file, { cacheControl: '3600', upsert: false });
+
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = db.storage.from('productos-imagenes').getPublicUrl(rutaArchivo);
+                comprobanteUrl = urlData?.publicUrl || null;
+
+            } catch (uploadErr) {
+                console.warn('Error subiendo comprobante (continuando sin foto):', uploadErr);
+                mostrarAlerta('No se pudo subir la foto, se guardará el pago sin ella.', 'warning');
+            }
+        }
+
+        // 2. Determinar método de pago basado en la info bancaria del proveedor
+        let metodoPago = 'Transferencia';
+        if (prov.banco?.toLowerCase().includes('nequi')) metodoPago = 'Nequi';
+        else if (prov.banco?.toLowerCase().includes('daviplata')) metodoPago = 'Daviplata';
+
+        // 3. Registrar el pago en pagos_proveedor
+        const pagoData = {
+            proveedor_id: id,
+            monto: monto,
+            metodo_pago: metodoPago,
+            referencia: referencia || null,
+            local: TIENDA.nombre,
+            notas: comprobanteUrl ? `Comprobante: ${comprobanteUrl}` : null
+        };
+
+        const { error: errorPago } = await db.from('pagos_proveedor').insert(pagoData);
+        if (errorPago) throw errorPago;
+
+        // 4. Descontar del saldo_pendiente de las compras (FIFO)
+        let montoRestante = monto;
+        const { data: comprasPendientes } = await db
+            .from('compras_proveedor')
+            .select('id, saldo_pendiente')
+            .eq('proveedor_id', id)
+            .gt('saldo_pendiente', 0)
+            .order('fecha_compra', { ascending: true });
+
+        if (comprasPendientes) {
+            for (const compra of comprasPendientes) {
+                if (montoRestante <= 0) break;
+                const saldoActual = parseFloat(compra.saldo_pendiente || 0);
+                let rebaja = Math.min(montoRestante, saldoActual);
+                let nuevoSaldo = saldoActual - rebaja;
+
+                await db.from('compras_proveedor')
+                    .update({
+                        saldo_pendiente: nuevoSaldo,
+                        estado: nuevoSaldo <= 0 ? 'PAGADO' : 'PENDIENTE'
+                    })
+                    .eq('id', compra.id);
+
+                montoRestante -= rebaja;
+            }
+        }
+
+        // 5. Actualizar saldo global del proveedor (intentar, pero no bloquear si falla)
+        try {
+            const { data: provData } = await db.from('proveedores').select('saldo_pendiente').eq('id', id).single();
+            if (provData) {
+                const nuevoSaldoGlobal = Math.max(0, parseFloat(provData.saldo_pendiente || 0) - monto);
+                await db.from('proveedores').update({ saldo_pendiente: nuevoSaldoGlobal }).eq('id', id);
+            }
+        } catch (e) {
+            console.error("Error actualizando saldo global proveedor (no crítico):", e);
+        }
+
+        // 6. Limpiar formulario
+        montoInput.value = '';
+        refInput.value = '';
+        fotoInput.value = '';
+        const preview = document.getElementById('previewFotoPago');
+        if (preview) { preview.style.display = 'none'; preview.src = ''; }
+        select.value = '';
+        document.getElementById('infoProveedorInline').style.display = 'none';
+
+        // Deseleccionar el método "Pago Proveedor"
+        const btnProv = document.querySelector('[data-metodo="Pago Proveedor"]');
+        if (btnProv) {
+            metodosSeleccionados.delete('Pago Proveedor');
+            btnProv.classList.remove('selected');
+            document.getElementById('seccionPagoProveedor').style.display = 'none';
+            const infoEl = document.getElementById('metodosSeleccionados');
+            if (metodosSeleccionados.size > 0) {
+                infoEl.textContent = ' ' + [...metodosSeleccionados].join(' + ');
+            } else {
+                infoEl.classList.remove('visible');
+            }
+        }
+
+        mostrarAlerta(`✅ Pago de $${monto.toLocaleString('es-CO')} a ${prov.razon_social} registrado`, 'success');
+        cargarProveedoresInline(); // Recargar lista para actualizar saldos
+
+    } catch (e) {
+        console.error('Error en pago proveedor inline:', e);
+        mostrarAlerta('Error al registrar el pago: ' + (e.message || 'desconocido'), 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DESGLOSE DE PRODUCTOS VENDIDOS (para cierre de caja)
+// ═══════════════════════════════════════════════════════════════
+function generarDesgloseProductos() {
+    if (!resumenVentas?.ventasDelDia || resumenVentas.ventasDelDia.length === 0) {
+        return '';
+    }
+
+    // Agrupar por nombre de producto
+    const productosMap = {};
+    resumenVentas.ventasDelDia.forEach(v => {
+        const nombre = v.nombre_producto || 'Producto sin nombre';
+        if (!productosMap[nombre]) {
+            productosMap[nombre] = { cantidad: 0, total: 0 };
+        }
+        productosMap[nombre].cantidad += (v.cantidad || 1);
+        productosMap[nombre].total += (v.total || 0);
+    });
+
+    const filas = Object.entries(productosMap)
+        .sort((a, b) => b[1].total - a[1].total)
+        .map(([nombre, data]) => `
+            <tr>
+                <td style="font-size:0.82rem; padding:0.4rem 0.6rem;">${nombre}</td>
+                <td style="text-align:center; padding:0.4rem;">${data.cantidad}</td>
+                <td style="text-align:right; padding:0.4rem 0.6rem;">$${data.total.toLocaleString('es-CO')}</td>
+            </tr>
+        `).join('');
+
+    const totalCant = Object.values(productosMap).reduce((s, p) => s + p.cantidad, 0);
+    const totalMonto = Object.values(productosMap).reduce((s, p) => s + p.total, 0);
+
+    return `
+        <div style="margin-top:1rem; border-top:1px solid #e2e8f0; padding-top:1rem;">
+            <h4 style="margin:0 0 0.6rem; font-size:0.9rem; color:#475569; cursor:pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                📋 Desglose de Productos ▼
+            </h4>
+            <div style="max-height:250px; overflow-y:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                    <thead>
+                        <tr style="background:#f1f5f9; border-bottom:2px solid #e2e8f0;">
+                            <th style="text-align:left; padding:0.5rem 0.6rem; color:#475569; font-weight:600;">Producto</th>
+                            <th style="text-align:center; padding:0.5rem; color:#475569; font-weight:600;">Cant.</th>
+                            <th style="text-align:right; padding:0.5rem 0.6rem; color:#475569; font-weight:600;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>${filas}</tbody>
+                    <tfoot>
+                        <tr style="border-top:2px solid #0369a1; font-weight:700;">
+                            <td style="padding:0.5rem 0.6rem;">TOTAL</td>
+                            <td style="text-align:center; padding:0.5rem;">${totalCant}</td>
+                            <td style="text-align:right; padding:0.5rem 0.6rem; color:#0369a1;">$${totalMonto.toLocaleString('es-CO')}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+// Preview de foto del comprobante
+document.addEventListener('DOMContentLoaded', () => {
+    const fotoInput = document.getElementById('fotoPagoProveedor');
+    if (fotoInput) {
+        fotoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const preview = document.getElementById('previewFotoPago');
+            if (file && preview) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    preview.src = ev.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
