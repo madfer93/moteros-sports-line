@@ -54,7 +54,11 @@ function mostrarToast(titulo, mensaje, tipo = 'success') {
 
 function actualizarContadorCarrito() {
     const total = carrito.reduce((sum, item) => sum + item.cantidad, 0);
-    document.getElementById('cartCount').textContent = total;
+    const cartCount = document.getElementById('cartCount');
+    const floatingCount = document.getElementById('cartFloatingCount');
+
+    if (cartCount) cartCount.textContent = total;
+    if (floatingCount) floatingCount.textContent = total;
 }
 
 function agregarAlCarrito() {
@@ -272,12 +276,23 @@ async function cargarProductos() {
             });
         }
 
+        // Cargar Stock Real (Suma de todas las tiendas y variantes)
+        const { data: stockData } = await supabaseClient.from('inventario').select('producto_id, cantidad');
+        const stockMap = {};
+        if (stockData) {
+            stockData.forEach(s => {
+                stockMap[s.producto_id] = (stockMap[s.producto_id] || 0) + s.cantidad;
+            });
+        }
+
         todosLosProductos = (data || []).map(p => {
             const c = cal[p.id] || cal[p.id_producto];
+            const stockTotal = stockMap[p.id] || stockMap[p.id_producto] || 0;
             return {
                 ...p,
                 rating: c ? (c.sum / c.count).toFixed(1) : 0,
-                ratingCount: c ? c.count : 0
+                ratingCount: c ? c.count : 0,
+                stockTotal: stockTotal
             };
         });
 
@@ -425,12 +440,13 @@ function mostrarProductos() {
         return `
         <div class="producto-card" onclick="verDetalle('${p.id}')">
             <div class="producto-imagen-wrapper">
-                <img class="producto-imagen"
+                <img class="producto-imagen ${p.stockTotal <= 0 ? 'producto-agotado' : ''}"
                      src="${p.url_imagen || PLACEHOLDER_IMG}"
                      alt="${p.nombre}"
                      loading="lazy"
                      onerror="this.src='${PLACEHOLDER_IMG}'">
                 <span class="badge-categoria">${p.categoria}</span>
+                ${p.stockTotal <= 0 ? '<span class="badge-agotado">No disponible</span>' : ''}
             </div>
             <div class="producto-info">
                 <h3 class="producto-nombre">${p.nombre}</h3>
@@ -443,8 +459,8 @@ function mostrarProductos() {
                     <div style="display: flex; justify-content: space-between; align-items: center; min-height: 38px;">
                         <span class="producto-precio" style="display:none;">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
                         ${tallasHTML}
-                        <button class="btn-agregar-inline" onclick="event.stopPropagation(); agregarAlCarritoRapido('${p.id}')">
-                            <span>🛒 Agregar</span>
+                        <button class="btn-agregar-inline" onclick="event.stopPropagation(); agregarAlCarritoRapido('${p.id}')" ${p.stockTotal <= 0 ? 'disabled' : ''}>
+                            <span>${p.stockTotal <= 0 ? '🚫 Agotado' : '🛒 Agregar'}</span>
                         </button>
                     </div>
                     <button class="btn-ver-mas" onclick="event.stopPropagation(); verDetalle('${p.id}')" style="width: 100%;">
@@ -462,65 +478,85 @@ function mostrarProductos() {
 // MODAL DETALLE
 // ═══════════════════════════════════════════════════════════════
 
-function verDetalle(id) {
+async function verDetalle(id) {
     productoActual = todosLosProductos.find(p => p.id === id);
     if (!productoActual) return;
 
+    // Abrir modal y mostrar cargando
+    const modal = document.getElementById('modalDetalle');
+    if (modal) modal.classList.add('active');
+    document.getElementById('contenidoDetalle').innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:300px;"><div class="spinner"></div></div>';
+
+    // 1. Obtener Stock Real (asíncrono)
+    let stockReal = [];
+    try {
+        const idProd = productoActual.id_producto || productoActual.id;
+        const { data } = await supabaseClient.from('inventario').select('*').eq('producto_id', idProd);
+        stockReal = data || [];
+    } catch (e) {
+        console.error("Error cargando stock:", e);
+    }
+
     const infoP = window.PromocionesManager ? window.PromocionesManager.calcularPrecio(productoActual.precio, productoActual.id) : { precioFinal: productoActual.precio, tieneDescuento: false };
+
+    // Preparar imágenes para el Slider
+    let imagenesSlider = [];
+    if (productoActual.url_imagen) imagenesSlider.push({ url: productoActual.url_imagen, color: 'Principal' });
+
+    if (productoActual.variantes && Array.isArray(productoActual.variantes)) {
+        productoActual.variantes.forEach(v => {
+            if (v.url && !imagenesSlider.some(img => img.url === v.url)) {
+                imagenesSlider.push({ url: v.url, color: v.color });
+            }
+        });
+    }
 
     document.getElementById('contenidoDetalle').innerHTML = `
         <div class="product-details-premium">
-            
-            <!-- COL 1: IMAGEN & VISUAL -->
+            <!-- COL 1: IMAGEN & VISUAL (SLIDER) -->
             <div class="column-media">
-                <div class="main-image-container" style="position:relative; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.05); margin-bottom: 1rem; width:100%; padding-top: 0 !important;">
+                <div class="slider-container" style="position:relative; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.05); margin-bottom: 1rem; width:100%; background: #f8fafc;">
                     ${infoP.tieneDescuento ? `<span class="discount-pill" style="position:absolute; top:0.5rem; left:0.5rem; background:#ef4444; color:white; padding:0.25rem 0.75rem; border-radius:15px; font-weight:700; font-size:0.8rem; z-index:10;">-${infoP.porcentajeDescuento}% OFF</span>` : ''}
-                    <img src="${productoActual.url_imagen || PLACEHOLDER_LG}" 
-                         alt="${productoActual.nombre}" 
-                         style="width:100%; max-height: 400px; object-fit:contain; display:block; margin:auto;"
-                         onerror="this.src='${PLACEHOLDER_LG}'">
-                </div>
-                
-                <!-- FILA DE SELECTORES (COLORES Y TALLAS) - SIDE BY SIDE -->
-                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                    
-                    <!-- 1. COLORES (VARIANTES) -->
-                    <div class="variantes-section" style="flex: 1; min-width: 200px; background:#f8fafc; padding:0.8rem; border-radius:8px; border:1px solid #e2e8f0;">
-                         <h5 style="margin-bottom: 0.5rem; font-weight: 700; color: #334155; font-size:0.85rem;">Colores:</h5>
-                         ${productoActual.variantes && productoActual.variantes.length > 0 ? `
-                            <div id="contenedorVariantes" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-start; align-items: center;"></div>
-                         ` : '<div style="color:#94a3b8; font-size:0.8rem;">N/A</div>'}
-                         <input type="hidden" id="varianteSeleccionada" value="">
+
+                    <div id="productSlider" style="display: flex; transition: transform 0.4s ease-out; width: 100%;">
+                        ${imagenesSlider.map(img => `
+                            <div class="slide" style="min-width: 100%; display: flex; justify-content: center; align-items: center;">
+                                <img src="${img.url}" alt="${img.color}" style="max-width: 100%; max-height: 400px; object-fit: contain;">
+                            </div>
+                        `).join('')}
                     </div>
 
-                    <!-- 2. TALLAS -->
+                    ${imagenesSlider.length > 1 ? `
+                        <button onclick="moveSlider(-1)" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.7); border:none; border-radius:50%; width:36px; height:36px; cursor:pointer; z-index:11;">❮</button>
+                        <button onclick="moveSlider(1)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.7); border:none; border-radius:50%; width:36px; height:36px; cursor:pointer; z-index:11;">❯</button>
+                    ` : ''}
+                </div>
+
+                <!-- FILA DE SELECTORES -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
                     <div class="variantes-section" style="flex: 1; min-width: 200px; background:#f8fafc; padding:0.8rem; border-radius:8px; border:1px solid #e2e8f0;">
-                        <h5 style="margin-bottom: 0.5rem; font-weight: 700; color: #334155; font-size:0.85rem;">Tallas:</h5>
-                        ${(productoActual.tallas && productoActual.tallas.length > 0) || (productoActual.tallas && typeof productoActual.tallas === 'string') ? `
-                            <div id="contenedorTallas" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-start; align-items: center;"></div>
-                        ` : '<div style="color:#94a3b8; font-size:0.8rem;">Única</div>'}
+                         <h5 style="margin-bottom: 0.5rem; font-weight: 700; color: #334155; font-size:0.85rem;">Color disponible:</h5>
+                         <div id="contenedorVariantes" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.6rem; justify-content: flex-start; align-items: center;"></div>
+                         <input type="hidden" id="colorSeleccionado" value="">
+                    </div>
+
+                    <div class="variantes-section" style="flex: 1; min-width: 200px; background:#f8fafc; padding:0.8rem; border-radius:8px; border:1px solid #e2e8f0;">
+                        <h5 style="margin-bottom: 0.5rem; font-weight: 700; color: #334155; font-size:0.85rem;">Tallas disponibles:</h5>
+                        <div id="contenedorTallas" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.6rem; justify-content: flex-start; align-items: center;"></div>
                         <input type="hidden" id="tallaSeleccionada" value="">
                     </div>
-
                 </div>
 
-                <!-- Trust Badges -->
+                <input type="hidden" id="varianteSeleccionada" value="">
+
                 <div class="product-trust-badges" style="width:100%; display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; background:#f8fafc; padding:0.75rem; border-radius:8px;">
-                    <div class="trust-badge" style="display:flex; align-items:center; gap:0.25rem; font-size:0.8rem; color:#64748b;">
-                        <span>🛡️</span> Envío Seguro
-                    </div>
-                    <div class="trust-badge" style="display:flex; align-items:center; gap:0.25rem; font-size:0.8rem; color:#64748b;">
-                        <span>📦</span> Stock Real
-                    </div>
-                    <div class="trust-badge" style="display:flex; align-items:center; gap:0.25rem; font-size:0.8rem; color:#64748b;">
-                        <span>✅</span> Garantía
-                    </div>
+                    <div class="trust-badge" style="display:flex; align-items:center; gap:0.25rem; font-size:0.8rem; color:#64748b;"><span>🛡️</span> Envío Seguro</div>
+                    <div class="trust-badge" style="display:flex; align-items:center; gap:0.25rem; font-size:0.8rem; color:#64748b;"><span>📦</span> Stock Real</div>
                 </div>
             </div>
 
-            <!-- COL 2: INFO & COMPRA & SPECS (Center) -->
+            <!-- COL 2: INFO -->
             <div class="column-info">
-                <!-- Header Info -->
                 <div class="product-header" style="border-bottom:1px solid #e2e8f0; padding-bottom:1rem; margin-bottom:1rem;">
                     <span class="category-tag" style="background:#fff7ed; color:#ea580c; padding:0.25rem 0.75rem; border-radius:15px; font-size:0.75rem; font-weight:700; text-transform:uppercase;">${productoActual.categoria}</span>
                     <h2 style="font-size:1.75rem; margin:0.5rem 0; line-height:1.2; color:#1e293b;">${productoActual.nombre}</h2>
@@ -531,32 +567,13 @@ function verDetalle(id) {
                     <span class="current-price" style="font-size:2.2rem; font-weight:800; color:#0f172a;">$${parseInt(productoActual.precio).toLocaleString('es-CO')}</span>
                 </div>
 
-                <!-- Descripción & Specs -->
                 <div style="flex:1;">
                     <h4 style="font-size:1rem; font-weight:700; color:#334155; margin-bottom:0.5rem;">Descripción</h4>
-                    <p style="color:#475569; line-height:1.5; margin-bottom:1.5rem; font-size:0.95rem;">
-                        ${productoActual.descripcion_corta || 'Producto disponible en nuestras tiendas.'}
-                    </p>
-
-                    <!-- Ficha Técnica -->
-                    ${productoActual.descripcion_tecnica ? `
-                    <div style="margin-bottom: 2rem; background: #fffcf8; padding: 1.25rem; border-radius: 10px; border: 1px dashed #e2e8f0; display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem;">
-                         <div style="flex: 1;">
-                             <h4 class="section-title" style="margin-bottom:0.75rem; color:#334155; font-size:0.95rem; font-weight:700;">📋 Ficha Técnica</h4>
-                             <p style="color:#475569; line-height:1.6; white-space: pre-line; margin:0; font-size:0.9rem;">${productoActual.descripcion_tecnica}</p>
-                         </div>
-                         <div style="flex-shrink: 0; width: 140px; opacity: 0.8; align-self: center; margin-right: 3rem;">
-                             <!-- Logo Sticker -->
-                             <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
-                                  onerror="this.style.display='none'"
-                                  alt="Moteros" 
-                                  style="width: 100%; height: auto; display: block; border-radius:50%; opacity:0.8; filter: none;">
-                         </div>
-                    </div>
-                    ` : ''}
+                    <p style="color:#475569; line-height:1.5; margin-bottom:1.5rem; font-size:0.95rem;">${productoActual.descripcion_corta || 'Producto disponible en nuestras tiendas.'}</p>
                 </div>
 
-                <!-- Botones de Acción (Al final del scroll del centro) -->
+                <div id="disponibilidadTexto" style="margin-top: 1rem; font-weight: 700; font-size: 0.9rem;"></div>
+
                 <div class="purchase-actions" style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid #f1f5f9;">
                     <div style="display:flex; gap:0.75rem; margin-bottom:0.75rem;">
                         <div class="quantity-selector" style="border:1px solid #e2e8f0; border-radius:8px; display:flex; align-items:center; width:100px;">
@@ -564,280 +581,165 @@ function verDetalle(id) {
                              <input type="number" id="cantidadDetalle" value="1" min="1" readonly style="width:35px; text-align:center; border:none; font-weight:700; font-size:1rem;">
                              <button style="flex:1; border:none; background:transparent; font-size:1rem; cursor:pointer;" onclick="document.getElementById('cantidadDetalle').value++">+</button>
                         </div>
-                        <button onclick="agregarAlCarrito()" style="flex:1; background:linear-gradient(135deg,#ff6b00,#ea580c); color:white; border:none; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer; padding:0.75rem;">
+                        <button id="btnAgregarCarrito" onclick="agregarAlCarrito()" style="flex:1; background:linear-gradient(135deg,#ff6b00,#ea580c); color:white; border:none; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer; padding:0.75rem;">
                             🛒 Agregar
                         </button>
                     </div>
-                    <a href="https://wa.me/${CONFIG.WHATSAPP.numero}" target="_blank" id="btnWhatsappDetalle"
+                    <a href="#" target="_blank" id="btnWhatsappDetalle"
                        style="display:block; text-align:center; padding:0.6rem; background:#25D366; color:white; border-radius:8px; text-decoration:none; font-weight:600; font-size:0.95rem;">
                         📱 Consultar por WhatsApp
                     </a>
                 </div>
             </div>
 
-            <!-- COL 3: SOLO RESEÑAS, CALIFICACION Y COMENTARIOS (Right) -->
+            <!-- COL 3: RESEÑAS -->
             <div class="column-extras">
-                
                 <div style="flex:1;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; border-bottom:1px solid #e2e8f0; padding-bottom:1rem;">
-                        <div>
-                            <h4 style="margin:0; font-size:1.1rem; color:#334155; font-weight:700;">Opiniones</h4>
-                            <span style="font-size:0.8rem; color:#94a3b8;">${productoActual.ratingCount || 0} valoraciones</span>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-weight:900; color:#334155; font-size:1.8rem; line-height:1;">${productoActual.rating || '0.0'}</div>
-                            <div style="color:#f59e0b; font-size:0.9rem;">★ ★ ★ ★ ★</div>
-                        </div>
-                    </div>
-                    
-                    <button onclick="document.getElementById('formResena').style.display = document.getElementById('formResena').style.display === 'none' ? 'block' : 'none'" 
-                        class="btn-primary" style="width:100%; margin-bottom:1rem; padding:0.6rem; font-size:0.9rem; border-radius:8px; background:white; color:#ff6b00; border:1px solid #ff6b00;">
-                        ✍️ Escribir mi opinión
-                    </button>
-
-                    <!-- Formulario (Oculto) -->
-                    <div id="formResena" style="display:none; background:#fff7ed; padding:1rem; border-radius:8px; margin-bottom:1.5rem; border:1px solid #ffedd5;">
-                        <input type="hidden" id="resenaProductoId" value="${productoActual.id}">
-                        <div style="display:flex; flex-direction:column; gap:0.5rem;">
-                            <label style="font-size:0.85rem; font-weight:700; color:#ea580c;">Tu Calificación:</label>
-                            <div class="rating-input" style="font-size:1.5rem; cursor:pointer; color:#fbbf24;">
-                                <span onclick="setRating(1)">☆</span><span onclick="setRating(2)">☆</span><span onclick="setRating(3)">☆</span><span onclick="setRating(4)">☆</span><span onclick="setRating(5)">☆</span>
-                            </div>
-                            <input type="hidden" id="resenaEstrellas" value="0">
-                            <input type="text" id="resenaNombre" placeholder="Tu Nombre" class="form-control" style="font-size:0.85rem; padding:0.5rem; border:1px solid #e2e8f0; border-radius:6px;">
-                            <textarea id="resenaComentario" placeholder="¿Qué te pareció?" class="form-control" rows="2" style="font-size:0.85rem; padding:0.5rem; border:1px solid #e2e8f0; border-radius:6px;"></textarea>
-                            <button onclick="enviarResenaCliente()" class="btn-primary" style="width:100%; padding:0.5rem; font-size:0.9rem; margin-top:0.5rem;">Publicar</button>
-                        </div>
-                    </div>
-
-                    <!-- Lista de Reseñas -->
-                    <div id="listaResenasContainer">
-                        <!-- Inyectado dinámicamente -->
-                        <div style="display:flex; justify-content:center; align-items:center; height:100px;">
-                            <div class="spinner"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Botón Ver Más (Oculto por defecto, se maneja en JS) -->
-                    <button id="btnVerMasResenas" style="display:none; width:100%; margin-top:1rem; padding:0.5rem; background:#f1f5f9; border:none; color:#64748b; font-weight:600; cursor:pointer; border-radius:6px;">
-                        Ver comentarios antiguos
-                    </button>
+                    <h4 style="margin:0; font-size:1.1rem; color:#334155; font-weight:700;">Opiniones</h4>
+                    <div id="listaResenasContainer"></div>
                 </div>
             </div>
         </div>
     `;
 
-    // Cargar reviews asíncronamente
-    setTimeout(() => cargarResenasProducto(productoActual.id), 100);
+    // Lógica del Slider
+    let currentSlide = 0;
+    window.moveSlider = (step) => {
+        currentSlide = (currentSlide + step + imagenesSlider.length) % imagenesSlider.length;
+        const slider = document.getElementById('productSlider');
+        if (slider) slider.style.transform = `translateX(-${currentSlide * 100}%)`;
 
-    // Renderizar opciones de variantes (chips confirmados)
-    if (productoActual.variantes && productoActual.variantes.length > 0) {
-        const container = document.getElementById('contenedorVariantes');
-        if (container) {
-            let opciones = [];
+        // Sincronizar con color si el slide tiene uno
+        const imgColor = imagenesSlider[currentSlide].color;
+        if (imgColor && imgColor !== 'Principal') {
+            seleccionarColor(imgColor, false); // false para no mover el slider otra vez
+        }
+    };
 
-            // Prioridad: Stock real -> Variantes simples registradas
-            if (productoActual.stock_variantes && Object.keys(productoActual.stock_variantes).length > 0) {
-                opciones = Object.keys(productoActual.stock_variantes);
-            } else {
-                // Si no hay stock detallado, usamos la lista de variantes (que puede ser ["Rojo", "Azul"])
-                opciones = Array.isArray(productoActual.variantes) ? productoActual.variantes : [];
-            }
+    // Renderizar Colores
+    const colorMap = { 'negro': '#000', 'blanco': '#fff', 'rojo': '#ef4444', 'azul': '#3b82f6', 'verde': '#22c55e', 'amarillo': '#eab308' }; // Simplificado para brevedad
+    const contenedorColores = document.getElementById('contenedorVariantes');
+    const coloresUnicos = Array.from(new Set(stockReal.map(s => s.color))).filter(Boolean);
 
-            if (opciones.length === 0) {
-                container.innerHTML = '<span style="color:#64748b; font-size:0.9rem;">No hay opciones específicas registradas.</span>';
-            } else {
-                // MAPA DE COLORES PARA CIRCULOS
-                const colorMap = {
-                    'negro': '#000000', 'negra': '#000000',
-                    'blanco': '#ffffff', 'blanca': '#ffffff',
-                    'rojo': '#ef4444', 'roja': '#ef4444',
-                    'azul': '#3b82f6',
-                    'verde': '#22c55e',
-                    'amarillo': '#eab308', 'amarilla': '#eab308',
-                    'gris': '#64748b',
-                    'morado': '#a855f7', 'morada': '#a855f7',
-                    'rosa': '#ec4899', 'rosado': '#ec4899', 'rosada': '#ec4899',
-                    'naranja': '#f97316',
-                    'cafe': '#78350f', 'café': '#78350f', 'marron': '#78350f', 'marrón': '#78350f',
-                    'cian': '#06b6d4',
-                    'mate': '#333333',
-                    'fucsia': '#d946ef', 'fuscia': '#d946ef',
-                    'dorado': '#fbbf24', 'dorada': '#fbbf24',
-                    'plateado': '#94a3b8', 'plateada': '#94a3b8',
-                    'beige': '#f5f5dc',
-                    'turquesa': '#2dd4bf',
-                    'vino': '#881337', 'vinotinto': '#881337',
-                    'lila': '#c084fc',
-                    'neon': '#ccff00', 'neón': '#ccff00',
-                    'multicolor': 'linear-gradient(45deg, red, blue)'
-                };
+    coloresUnicos.forEach(color => {
+        const btn = document.createElement('button');
+        btn.className = 'variant-chip color';
+        btn.title = color;
+        btn.style.cssText = `width:30px; height:30px; border-radius:50%; background:${colorMap[color.toLowerCase()] || '#cbd5e1'}; border:2px solid #e2e8f0; cursor:pointer;`;
+        btn.onclick = () => seleccionarColor(color, true);
+        contenedorColores.appendChild(btn);
+    });
 
-                opciones.forEach(opt => {
-                    const btn = document.createElement('button');
-                    btn.className = 'variant-chip';
+    window.seleccionarColor = (color, animateSlider) => {
+        document.getElementById('colorSeleccionado').value = color;
+        // Actualizar UI de botones color
+        document.querySelectorAll('#contenedorVariantes .variant-chip').forEach(b => b.style.borderColor = (b.title === color) ? '#ea580c' : '#e2e8f0');
 
-                    // Limpiar label
-                    let label = opt;
-                    if (typeof opt !== 'string') label = JSON.stringify(opt);
-                    label = label.replace(/-/g, ' ').replace(/[{"}]/g, '');
-
-                    // Detectar si es color
-                    const labelLower = label.toLowerCase().trim();
-                    const esColor = colorMap[labelLower];
-
-                    // --- Mostrar Stock Disponible si existe ---
-                    let stockTexto = '';
-                    let stockVars = productoActual.stock_variantes;
-                    if (typeof stockVars === 'string') {
-                        try { stockVars = JSON.parse(stockVars); } catch (e) { stockVars = {}; }
-                    }
-
-                    if (stockVars && stockVars[opt] !== undefined) {
-                        stockTexto = ` (${stockVars[opt]})`;
-                    }
-
-                    if (esColor) {
-                        // Renderizar como círculo de color
-                        btn.title = label + stockTexto; // Tooltip con nombre
-                        btn.style.cssText = `
-                            width: 32px;
-                            height: 32px;
-                            border-radius: 50%;
-                            background-color: ${esColor};
-                            border: 2px solid #e2e8f0;
-                            cursor: pointer;
-                            transition: transform 0.2s, border-color 0.2s;
-                            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                        `;
-                        // Borde extra para blanco
-                        if (labelLower === 'blanco') btn.style.border = '2px solid #cbd5e1';
-                    } else {
-                        // Renderizar como chip normal
-                        btn.textContent = label + stockTexto;
-                        btn.style.cssText = `
-                            padding: 0.5rem 1rem;
-                            border: 2px solid #e2e8f0;
-                            border-radius: 2rem;
-                            background: white;
-                            cursor: pointer;
-                            font-size: 0.9rem;
-                            transition: all 0.2s;
-                        `;
-                    }
-
-                    btn.onclick = () => {
-                        // Reset visual selection
-                        document.querySelectorAll('#contenedorVariantes .variant-chip').forEach(b => {
-                            if (b.style.borderRadius === '50%') {
-                                // Es color
-                                b.style.transform = 'scale(1)';
-                                b.style.borderColor = '#e2e8f0';
-                                if (b.title.toLowerCase().includes('blanco')) b.style.borderColor = '#cbd5e1';
-                            } else {
-                                // Es chip normal
-                                b.style.borderColor = '#e2e8f0';
-                                b.style.background = 'white';
-                                b.style.color = 'black';
-                            }
-                        });
-
-                        // Selección activa
-                        if (esColor) {
-                            btn.style.transform = 'scale(1.2)';
-                            btn.style.borderColor = '#ea580c'; // Naranja selección
-                        } else {
-                            btn.style.borderColor = '#ea580c';
-                            btn.style.background = '#fff7ed';
-                            btn.style.color = '#ea580c';
-                        }
-
-                        // Actualizar input COLOR (Hidden original) para persistencia
-                        // Pero OJO: ahora 'varianteSeleccionada' sera la combinacion final?
-                        // Mejor: guardamos el color en un attribute o variable, y llamamos update.
-                        // Para minima invasion: dejamos que viarignteSeleccionada sea el COMBINADO
-
-                        // Buscamos si hay talla seleccionada
-                        const tallaVal = document.getElementById('tallaSeleccionada')?.value || '';
-                        const colorVal = label;
-
-                        const final = tallaVal ? `${colorVal} | Talla: ${tallaVal}` : colorVal;
-                        document.getElementById('varianteSeleccionada').value = final;
-
-                        // Guardar el color raw en dataset del input para referencia futura
-                        document.getElementById('varianteSeleccionada').dataset.color = colorVal;
-
-                        // --- Actualizar botón WhatsApp con la selección ---
-                        if (waBtn) {
-                            const text = `¡Hola! Me interesa este producto: ${productoActual.nombre} (${productoActual.marca}) - ${document.getElementById('varianteSeleccionada').value}`;
-                            waBtn.href = `https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent(text)}`;
-                        }
-                    };
-                    container.appendChild(btn);
-                });
+        // Mover slider si corresponde
+        if (animateSlider) {
+            const index = imagenesSlider.findIndex(img => img.color === color);
+            if (index !== -1) {
+                currentSlide = index;
+                document.getElementById('productSlider').style.transform = `translateX(-${currentSlide * 100}%)`;
             }
         }
-    }
-    // Renderizar opciones de TALLAS
-    if (productoActual.tallas && (productoActual.tallas.length > 0 || typeof productoActual.tallas === 'string')) {
+
+        actualizarTallasPorColor(color, stockReal);
+        validarDisponibilidad(stockReal);
+    };
+
+    window.actualizarTallasPorColor = (color, stock) => {
         const container = document.getElementById('contenedorTallas');
-        if (container) {
-            container.innerHTML = ''; // Limpiar previo
-            let tallas = productoActual.tallas;
-            // Parsear si viene como string JSON o string simple
-            if (typeof tallas === 'string') {
-                try { tallas = JSON.parse(tallas); }
-                catch (e) { tallas = tallas.split(',').map(s => s.trim()); }
-            }
-            if (!Array.isArray(tallas)) tallas = [];
+        container.innerHTML = '';
+        const tallas = Array.from(new Set(stock.filter(s => s.color === color).map(s => s.talla))).filter(Boolean);
 
-            if (tallas.length === 0) {
-                container.innerHTML = '<span style="color:#64748b; font-size:0.9rem;">Agotado.</span>';
-            } else {
-                tallas.forEach(t => {
-                    // Ignorar "Única" si se prefiere no mostrar, o mostrarla como chip
-                    if (t === 'Única') return;
+        if (tallas.length === 0) {
+            container.innerHTML = '<span style="color:#64748b; font-size:0.9rem;">Estándar</span>';
+            document.getElementById('tallaSeleccionada').value = ''; // Clear talla selection
+        } else {
+            tallas.forEach(t => {
+                const btn = document.createElement('button');
+                btn.className = 'variant-chip talla';
+                btn.textContent = t;
+                btn.style.cssText = `
+                    padding: 0.5rem 1rem;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 8px;
+                    background: white;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                    transition: all 0.2s;
+                    min-width: 40px;
+                    text-align: center;
+                    color: black;
+                `;
 
-                    const btn = document.createElement('button');
-                    btn.className = 'variant-chip talla-chip'; // Clase identificadora
-                    btn.textContent = t;
-                    btn.style.cssText = `
-                        padding: 0.5rem 1rem;
-                        border: 2px solid #e2e8f0;
-                        border-radius: 8px;
-                        background: white;
-                        cursor: pointer;
-                        font-size: 0.9rem;
-                        transition: all 0.2s;
-                        min-width: 40px;
-                        text-align: center;
-                     `;
+                btn.onclick = () => {
+                    // Reset visual selection tallas
+                    document.querySelectorAll('#contenedorTallas .variant-chip').forEach(b => {
+                        b.style.borderColor = '#e2e8f0';
+                        b.style.background = 'white';
+                        b.style.color = 'black';
+                    });
+                    // Select clicked
+                    btn.style.borderColor = '#ea580c';
+                    btn.style.background = '#fff7ed';
+                    btn.style.color = '#ea580c';
 
-                    btn.onclick = () => {
-                        // Reset visual selection tallas
-                        document.querySelectorAll('#contenedorTallas .talla-chip').forEach(b => {
-                            b.style.borderColor = '#e2e8f0';
-                            b.style.background = 'white';
-                            b.style.color = 'black';
-                        });
-                        // Select clicked
-                        btn.style.borderColor = '#ea580c';
-                        btn.style.background = '#fff7ed';
-                        btn.style.color = '#ea580c';
-
-                        document.getElementById('tallaSeleccionada').value = t;
-                        actualizarVarianteCombinada();
-                    };
-                    container.appendChild(btn);
-                });
-
-                // Mensaje si solo había Única y se ocultó, o vacio
-                if (container.children.length === 0) container.innerHTML = '<span style="color:#64748b; font-size:0.9rem;">Estándar</span>';
-            }
+                    document.getElementById('tallaSeleccionada').value = t;
+                    validarDisponibilidad(stock);
+                };
+                container.appendChild(btn);
+            });
         }
+    };
+
+    // Helper: Validar Disponibilidad
+    window.validarDisponibilidad = (stock) => {
+        const color = document.getElementById('colorSeleccionado').value;
+        const talla = document.getElementById('tallaSeleccionada').value;
+        const matches = stock.filter(s => s.color === color && (talla ? s.talla === talla : true));
+        const totalStock = matches.reduce((sum, s) => sum + (s.cantidad || 0), 0);
+        const textArea = document.getElementById('disponibilidadTexto');
+        const btnAdd = document.getElementById('btnAgregarCarrito');
+        const cantidadInput = document.getElementById('cantidadDetalle');
+
+        if (totalStock > 0) {
+            textArea.textContent = `✅ Disponible`;
+            textArea.style.color = '#16a34a';
+            btnAdd.disabled = false;
+            cantidadInput.max = totalStock;
+            if (parseInt(cantidadInput.value) > totalStock) {
+                cantidadInput.value = totalStock;
+            }
+        } else {
+            textArea.textContent = '❌ No disponible en esta combinación';
+            textArea.style.color = '#ef4444';
+            btnAdd.disabled = true;
+            cantidadInput.value = 1;
+            cantidadInput.max = 1; // Prevent increasing quantity for unavailable items
+        }
+        document.getElementById('varianteSeleccionada').value = `${color}${talla ? ' | ' + talla : ''}`;
+
+        // Update WhatsApp button with current selection
+        const waBtn = document.getElementById('btnWhatsappDetalle');
+        if (waBtn && typeof productoActual !== 'undefined') {
+            const text = `¡Hola! Me interesa este producto: ${productoActual.nombre} (${productoActual.marca}) - ${document.getElementById('varianteSeleccionada').value} `;
+            waBtn.href = `https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent(text)}`;
+        }
+    };
+
+    // Initial setup for variants and stock
+    if (coloresUnicos.length > 0) {
+        seleccionarColor(coloresUnicos[0], true);
+    } else {
+        // If no colors, try to render default tallas or show "Estándar"
+        actualizarTallasPorColor('', stockReal);
+        validarDisponibilidad(stockReal);
     }
 
-    document.getElementById('modalDetalle').classList.add('active');
+    // Cargar reseñas
+    cargarResenasProducto(productoActual.id);
 }
 
 function cerrarModalDetalle() {
@@ -947,9 +849,9 @@ function actualizarVarianteCombinada() {
     const talla = inputTalla ? inputTalla.value : '';
 
     if (color && talla) {
-        inputVar.value = `${color} | Talla: ${talla}`;
+        inputVar.value = `${color} | Talla: ${talla} `;
     } else if (talla) {
-        inputVar.value = `Talla: ${talla}`;
+        inputVar.value = `Talla: ${talla} `;
     } else if (color) {
         inputVar.value = color;
     } else {
@@ -959,7 +861,7 @@ function actualizarVarianteCombinada() {
     // Actualizar botón WhatsApp
     const waBtn = document.getElementById('btnWhatsappDetalle');
     if (waBtn && typeof productoActual !== 'undefined') {
-        const text = `¡Hola! Me interesa este producto: ${productoActual.nombre} (${productoActual.marca}) - ${inputVar.value}`;
+        const text = `¡Hola! Me interesa este producto: ${productoActual.nombre} (${productoActual.marca}) - ${inputVar.value} `;
         waBtn.href = `https://wa.me/${CONFIG.WHATSAPP.numero}?text=${encodeURIComponent(text)}`;
     }
 }

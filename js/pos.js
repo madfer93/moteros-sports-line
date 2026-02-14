@@ -1005,18 +1005,16 @@ async function cargarProductos() {
 
         if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
             const [alcala, local01, jordan] = await Promise.all([
-                db.from('inventario_alcala').select('id_producto, cantidad, talla'),
-                db.from('inventario_01').select('id_producto, cantidad, talla'),
-                db.from('inventario_jordan').select('id_producto, cantidad, talla')
+                db.from('inventario_alcala').select('id_producto, cantidad, talla, color'),
+                db.from('inventario_01').select('id_producto, cantidad, talla, color'),
+                db.from('inventario_jordan').select('id_producto, cantidad, talla, color')
             ]);
             inventarios = { alcala: alcala.data, local01: local01.data, jordan: jordan.data };
         } else if (TIENDA.nombre === 'Evento') {
-            // Evento usa tabla especifica. Asumimos que también tiene talla o se migró.
-            const { data: stock } = await db.from('inventario_evento').select('id_producto, cantidad, talla'); // Verificar si tiene talla
+            const { data: stock } = await db.from('inventario_evento').select('id_producto, cantidad, talla, color');
             inventarios = { actual: stock };
         } else {
-            // Tienda Física Normal
-            const { data: stock } = await db.from(TIENDA.tablaInventario).select('id_producto, cantidad, talla');
+            const { data: stock } = await db.from(TIENDA.tablaInventario).select('id_producto, cantidad, talla, color');
             inventarios = { actual: stock };
         }
 
@@ -1027,9 +1025,8 @@ async function cargarProductos() {
             const pId = p.id_producto ? String(p.id_producto) : String(p.id);
 
             let stockTotal = 0;
-            let stockPorTalla = {}; // { "S": 5, "M": 0 }
-            let tieneTallas = false;
-            let stocksGlobales = {}; // Estructura: { 'Alcalá': { 'S': 5, 'M': 3 }, '01': { ... } }
+            let stockDetallado = {}; // Estructura: { "Color": { "S": 5, "M": 3 } }
+            let stocksGlobales = {}; // Estructura: { 'Alcalá': { 'Color': { 'S': 5 } } }
 
             if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
                 // Lógica Digital: Desglosar por tienda y talla
@@ -1048,43 +1045,36 @@ async function cargarProductos() {
                         itemsProducto.forEach(item => {
                             const cant = item.cantidad || 0;
                             const talla = item.talla || 'Única';
+                            const color = item.color || '';
 
                             stockTotal += cant;
-                            stocksGlobales[t.nombre][talla] = (stocksGlobales[t.nombre][talla] || 0) + cant;
+                            if (!stocksGlobales[t.nombre][color]) stocksGlobales[t.nombre][color] = {};
+                            stocksGlobales[t.nombre][color][talla] = (stocksGlobales[t.nombre][color][talla] || 0) + cant;
                         });
                     }
                 });
             } else {
-                // Lógica Tienda Física: Stock de esta tienda desglosado por talla
+                // Lógica Tienda Física: Stock de esta tienda desglosado por talla y color
                 const items = inventarios.actual || [];
                 // Filtrar items de este producto
                 const variantesStock = items.filter(i => String(i.id_producto) === pId);
 
                 variantesStock.forEach(v => {
                     const cant = v.cantidad || 0;
-                    stockTotal += cant;
-                    if (v.talla && v.talla !== 'Única') {
-                        tieneTallas = true;
-                        stockPorTalla[v.talla] = (stockPorTalla[v.talla] || 0) + cant;
-                    } else if (v.talla === 'Única') {
-                        // Si es única, se suma al total y ya.
-                        stockPorTalla['Única'] = (stockPorTalla['Única'] || 0) + cant;
-                    }
-                });
-            }
+                    const talla = v.talla || 'Única';
+                    const color = v.color || '';
 
-            // Si hay variantes visuales (colores) pero no se detectaron tallas en inventario (migración a medias),
-            // Tratamos de usar 'Única' con el stock total encontrado.
-            if (!tieneTallas && stockTotal > 0 && Object.keys(stockPorTalla).length === 0) {
-                stockPorTalla['Única'] = stockTotal;
+                    stockTotal += cant;
+                    if (!stockDetallado[color]) stockDetallado[color] = {};
+                    stockDetallado[color][talla] = (stockDetallado[color][talla] || 0) + cant;
+                });
             }
 
             return {
                 ...p,
                 id_producto: p.id, // Unificar uso de ID
                 stock: stockTotal,
-                tiene_tallas: tieneTallas || (Object.keys(stockPorTalla).length > 1), // O si hay varios registros
-                stock_por_talla: stockPorTalla,
+                stock_detallado: stockDetallado,
                 stocks_globales: stocksGlobales // Nuevo campo para Digital/Admin
             };
         });
@@ -1126,7 +1116,7 @@ function renderizarProductos() {
             // Renderizado especial para Digital y Admin (Botones por tienda y talla)
             let htmlStock = '';
             if (p.stocks_globales && Object.keys(p.stocks_globales).length > 0) {
-                Object.entries(p.stocks_globales).forEach(([tienda, tallasObj]) => {
+                Object.entries(p.stocks_globales).forEach(([tienda, coloresObj]) => {
 
                     // Determinar clase de color según tienda
                     let claseTienda = 'btn-stock-defecto';
@@ -1135,17 +1125,19 @@ function renderizarProductos() {
                     else if (tienda.includes('Jordán')) claseTienda = 'btn-stock-jordan';
                     else if (tienda.includes('Digital')) claseTienda = 'btn-stock-digital';
 
-                    Object.entries(tallasObj).forEach(([talla, cant]) => {
-                        if (cant > 0) {
-                            // En digital, al hacer click, agregamos al carrito con Tienda y Talla
-                            htmlStock += `
-                            <button class="btn-stock-tienda ${claseTienda} activo"
-                                onclick="agregarAlCarrito('${p.id_producto}', '${tienda}', '${talla}')"
-                                title="Vender de ${tienda} - Talla ${talla}">
-                                <span class="tienda-name">${tienda}</span>
-                                <span class="talla-qty">${talla === 'Única' ? 'ÚNICA' : talla} (${cant})</span>
-                            </button>`;
-                        }
+                    Object.entries(coloresObj).forEach(([color, tallasObj]) => {
+                        Object.entries(tallasObj).forEach(([talla, cant]) => {
+                            if (cant > 0) {
+                                // En digital, al hacer click, agregamos al carrito con Tienda, Color y Talla
+                                htmlStock += `
+                                <button class="btn-stock-tienda ${claseTienda} activo"
+                                    onclick="agregarAlCarrito('${p.id_producto}', '${tienda}', '${talla}', '${color}')"
+                                    title="Vender de ${tienda} - ${color ? `Color ${color} - ` : ''}Talla ${talla}">
+                                    <span class="tienda-name">${tienda}</span>
+                                    <span class="talla-qty">${color ? `${color} ` : ''}${talla === 'Única' ? 'ÚNICA' : talla} (${cant})</span>
+                                </button>`;
+                            }
+                        });
                     });
                 });
             } else {
@@ -1171,20 +1163,21 @@ function renderizarProductos() {
             const stockClass = p.stock > 5 ? 'stock-ok' : p.stock > 0 ? 'stock-bajo' : 'stock-no';
 
             let htmlTallas = '';
-            if (p.tiene_tallas && p.stock_por_talla) {
-                // Generar botones para cada talla
-                htmlTallas = '<div class="tallas-grid">';
-                Object.entries(p.stock_por_talla).forEach(([talla, qty]) => {
-                    const btnClass = qty > 0 ? 'btn-talla-disponible' : 'btn-talla-agotada';
-                    const clickAction = qty > 0 ? `event.stopPropagation(); agregarAlCarrito('${p.id_producto}', '${talla}')` : '';
-                    htmlTallas += `<button class="${btnClass}" onclick="${clickAction}">${talla} (${qty})</button>`;
+            // Si hay stock detallado por color y talla
+            if (p.stock_detallado && Object.keys(p.stock_detallado).length > 0) {
+                // Iterar sobre colores y luego sobre tallas
+                Object.entries(p.stock_detallado).forEach(([color, tallasObj]) => {
+                    Object.entries(tallasObj).forEach(([talla, qty]) => {
+                        const btnClass = qty > 0 ? 'btn-talla-disponible' : 'btn-talla-agotada';
+                        const clickAction = qty > 0 ? `event.stopPropagation(); agregarAlCarrito('${p.id_producto}', '${talla}', '${color}')` : '';
+                        htmlTallas += `<button class="${btnClass}" onclick="${clickAction}">${color ? `${color} ` : ''}${talla} (${qty})</button>`;
+                    });
                 });
-                htmlTallas += '</div>';
             }
 
             return `
                 <div id="card-producto-${p.id_producto}" class="producto ${agotado ? 'agotado' : ''}" 
-                     onclick="${agotado ? '' : (p.tiene_tallas ? '' : `agregarAlCarrito('${p.id_producto}')`)}">
+                     onclick="${agotado ? '' : (p.variantes && p.variantes.length > 0 ? '' : `agregarAlCarrito('${p.id_producto}')`)}">
                     
                     ${p.url_imagen ? `<div class="producto-img"><img src="${p.url_imagen}" alt="${p.nombre}" onerror="this.style.display='none'"></div>` : ''}
                     
@@ -1205,18 +1198,21 @@ function renderizarProductos() {
                         ` : ''}
 
                         <!-- SECCIÓN TALLAS -->
-                        ${p.tiene_tallas ? `
+                        ${Object.keys(p.stock_detallado).length > 0 ? `
                             <div class="tallas-grid" style="margin-top: 8px; display:flex; flex-wrap:wrap; gap:4px;">
-                                ${Object.entries(p.stock_por_talla)
-                        .filter(([t, q]) => q > 0) // Solo mostrar tallas con stock
-                        .map(([talla, qty]) => `
-                                    <button class="btn-talla-disponible" 
-                                            onclick="event.stopPropagation(); agregarAlCarrito('${p.id_producto}', '${talla}')"
-                                            style="padding: 4px 8px; font-size: 0.8rem; background:#10b981; color:white; border:none; border-radius:4px; cursor:pointer;">
-                                        ${talla} (${qty})
-                                    </button>
-                                `).join('')}
-                                ${Object.keys(p.stock_por_talla).filter(k => p.stock_por_talla[k] > 0).length === 0 ? '<span style="color:red; font-size:0.8rem;">Agotado</span>' : ''}
+                                ${Object.entries(p.stock_detallado)
+                        .flatMap(([color, tallasObj]) =>
+                            Object.entries(tallasObj)
+                                .filter(([t, q]) => q > 0) // Solo mostrar tallas con stock
+                                .map(([talla, qty]) => `
+                                                <button class="btn-talla-disponible" 
+                                                        onclick="event.stopPropagation(); agregarAlCarrito('${p.id_producto}', '${talla}', '${color}')"
+                                                        style="padding: 4px 8px; font-size: 0.8rem; background:#10b981; color:white; border:none; border-radius:4px; cursor:pointer;">
+                                                    ${color ? `${color} ` : ''}${talla} (${qty})
+                                                </button>
+                                            `)
+                        ).join('')}
+                                ${Object.values(p.stock_detallado).every(tallasObj => Object.values(tallasObj).every(qty => qty === 0)) ? '<span style="color:red; font-size:0.8rem;">Agotado</span>' : ''}
                             </div>
                         ` : `<div style="margin-top:5px;"><span class="stock-badge ${stockClass}">${p.stock} unid.</span></div>`}
 
@@ -1258,7 +1254,7 @@ function seleccionarColor(idProducto, btn, color) {
 // ═══════════════════════════════════════════════════════════════
 // CARRITO
 // ═══════════════════════════════════════════════════════════════
-function agregarAlCarrito(idProducto, arg2 = null, arg3 = null) {
+function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { // arg2: talla (fisica) / tiendaOrigen (digital), arg3: color (fisica) / talla (digital), arg4: color (digital)
     const prod = productos.find(p => p.id_producto == idProducto);
     if (!prod) return;
 
@@ -1277,33 +1273,41 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null) {
     // LÓGICA FÍSICA
     if (!TIENDA.esDigital) {
         const tallaSeleccionada = arg2;
+        let colorSeleccionado = arg3; // Ahora el color puede venir directamente del botón de talla si no hay botones de color
 
-        // 1. Validar Color si aplica
-        let colorSeleccionado = null;
+        // 1. Validar Color si aplica (si hay botones de color, se debe seleccionar uno)
         if (prod.variantes && prod.variantes.length > 0) {
             const card = document.getElementById(`card-producto-${idProducto}`);
             const btnColor = card ? card.querySelector('.btn-color.seleccionado') : null;
-            if (!btnColor) {
+            if (!btnColor && !colorSeleccionado) { // Si hay variantes pero no se seleccionó color ni se pasó por arg
                 mostrarAlerta('⚠️ Selecciona un color primero', 'warning');
                 return;
             }
-            colorSeleccionado = btnColor.dataset.color || btnColor.textContent;
+            if (btnColor) colorSeleccionado = btnColor.dataset.color || btnColor.textContent;
         }
 
         // 2. Validar Talla
-        if (prod.tiene_tallas && !tallaSeleccionada) {
+        // Si el producto tiene stock detallado (por color/talla) y no se seleccionó talla
+        if (prod.stock_detallado && Object.keys(prod.stock_detallado).length > 0 && !tallaSeleccionada) {
             mostrarAlerta('⚠️ Selecciona una talla', 'warning');
             return;
         }
 
         // 3. Stock
-        let stockDisponible = prod.stock;
-        if (prod.tiene_tallas && tallaSeleccionada) {
-            stockDisponible = prod.stock_por_talla[tallaSeleccionada] || 0;
+        let stockDisponible = 0;
+        if (prod.stock_detallado) {
+            const colorKey = colorSeleccionado || '';
+            const tallaKey = tallaSeleccionada || 'Única';
+            if (prod.stock_detallado[colorKey]) {
+                stockDisponible = prod.stock_detallado[colorKey][tallaKey] || 0;
+            }
+        } else {
+            // Si no hay stock detallado, usamos el stock total del producto
+            stockDisponible = prod.stock;
         }
 
         if (stockDisponible <= 0) {
-            mostrarAlerta('❌ Sin stock disponible', 'error');
+            mostrarAlerta(`❌ Sin stock para ${colorSeleccionado || ''} [${tallaSeleccionada || 'Única'}]`, 'error');
             return;
         }
 
@@ -1349,23 +1353,24 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null) {
     else {
         const tiendaOrigen = arg2;
         const tallaDigital = arg3 || 'Única'; // Recibimos la talla o asumimos única
+        const colorDigital = arg4 || '';
         if (!tiendaOrigen) return mostrarAlerta('Error: tienda origen no definida', 'error');
 
         // Búsqueda de stock más precisa usando stocks_globales
         let stockDisp = 0;
         if (prod.stocks_globales && prod.stocks_globales[tiendaOrigen]) {
-            stockDisp = prod.stocks_globales[tiendaOrigen][tallaDigital] || 0;
-        } else if (prod.stocks && prod.stocks[tiendaOrigen]) {
-            // Fallback antigua lógica (solo si no hay stocks_globales)
-            stockDisp = prod.stocks[tiendaOrigen];
+            if (prod.stocks_globales[tiendaOrigen][colorDigital]) {
+                stockDisp = prod.stocks_globales[tiendaOrigen][colorDigital][tallaDigital] || 0;
+            }
         }
 
-        if (stockDisp <= 0) return mostrarAlerta(`Sin stock de talla ${tallaDigital} en ${tiendaOrigen} `, 'error');
+        if (stockDisp <= 0) return mostrarAlerta(`Sin stock de ${colorDigital ? colorDigital + ' ' : ''}${tallaDigital} en ${tiendaOrigen}`, 'error');
 
         const existe = carrito.find(i =>
             i.id_producto == idProducto &&
             i.tiendaOrigen === tiendaOrigen &&
-            i.variante === tallaDigital // Importante: Diferenciar por talla en el carrito
+            i.variante === tallaDigital &&
+            i.color === colorDigital
         );
 
         if (existe) {
@@ -1377,7 +1382,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null) {
         } else {
             carrito.push({
                 id_producto: prod.id_producto,
-                nombre: `${prod.nombre} (${tiendaOrigen}) [${tallaDigital}]`,
+                nombre: `${prod.nombre} (${tiendaOrigen}) ${colorDigital ? '[' + colorDigital + '] ' : ''}[${tallaDigital}]`,
                 nombreBase: prod.nombre,
                 marca: prod.marca,
                 precioOriginal: prod.precio,
@@ -1386,6 +1391,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null) {
                 stockMax: stockDisp,
                 tiendaOrigen: tiendaOrigen,
                 variante: tallaDigital, // Guardamos la talla
+                color: colorDigital,
                 motivo: motivo
             });
         }

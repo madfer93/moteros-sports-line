@@ -9,13 +9,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const path = window.location.pathname;
     let context = 'INDEX';
 
-    // 🚨 REGLA DE VISIBILIDAD: Solo en Index y Admin
+    // 🚨 REGLA DE VISIBILIDAD: Index, Admin y Catálogo
     const isIndex = path === '/' || path.endsWith('/index.html') || path.endsWith('/moteros-sports-line/');
     const isAdmin = path.includes('admin');
+    const isCatalog = path.includes('catalogo.html');
 
-    if (!isIndex && !isAdmin) return; // 🚫 No cargar en otras páginas
+    if (!isIndex && !isAdmin && !isCatalog) return; // 🚫 No cargar en otras páginas
 
     if (isAdmin || document.title.includes('Admin')) context = 'ADMIN';
+    else if (isCatalog) context = 'CATALOGO';
     else if (path.includes('tienda-digital')) context = 'TIENDA';
     else if (path.includes('tienda-')) context = 'POS';
 
@@ -38,11 +40,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const widgetContainer = document.createElement('div');
         widgetContainer.className = 'ai-fab-container';
         widgetContainer.innerHTML = `
-            <div class="ai-fab-label">💡 IA Asistida</div>
+            <div class="ai-fab-label">💡 Moteros IA</div>
             <button id="aiFabBtn" class="ai-fab-btn" title="Asistente IA">
-                <svg viewBox="0 0 24 24">
-                    <path d="M20,2H4C2.9,2,2,2.9,2,4v18l4-4h14c1.1,0,2-0.9,2-2V4C22,2.9,21.1,2,20,2z" />
-                </svg>
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
+                     alt="IA" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
             </button>
         `;
         document.body.appendChild(widgetContainer);
@@ -53,7 +54,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatWindow.className = isInsideAdmin ? 'ai-chat-window admin-box' : 'ai-chat-window hidden';
     chatWindow.innerHTML = `
         <div class="ai-header">
-            <h4><span class="ai-status-dot"></span> Moteros AI ${isInsideAdmin ? '(Modo Prueba)' : ''}</h4>
+            <h4>
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
+                     alt="Logo" class="ai-header-logo">
+                <span class="ai-status-dot"></span> Moteros IA ${isInsideAdmin ? '(Modo Prueba)' : ''}
+            </h4>
             ${!isInsideAdmin ? '<button id="aiCloseBtn" class="ai-close-btn">×</button>' : ''}
         </div>
         <div id="aiMessages" class="ai-messages"></div>

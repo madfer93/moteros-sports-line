@@ -57,9 +57,9 @@ async function cargarProductos() {
 
             return {
                 ...p,
-                stock_alcala: p.stock_alcala || stockAlc,
-                stock_local01: p.stock_local01 || stock01,
-                stock_jordan: p.stock_jordan || stockJor,
+                stock_alcala: stockAlc, // Prioridad total al inventario real
+                stock_local01: stock01,
+                stock_jordan: stockJor,
                 stock_digital: p.stock_digital || 0
             };
         });
@@ -649,16 +649,106 @@ function cancelarFormProducto() {
 // GESTIÓN DE TALLAS Y STOCK (NUEVO)
 // ═══════════════════════════════════════════════════════════════
 
-window.agregarFilaTalla = function (talla = '', stockA = 0, stockL = 0, stockJ = 0) {
+// --- GESTIÓN DE COLORES CON FOTOS ---
+window.agregarFilaColor = function (color = '', url = '') {
+    const container = document.getElementById('containerColoresFotos');
+    if (!container) return;
+    const index = container.children.length;
+
+    const div = document.createElement('div');
+    div.className = 'fila-color';
+    div.style.display = 'flex';
+    div.style.gap = '1rem';
+    div.style.alignItems = 'center';
+    div.style.background = 'white';
+    div.style.padding = '1rem';
+    div.style.borderRadius = '0.75rem';
+    div.style.border = '1px solid #e2e8f0';
+    div.id = `fila-color-${index}`;
+
+    div.innerHTML = `
+        <div style="flex: 1;">
+            <input type="text" class="form-control input-color-nombre" value="${color}" placeholder="Nombre del Color (ej: Rojo Mate)" oninput="actualizarSelectsColor()">
+        </div>
+        <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
+            <input type="text" class="form-control input-color-url" value="${url}" placeholder="URL de Imagen o sube una">
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="subirImagenColor(${index})">📷</button>
+        </div>
+        <div class="color-preview-img" style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0;">
+            <img src="${url || 'https://via.placeholder.com/50'}" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <button type="button" class="btn btn-sm btn-danger" onclick="removerFilaColor(${index})">🗑️</button>
+    `;
+    container.appendChild(div);
+    actualizarSelectsColor();
+};
+
+window.removerFilaColor = function (index) {
+    const div = document.getElementById(`fila-color-${index}`);
+    if (div) div.remove();
+    actualizarSelectsColor();
+};
+
+window.actualizarSelectsColor = function () {
+    const nombres = Array.from(document.querySelectorAll('.input-color-nombre')).map(i => i.value.trim()).filter(v => v !== '');
+    const selects = document.querySelectorAll('.select-color-stock');
+
+    selects.forEach(select => {
+        const valActual = select.value;
+        select.innerHTML = '<option value="">Color...</option>' + nombres.map(n => `<option value="${n}" ${n === valActual ? 'selected' : ''}>${n}</option>`).join('');
+    });
+};
+
+window.subirImagenColor = async function (index) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            showToast('Subiendo imagen de color...', 'info');
+
+            // Usar la función global subirImagen (definida en admin.js)
+            const publicUrl = await window.subirImagen(file, 'productos-imagenes');
+            if (!publicUrl) return;
+
+            const fila = document.getElementById(`fila-color-${index}`);
+            if (fila) {
+                fila.querySelector('.input-color-url').value = publicUrl;
+                fila.querySelector('.color-preview-img img').src = publicUrl;
+            }
+            showToast('Imagen subida con éxito');
+        } catch (err) {
+            console.error('Error subiendo imagen de color:', err);
+            showToast('Error al subir imagen', 'error');
+        }
+    };
+    input.click();
+};
+
+window.agregarFilaTalla = function (talla = '', color = '', stockA = 0, stockL = 0, stockJ = 0) {
     const tbody = document.getElementById('tbodyTallasStock');
     if (!tbody) return;
     const tr = document.createElement('tr');
-    // Detectar placeholder según categoría actual
+
+    // Obtener nombres de colores actuales
+    const nombresColores = Array.from(document.querySelectorAll('.input-color-nombre'))
+        .map(i => i.value.trim())
+        .filter(v => v !== '');
+
     const cat = document.getElementById('productoCategoria')?.value?.toUpperCase() || '';
-    const esMaletero = CATEGORIAS_MALETEROS.includes(cat);
+    const esMaletero = window.CATEGORIAS_MALETEROS?.includes(cat) || false;
     const place = esMaletero ? 'Ej: 30L' : 'Ej: S, 40...';
 
     tr.innerHTML = `
+        <td>
+            <select class="form-control select-color-stock" style="padding: 0.5rem;">
+                <option value="">Color...</option>
+                ${nombresColores.map(n => `<option value="${n}" ${n === color ? 'selected' : ''}>${n}</option>`).join('')}
+            </select>
+        </td>
         <td><input type="text" class="form-control input-talla" value="${talla}" placeholder="${place}"></td>
         <td><input type="number" class="form-control input-stock-alcala" value="${stockA}" min="0"></td>
         <td><input type="number" class="form-control input-stock-local01" value="${stockL}" min="0"></td>
@@ -673,18 +763,18 @@ window.agregarFilaTalla = function (talla = '', stockA = 0, stockL = 0, stockJ =
 // ═══════════════════════════════════════════════════════════════
 
 async function guardarProducto() {
-    const id = document.getElementById('productoId').value; // Original ID for update
+    const id = document.getElementById('productoId').value;
     const nombre = document.getElementById('productoNombre').value.trim();
     const categoria = document.getElementById('productoCategoria').value;
-    const precio = document.getElementById('productoPrecio').value; // Precio Venta
-    const precioCompra = document.getElementById('productoPrecioCompra').value || 0; // Costo
+    const precio = document.getElementById('productoPrecio').value;
+    const precioCompra = document.getElementById('productoPrecioCompra').value || 0;
     const marca = document.getElementById('productoMarca').value.trim();
     const proveedorId = document.getElementById('productoProveedor').value || null;
     const estado = document.getElementById('productoEstado').value;
     const referencia = document.getElementById('productoReferencia').value;
     const descripcionCorta = document.getElementById('productoDescCorta').value;
     const descripcionTecnica = document.getElementById('productoDescTecnica').value;
-    let urlImagen = document.getElementById('productoImagen').value; // Existing URL or manual input
+    let urlImagen = document.getElementById('productoImagen').value;
 
     if (!nombre || parseFloat(precio) <= 0) {
         showToast('Nombre y Precio son obligatorios', 'warning');
@@ -695,195 +785,161 @@ async function guardarProducto() {
     if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...'; }
 
     try {
-        // 1. Manejar subida de imagen si existe archivo temporal
-        if (archivosTemporal.producto) {
+        // 1. Imagen principal
+        if (window.archivosTemporal?.producto) {
             try {
-                showToast('Subiendo imagen...', 'info');
-                const urlSubida = await subirImagenSupabase(archivosTemporal.producto, 'productos-imagenes');
+                showToast('Subiendo imagen principal...', 'info');
+                // Usar la función global subirImagen
+                const urlSubida = await window.subirImagen(window.archivosTemporal.producto, 'productos-imagenes');
                 if (urlSubida) urlImagen = urlSubida;
             } catch (err) {
                 console.error('Error subiendo imagen:', err);
-                showToast('Error al subir imagen, se usará URL manual si existe', 'warning');
             }
         }
 
-        // VARIANTES: Ahora es COLOR
-        const coloresInput = document.getElementById('productoVariantes').value;
-        const arrayColores = coloresInput.split(',').map(s => s.trim()).filter(Boolean);
+        // 2. Colores e Imágenes (Variantes modernas)
+        const filasColores = document.querySelectorAll('#containerColoresFotos .fila-color');
+        const variantesData = [];
+        filasColores.forEach(fila => {
+            const colorName = fila.querySelector('.input-color-nombre').value.trim();
+            const colorUrl = fila.querySelector('.input-color-url').value.trim();
+            if (colorName) {
+                variantesData.push({ color: colorName, url: colorUrl });
+            }
+        });
 
-        // TALLAS Y STOCK
-        const filasTallas = document.querySelectorAll('#tbodyTallasStock tr');
-        const tallasData = [];
-        let totalStockAlcala = 0;
-        let totalStock01 = 0;
-        let totalStockJordan = 0;
-
-        filasTallas.forEach(row => {
-            const t = row.querySelector('.input-talla').value.trim();
+        // 3. Matriz de Stock (Color + Talla)
+        const filasStock = document.querySelectorAll('#tbodyTallasStock tr');
+        const inventarioData = [];
+        filasStock.forEach(row => {
+            const color = row.querySelector('.select-color-stock').value;
+            const talla = row.querySelector('.input-talla').value.trim();
             const sA = parseInt(row.querySelector('.input-stock-alcala').value) || 0;
             const sL = parseInt(row.querySelector('.input-stock-local01').value) || 0;
             const sJ = parseInt(row.querySelector('.input-stock-jordan').value) || 0;
 
-            if (t) {
-                tallasData.push({ talla: t, alcala: sA, local01: sL, jordan: sJ });
-                totalStockAlcala += sA;
-                totalStock01 += sL;
-                totalStockJordan += sJ;
+            if (talla || color) {
+                inventarioData.push({
+                    color: color || '',
+                    talla: talla || 'Única',
+                    alcala: sA,
+                    local01: sL,
+                    jordan: sJ
+                });
             }
         });
 
-        // Si no se definieron tallas, crear una "Única" por defecto con 0 stock
-        // Si no se definieron tallas, usar los inputs generales como "Única"
-        // Check for "Phantom Unica": Table has 1 row ("Única") with 0 stock, but simple inputs have values.
-        const sA_simple = parseInt(document.getElementById('stockAlcala')?.value) || 0;
-        const sL_simple = parseInt(document.getElementById('stockLocal01')?.value) || 0;
-        const sJ_simple = parseInt(document.getElementById('stockJordan')?.value) || 0;
-        const simpleHasValue = (sA_simple + sL_simple + sJ_simple) > 0;
-
-        if (tallasData.length === 1 && simpleHasValue) {
-            const t = tallasData[0];
-            const isUnica = ['única', 'unica', '', 'u'].includes(t.talla.toLowerCase());
-            const isZero = (t.alcala + t.local01 + t.jordan) === 0;
-
-            if (isUnica && isZero) {
-                // Override with simple values
-                tallasData[0].alcala = sA_simple;
-                tallasData[0].local01 = sL_simple;
-                tallasData[0].jordan = sJ_simple;
-                totalStockAlcala = sA_simple;
-                totalStock01 = sL_simple;
-                totalStockJordan = sJ_simple;
-            }
-        }
-
-        // Si no se definieron tallas, crear una "Única" por defecto con los valores simples
-        if (tallasData.length === 0) {
-            tallasData.push({ talla: 'Única', alcala: sA_simple, local01: sL_simple, jordan: sJ_simple });
-            totalStockAlcala = sA_simple;
-            totalStock01 = sL_simple;
-            totalStockJordan = sJ_simple;
-        }
+        const stockDigital = parseInt(document.getElementById('stockDigital').value) || 0;
 
         const productoData = {
-            nombre,
-            referencia,
-            categoria,
-            marca,
+            nombre, referencia, categoria, marca,
             proveedor: proveedorId,
-            variantes: arrayColores,
-            tallas: tallasData.map(t => t.talla), // Guardar tallas en array para el catálogo
+            variantes: variantesData, // Array de objetos {color, url}
+            tallas: Array.from(new Set(inventarioData.map(i => i.talla))),
             precio: parseFloat(precio),
             precio_compra: parseFloat(precioCompra),
+            stock_digital: stockDigital,
             estado,
             descripcion_corta: descripcionCorta,
             descripcion_tecnica: descripcionTecnica,
             url_imagen: urlImagen
-            // Stock ahora solo vive en tablas de inventario
         };
 
-        let prodTextId; // El ID de texto (PROD...) que usa el inventario
-
-        // INSERT o UPDATE Producto Base
-        if (id) { // UPDATE
-            // No enviamos id_producto en update para no cambiarlo, pero lo necesitamos de vuelta
-            const { data, error } = await supabaseClient
-                .from('productos')
-                .update(productoData)
-                .eq('id', id)
-                .select(); // Importante: .select() para recuperar el id_producto
+        let prodTextId;
+        if (id) {
+            const { data, error } = await supabaseClient.from('productos').update(productoData).eq('id', id).select();
             if (error) throw error;
             prodTextId = data[0].id_producto;
-        } else { // INSERT
-            // Generar id_producto para nuevos
+        } else {
             productoData.id_producto = 'PROD' + Date.now() + Math.floor(Math.random() * 1000);
-
-            const { data, error } = await supabaseClient
-                .from('productos')
-                .insert(productoData)
-                .select();
+            const { data, error } = await supabaseClient.from('productos').insert(productoData).select();
             if (error) throw error;
             prodTextId = data[0].id_producto;
         }
 
-        // GUARDAR INVENTARIO DETALLADO POR TALLA
-        // Estrategia: 1) Borrar filas huérfanas, 2) Upsert las actuales
-        // IMPORTANTE: Usamos prodTextId (ej: PROD123...), no el UUID.
+        // GUARDAR INVENTARIO (NUEVA LÓGICA)
+        const sedes = [
+            { id: 'Alcalá', tabla: 'inventario_alcala', key: 'alcala' },
+            { id: 'Local 01', tabla: 'inventario_01', key: 'local01' },
+            { id: 'Jordán', tabla: 'inventario_jordan', key: 'jordan' }
+        ];
 
-        const tallasActuales = tallasData.map(t => t.talla);
+        for (const sede of sedes) {
+            // 1. Borrar lo que ya no está en la matriz para este producto
+            const { data: actuales } = await supabaseClient.from(sede.tabla).select('talla, color').eq('id_producto', prodTextId);
 
-        // 0. Eliminar tallas que ya no existen (filas huérfanas)
-        const tablas = ['inventario_alcala', 'inventario_01', 'inventario_jordan'];
-        for (const tabla of tablas) {
-            try {
-                // Obtener tallas existentes en DB para este producto
-                const { data: existentes } = await supabaseClient
-                    .from(tabla)
-                    .select('talla')
-                    .eq('id_producto', prodTextId);
+            if (actuales) {
+                const aBorrar = actuales.filter(act =>
+                    !inventarioData.some(n => n.talla === act.talla && (act.color || '') === (n.color || ''))
+                );
 
-                if (existentes && existentes.length > 0) {
-                    const tallasAEliminar = existentes
-                        .map(r => r.talla)
-                        .filter(t => !tallasActuales.includes(t));
+                for (const item of aBorrar) {
+                    let query = supabaseClient.from(sede.tabla).delete().eq('id_producto', prodTextId).eq('talla', item.talla);
 
-                    if (tallasAEliminar.length > 0) {
-                        const { error: errDel } = await supabaseClient
-                            .from(tabla)
-                            .delete()
-                            .eq('id_producto', prodTextId)
-                            .in('talla', tallasAEliminar);
-                        if (errDel) console.error(`Error eliminando tallas huérfanas en ${tabla}:`, errDel);
+                    // Manejo seguro de NULL o vacío para color en el borrado
+                    if (!item.color) {
+                        // Intentar borrar ambos por si acaso, pero el nuevo standard es ''
+                        await query.is('color', null);
+                        await supabaseClient.from(sede.tabla).delete().eq('id_producto', prodTextId).eq('talla', item.talla).eq('color', '');
+                    } else {
+                        await query.eq('color', item.color);
                     }
                 }
-            } catch (e) {
-                console.error(`Error limpiando ${tabla}:`, e);
+            }
+
+            // 2. Upsert
+            const opsSede = inventarioData.map(i => ({
+                id_producto: prodTextId,
+                talla: i.talla,
+                color: i.color,
+                cantidad: i[sede.key],
+                ultima_actualizacion: new Date().toISOString()
+            }));
+
+            if (opsSede.length > 0) {
+                await supabaseClient.from(sede.tabla).upsert(opsSede, { onConflict: 'id_producto, talla, color' });
             }
         }
 
-        // 1. Alcalá
-        const opsAlcala = tallasData.map(t => ({
-            id_producto: prodTextId,
-            talla: t.talla,
-            cantidad: t.alcala
-        }));
-        if (opsAlcala.length > 0) {
-            const { error: errA } = await supabaseClient.from('inventario_alcala').upsert(opsAlcala, { onConflict: 'id_producto, talla' });
-            if (errA) { console.error('Error stock Alcalá', errA); showToast('Error guardando stock Alcalá', 'warning'); }
+        // 3. Actualizar Tabla Unificada 'inventario'
+        // Primero obtener actuales para limpiar lo que no está
+        const { data: unifiedActuales } = await supabaseClient.from('inventario').select('producto_id, local_id, talla, color').eq('producto_id', prodTextId);
+
+        if (unifiedActuales) {
+            const staleUnified = unifiedActuales.filter(act =>
+                !inventarioData.some(n => n.talla === act.talla && (n.color || '') === (act.color || ''))
+            );
+            for (const item of staleUnified) {
+                let q = supabaseClient.from('inventario').delete().eq('producto_id', prodTextId).eq('local_id', item.local_id).eq('talla', item.talla);
+                if (!item.color) {
+                    await q.is('color', null);
+                    await supabaseClient.from('inventario').delete().eq('producto_id', prodTextId).eq('local_id', item.local_id).eq('talla', item.talla).eq('color', '');
+                } else {
+                    await q.eq('color', item.color);
+                }
+            }
         }
 
-        // 2. Local 01
-        const ops01 = tallasData.map(t => ({
-            id_producto: prodTextId,
-            talla: t.talla,
-            cantidad: t.local01
-        }));
-        if (ops01.length > 0) {
-            const { error: err01 } = await supabaseClient.from('inventario_01').upsert(ops01, { onConflict: 'id_producto, talla' });
-            if (err01) { console.error('Error stock 01', err01); showToast('Error guardando stock Local 01', 'warning'); }
+        for (const i of inventarioData) {
+            for (const sede of sedes) {
+                await supabaseClient.from('inventario').upsert({
+                    producto_id: prodTextId,
+                    local_id: sede.id,
+                    talla: i.talla,
+                    color: i.color || '',
+                    cantidad: i[sede.key],
+                    ultima_actualizacion: new Date().toISOString()
+                }, { onConflict: 'producto_id, local_id, talla, color' });
+            }
         }
 
-        // 3. Jordán
-        const opsJordan = tallasData.map(t => ({
-            id_producto: prodTextId,
-            talla: t.talla,
-            cantidad: t.jordan
-        }));
-        if (opsJordan.length > 0) {
-            const { error: errJ } = await supabaseClient.from('inventario_jordan').upsert(opsJordan, { onConflict: 'id_producto, talla' });
-            if (errJ) { console.error('Error stock Jordán', errJ); showToast('Error guardando stock Jordán', 'warning'); }
-        }
-
-        showToast('Producto guardado', 'success');
-        removerPreview('producto'); // Limpiar imagen temporal
+        showToast('Producto y Stock guardados correctamente');
         cancelarFormProducto();
         cargarProductos();
 
-        // Refrescar categorías por si acaso cambió el nombre de una o se añadió nueva
-        if (typeof cargarCategoriasSelect === 'function') cargarCategoriasSelect();
-
-    } catch (e) {
-        console.error(e);
-        showToast('Error guardar: ' + e.message, 'error');
+    } catch (err) {
+        console.error('Error guardando producto:', err);
+        showToast('Error al guardar: ' + err.message, 'error');
     } finally {
         if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerHTML = 'Guardar Producto'; }
     }
@@ -944,23 +1000,8 @@ function removerPreview(tipo) {
     }
 }
 
-async function subirImagenSupabase(file, bucket) {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-    const filePath = fileName;
-
-    const { data, error } = await supabaseClient.storage
-        .from(bucket)
-        .upload(filePath, file);
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabaseClient.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
-    return publicUrl;
-}
+// La función subirImagenSupabase ha sido reemplazada por window.subirImagen (en admin.js)
+// para mantener la consistencia y evitar duplicidad de lógica.
 
 window.handleFileSelect = handleFileSelect;
 window.removerPreview = removerPreview;
@@ -982,8 +1023,16 @@ async function editarProducto(id) {
 
     await cargarProveedoresEnSelectProducto(p.proveedor);
 
+    // Cargar Colores y Fotos
+    document.getElementById('containerColoresFotos').innerHTML = '';
     if (p.variantes && Array.isArray(p.variantes)) {
-        document.getElementById('productoVariantes').value = p.variantes.join(', ');
+        p.variantes.forEach(v => {
+            if (typeof v === 'string') {
+                agregarFilaColor(v, '');
+            } else {
+                agregarFilaColor(v.color, v.url);
+            }
+        });
     }
 
     document.getElementById('productoPrecio').value = p.precio;
@@ -1010,53 +1059,59 @@ async function editarProducto(id) {
 
     // CARGAR TALLAS Y STOCK
     // Consultamos las tablas de inventario para este producto
-    document.getElementById('tbodyTallasStock').innerHTML = '<tr><td colspan="5" class="text-center">Cargando inventario...</td></tr>';
+    document.getElementById('tbodyTallasStock').innerHTML = '<tr><td colspan="6" class="text-center">Cargando inventario...</td></tr>';
 
     try {
         // Obtenemos id_producto (texto) si existe, o usamos el ID numérico/UUID como fallback
         const idProd = p.id_producto || p.id;
 
         const [invA, invL, invJ] = await Promise.all([
-            supabaseClient.from('inventario_alcala').select('talla, cantidad').eq('id_producto', idProd),
-            supabaseClient.from('inventario_01').select('talla, cantidad').eq('id_producto', idProd),
-            supabaseClient.from('inventario_jordan').select('talla, cantidad').eq('id_producto', idProd)
+            supabaseClient.from('inventario_alcala').select('talla, color, cantidad').eq('id_producto', idProd),
+            supabaseClient.from('inventario_01').select('talla, color, cantidad').eq('id_producto', idProd),
+            supabaseClient.from('inventario_jordan').select('talla, color, cantidad').eq('id_producto', idProd)
         ]);
 
-        // Unificar tallas
-        const tallasMap = new Set();
-        let totalA = 0, totalL = 0, totalJ = 0;
+        // Unificar tallas y colores
+        const combinaciones = new Set();
+        (invA.data || []).forEach(i => combinaciones.add(JSON.stringify({ t: i.talla, c: i.color || '' })));
+        (invL.data || []).forEach(i => combinaciones.add(JSON.stringify({ t: i.talla, c: i.color || '' })));
+        (invJ.data || []).forEach(i => combinaciones.add(JSON.stringify({ t: i.talla, c: i.color || '' })));
 
-        (invA.data || []).forEach(i => { tallasMap.add(i.talla); totalA += (i.cantidad || 0); });
-        (invL.data || []).forEach(i => { tallasMap.add(i.talla); totalL += (i.cantidad || 0); });
-        (invJ.data || []).forEach(i => { tallasMap.add(i.talla); totalJ += (i.cantidad || 0); });
+        // Calcular Totales por Sede para los inputs legacy (visibilidad y backup)
+        const totalA = (invA.data || []).reduce((acc, i) => acc + (parseInt(i.cantidad) || 0), 0);
+        const totalL = (invL.data || []).reduce((acc, i) => acc + (parseInt(i.cantidad) || 0), 0);
+        const totalJ = (invJ.data || []).reduce((acc, i) => acc + (parseInt(i.cantidad) || 0), 0);
 
-        // Llenar inputs legacy para referencia visual
         if (document.getElementById('stockAlcala')) document.getElementById('stockAlcala').value = totalA;
         if (document.getElementById('stockLocal01')) document.getElementById('stockLocal01').value = totalL;
         if (document.getElementById('stockJordan')) document.getElementById('stockJordan').value = totalJ;
+        if (document.getElementById('stockDigital')) document.getElementById('stockDigital').value = p.stock_digital || 0;
 
         document.getElementById('tbodyTallasStock').innerHTML = '';
 
-        if (tallasMap.size === 0) {
-            // Si no hay datos detallados de tallas, asumimos que es un producto "Único" o legado
-            // y usamos los totales encontrados.
-            // Si todo es 0, igual mostramos la fila para que puedan agregar stock.
-            agregarFilaTalla('Única', totalA, totalL, totalJ);
+        if (combinaciones.size === 0) {
+            // Si no hay datos detallados de tallas, lo tratamos como producto simple
+            // Usamos los totales encontrados para pre-llenar la fila Única
+            agregarFilaTalla('Única', '', totalA, totalL, totalJ);
         } else {
             // Ordenar tallas si es posible (alfabético o numérico)
-            const tallasOrdenadas = Array.from(tallasMap).sort();
+            const tallasColoresOrdenadas = Array.from(combinaciones).map(s => JSON.parse(s)).sort((a, b) => {
+                const compT = (a.t || '').toString().localeCompare((b.t || '').toString());
+                if (compT !== 0) return compT;
+                return (a.c || '').toString().localeCompare((b.c || '').toString());
+            });
 
-            tallasOrdenadas.forEach(talla => {
-                const sA = (invA.data || []).find(i => i.talla === talla)?.cantidad || 0;
-                const sL = (invL.data || []).find(i => i.talla === talla)?.cantidad || 0;
-                const sJ = (invJ.data || []).find(i => i.talla === talla)?.cantidad || 0;
-                agregarFilaTalla(talla, sA, sL, sJ);
+            tallasColoresOrdenadas.forEach(comb => {
+                const sA = (invA.data || []).find(i => i.talla === comb.t && (i.color || '') === comb.c)?.cantidad || 0;
+                const sL = (invL.data || []).find(i => i.talla === comb.t && (i.color || '') === comb.c)?.cantidad || 0;
+                const sJ = (invJ.data || []).find(i => i.talla === comb.t && (i.color || '') === comb.c)?.cantidad || 0;
+                agregarFilaTalla(comb.t, comb.c, sA, sL, sJ);
             });
         }
 
     } catch (e) {
         console.error('Error cargando stock detallado:', e);
-        document.getElementById('tbodyTallasStock').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error cargando stock</td></tr>';
+        document.getElementById('tbodyTallasStock').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error cargando stock</td></tr>';
     }
 }
 

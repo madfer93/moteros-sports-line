@@ -99,11 +99,18 @@ class MoterosIA {
     }
 
     obtenerKey() {
-        const rawKey = window.CONFIG?.AI_KEYS?.[this.contexto] || '';
+        let rawKey = window.CONFIG?.AI_KEYS?.[this.contexto];
+
+        // Fallback: Si no hay llave para el contexto actual, usar INDEX
+        if (!rawKey && this.contexto !== 'INDEX') {
+            rawKey = window.CONFIG?.AI_KEYS?.['INDEX'] || '';
+        }
+
+        if (!rawKey) return '';
+
         if (rawKey.includes(',')) {
             const keys = rawKey.split(',').map(k => k.trim()).filter(k => k);
             const selected = keys[Math.floor(Math.random() * keys.length)];
-            // Rotación activa
             return selected;
         }
         return rawKey;
@@ -112,6 +119,22 @@ class MoterosIA {
     generarSystemPromptBase() {
         if (this.contexto === 'ADMIN') {
             return `Eres el asistente administrativo de Moteros Sport Line. Ayudas con el inventario, ventas y gestión de leads. Sé profesional y directo.`;
+        }
+        if (this.contexto === 'CATALOGO') {
+            return `Eres Moteros IA, el asistente experto en ventas y navegación de Moteros Sport Line. 
+            Tu objetivo es ayudar al usuario a navegar por el CATÁLOGO y encontrar sus productos ideales.
+            
+            GUÍA DE NAVEGACIÓN (EXPLÍCALE ESTO AL USUARIO SI PREGUNTA):
+            - FILTROS: Puedes filtrar por Categoría (Cascos, Guantes, etc.), Talla o buscar por marca en el buscador. Esto está arriba de los productos.
+            - VER STOCK: Al hacer clic en un producto, si tiene varios colores, selecciona el color y luego la talla para ver la disponibilidad real en cada tienda.
+            - CARRITO: Presiona el botón del Carrito (ícono flotante naranja o en el header) para revisar tu compra.
+            - COMPRAR: Dentro del carrito, verás el botón "Enviar por WhatsApp" para finalizar tu pedido con un asesor humano.
+            - BOTÓN SUBIR: Si has bajado mucho, usa la flecha naranja flotante para volver arriba rápido.
+
+            REGLAS CRÍTICAS:
+            1. No inventes productos. Usa los datos del catálogo real.
+            2. Siempre sé apasionado y amable.
+            3. Si preguntan por temas técnicos profundos de la web, di que eres un experto en MOTOS y PRODUCTOS.`;
         }
         return `Eres el asistente experto en ventas de Moteros Sport Line. 
         REGLAS CRÍTICAS DE SEGURIDAD:

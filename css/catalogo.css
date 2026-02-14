@@ -37,7 +37,7 @@ body {
     background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
     color: white;
     padding: 1.5rem 0;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -100,7 +100,7 @@ body {
     background: white;
     padding: 2.5rem 0;
     margin: 2rem 0;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .filtros-title {
@@ -183,7 +183,7 @@ body {
     background: white;
     border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     height: 100%;
@@ -193,13 +193,14 @@ body {
 
 .producto-card:hover {
     transform: translateY(-10px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
 }
 
 .producto-imagen-wrapper {
     position: relative;
     width: 100%;
-    padding-top: 75%; /* Aspect ratio 4:3 */
+    padding-top: 75%;
+    /* Aspect ratio 4:3 */
     overflow: hidden;
     background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
 }
@@ -232,6 +233,28 @@ body {
     letter-spacing: 0.5px;
     z-index: 2;
     box-shadow: 0 2px 10px rgba(255, 107, 0, 0.3);
+}
+
+.badge-agotado {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    background: rgba(220, 38, 38, 0.9);
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border: 2px solid white;
+    font-size: 1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    z-index: 5;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.producto-agotado {
+    filter: grayscale(1) opacity(0.5);
 }
 
 .producto-info {
@@ -313,7 +336,7 @@ body {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0,0,0,0.7);
+    background-color: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(5px);
 }
 
@@ -333,7 +356,7 @@ body {
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: modalSlideIn 0.3s ease-out;
 }
 
@@ -342,6 +365,7 @@ body {
         opacity: 0;
         transform: translateY(-50px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -363,7 +387,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     transition: var(--transition);
 }
 
@@ -388,7 +412,7 @@ body {
 .detalle-imagen img {
     width: 100%;
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .detalle-info {
@@ -616,61 +640,61 @@ body {
     .nav {
         display: none;
     }
-    
+
     .header .container {
         justify-content: center;
     }
-    
+
     .filtros-container {
         flex-direction: column;
         width: 100%;
     }
-    
+
     .filtros-container select,
     .filtros-container input,
     .btn-limpiar {
         width: 100%;
     }
-    
+
     .productos-grid {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
         gap: 1.5rem;
     }
-    
+
     .producto-nombre {
         font-size: 1.1rem;
     }
-    
+
     .producto-precio {
         font-size: 1.5rem;
     }
-    
+
     .detalle-container {
         padding: 2rem 1rem;
     }
-    
+
     .detalle-titulo {
         font-size: 1.8rem;
     }
-    
+
     .detalle-precio {
         font-size: 2rem;
     }
-    
+
     .carrito-item {
         flex-direction: column;
         align-items: flex-start;
     }
-    
+
     .carrito-item-controls {
         width: 100%;
         justify-content: space-between;
     }
-    
+
     .carrito-acciones {
         flex-direction: column;
     }
-    
+
     .carrito-acciones button {
         width: 100%;
     }
@@ -680,15 +704,36 @@ body {
     .productos-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .logo h1 {
         font-size: 1.2rem;
     }
-    
+
     .cart-btn {
         font-size: 0.9rem;
         padding: 0.6rem 1rem;
     }
 }
+
 /* Variant Chips */
-.variant-chip { padding: 0.5rem 1rem; border: 2px solid #e2e8f0; border-radius: 2rem; background: white; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; } .variant-chip:hover { border-color: #ea580c; background: #fff7ed; color: #ea580c; } .variant-chip.selected { background: #ea580c; color: white; border-color: #ea580c; }
+.variant-chip {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 2rem;
+    background: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.variant-chip:hover {
+    border-color: #ea580c;
+    background: #fff7ed;
+    color: #ea580c;
+}
+
+.variant-chip.selected {
+    background: #ea580c;
+    color: white;
+    border-color: #ea580c;
+}

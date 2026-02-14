@@ -36,6 +36,7 @@
     <link rel="stylesheet" href="css/premium.css">
 
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/ai-widget.css">
 
     <style>
         :root {
@@ -609,7 +610,8 @@
         .whatsapp-float {
             position: fixed;
             bottom: 2rem;
-            right: 2rem;
+            left: 2rem;
+            right: auto;
             width: 60px;
             height: 60px;
             background: #25D366;
@@ -638,6 +640,136 @@
             50% {
                 transform: translateY(-8px);
             }
+        }
+
+        /* Botón Subir Arriba */
+        .scroll-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+            z-index: 998;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+            border: none;
+            font-size: 1.2rem;
+        }
+
+        .scroll-top.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-5px);
+            background: var(--primary-hover);
+            box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
+        }
+
+        /* Carrito Flotante (Estilo Index) */
+        .cart-floating {
+            position: fixed;
+            bottom: 12rem;
+            right: 2rem;
+            width: 56px;
+            height: 56px;
+            background: var(--primary);
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4);
+            cursor: pointer;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        .cart-floating:hover {
+            transform: scale(1.1);
+        }
+
+        .cart-floating-icon {
+            font-size: 24px;
+        }
+
+        .cart-floating-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 10px;
+            border: 2px solid white;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        @keyframes bounceIn {
+            from {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+
+            50% {
+                opacity: 0.9;
+                transform: scale(1.1);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Ajustes de posición para botones flotantes */
+        .whatsapp-float {
+            bottom: 2rem !important;
+            left: 2rem !important;
+            right: auto !important;
+            width: 56px !important;
+            height: 56px !important;
+        }
+
+        /* Stack Derecho (Subir -> IA -> Carrito) */
+        .scroll-top {
+            bottom: 2rem !important;
+            right: 2rem !important;
+            width: 56px !important;
+            height: 56px !important;
+            z-index: 9998 !important;
+        }
+
+        .ai-fab-container {
+            bottom: 7rem !important;
+            right: 2rem !important;
+            z-index: 9999 !important;
+        }
+
+        .ai-chat-window:not(.admin-box) {
+            bottom: 12rem !important;
+            right: 2rem !important;
+            z-index: 10000 !important;
+        }
+
+        .cart-floating {
+            bottom: 12rem !important;
+            right: 2rem !important;
+            z-index: 9999 !important;
         }
 
         /* Toast notifications */
@@ -760,10 +892,6 @@
                 <span></span>
                 <span></span>
             </button>
-            <button class="cart-btn" onclick="abrirCarrito()">
-                <span>🛒</span>
-                <span><strong id="cartCount">0</strong> items</span>
-            </button>
         </div>
     </header>
 
@@ -806,13 +934,23 @@
         </div>
     </section>
 
-    <!-- Modal Detalle -->
     <div id="modalDetalle" class="modal">
         <div class="modal-content">
             <button class="modal-close" onclick="cerrarModalDetalle()">❌</button>
             <div id="contenidoDetalle"></div>
         </div>
     </div>
+
+    <!-- Botón Subir Arriba -->
+    <button class="scroll-top" id="scrollTop" onclick="subirArriba()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Carrito Flotante (Igual a Index) -->
+    <button class="cart-floating" onclick="abrirCarrito()" aria-label="Ver carrito">
+        <span class="cart-floating-icon">🛒</span>
+        <span class="cart-floating-count" id="cartFloatingCount">0</span>
+    </button>
 
     <!-- Modal Carrito -->
     <div id="modalCarrito" class="modal">
@@ -915,6 +1053,25 @@
                 d="M16 0C7.163 0 0 7.163 0 16c0 2.837.736 5.496 2.021 7.805L0 32l8.469-2.012A15.94 15.94 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm8.176 22.648c-.346.971-2.024 1.855-2.782 1.971-.704.108-1.596.154-2.573-.161-.593-.192-1.356-.449-2.332-.877-4.099-1.798-6.776-5.978-6.978-6.254-.201-.275-1.648-2.188-1.648-4.175 0-1.986 1.043-2.963 1.413-3.369.371-.406.808-.508 1.078-.508.27 0 .539.003.775.014.248.012.581-.094.909.694.346.831 1.177 2.871 1.28 3.078.104.207.173.449.035.724-.139.275-.207.449-.415.69-.207.242-.437.539-.624.724-.207.207-.424.432-.183.848.242.415 1.072 1.77 2.303 2.865 1.582 1.409 2.917 1.848 3.331 2.054.415.207.656.173.898-.104.242-.276 1.043-1.219 1.321-1.636.277-.415.553-.346.932-.207.38.138 2.399 1.132 2.813 1.337.415.207.69.311.794.483.103.173.103.986-.243 1.957z" />
         </svg>
     </a>
+    <script>
+        // Lógica Botón Subir Arriba
+        const btnScrollTop = document.getElementById('scrollTop');
+
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                btnScrollTop.classList.add('active');
+            } else {
+                btnScrollTop.classList.remove('active');
+            }
+        });
+
+        function subirArriba() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+    </script>
     <script src="js/security.js"></script>
 </body>
 
