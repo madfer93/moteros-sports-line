@@ -617,9 +617,14 @@ async function verDetalle(id) {
     };
 
     // Renderizar Colores
-    const colorMap = { 'negro': '#000', 'blanco': '#fff', 'rojo': '#ef4444', 'azul': '#3b82f6', 'verde': '#22c55e', 'amarillo': '#eab308' }; // Simplificado para brevedad
+    // Renderizar Colores
+    const colorMap = { 'negro': '#000', 'blanco': '#fff', 'rojo': '#ef4444', 'azul': '#3b82f6', 'verde': '#22c55e', 'amarillo': '#eab308', 'dorado': '#ffd700', 'humo': '#555' };
     const contenedorColores = document.getElementById('contenedorVariantes');
-    const coloresUnicos = Array.from(new Set(stockReal.map(s => s.color))).filter(Boolean);
+
+    // Prioridad: Colores definidos en variantes del producto, luego los encontrados en stock
+    const coloresVariantes = (productoActual.variantes || []).map(v => v.color).filter(Boolean);
+    const coloresStock = stockReal.map(s => s.color).filter(Boolean);
+    const coloresUnicos = Array.from(new Set([...coloresVariantes, ...coloresStock]));
 
     coloresUnicos.forEach(color => {
         const btn = document.createElement('button');
@@ -651,41 +656,30 @@ async function verDetalle(id) {
     window.actualizarTallasPorColor = (color, stock) => {
         const container = document.getElementById('contenedorTallas');
         container.innerHTML = '';
-        const tallas = Array.from(new Set(stock.filter(s => s.color === color).map(s => s.talla))).filter(Boolean);
+
+        // Tallas para el color específico
+        let tallas = Array.from(new Set(stock.filter(s => s.color === color).map(s => s.talla))).filter(Boolean);
+
+        // Fallback: si no hay tallas para ese color pero hay tallas globales (color vacio)
+        if (tallas.length === 0) {
+            tallas = Array.from(new Set(stock.filter(s => !s.color || s.color === '').map(s => s.talla))).filter(Boolean);
+        }
 
         if (tallas.length === 0) {
             container.innerHTML = '<span style="color:#64748b; font-size:0.9rem;">Estándar</span>';
-            document.getElementById('tallaSeleccionada').value = ''; // Clear talla selection
+            document.getElementById('tallaSeleccionada').value = '';
         } else {
             tallas.forEach(t => {
                 const btn = document.createElement('button');
                 btn.className = 'variant-chip talla';
                 btn.textContent = t;
-                btn.style.cssText = `
-                    padding: 0.5rem 1rem;
-                    border: 2px solid #e2e8f0;
-                    border-radius: 8px;
-                    background: white;
-                    cursor: pointer;
-                    font-size: 0.9rem;
-                    transition: all 0.2s;
-                    min-width: 40px;
-                    text-align: center;
-                    color: black;
-                `;
+                btn.style.cssText = `padding: 0.5rem 1rem; border: 2px solid #e2e8f0; border-radius: 8px; background: white; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; min-width: 40px; text-align: center; color: black;`;
 
                 btn.onclick = () => {
-                    // Reset visual selection tallas
                     document.querySelectorAll('#contenedorTallas .variant-chip').forEach(b => {
-                        b.style.borderColor = '#e2e8f0';
-                        b.style.background = 'white';
-                        b.style.color = 'black';
+                        b.style.borderColor = '#e2e8f0'; b.style.background = 'white'; b.style.color = 'black';
                     });
-                    // Select clicked
-                    btn.style.borderColor = '#ea580c';
-                    btn.style.background = '#fff7ed';
-                    btn.style.color = '#ea580c';
-
+                    btn.style.borderColor = '#ea580c'; btn.style.background = '#fff7ed'; btn.style.color = '#ea580c';
                     document.getElementById('tallaSeleccionada').value = t;
                     validarDisponibilidad(stock);
                 };
@@ -698,7 +692,15 @@ async function verDetalle(id) {
     window.validarDisponibilidad = (stock) => {
         const color = document.getElementById('colorSeleccionado').value;
         const talla = document.getElementById('tallaSeleccionada').value;
-        const matches = stock.filter(s => s.color === color && (talla ? s.talla === talla : true));
+
+        // 1. Buscar coincidencia exacta
+        let matches = stock.filter(s => s.color === color && (talla ? s.talla === talla : true));
+
+        // 2. Fallback: buscar en stock global si no hay coincidencia exacta para el color
+        if (matches.length === 0 && color !== '') {
+            matches = stock.filter(s => (!s.color || s.color === '') && (talla ? s.talla === talla : true));
+        }
+
         const totalStock = matches.reduce((sum, s) => sum + (s.cantidad || 0), 0);
         const textArea = document.getElementById('disponibilidadTexto');
         const btnAdd = document.getElementById('btnAgregarCarrito');
@@ -709,19 +711,16 @@ async function verDetalle(id) {
             textArea.style.color = '#16a34a';
             btnAdd.disabled = false;
             cantidadInput.max = totalStock;
-            if (parseInt(cantidadInput.value) > totalStock) {
-                cantidadInput.value = totalStock;
-            }
+            if (parseInt(cantidadInput.value) > totalStock) cantidadInput.value = totalStock;
         } else {
             textArea.textContent = '❌ No disponible en esta combinación';
             textArea.style.color = '#ef4444';
             btnAdd.disabled = true;
             cantidadInput.value = 1;
-            cantidadInput.max = 1; // Prevent increasing quantity for unavailable items
+            cantidadInput.max = 1;
         }
-        document.getElementById('varianteSeleccionada').value = `${color}${talla ? ' | ' + talla : ''}`;
+        document.getElementById('varianteSeleccionada').value = `${color || 'Único'}${talla ? ' | ' + talla : ''}`;
 
-        // Update WhatsApp button with current selection
         const waBtn = document.getElementById('btnWhatsappDetalle');
         if (waBtn && typeof productoActual !== 'undefined') {
             const text = `¡Hola! Me interesa este producto: ${productoActual.nombre} (${productoActual.marca}) - ${document.getElementById('varianteSeleccionada').value} `;
@@ -729,11 +728,10 @@ async function verDetalle(id) {
         }
     };
 
-    // Initial setup for variants and stock
+    // Configuración Inicial
     if (coloresUnicos.length > 0) {
         seleccionarColor(coloresUnicos[0], true);
     } else {
-        // If no colors, try to render default tallas or show "Estándar"
         actualizarTallasPorColor('', stockReal);
         validarDisponibilidad(stockReal);
     }

@@ -607,15 +607,17 @@ function actualizarFormularioPorCategoria() {
     if (!catInput || !container) return;
 
     const cat = catInput.value.trim().toUpperCase();
+    const tieneColores = document.querySelectorAll('.input-color-nombre').length > 0;
 
-    // 1. Mostrar/Ocultar Tabla de Tallas
+    // 1. Mostrar/Ocultar Tabla de Tallas/Stock
+    // Se muestra si la categoría usa tallas O si el usuario ha definido colores
     const usaTalla = CATEGORIAS_CON_TALLA.includes(cat);
 
-    if (usaTalla) {
+    if (usaTalla || tieneColores) {
         container.style.display = 'block';
 
         // 2. Personalizar Header (Talla vs Capacidad)
-        const thTalla = document.querySelector('#tablaTallasStock th:first-child');
+        const thTalla = document.querySelector('#tablaTallasStock th:nth-child(2)'); // Segunda columna es Talla
         const placeholders = document.querySelectorAll('.input-talla');
 
         if (CATEGORIAS_MALETEROS.includes(cat)) {
@@ -627,7 +629,6 @@ function actualizarFormularioPorCategoria() {
         }
     } else {
         container.style.display = 'none';
-        // Si se oculta, asumimos que internamente será "Única" al guardar
     }
 }
 
@@ -681,12 +682,14 @@ window.agregarFilaColor = function (color = '', url = '') {
     `;
     container.appendChild(div);
     actualizarSelectsColor();
+    actualizarFormularioPorCategoria(); // Asegurar que se muestre la tabla de stock
 };
 
 window.removerFilaColor = function (index) {
     const div = document.getElementById(`fila-color-${index}`);
     if (div) div.remove();
     actualizarSelectsColor();
+    actualizarFormularioPorCategoria();
 };
 
 window.actualizarSelectsColor = function () {
