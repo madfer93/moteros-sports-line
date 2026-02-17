@@ -1605,32 +1605,23 @@
                             <p style="font-size: 0.85rem; color: #6c757d; margin-bottom: 10px;">Agregue las tallas
                                 disponibles y asigne el inventario para cada sede.</p>
 
-                            <div class="table-responsive">
+                            <div class="table-responsive"
+                                style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px;">
                                 <table class="table table-bordered table-sm" id="tablaTallasStock"
-                                    style="background: white;">
-                                    <thead class="thead-light">
+                                    style="background: white; margin-bottom: 0;">
+                                    <thead class="thead-light" style="position: sticky; top: 0; z-index: 10;">
                                         <tr>
-                                            <th style="width: 25%">Color</th>
-                                            <th style="width: 15%">Talla</th>
-                                            <th style="width: 15%">Alcalá</th>
-                                            <th style="width: 15%">Local 01</th>
-                                            <th style="width: 15%">Jordán</th>
-                                            <th style="width: 10%">Acción</th>
+                                            <th style="width: 25%; background: #f8f9fa;">Color</th>
+                                            <th style="width: 15%; background: #f8f9fa;">Talla</th>
+                                            <th style="width: 15%; background: #f8f9fa;">Alcalá</th>
+                                            <th style="width: 15%; background: #f8f9fa;">Local 01</th>
+                                            <th style="width: 15%; background: #f8f9fa;">Jordán</th>
+                                            <th style="width: 10%; background: #f8f9fa;">Acción</th>
                                         </tr>
                                     </thead>
                                     <tbody id="tbodyTallasStock">
                                         <!-- Filas dinámicas -->
                                     </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="6" class="text-right">
-                                                <button type="button" class="btn btn-sm btn-outline-primary"
-                                                    onclick="agregarFilaTalla()">
-                                                    + Agregar Talla
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </tfoot>
                                 </table>
                             </div>
                         </div>

@@ -19,6 +19,8 @@
         gtag('config', 'G-MGGG89S8XM');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="../manifest.json">
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 </head>
 
 <body>
@@ -903,7 +905,17 @@
             storageKey: 'pos_caja_alcala'
         };
     </script>
+    <script src="../js/offline-db.js"></script>
     <script src="../js/pos.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW: Registrado', reg))
+                    .catch(err => console.log('SW: Error', err));
+            });
+        }
+    </script>
 
 </body>
 

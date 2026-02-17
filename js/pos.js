@@ -63,6 +63,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cargar vendedores
     await cargarVendedores();
 
+    // Sincronización automática de ventas offline
+    if (window.OfflineManager) {
+        window.OfflineManager.sincronizarPendientes(db);
+        setInterval(() => window.OfflineManager.sincronizarPendientes(db), 60000); // Cada minuto
+    }
+
     // AUTO-LOGIN para Admin (Solicitud Usuario)
     if (TIENDA.nombre === 'Admin') {
 
@@ -148,6 +154,31 @@ async function verificarLogin() {
         errorDiv.textContent = 'Por favor ingresa usuario y contraseña';
         errorDiv.style.display = 'block';
         return;
+    }
+
+    // MODO OFFLINE: Si no hay internet, verificar en la DB local
+    if (!navigator.onLine && window.OfflineManager) {
+        console.warn('Offline: Intentando login local...');
+        const empLocal = await offlineDB.empleados
+            .where('usuario').equals(usuario)
+            .or('cedula').equals(usuario)
+            .first();
+
+        if (empLocal && empLocal.password === password) {
+            empleadoLogueado = empLocal;
+            document.getElementById('modalLoginEmpleado').classList.remove('visible');
+            abrirModalCajaConEmpleado();
+            mostrarAlerta('Sesión iniciada (Modo Offline)', 'info');
+            return;
+        } else if (empLocal) {
+            errorDiv.textContent = 'Contraseña incorrecta (Offline)';
+            errorDiv.style.display = 'block';
+            return;
+        } else {
+            errorDiv.textContent = 'Usuario no encontrado localmente';
+            errorDiv.style.display = 'block';
+            return;
+        }
     }
 
 
@@ -960,40 +991,50 @@ async function subirEvidenciaGasto(idx, input) {
 // ═══════════════════════════════════════════════════════════════
 async function cargarVendedores() {
     try {
-        const { data: empleados, error } = await db
-            .from('empleados_tienda')
-            .select('nombre')
-            .eq('activo', true)
-            .order('nombre');
-
+        const { data: vends, error } = await db.from('empleados_tienda').select('*').eq('activo', true);
         if (error) throw error;
 
-        const select = document.getElementById('vendedorVenta');
-        if (!select) return;
-
-        select.innerHTML = '<option value="">Seleccionar Vendedor...</option>';
-        (empleados || []).forEach(e => {
-            const opt = document.createElement('option');
-            opt.value = e.nombre;
-            opt.textContent = e.nombre;
-            select.appendChild(opt);
-        });
-
-        // Autoseleccionar si hay empleado logueado
-        if (typeof empleadoLogueado !== 'undefined' && empleadoLogueado) {
-            select.value = empleadoLogueado.nombre;
+        // Cachear empleados para login offline
+        if (vends && window.OfflineManager) {
+            window.OfflineManager.cachearEmpleados(vends);
         }
 
+        const select = document.getElementById('vendedorVenta');
+        if (select) {
+            select.innerHTML = '<option value="">-- Seleccionar Vendedor --</option>' +
+                vends.map(v => `<option value="${v.nombre}">${v.nombre}</option>`).join('');
+        }
     } catch (e) {
         console.error('Error cargando vendedores:', e);
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando vendedores:', e);
+        // Si estamos offline, intentar cargar de la DB local para el select
+        if (!navigator.onLine && window.OfflineManager) {
+            const vendsLocal = await offlineDB.empleados.toArray();
+            const select = document.getElementById('vendedorVenta');
+            if (select && vendsLocal.length > 0) {
+                select.innerHTML = '<option value="">-- Seleccionar Vendedor (Offline) --</option>' +
+                    vendsLocal.map(v => `<option value="${v.nombre}">${v.nombre}</option>`).join('');
+            }
+        }
     }
 }
 
 async function cargarProductos() {
     try {
+        // MODO OFFLINE
+        if (!navigator.onLine && window.OfflineManager) {
+            console.warn('Offline: Cargando productos desde IndexedDB...');
+            const prodsCached = await window.OfflineManager.obtenerProductosOffline();
+            const localFilter = TIENDA.esDigital || TIENDA.nombre === 'Admin' ? 'Todas' : (TIENDA.nombre === '01' ? '01' : (TIENDA.nombre === 'Alcalá' ? 'Alcalá' : (TIENDA.nombre === 'Jordán' ? 'Jordán' : TIENDA.nombre)));
+            const invCached = await window.OfflineManager.obtenerInventarioOffline(localFilter);
+
+            if (prodsCached.length > 0) {
+                procesarProductosOffline(prodsCached, invCached);
+                return;
+            }
+        }
+
         const { data: prods, error } = await db.from('productos')
-            .select('id, id_producto, nombre, marca, precio, variantes, url_imagen, categoria') // id_producto is vital for inventory matching
+            .select('id, id_producto, nombre, marca, precio, variantes, url_imagen, categoria')
             .eq('estado', 'Activo')
             .order('nombre');
 
@@ -1079,9 +1120,9 @@ async function cargarProductos() {
             };
         });
 
-        // Inyectar Genéricos si es Evento (Lógica existente simplificada)
-        if (TIENDA.nombre === 'Evento') {
-            // ... (Mantener lógica de genéricos si es necesario, abreviado aquí)
+        // Cachear para modo offline
+        if (window.OfflineManager) {
+            window.OfflineManager.cachearProductos(prods, inventarios);
         }
 
         renderizarProductos();
@@ -1742,7 +1783,36 @@ async function procesarVenta() {
                 imprime_tirilla: imprimeTirilla
             });
 
-            if (errorVenta) throw new Error(errorVenta.message);
+            if (errorVenta) {
+                // MODO OFFLINE: Si falla por red, intentar encolar localmente
+                if (!navigator.onLine && window.OfflineManager) {
+                    console.warn('Offline: Venta falló en Supabase, encolando localmente...');
+                    const ventaOffline = {
+                        id_venta: id_venta,
+                        local: origenReal,
+                        id_producto: item.id_producto,
+                        nombre_producto: item.nombre,
+                        cantidad: item.cantidad,
+                        precio_unitario: item.precio,
+                        total: totalItem,
+                        descuento_valor: descuentoValor,
+                        descuento_motivo: descuentoMotivo,
+                        metodo_pago: metodoPagoStr,
+                        voucher_code: voucherCode,
+                        usuario: `POS ${TIENDA.nombre}`,
+                        id_evento: TIENDA.id_evento || null,
+                        created_at: fechaVenta,
+                        cliente_id: clienteId,
+                        imprime_tirilla: imprimeTirilla
+                    };
+                    await window.OfflineManager.encolarVenta(ventaOffline);
+
+                    // Notificar pero continuar con el siguiente item (o el flujo de limpieza)
+                    mostrarAlerta('Venta guardada localmente (Sin internet)', 'info');
+                } else {
+                    throw new Error(errorVenta.message);
+                }
+            }
 
             // Descontar stock SOLO si está marcado o si no existe el checkbox (comportamiento normal)
             const checkInventario = document.getElementById('afectarInventario');
@@ -3890,3 +3960,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+/**
+ * Helper para procesar productos cargados desde IndexedDB
+ */
+function procesarProductosOffline(prodsCached, invCached) {
+    productos = prodsCached.map(p => {
+        let stockTotal = 0;
+        let stockDetallado = {};
+
+        // Filtrar inventario para este producto
+        const variantesStock = invCached.filter(i => String(i.id_producto) === String(p.id));
+
+        variantesStock.forEach(v => {
+            const cant = v.cantidad || 0;
+            const talla = v.talla || 'Única';
+            const color = v.color || '';
+            stockTotal += cant;
+            if (!stockDetallado[color]) stockDetallado[color] = {};
+            stockDetallado[color][talla] = (stockDetallado[color][talla] || 0) + cant;
+        });
+
+        return {
+            ...p,
+            id_producto: p.id,
+            stock: stockTotal,
+            stock_detallado: stockDetallado
+        };
+    });
+    renderizarProductos();
+}

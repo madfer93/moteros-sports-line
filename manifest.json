@@ -1,12 +1,12 @@
 {
     "name": "Moteros Sport Line",
-    "short_name": "Moteros",
-    "description": "La Casa Oficial de los Moteros en Villavicencio. Cascos, guantes, chaquetas y accesorios para motociclistas.",
-    "start_url": "/",
+    "short_name": "Moteros POS",
+    "description": "Sistema de Punto de Venta y Catálogo - Moteros Sport Line",
+    "start_url": "/pos/tienda-01.html",
     "display": "standalone",
-    "background_color": "#ffffff",
+    "background_color": "#1e293b",
     "theme_color": "#ff6b00",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "icons": [
         {
             "src": "https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg",
@@ -18,12 +18,15 @@
             "src": "https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg",
             "sizes": "512x512",
             "type": "image/jpeg",
-            "purpose": "any maskable"
+            "purpose": "any"
         }
     ],
-    "categories": ["shopping", "lifestyle"],
+    "categories": [
+        "business",
+        "productivity"
+    ],
     "lang": "es",
     "dir": "ltr",
     "scope": "/",
-    "id": "moteros-sport-line"
+    "id": "moteros-pos-v1"
 }

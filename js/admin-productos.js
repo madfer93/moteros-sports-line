@@ -746,17 +746,17 @@ window.agregarFilaTalla = function (talla = '', color = '', stockA = 0, stockL =
     const place = esMaletero ? 'Ej: 30L' : 'Ej: S, 40...';
 
     tr.innerHTML = `
-        <td>
-            <select class="form-control select-color-stock" style="padding: 0.5rem;">
+        <td style="padding: 4px;">
+            <select class="form-control form-control-sm select-color-stock" style="padding: 2px 4px; height: 30px;">
                 <option value="">Color...</option>
                 ${nombresColores.map(n => `<option value="${n}" ${n === color ? 'selected' : ''}>${n}</option>`).join('')}
             </select>
         </td>
-        <td><input type="text" class="form-control input-talla" value="${talla}" placeholder="${place}"></td>
-        <td><input type="number" class="form-control input-stock-alcala" value="${stockA}" min="0"></td>
-        <td><input type="number" class="form-control input-stock-local01" value="${stockL}" min="0"></td>
-        <td><input type="number" class="form-control input-stock-jordan" value="${stockJ}" min="0"></td>
-        <td><button type="button" class="btn-icon btn-danger" onclick="this.closest('tr').remove()" title="Eliminar Variantes">🗑️</button></td>
+        <td style="padding: 4px;"><input type="text" class="form-control form-control-sm input-talla" value="${talla}" placeholder="${place}" style="padding: 2px 4px; height: 30px;"></td>
+        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-alcala" value="${stockA}" min="0" style="padding: 2px 4px; height: 30px;"></td>
+        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-local01" value="${stockL}" min="0" style="padding: 2px 4px; height: 30px;"></td>
+        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-jordan" value="${stockJ}" min="0" style="padding: 2px 4px; height: 30px;"></td>
+        <td style="padding: 4px; text-align: center;"><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()" title="Eliminar Variantes" style="padding: 0 6px;">🗑️</button></td>
     `;
     tbody.appendChild(tr);
 };
@@ -1212,25 +1212,19 @@ function initStockSync() {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('input', function () {
-                const val = this.value;
+                const val = parseInt(this.value) || 0;
                 const tbody = document.getElementById('tbodyTallasStock');
                 if (!tbody) return;
                 const rows = tbody.querySelectorAll('tr');
 
-                // Solo sincronizar si hay una única fila (caso producto simple)
+                // Sincronizar SIEMPRE si hay una única fila
+                // O si todas las filas tienen talla vacía/única (caso raro pero posible)
                 if (rows.length === 1) {
                     const row = rows[0];
-                    const tallaInput = row.querySelector('.input-talla');
-                    if (tallaInput) {
-                        const tVal = tallaInput.value.trim().toLowerCase();
-                        // Si es talla única o vacía
-                        if (['única', 'unica', '', 'u'].includes(tVal)) {
-                            const targetClass = mapClass[id];
-                            if (targetClass) {
-                                const targetInput = row.querySelector(targetClass);
-                                if (targetInput) targetInput.value = val;
-                            }
-                        }
+                    const targetClass = mapClass[id];
+                    if (targetClass) {
+                        const targetInput = row.querySelector(targetClass);
+                        if (targetInput) targetInput.value = val;
                     }
                 }
             });
