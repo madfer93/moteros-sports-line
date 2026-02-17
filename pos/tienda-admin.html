@@ -5,8 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POS Admin (Histórico) | Moteros Sports Line</title>
-    <link rel="icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="icon" href="../img/logo-moteros.jpeg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../css/pos.css">
     <style>
@@ -61,8 +60,7 @@
         <div class="locked-content">
             <div id="resumenCierreCompleto" class="hidden"></div>
             <div id="pantallaAbrirCaja">
-                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                    alt="Moteros Sports Line" class="locked-logo logo-img">
+                <img src="../img/logo-moteros.jpeg" alt="Moteros Sports Line" class="locked-logo logo-img">
                 <h2>🔒 Caja Admin Cerrada</h2>
                 <p class="tienda-nombre tienda-nombre-display">Admin Histórico</p>
                 <p>Facturación Retroactiva (Enero - Febrero)</p>
@@ -87,8 +85,7 @@
                 🏍️ Abonos Deuda
             </button>
             <button id="btnAbrirCaja" class="btn btn-success" onclick="abrirModalCaja()">🔓 Abrir</button>
-            <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="abrirModalCierreSimple()">🔐
-                Cerrar</button>
+            <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="abrirModalCierreSimple()">Cerrar</button>
         </div>
     </header>
 
@@ -188,7 +185,7 @@
     <div class="container">
         <!-- Panel de Productos -->
         <div class="panel">
-            <h3 class="panel-title">📦 Catálogo General</h3>
+            <h3 class="panel-title">📦 Catalogo General</h3>
             <div class="search-box">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="inputBuscar" placeholder="Buscar producto..."
@@ -209,7 +206,7 @@
             <!-- CONTROLES HISTÓRICOS -->
             <div class="historical-controls">
                 <div style="display:flex; flex-direction:column; gap:5px;">
-                    <label>📆​ Fecha REAL de la venta:</label>
+                    <label>📅 Fecha REAL de la venta:</label>
                     <input type="datetime-local" id="fechaPersonalizada" class="historical-input">
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
@@ -235,7 +232,7 @@
             </div>
 
             <div class="seccion">
-                <h4 class="seccion-titulo">🏬 Local Origen (Para reporte)</h4>
+                <h4 class="seccion-titulo">📍 Local Origen (Para reporte)</h4>
                 <select id="origenVentaReal" class="form-control" style="font-weight:bold;">
                     <option value="Alcalá">🏪 Alcalá</option>
                     <option value="Local 01">🏬 Local 01</option>
@@ -260,7 +257,7 @@
                 <div id="metodosSeleccionados" class="metodos-seleccionados"></div>
             </div>
 
-            <!-- Voucher Code (Solo para Tarjeta/Datáfono) -->
+            <!-- Voucher Code (Solo para Tarjeta/Dat�fono) -->
             <div id="seccionVoucher" class="seccion-voucher">
                 <div class="seccion-voucher-titulo">🎫 Código de Comprobante / Voucher</div>
                 <input type="text" id="voucherCode" placeholder="Ingresa el código del voucher terminal/tarjeta">

@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS Eventos | Moteros Sports Line</title>
-    <link rel="icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <title>POS Evento | Moteros Sports Line</title>
+    <link rel="icon" href="../img/logo-moteros.jpeg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../css/pos.css">
     <!-- Google tag (gtag.js) -->
@@ -28,16 +27,17 @@
     <!-- ====== PANTALLA BLOQUEADA - CAJA CERRADA ====== -->
     <div id="lockedScreen" class="locked-screen">
         <div class="locked-content">
+            <!-- Resumen de cierre (se muestra después de cerrar caja) -->
             <div id="resumenCierreCompleto" class="hidden"></div>
 
+            <!-- Pantalla inicial para abrir caja -->
             <div id="pantallaAbrirCaja">
-                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                    alt="Moteros Sports Line" class="locked-logo logo-img">
-                <h2>🔒 Caja de Evento Cerrada</h2>
+                <img src="../img/logo-moteros.jpeg" alt="Moteros Sports Line" class="locked-logo logo-img">
+                <h2>🔒 Caja Cerrada</h2>
                 <p class="tienda-nombre tienda-nombre-display">Evento</p>
-                <p>Abre la caja para comenzar a vender en el evento</p>
+                <p>Abre la caja para comenzar a vender</p>
                 <button class="btn btn-success btn-large" onclick="abrirModalCaja()">
-                    🔓 Abrir Caja de Evento
+                    🔓 Abrir Caja
                 </button>
             </div>
         </div>
@@ -46,10 +46,9 @@
     <!-- ====== HEADER ====== -->
     <header class="header">
         <div class="header-left">
-            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                alt="Logo" class="header-logo logo-img">
+            <img src="../img/logo-moteros.jpeg" alt="Logo" class="header-logo logo-img">
             <div>
-                <h1>🏍️​ Moteros - <span class="tienda-nombre-display">Evento</span></h1>
+                <h1>🏪 Moteros - <span class="tienda-nombre-display">Evento</span></h1>
             </div>
         </div>
         <div class="header-info">
@@ -57,35 +56,33 @@
             <span id="cajaBadge" class="badge badge-cerrada">🔒 Cerrada</span>
             <button class="btn btn-warning" onclick="abrirModalServicios()" title="Servicios (Lavados, Arreglos)">🛠️
                 Servicios</button>
-            <button class="btn btn-info" onclick="abrirModalProveedoresPOS()" title="Pagos a Proveedores">🧾 Pagos
-                Prov.</button>
             <button class="btn btn-secondary" onclick="abrirModalTraslado()" title="Trasladar Mercancía">🚚
                 Traslados</button>
-            <button class="btn btn-primary" onclick="abrirModalAbonoCredito()" title="Abonos Crédito Motero">🏍️
-                Pago Crédito</button>
+            <button class="btn btn-primary" onclick="abrirModalAbonoCredito()" title="Abonos Crédito Motero">🏍️ Pago
+                Crédito</button>
             <button class="btn btn-warning" onclick="abrirModalAdelantoNomina()" title="Adelanto de Nómina">💵
                 Adelanto</button>
             <button id="btnAbrirCaja" class="btn btn-success" onclick="abrirModalCaja()">🔓 Abrir</button>
-            <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">🔐 Cerrar
+            <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">🔒 Cerrar
                 Caja</button>
         </div>
     </header>
 
-    <!-- ====== Alertas ====== -->
+    <!-- Alertas -->
     <div id="alertas"></div>
 
     <!-- ====== CONTENIDO PRINCIPAL ====== -->
     <div class="container">
         <!-- Panel de Productos -->
         <div class="panel">
-            <h3 class="panel-title">📦 Inventario del Evento</h3>
+            <h3 class="panel-title">📦 Productos</h3>
             <div class="search-box">
                 <span class="search-icon">🔍</span>
-                <input type="text" class="search-input" id="inputBuscar" placeholder="Buscar por nombre o código..."
-                    oninput="filtrarProductos()">
+                <input type="text" class="search-input" id="inputBuscar"
+                    placeholder="Buscar por nombre, marca o código..." oninput="filtrarProductos()">
             </div>
             <div id="listaProductos" class="productos-lista">
-                <div class="carrito-vacio">Cargando productos del evento...</div>
+                <div class="carrito-vacio">Cargando productos...</div>
             </div>
         </div>
 
@@ -102,19 +99,78 @@
 
             <!-- Destino -->
             <div class="seccion">
-                <h4 class="seccion-titulo">📍 Entrega</h4>
+                <h4 class="seccion-titulo">📍 Destino de la Venta</h4>
                 <select id="selectDestino" onchange="actualizarCredito()">
-                    <option value="tienda">🎪 Entrega en Evento</option>
-                    <option value="digital">📦 Para Envío (Digital)</option>
+                    <option value="tienda">🏪 Venta en Tienda (cliente se lleva)</option>
+                    <option value="digital">📦 Transferir a Tienda Digital (envío)</option>
                 </select>
             </div>
 
             <!-- Selector de Vendedor -->
             <div class="seccion">
-                <h4 class="seccion-titulo">👤 Personal en Evento</h4>
+                <h4 class="seccion-titulo">👤 Vendedor</h4>
                 <select id="vendedorVenta" class="vendedor-select">
-                    <option value="">Cargando personal...</option>
+                    <option value="">Cargando vendedores...</option>
                 </select>
+            </div>
+
+            <!-- Selector de Cliente -->
+            <div class="seccion">
+                <h4 class="seccion-titulo">👤 Cliente</h4>
+                <div class="cliente-selector">
+                    <button id="btnConsumidorFinal" class="btn-cliente-tipo active"
+                        onclick="seleccionarTipoCliente('consumidor')">
+                        🛒 Consumidor Final
+                    </button>
+                    <button id="btnClienteRegistrado" class="btn-cliente-tipo"
+                        onclick="seleccionarTipoCliente('registrado')">
+                        👤 Cliente Registrado
+                    </button>
+                </div>
+
+                <!-- Búsqueda de cliente (oculto por defecto) -->
+                <div id="seccionBuscarCliente" style="display:none;">
+                    <div class="search-box" style="margin-top:1rem;">
+                        <input type="text" id="inputCedulaCliente" placeholder="Buscar por cédula..."
+                            onkeyup="if(event.key==='Enter') buscarCliente()" style="flex:1;">
+                        <button onclick="buscarCliente()" class="btn btn-primary"
+                            style="padding:0.75rem 1rem;">🔍</button>
+                    </div>
+
+                    <!-- Info del cliente encontrado -->
+                    <div id="infoClienteEncontrado"
+                        style="display:none; margin-top:1rem; padding:1rem; background:#f0f9ff; border-radius:8px;">
+                        <input type="hidden" id="clienteSeleccionadoId">
+                        <div style="font-weight:700; color:#0369a1; font-size:1.1rem;" id="clienteNombreDisplay"></div>
+                        <div style="font-size:0.9rem; color:#64748b; margin-top:0.5rem;">
+                            <span id="clienteTelefonoDisplay"></span> |
+                            <span id="clienteCedulaDisplay"></span>
+                        </div>
+                        <div style="font-size:0.85rem; color:#059669; margin-top:0.3rem;">
+                            <span id="clienteEstadisticasDisplay"></span>
+                        </div>
+                        <div id="clientePromoDisplay"
+                            style="display:none; margin-top:0.75rem; padding:0.75rem; background:#fef3c7; border-radius:6px; font-size:0.9rem; border-left:4px solid #f59e0b;">
+                            🎁 <strong>Descuento activo:</strong> <span id="clientePromoDescuento"
+                                style="color:#d97706; font-weight:700;"></span>
+                        </div>
+                    </div>
+
+                    <button onclick="abrirModalRegistroCliente()" class="btn btn-success"
+                        style="margin-top:1rem; width:100%; padding:0.875rem; font-weight:600;">
+                        ➕ Registrar Nuevo Cliente
+                    </button>
+                </div>
+
+                <!-- Checkbox para imprimir tirilla -->
+                <div id="seccionImprimirTirilla" style="display:none; margin-top:1rem;">
+                    <label
+                        style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; padding:0.75rem; background:#f8fafc; border-radius:6px; border:2px solid #e2e8f0; transition:all 0.2s;">
+                        <input type="checkbox" id="checkImprimirTirilla"
+                            style="width:18px; height:18px; cursor:pointer;">
+                        <span style="font-weight:500;">🖨️ Imprimir tirilla con datos del cliente</span>
+                    </label>
+                </div>
             </div>
 
             <!-- Métodos de Pago -->
@@ -133,20 +189,76 @@
                     <div class="metodo-btn" data-metodo="Daviplata" onclick="toggleMetodo(this)">
                         <span class="icono">📱</span>Daviplata
                     </div>
-                    <div class="metodo-btn" data-metodo="Tarjeta" onclick="toggleMetodo(this)">
-                        <span class="icono">💳</span>Tarjeta
+                    <div class="metodo-btn" data-metodo="Pago Proveedor" onclick="toggleMetodo(this)">
+                        <span class="icono">🏭</span>Pago Proveedor
+                    </div>
+                    <div class="metodo-btn" data-metodo="Datafono" onclick="toggleMetodo(this)">
+                        <span class="icono">🖥️</span>Datáfono
                     </div>
                     <div class="metodo-btn" data-metodo="Addi" onclick="toggleMetodo(this)">
-                        <span class="icono">🅰️​</span>Addi
+                        <span class="icono">🅰️</span>Addi
                     </div>
                     <div class="metodo-btn" data-metodo="Sistecredito" onclick="toggleMetodo(this)">
-                        <span class="icono">💳</span>Sistecrédito
+                        <span class="icono">📋</span>Sistecrédito
                     </div>
                     <div class="metodo-btn" data-metodo="Credito Motero" onclick="toggleMetodo(this)">
                         <span class="icono">🏍️</span>Crédito Motero
                     </div>
+                    <div class="metodo-btn" data-metodo="Fodegas" onclick="toggleMetodo(this)">
+                        <span class="icono">⛽</span>Fodegas
+                    </div>
                 </div>
                 <div id="metodosSeleccionados" class="metodos-seleccionados"></div>
+            </div>
+
+            <!-- Panel inline Pago a Proveedor (se muestra al seleccionar método "Pago Proveedor") -->
+            <div id="seccionPagoProveedor" class="seccion-pago-proveedor" style="display:none;">
+                <h4 style="margin:0 0 0.8rem; color:#0369a1; display:flex; align-items:center; gap:0.5rem;">🏭 Pago a
+                    Proveedor</h4>
+                <div class="form-group" style="margin-bottom:0.8rem;">
+                    <label style="font-weight:600; font-size:0.85rem; color:#475569;">Proveedor *</label>
+                    <select id="selectProveedorPago" class="form-control" onchange="mostrarInfoProveedorInline()"
+                        style="width:100%; padding:0.6rem; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem;">
+                        <option value="">Seleccionar proveedor...</option>
+                    </select>
+                </div>
+                <div id="infoProveedorInline"
+                    style="display:none; background:#f0f9ff; padding:0.8rem; border-radius:8px; border:1px solid #bae6fd; margin-bottom:0.8rem;">
+                    <div style="font-weight:700; color:#0369a1; font-size:0.95rem;" id="provInlineNombre"></div>
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:0.3rem;"> 🏦 <span
+                            id="provInlineBanco"></span> - <span id="provInlineTipoCuenta"></span></div>
+                    <div style="font-size:0.9rem; font-weight:600; color:#0f172a; margin-top:0.2rem;">📋 Cuenta: <span
+                            id="provInlineCuenta"></span></div>
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:0.2rem;">👤 Titular: <span
+                            id="provInlineTitular"></span></div>
+                    <div style="font-size:0.9rem; font-weight:700; color:#ef4444; margin-top:0.3rem;">💰 Saldo
+                        Pendiente: <span id="provInlineSaldo"></span></div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.8rem;">
+                    <div class="form-group">
+                        <label style="font-weight:600; font-size:0.85rem; color:#475569;">Monto *</label>
+                        <input type="number" id="montoPagoProveedor" placeholder="$0"
+                            style="width:100%; padding:0.6rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1.1rem; font-weight:700;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight:600; font-size:0.85rem; color:#475569;">Referencia</label>
+                        <input type="text" id="refPagoProveedor" placeholder="Nro comprobante"
+                            style="width:100%; padding:0.6rem; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0.8rem;">
+                    <label style="font-weight:600; font-size:0.85rem; color:#475569;">📸 Foto del Comprobante</label>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <input type="file" id="fotoPagoProveedor" accept="image/*" capture="environment"
+                            style="flex:1; font-size:0.85rem;">
+                        <img id="previewFotoPago" src="" alt=""
+                            style="display:none; width:50px; height:50px; object-fit:cover; border-radius:6px; border:2px solid #e2e8f0;">
+                    </div>
+                </div>
+                <button class="btn btn-success btn-full" onclick="confirmarPagoProveedorInline()"
+                    style="padding:0.8rem; font-size:0.95rem; font-weight:700;">
+                    ✅ Confirmar Pago a Proveedor
+                </button>
             </div>
 
             <!-- Voucher Code (Solo para Tarjeta/Datáfono) -->
@@ -157,7 +269,7 @@
 
             <!-- Datos de Crédito -->
             <div id="datosCredito" class="datos-credito">
-                <h4>📝 Datos del Cliente</h4>
+                <h4>📝 Datos del Cliente (requerido para crédito)</h4>
                 <input type="text" id="creditoNombre" placeholder="Nombre completo *">
                 <div class="row">
                     <input type="tel" id="creditoTelefono" placeholder="Teléfono *">
@@ -168,13 +280,15 @@
                     <option value="">-- ¿Quién autoriza el crédito? --</option>
                     <option value="Gerencia">Gerencia</option>
                     <option value="Administrador">Administrador</option>
-                    <option value="Personal de Evento">Personal de Evento</option>
+                    <option value="Jefe de Tienda">Jefe de Tienda</option>
                 </select>
                 <select id="creditoCuotas">
                     <option value="1">1 Cuota (pago único)</option>
                     <option value="2">2 Cuotas</option>
                     <option value="3">3 Cuotas</option>
                     <option value="4">4 Cuotas</option>
+                    <option value="5">5 Cuotas</option>
+                    <option value="6">6 Cuotas</option>
                 </select>
             </div>
 
@@ -184,82 +298,581 @@
                 <div id="totalMonto" class="monto">$0</div>
             </div>
 
+            <!-- Botón Vender -->
             <button id="btnVender" class="btn btn-success btn-full btn-large" onclick="procesarVenta()" disabled>
                 ✅ Procesar Venta
             </button>
         </div>
     </div>
 
-    <!-- MODALES (COPIADOS DE ALCALA) -->
-    <!-- [Resto de modales: Login, Abrir Caja, Cerrar Caja, Editar Precio, Traslado, Proveedores, Adelanto, Abono Crédito, Servicios] -->
-    <!-- ... -->
-    <!-- Para ser eficientes y dado que son exactamente iguales, los incluyo aquí resumidos o tal cual -->
-
+    <!-- ===== MODAL: LOGIN EMPLEADO ===== -->
     <div id="modalLoginEmpleado" class="modal-overlay">
-        <!-- Contenido omitido por brevedad pero idéntico al original -->
         <div class="modal">
-            <h3>🔐 Iniciar Sesión</h3>
+            <h3>🔍 Iniciar Sesión</h3>
+            <p style="color:#64748b;font-size:0.9rem;margin-bottom:1.5rem;">Ingresa tus credenciales para acceder al POS
+            </p>
+            <div class="form-group">
+                <label>👤 Usuario o Cédula</label>
+                <input type="text" id="loginUsuario" placeholder="Tu usuario o número de cédula"
+                    autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>🔒 Contraseña</label>
+                <input type="password" id="loginPassword" placeholder="Tu contraseña" autocomplete="current-password">
+            </div>
             <div id="loginError" class="alert alert-danger" style="display:none;margin-bottom:1rem;"></div>
-            <div class="form-group"><label>👤 Usuario</label><input type="text" id="loginUsuario"></div>
-            <div class="form-group"><label>🔑 Contraseña</label><input type="password" id="loginPassword"></div>
-            <button class="btn btn-success btn-full" onclick="verificarLogin()">➡️ Iniciar Sesión</button>
+            <div class="modal-botones">
+                <button class="btn btn-success btn-full" onclick="verificarLogin()">➡️ Iniciar Sesión</button>
+            </div>
+            <p style="color:#94a3b8;font-size:0.8rem;margin-top:1rem;text-align:center;">
+                ¿Olvidaste tu contraseña? Contacta al administrador
+            </p>
         </div>
     </div>
 
+    <!-- ===== MODAL: ABRIR CAJA ===== -->
     <div id="modalAbrirCaja" class="modal-overlay">
         <div class="modal">
-            <h3>🔓 Abrir Caja de Evento</h3>
-            <div class="user-info-display"
-                style="margin-bottom:1rem; padding:0.5rem; background:#f8fafc; border-radius:8px;">
-                <p>👤 <strong>Usuario:</strong> <span id="nombreEmpleadoLogueado"></span></p>
-                <p>·ï¸ <strong>Cargo:</strong> <span id="cargoEmpleadoLogueado"></span></p>
-                <input type="hidden" id="vendedorNombre">
+            <h3>🔓 Abrir Caja</h3>
+            <div id="empleadoLogueado"
+                style="background:linear-gradient(135deg,#10b981,#059669);color:white;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+                <span style="font-size:1.5rem;">👤</span>
+                <div>
+                    <div style="font-weight:700;" id="nombreEmpleadoLogueado">Empleado</div>
+                    <div style="font-size:0.8rem;opacity:0.9;" id="cargoEmpleadoLogueado">Cargo</div>
+                </div>
             </div>
             <div class="form-group">
-                <label>ª Seleccionar Evento Activo</label>
-                <select id="selectEventoActivo">
-                    <option value="">-- Seleccionar --</option>
-                </select>
-                <small style="display:block; margin-top:0.25rem; color:#64748b;">Solo se muestran eventos con estado
-                    'Activo'</small>
+                <label>💵 Base de caja (dinero inicial)</label>
+                <input type="number" id="montoInicial" value="100000" min="0" placeholder="100000">
             </div>
-            <div class="form-group">
-                <label>💵 Base de caja para el evento</label>
-                <input type="number" id="montoInicial" value="0">
-            </div>
+            <input type="hidden" id="vendedorNombre">
             <div class="modal-botones">
-                <button class="btn btn-danger" onclick="cerrarSesionEmpleado()">Cerrar Sesión</button>
-                <button class="btn btn-success" onclick="confirmarAbrirCaja()">✅ Abrir Caja</button>
+                <button class="btn btn-danger" onclick="cerrarSesionEmpleado()">🚪 Cerrar Sesión</button>
+                <button class="btn btn-success" onclick="confirmarAbrirCaja()">🔓 Abrir Caja</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: CERRAR CAJA -->
+    <!-- ===== MODAL: CERRAR CAJA ===== -->
     <div id="modalCerrarCaja" class="modal-overlay">
         <div class="modal modal-large">
-            <h3>🔐 Cierre de Caja del Evento</h3>
+            <h3>🔐 Cierre de Caja</h3>
+
+            <!-- Resumen del sistema -->
             <div id="resumenCierreModal"></div>
+
+            <!-- Conteo por método -->
+            <h4 style="margin:1rem 0 0.6rem; font-size:0.9rem; color:#475569;">💵 Conteo de Dinero</h4>
             <div class="cierre-grid">
-                <div class="form-group"><label>💵 Efectivo contado</label><input type="number" id="efectivoContado">
+                <div class="form-group">
+                    <label>💵 Efectivo contado *</label>
+                    <input type="number" id="efectivoContado" min="0" placeholder="0">
                 </div>
-                <!-- Otros métodos -->
+                <div class="form-group">
+                    <label>🏦 Transferencias</label>
+                    <input type="number" id="transferenciaContado" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>📱 Nequi</label>
+                    <input type="number" id="nequiContado" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>📱 Daviplata</label>
+                    <input type="number" id="daviplataContado" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>💳 Tarjeta</label>
+                    <input type="number" id="tarjetaContado" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>🖥️ Datáfono</label>
+                    <input type="number" id="datafonoContado" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>🅰️ Addi</label>
+                    <input type="number" id="addiContado" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>📋 Sistecrédito</label>
+                    <input type="number" id="sistecreditoContado" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>📦 Fodegas</label>
+                    <input type="number" id="fodegasContado" min="0" placeholder="0">
+                </div>
+            </div>
+
+            <!-- Gastos del día -->
+            <div class="gastos-container">
+                <h4>🧾 Gastos del Día</h4>
+                <div id="gastosLista"></div>
+                <button class="btn-agregar-gasto" onclick="agregarGasto()">➕ Agregar Gasto</button>
+                <div class="gastos-total">
+                    <span>Total Gastos:</span>
+                    <span id="totalGastos">$0</span>
+                </div>
+            </div>
+
+            <!-- Dinero Sobrante - NUEVO -->
+            <div id="seccionSobrante"
+                style="margin:1rem 0; padding:1rem; background:#f0f9ff; border-radius:12px; border:1px solid #bae6fd;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin:0; color:#0369a1;">💰 Dinero Sobrante / Ajuste</h4>
+                    <span id="labelMontoSobrante" style="font-weight:700; color:#0369a1;">$0</span>
+                </div>
+                <div class="form-group" style="margin-top:0.5rem;">
+                    <label>Motivo del dinero extra (opcional)</label>
+                    <input type="text" id="motivoSobrante" placeholder="Ej: Propina, cliente no llevó cambio, etc.">
+                </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="form-group">
+                <label>📝 Observaciones (opcional)</label>
+                <textarea id="observacionesCierre" rows="2" placeholder="Notas adicionales del cierre..."></textarea>
+            </div>
+
+            <div class="modal-botones">
+                <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn btn-success" onclick="confirmarCerrarCaja()">✅ Cerrar y Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: EDITAR PRECIO ===== -->
+    <div id="modalEditarPrecio" class="modal-overlay">
+        <div class="modal">
+            <h3>Modificar Precio</h3>
+            <p id="nombreProductoEditar" style="font-weight:600; margin-bottom:1rem; color:var(--primary);"></p>
+            <div class="form-group">
+                <label>Precio original</label>
+                <input type="text" id="precioOriginal" disabled>
+            </div>
+            <div class="form-group">
+                <label>Nuevo precio *</label>
+                <input type="number" id="precioNuevo" min="0" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label>Motivo del descuento * (quién autoriza)</label>
+                <input type="text" id="motivoDescuento"
+                    placeholder="Ej: Autorizado por Gerencia - descuento cliente frecuente">
             </div>
             <div class="modal-botones">
                 <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
-                <button class="btn btn-success" onclick="confirmarCerrarCaja()">✅ Finalizar Jornada</button>
+                <button class="btn btn-success" onclick="aplicarDescuento()">✅ Aplicar</button>
             </div>
         </div>
     </div>
 
-    <!-- OTROS MODALES NECESARIOS -->
-    <!-- [Incluiré los modales básicos para que sea funcional] -->
+    <!-- ===== MODAL: TRASLADOS ===== -->
+    <div id="modalTraslado" class="modal-overlay">
+        <div class="modal" style="max-width: 450px;">
+            <h3>🚚 Trasladar Mercancía</h3>
+            <p style="margin-bottom:1rem; font-size:0.9rem; color:var(--gray);">Mueve productos de esta sede a otra
+                sucursal de forma inmediata.</p>
 
+            <div class="form-group">
+                <label>Producto a trasladar *</label>
+                <select id="trasladoProducto" class="form-control" style="width: 100%;">
+                    <option value="">Selecciona un producto...</option>
+                </select>
+            </div>
+
+            <div class="form-row" style="display:flex; gap:1rem; margin-top:1rem;">
+                <div class="form-group" style="flex:1;">
+                    <label>Sede Destino *</label>
+                    <select id="trasladoDestino" class="form-control">
+                        <option value="">Seleccionar...</option>
+                        <option value="Alcalá">Alcalá</option>
+                        <option value="01">Local 01</option>
+                        <option value="Jordán">Jordán</option>
+                        <option value="Digital">Digital</option>
+                        <option value="Evento">🎪 Evento</option>
+                    </select>
+                </div>
+                <div class="form-group" style="width:100px;">
+                    <label>Cantidad *</label>
+                    <input type="number" id="trasladoCantidad" min="1" value="1" class="form-control">
+                </div>
+            </div>
+
+            <div class="modal-botones" style="margin-top:1.5rem;">
+                <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="procesarTraslado()">🚚 Confirmar Traslado</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== MODAL: PROVEEDORES Y PAGOS ====== -->
+    <div id="modalProveedoresPOS" class="modal-overlay">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header"
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="margin:0;">🏭 Proveedores - Cuentas por Pagar</h3>
+                <button class="modal-close" onclick="cerrarModalProveedoresPOS()"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌</button>
+            </div>
+            <div class="search-box" style="margin-bottom:1rem;">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="busquedaProveedorPOS" placeholder="Buscar proveedor..."
+                    oninput="filtrarProveedoresPOS()">
+            </div>
+            <div class="table-container" style="max-height:400px; overflow-y:auto;">
+                <table class="data-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Proveedor</th>
+                            <th>Saldo Pendiente</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaProveedoresPOS"></tbody>
+                </table>
+            </div>
+            <div class="modal-botones" style="margin-top:1rem;">
+                <button class="btn btn-secondary" onclick="cerrarModalProveedoresPOS()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: REGISTRAR ABONO A PROVEEDOR -->
+    <div id="modalAbonoProveedor" class="modal-overlay">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header"
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="margin:0;">🧾 Registrar Pago a Proveedor</h3>
+                <button class="modal-close" onclick="cerrarModalAbonoProveedor()"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="abonoProveedorId">
+                <input type="hidden" id="abonoProveedorNombre">
+
+                <div class="card"
+                    style="background:#f8fafc; border:1px solid #e2e8f0; padding:1rem; margin-bottom:1rem; border-radius:8px;">
+                    <h4 id="abonoNombreDisplay" style="margin:0 0 10px 0; color:var(--primary);"></h4>
+                    <p><strong>Saldo Actual:</strong> <span id="abonoSaldoDisplay">$0</span></p>
+                    <hr style="margin:10px 0;">
+                    <p style="font-size:0.9rem;"><strong>🏦 Datos Bancarios:</strong></p>
+                    <p id="abonoBancoDisplay" style="font-size:0.9rem; color:#64748b;">-</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Monto a Pagar *</label>
+                    <input type="number" id="abonoMonto" class="form-control" placeholder="$0"
+                        style="font-size:1.2rem; font-weight:bold;">
+                </div>
+
+                <div class="form-group">
+                    <label>Método de Pago *</label>
+                    <select id="abonoMetodoPago" class="form-control">
+                        <option value="">Seleccionar...</option>
+                        <option value="Efectivo">💵 Efectivo</option>
+                        <option value="Transferencia">🏭 Transferencia</option>
+                        <option value="Nequi">📱 Nequi</option>
+                        <option value="Daviplata">📱 Daviplata</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Referencia / Comprobante</label>
+                    <input type="text" id="abonoReferencia" class="form-control"
+                        placeholder="Ej: Transferencia #123456">
+                </div>
+
+                <div class="form-group">
+                    <label>Notas / Observaciones</label>
+                    <input type="text" id="abonoNotas" class="form-control"
+                        placeholder="Ej: Pago parcial factura FAC-001">
+                </div>
+            </div>
+            <div class="modal-botones" style="margin-top:1rem;">
+                <button class="btn btn-success btn-large" onclick="confirmarAbonoProveedor()">✅ Confirmar Pago</button>
+                <button class="btn btn-secondary" onclick="cerrarModalAbonoProveedor()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== MODAL: REGISTRAR ADELANTO DE NÓMINA ====== -->
+    <div id="modalAdelantoNomina" class="modal-overlay">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header"
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="margin:0;">💵 Registrar Adelanto de Nómina</h3>
+                <button class="modal-close" onclick="cerrarModalAdelantoNomina()"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Empleado *</label>
+                    <select id="adelantoEmpleadoId" class="form-control">
+                        <option value="">Seleccionar empleado...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Monto del Adelanto *</label>
+                    <input type="number" id="adelantoMonto" class="form-control" placeholder="$0"
+                        style="font-size:1.2rem; font-weight:bold;">
+                </div>
+
+                <div class="form-group">
+                    <label>¿Quién Autoriza? *</label>
+                    <input type="text" id="adelantoAutoriza" class="form-control"
+                        placeholder="Ej: Gerencia / Pedro Pérez">
+                </div>
+
+                <div class="form-group">
+                    <label>Motivo / Observaciones</label>
+                    <textarea id="adelantoMotivo" class="form-control" rows="2"
+                        placeholder="Ej: Adelanto para transporte"></textarea>
+                </div>
+            </div>
+            <div class="modal-botones" style="margin-top:1.5rem;">
+                <button class="btn btn-success btn-large" onclick="guardarAdelantoNomina()">✅ Confirmar
+                    Adelanto</button>
+                <button class="btn btn-secondary" onclick="cerrarModalAdelantoNomina()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== MODAL ABONO CRÉDITO MOTERO ====== -->
+    <div id="modalAbonoCredito" class="modal-overlay">
+        <div class="modal">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:1rem; margin-bottom:1.5rem;">
+                <h3 style="margin:0; color:var(--dark); display:flex; align-items:center; gap:0.5rem;">
+                    <span style="font-size:1.5rem;">🏍️</span> Abono a Deuda / Crédito
+                </h3>
+                <button onclick="cerrarModalAbonoCredito()"
+                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div style="margin-bottom:1.5rem;">
+                    <label
+                        style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">BUSCAR
+                        DEUDOR (NOMBRE O TELÉFONO)</label>
+                    <div class="search-box" style="margin-bottom:0;">
+                        <input type="text" id="buscarClienteCredito" class="search-input"
+                            placeholder="Ej: Juan Perez..." style="padding-left:1rem; padding-right:3.5rem;">
+                        <button onclick="buscarCreditoCliente()" class="btn btn-primary"
+                            style="position:absolute; right:5px; top:5px; bottom:5px; padding:0 1rem; border-radius:8px;">🔍</button>
+                    </div>
+                </div>
+
+                <div id="listaCreditosCliente"
+                    style="max-height:200px; overflow-y:auto; margin-bottom:1.5rem; border:1px solid #e2e8f0; border-radius:12px; display:none; background:#f8fafc; padding:0.5rem;">
+                    <!-- Se llena vía JS -->
+                </div>
+
+                <div id="detalleCreditoAbono"
+                    style="display:none; background:#eff6ff; border:1px solid #dbeafe; padding:1.5rem; border-radius:16px; margin-bottom:1.5rem;">
+                    <input type="hidden" id="creditoAbonoId">
+                    <div style="display:grid; gap:0.8rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:#64748b; font-size:0.85rem; font-weight:600;">CLIENTE:</span>
+                            <span id="abonoClienteNombre" style="color:var(--dark); font-weight:700;"></span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:#64748b; font-size:0.85rem; font-weight:600;">SALDO ACTUAL:</span>
+                            <span id="abonoSaldoActual"
+                                style="color:var(--danger); font-weight:800; font-size:1.1rem;"></span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:#64748b; font-size:0.85rem; font-weight:600;">SUGERIDO:</span>
+                            <span id="abonoCuotaSugerida" style="color:var(--success); font-weight:700;"></span>
+                        </div>
+                    </div>
+
+                    <div
+                        style="margin-top:1.2rem; display:grid; grid-template-columns: 1fr 1fr; gap:1rem; border-top:1px solid #dbeafe; padding-top:1.2rem;">
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">MÉTODO
+                                PAGO</label>
+                            <select id="metodoAbonoCredito" class="search-input"
+                                style="padding:0.75rem; font-size:0.9rem; height:auto; width:100%;">
+                                <option value="Efectivo">💵 Efectivo</option>
+                                <option value="Transferencia">🏭 Transferencia</option>
+                                <option value="Tarjeta">💳 Tarjeta</option>
+                                <option value="Daviplata">📱 Daviplata</option>
+                                <option value="Nequi">📱 Nequi</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">MONTO
+                                A ABONAR</label>
+                            <input type="number" id="montoAbonoCredito" class="search-input"
+                                style="font-size:1.2rem; font-weight:800; text-align:center; color:var(--primary); padding:0.6rem; padding-left:0.6rem; height:auto; width:100%;"
+                                placeholder="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-botones">
+                <button id="btnConfirmarAbono" onclick="confirmarAbonoCredito()" class="btn btn-success"
+                    style="display:none; font-size:1rem; padding:1rem;">
+                    ✔️ Confirmar Abono
+                </button>
+                <button onclick="cerrarModalAbonoCredito()" class="btn btn-outline"
+                    style="font-size:1rem; padding:1rem; border-color:#e2e8f0; color:var(--gray);">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SERVICIOS MOTERO -->
+    <div id="modalServicios" class="modal-overlay">
+        <div class="modal" style="max-width:600px;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:1rem; margin-bottom:1.5rem;">
+                <h3 style="margin:0; color:var(--dark); display:flex; align-items:center; gap:0.5rem;">
+                    <span style="font-size:1.5rem;">🛠️</span> Nuevo Servicio / Lavado
+                </h3>
+                <button onclick="cerrarModalServicios()"
+                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                    <div>
+                        <label
+                            style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">TIPO
+                            DE SERVICIO</label>
+                        <select id="servTipo" class="search-input" style="height:auto; padding:0.75rem;">
+                            <option value="Lavado">🧼 Lavado Premium</option>
+                            <option value="Tapizado">💺 Tapizado / Forro</option>
+                            <option value="Polichado">✨ Polichado / Brillo</option>
+                            <option value="Tallas">📏 Ajuste de Tallas</option>
+                            <option value="Otros">🛠️ Otros Arreglos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">REALIZADO
+                            POR (PARA COMISIÓN)</label>
+                        <select id="servEmpleado" class="search-input" style="height:auto; padding:0.75rem;">
+                            <option value="">Seleccionar Empleado...</option>
+                            <!-- Se llena dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-bottom:1.5rem; background:#f8fafc; padding:1.2rem; border-radius:12px; border:1px solid #e2e8f0;">
+                    <label
+                        style="display:block; margin-bottom:0.8rem; font-weight:700; color:var(--dark); font-size:0.9rem;">DATOS
+                        DEL CLIENTE</label>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+                        <input type="text" id="servClienteNombre" class="search-input" placeholder="Nombre completo"
+                            style="height:auto; padding:0.75rem;">
+                        <input type="text" id="servClienteTelefono" class="search-input"
+                            placeholder="WhatsApp (Enviar nota)" style="height:auto; padding:0.75rem;">
+                    </div>
+                    <input type="text" id="servCascoInfo" class="search-input"
+                        placeholder="Descripción del Casco Prestado (Si aplica)" style="height:auto; padding:0.75rem;">
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                    <div>
+                        <label
+                            style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">PRECIO
+                            TOTAL</label>
+                        <input type="number" id="servPrecioTotal" class="search-input" placeholder="0"
+                            style="height:auto; padding:0.8rem; font-weight:800; color:var(--primary); font-size:1.2rem; text-align:center;">
+                    </div>
+                    <div>
+                        <label
+                            style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">ABONO
+                            INICIAL</label>
+                        <input type="number" id="servAbono" class="search-input" placeholder="0"
+                            style="height:auto; padding:0.8rem; font-weight:800; color:var(--success); font-size:1.2rem; text-align:center;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-botones" style="margin-top:2rem;">
+                <button onclick="registrarServicio()" class="btn btn-success"
+                    style="flex:2; padding:1rem; font-size:1rem;">✅ Guardar y Usar</button>
+                <button onclick="cerrarModalServicios()" class="btn btn-outline"
+                    style="flex:1; padding:1rem;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== MODAL: REGISTRO RÁPIDO DE CLIENTE ====== -->
+    <div id="modalRegistroCliente" class="modal-overlay">
+        <div class="modal" style="max-width: 500px;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:1rem; margin-bottom:1.5rem;">
+                <h3 style="margin:0; color:var(--dark);">👤 Registrar Nuevo Cliente</h3>
+                <button onclick="cerrarModalRegistroCliente()"
+                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom:1.2rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.9rem;">Nombre
+                        Completo
+                        *</label>
+                    <input type="text" id="nuevoClienteNombre" class="search-input" placeholder="Ej: Juan Pérez"
+                        style="height:auto; padding:0.8rem; border:2px solid #e2e8f0; border-radius:10px;">
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.2rem;">
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.9rem;">Cédula
+                            *</label>
+                        <input type="text" id="nuevoClienteCedula" class="search-input" placeholder="123456789"
+                            style="height:auto; padding:0.8rem; border:2px solid #e2e8f0; border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.9rem;">WhatsApp
+                            * <span style="color:var(--danger);">*</span></label>
+                        <input type="tel" id="nuevoClienteTelefono" class="search-input" placeholder="3001234567"
+                            style="height:auto; padding:0.8rem; border:2px solid #e2e8f0; border-radius:10px;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:1.2rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.9rem;">Email</label>
+                    <input type="email" id="nuevoClienteEmail" class="search-input" placeholder="cliente@example.com"
+                        style="height:auto; padding:0.8rem; border:2px solid #e2e8f0; border-radius:10px;">
+                </div>
+
+                <div class="form-group" style="margin-bottom:1.5rem;">
+                    <label
+                        style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.9rem;">Dirección</label>
+                    <input type="text" id="nuevoClienteDireccion" class="search-input"
+                        placeholder="Calle 123 #45-67 Villavicencio"
+                        style="height:auto; padding:0.8rem; border:2px solid #e2e8f0; border-radius:10px;">
+                </div>
+            </div>
+
+            <div class="modal-botones" style="display:flex; gap:1rem; margin-top:2rem;">
+                <button onclick="cerrarModalRegistroCliente()" class="btn btn-outline"
+                    style="flex:1; padding:1rem; font-weight:600;">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarNuevoCliente()"
+                    style="flex:2; padding:1rem; font-size:1rem; font-weight:700;">✅ Guardar y Usar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== SCRIPTS ====== -->
     <script src="../js/config.js"></script>
     <script src="../js/security.js"></script>
     <script src="../js/promociones.js"></script>
+    <script src="../js/ticket-printer.js"></script>
     <script src="../js/ia-core.js"></script>
     <script src="../js/ai-widget.js"></script>
     <script>
+        // ===== CONFIGURACIÓN DE ESTA TIENDA =====
+        // Cambiar estos valores para cada tienda
         const TIENDA = {
             nombre: 'Evento',
             tablaInventario: 'inventario_evento',
@@ -277,6 +890,7 @@
             });
         }
     </script>
+
 </body>
 
 </html>

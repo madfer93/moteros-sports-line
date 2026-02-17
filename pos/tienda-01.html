@@ -5,8 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POS Local 01 | Moteros Sports Line</title>
-    <link rel="icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="icon" href="../img/logo-moteros.jpeg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../css/pos.css">
     <!-- Google tag (gtag.js) -->
@@ -33,8 +32,7 @@
 
             <!-- Pantalla inicial para abrir caja -->
             <div id="pantallaAbrirCaja">
-                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                    alt="Moteros Sports Line" class="locked-logo logo-img">
+                <img src="../img/logo-moteros.jpeg" alt="Moteros Sports Line" class="locked-logo logo-img">
                 <h2>🔒 Caja Cerrada</h2>
                 <p class="tienda-nombre tienda-nombre-display">Local 01</p>
                 <p>Abre la caja para comenzar a vender</p>
@@ -48,8 +46,7 @@
     <!-- ====== HEADER ====== -->
     <header class="header">
         <div class="header-left">
-            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                alt="Logo" class="header-logo logo-img">
+            <img src="../img/logo-moteros.jpeg" alt="Logo" class="header-logo logo-img">
             <div>
                 <h1>🏪 Moteros - <span class="tienda-nombre-display">Local 01</span></h1>
             </div>
@@ -61,12 +58,12 @@
                 Servicios</button>
             <button class="btn btn-secondary" onclick="abrirModalTraslado()" title="Trasladar Mercancía">🚚
                 Traslados</button>
-            <button class="btn btn-primary" onclick="abrirModalAbonoCredito()" title="Abonos Crédito Motero">🏍️ Pago
+            <button class="btn btn-primary" onclick="abrirModalAbonoCredito()" title="Abonos Crdito Motero">🏍️ Pago
                 Crédito</button>
             <button class="btn btn-warning" onclick="abrirModalAdelantoNomina()" title="Adelanto de Nómina">💵
                 Adelanto</button>
             <button id="btnAbrirCaja" class="btn btn-success" onclick="abrirModalCaja()">🔓 Abrir</button>
-            <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">🔐 Cerrar
+            <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">🔒 Cerrar
                 Caja</button>
         </div>
     </header>
@@ -82,7 +79,7 @@
             <div class="search-box">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="inputBuscar"
-                    placeholder="Buscar por nombre, marca o código..." oninput="filtrarProductos()">
+                    placeholder="Buscar por nombre, marca o cdigo..." oninput="filtrarProductos()">
             </div>
             <div id="listaProductos" class="productos-lista">
                 <div class="carrito-vacio">Cargando productos...</div>
@@ -131,7 +128,7 @@
                     </button>
                 </div>
 
-                <!-- Búsqueda de cliente (oculto por defecto) -->
+                <!-- Bsqueda de cliente (oculto por defecto) -->
                 <div id="seccionBuscarCliente" style="display:none;">
                     <div class="search-box" style="margin-top:1rem;">
                         <input type="text" id="inputCedulaCliente" placeholder="Buscar por cédula..."
@@ -228,7 +225,7 @@
                 <div id="infoProveedorInline"
                     style="display:none; background:#f0f9ff; padding:0.8rem; border-radius:8px; border:1px solid #bae6fd; margin-bottom:0.8rem;">
                     <div style="font-weight:700; color:#0369a1; font-size:0.95rem;" id="provInlineNombre"></div>
-                    <div style="font-size:0.85rem; color:#64748b; margin-top:0.3rem;">🏦 <span
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:0.3rem;"> 🏦 <span
                             id="provInlineBanco"></span> - <span id="provInlineTipoCuenta"></span></div>
                     <div style="font-size:0.9rem; font-weight:600; color:#0f172a; margin-top:0.2rem;">📋 Cuenta: <span
                             id="provInlineCuenta"></span></div>
@@ -290,6 +287,7 @@
                     <option value="2">2 Cuotas</option>
                     <option value="3">3 Cuotas</option>
                     <option value="4">4 Cuotas</option>
+                    <option value="5">5 Cuotas</option>
                     <option value="6">6 Cuotas</option>
                 </select>
             </div>
@@ -319,7 +317,7 @@
                     autocomplete="username">
             </div>
             <div class="form-group">
-                <label>🔑 Contraseña</label>
+                <label>🔒 Contraseña</label>
                 <input type="password" id="loginPassword" placeholder="Tu contraseña" autocomplete="current-password">
             </div>
             <div id="loginError" class="alert alert-danger" style="display:none;margin-bottom:1rem;"></div>
@@ -351,7 +349,7 @@
             <input type="hidden" id="vendedorNombre">
             <div class="modal-botones">
                 <button class="btn btn-danger" onclick="cerrarSesionEmpleado()">🚪 Cerrar Sesión</button>
-                <button class="btn btn-success" onclick="confirmarAbrirCaja()">✅ Abrir Caja</button>
+                <button class="btn btn-success" onclick="confirmarAbrirCaja()">🔓 Abrir Caja</button>
             </div>
         </div>
     </div>
@@ -364,7 +362,7 @@
             <!-- Resumen del sistema -->
             <div id="resumenCierreModal"></div>
 
-            <!-- Conteo por método -->
+            <!-- Conteo por mtodo -->
             <h4 style="margin:1rem 0 0.6rem; font-size:0.9rem; color:#475569;">💵 Conteo de Dinero</h4>
             <div class="cierre-grid">
                 <div class="form-group">
@@ -409,7 +407,7 @@
             <div class="gastos-container">
                 <h4>🧾 Gastos del Día</h4>
                 <div id="gastosLista"></div>
-                <button class="btn-agregar-gasto" onclick="agregarGasto()">➕ Agregar Gasto</button>
+                <button class="btn-agregar-gasto" onclick="agregarGasto()">? Agregar Gasto</button>
                 <div class="gastos-total">
                     <span>Total Gastos:</span>
                     <span id="totalGastos">$0</span>
@@ -603,7 +601,7 @@
                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                 <h3 style="margin:0;">💵 Registrar Adelanto de Nómina</h3>
                 <button class="modal-close" onclick="cerrarModalAdelantoNomina()"
-                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌​</button>
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
@@ -697,7 +695,7 @@
                             <select id="metodoAbonoCredito" class="search-input"
                                 style="padding:0.75rem; font-size:0.9rem; height:auto; width:100%;">
                                 <option value="Efectivo">💵 Efectivo</option>
-                                <option value="Transferencia">📱 Transferencia</option>
+                                <option value="Transferencia">🏭 Transferencia</option>
                                 <option value="Tarjeta">💳 Tarjeta</option>
                                 <option value="Daviplata">📱 Daviplata</option>
                                 <option value="Nequi">📱 Nequi</option>
@@ -750,7 +748,7 @@
                             <option value="Lavado">🧼 Lavado Premium</option>
                             <option value="Tapizado">💺 Tapizado / Forro</option>
                             <option value="Polichado">✨ Polichado / Brillo</option>
-                            <option value="Tallas">📏 Arreglo de Tallas</option>
+                            <option value="Tallas">📏 Ajuste de Tallas</option>
                             <option value="Otros">🛠️ Otros Arreglos</option>
                         </select>
                     </div>

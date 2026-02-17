@@ -5,14 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de Productos | Moteros Sport Line Villavicencio</title>
-    <link rel="icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="icon" href="img/logo-moteros.jpeg">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff6b00">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="apple-touch-icon" href="img/logo-moteros.jpeg">
     <meta name="description"
         content="Explora nuestro catálogo de cascos, guantes, chaquetas, botas, intercomunicadores y accesorios para motociclistas. Los mejores precios en Villavicencio, Meta.">
 
@@ -27,15 +25,14 @@
     <meta property="og:title" content="Catálogo - Moteros Sport Line">
     <meta property="og:description"
         content="Encuentra cascos, guantes, chaquetas y más para tu moto. Precios competitivos en Villavicencio.">
-    <meta property="og:image"
-        content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <meta property="og:image" content="img/logo-moteros.jpeg">
 
     <link rel="canonical" href="https://moterossportline.store/catalogo.html">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- CSS externo -->
     <link rel="stylesheet" href="css/premium.css">
-
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/ai-widget.css">
 
     <style>
@@ -67,83 +64,7 @@
         }
 
         /* Header */
-        .header {
-            background: white;
-            color: #1a1a1a;
-            padding: 1.5rem 0;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .logo img {
-            height: 50px;
-            width: auto;
-            object-fit: contain;
-        }
-
-        .logo h1 {
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .nav {
-            display: flex;
-            gap: 2rem;
-        }
-
-        .nav a {
-            color: #666;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-
-        .nav a:hover {
-            color: var(--primary);
-        }
-
-        .nav a.active {
-            color: var(--primary);
-        }
-
-        .cart-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 0.7rem 1.5rem;
-            border-radius: 25px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .cart-btn:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-        }
+        /* El header se gestiona ahora por index.css para consistencia global */
 
         /* Sección Filtros */
         .filtros-section {
@@ -872,26 +793,71 @@
         <a href="contacto.html">Contacto</a>
     </div>
 
+    <!-- Header Principal (Base Global) -->
     <header class="header">
-        <div class="container">
-            <a href="index.html" class="logo" style="text-decoration:none;">
-                <img id="siteLogo"
-                    src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                    alt="Moteros Sports Line">
-                <h1 id="siteTitle">MOTEROS SPORT LINE</h1>
-            </a>
-            <nav class="nav">
-                <a href="index.html">Inicio</a>
-                <a href="catalogo.html" class="active">Tienda</a>
-                <a href="nosotros.html">Nosotros</a>
-                <a href="blog.html">Blog</a>
-                <a href="contacto.html">Contacto</a>
-            </nav>
-            <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+        <div class="container header-grid">
+            <div class="header-left">
+                <a href="index.html" class="logo">
+                    <img src="img/logo-moteros.jpeg" alt="Moteros Sports Line" width="100" height="100"
+                        fetchpriority="high">
+                </a>
+            </div>
+
+            <div class="header-center">
+                <div class="header-slogan">
+                    <h1>LA CASA OFICIAL DE LOS MOTEROS</h1>
+                    <p>en Villavicencio el Meta y Colombia</p>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <nav class="nav" id="topNav">
+                    <a href="index.html">Inicio</a>
+                    <a href="catalogo.html" class="active">Tienda</a>
+                    <a href="nosotros.html">Nosotros</a>
+                    <a href="contacto.html">Contacto</a>
+                </nav>
+                <div class="header-search">
+                    <input type="text" id="headerSearch" placeholder="¿Qué buscas?">
+                    <button class="search-btn"><i class="fas fa-search"></i></button>
+                </div>
+                <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()"
+                    aria-label="Abrir menú de navegación">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Fila de Categorías (Mega Menú Trigger) -->
+        <div class="header-nav-bar">
+            <div class="container">
+                <nav class="nav-categories" id="mainNav">
+                    <!-- Dinámico: Categorías aquí -->
+                </nav>
+            </div>
+        </div>
+
+        <!-- Mega Menú Container -->
+        <div id="megaMenu" class="mega-menu">
+            <div class="container">
+                <div class="mega-menu-grid">
+                    <div class="mega-menu-spacer"></div>
+                    <div class="mega-menu-sections" id="megaMenuSections">
+                        <!-- Subcategorías e Iconos -->
+                    </div>
+                    <div class="mega-menu-brands">
+                        <h4>MARCAS</h4>
+                        <div class="brands-grid" id="megaMenuBrands">
+                            <!-- Marcas -->
+                        </div>
+                    </div>
+                    <div class="mega-menu-promo" id="megaMenuPromo">
+                        <!-- Imagen de oferta -->
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -912,12 +878,12 @@
                 </select>
                 <select id="filtroTalla" onchange="aplicarFiltros()">
                     <option value="">Todas las tallas</option>
-                    <!-- Se llena dinámicamente con JS -->
+                    <!-- Se llena dinmicamente con JS -->
                 </select>
                 <select id="filtroCalificacion" onchange="aplicarFiltros()">
                     <option value="">Todas las calificaciones</option>
-                    <option value="4">⭐⭐⭐⭐⭐ 4+ Estrellas</option>
-                    <option value="5">⭐⭐⭐⭐⭐⭐ 5 Estrellas</option>
+                    <option value="4">⭐⭐⭐⭐ 4+ Estrellas</option>
+                    <option value="5">⭐⭐⭐⭐⭐ 5 Estrellas</option>
                 </select>
                 <input type="text" id="buscarProducto" placeholder="🔍 Buscar por nombre o marca..."
                     onkeyup="aplicarFiltros()">
@@ -936,7 +902,7 @@
 
     <div id="modalDetalle" class="modal">
         <div class="modal-content">
-            <button class="modal-close" onclick="cerrarModalDetalle()">❌</button>
+            <button class="modal-close" onclick="cerrarModalDetalle()">?</button>
             <div id="contenidoDetalle"></div>
         </div>
     </div>
@@ -955,7 +921,7 @@
     <!-- Modal Carrito -->
     <div id="modalCarrito" class="modal">
         <div class="modal-content">
-            <button class="modal-close" onclick="cerrarModalCarrito()">❌</button>
+            <button class="modal-close" onclick="cerrarModalCarrito()">?</button>
             <div style="padding: 3rem;">
                 <h2 style="text-align:center; color: var(--primary); margin-bottom: 2rem; font-size: 2rem;">🛒 Mi
                     Carrito</h2>
@@ -980,7 +946,7 @@
                 <div style="text-align:center; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
                     <button onclick="enviarPedidoWhatsApp()" class="btn-ver-mas"
                         style="padding:1.2rem 2.5rem; font-size: 1.1rem;">
-                        📲 Enviar por WhatsApp
+                        💬 Enviar por WhatsApp
                     </button>
                     <button onclick="vaciarCarrito()" class="btn-limpiar" style="padding:1.2rem 2rem;">
                         Vaciar Carrito

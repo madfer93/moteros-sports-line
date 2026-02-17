@@ -5,8 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POS Alcalá | Moteros Sports Line</title>
-    <link rel="icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="icon" href="../img/logo-moteros.jpeg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../css/pos.css">
     <!-- Google tag (gtag.js) -->
@@ -25,7 +24,7 @@
 
 <body>
 
-    <!-- ==== PANTALLA BLOQUEADA - CAJA CERRADA ==== -->
+    <!-- ====== PANTALLA BLOQUEADA - CAJA CERRADA ====== -->
     <div id="lockedScreen" class="locked-screen">
         <div class="locked-content">
             <!-- Resumen de cierre (se muestra después de cerrar caja) -->
@@ -33,8 +32,7 @@
 
             <!-- Pantalla inicial para abrir caja -->
             <div id="pantallaAbrirCaja">
-                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                    alt="Moteros Sports Line" class="locked-logo logo-img">
+                <img src="../img/logo-moteros.jpeg" alt="Moteros Sports Line" class="locked-logo logo-img">
                 <h2>🔒 Caja Cerrada</h2>
                 <p class="tienda-nombre tienda-nombre-display">Alcalá</p>
                 <p>Abre la caja para comenzar a vender</p>
@@ -45,11 +43,10 @@
         </div>
     </div>
 
-    <!-- ==== HEADER ==== -->
+    <!-- ====== HEADER ====== -->
     <header class="header">
         <div class="header-left">
-            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                alt="Logo" class="header-logo logo-img">
+            <img src="../img/logo-moteros.jpeg" alt="Logo" class="header-logo logo-img">
             <div>
                 <h1>🏪 Moteros - <span class="tienda-nombre-display">Alcalá</span></h1>
             </div>
@@ -66,15 +63,15 @@
             <button class="btn btn-warning" onclick="abrirModalAdelantoNomina()" title="Adelanto de Nómina">💵
                 Adelanto</button>
             <button id="btnAbrirCaja" class="btn btn-success" onclick="abrirModalCaja()">🔓 Abrir</button>
-            <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">🔐 Cerrar
+            <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">🔒 Cerrar
                 Caja</button>
         </div>
     </header>
 
-    <!-- Alertas ==== -->
+    <!-- Alertas -->
     <div id="alertas"></div>
 
-    <!-- ==== CONTENIDO PRINCIPAL ==== -->
+    <!-- ====== CONTENIDO PRINCIPAL ====== -->
     <div class="container">
         <!-- Panel de Productos -->
         <div class="panel">
@@ -171,14 +168,14 @@
                         style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; padding:0.75rem; background:#f8fafc; border-radius:6px; border:2px solid #e2e8f0; transition:all 0.2s;">
                         <input type="checkbox" id="checkImprimirTirilla"
                             style="width:18px; height:18px; cursor:pointer;">
-                        <span style="font-size:0.9rem; color:#475569;">🖨️ Imprimir tirilla con datos del cliente</span>
+                        <span style="font-weight:500;">🖨️ Imprimir tirilla con datos del cliente</span>
                     </label>
                 </div>
             </div>
 
             <!-- Métodos de Pago -->
             <div class="seccion">
-                <h4 class="seccion-titulo">💰 Método(s) de Pago</h4>
+                <h4 class="seccion-titulo">💳 Método(s) de Pago</h4>
                 <div class="metodos-grid">
                     <div class="metodo-btn" data-metodo="Efectivo" onclick="toggleMetodo(this)">
                         <span class="icono">💵</span>Efectivo
@@ -202,7 +199,7 @@
                         <span class="icono">🅰️</span>Addi
                     </div>
                     <div class="metodo-btn" data-metodo="Sistecredito" onclick="toggleMetodo(this)">
-                        <span class="icono">💳</span>Sistecrédito
+                        <span class="icono">📋</span>Sistecrédito
                     </div>
                     <div class="metodo-btn" data-metodo="Credito Motero" onclick="toggleMetodo(this)">
                         <span class="icono">🏍️</span>Crédito Motero
@@ -214,7 +211,7 @@
                 <div id="metodosSeleccionados" class="metodos-seleccionados"></div>
             </div>
 
-            <!-- Panel inline Pago a Proveedor -->
+            <!-- Panel inline Pago a Proveedor (se muestra al seleccionar método "Pago Proveedor") -->
             <div id="seccionPagoProveedor" class="seccion-pago-proveedor" style="display:none;">
                 <h4 style="margin:0 0 0.8rem; color:#0369a1; display:flex; align-items:center; gap:0.5rem;">🏭 Pago a
                     Proveedor</h4>
@@ -228,7 +225,7 @@
                 <div id="infoProveedorInline"
                     style="display:none; background:#f0f9ff; padding:0.8rem; border-radius:8px; border:1px solid #bae6fd; margin-bottom:0.8rem;">
                     <div style="font-weight:700; color:#0369a1; font-size:0.95rem;" id="provInlineNombre"></div>
-                    <div style="font-size:0.85rem; color:#64748b; margin-top:0.3rem;">🏦 <span
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:0.3rem;"> 🏦 <span
                             id="provInlineBanco"></span> - <span id="provInlineTipoCuenta"></span></div>
                     <div style="font-size:0.9rem; font-weight:600; color:#0f172a; margin-top:0.2rem;">📋 Cuenta: <span
                             id="provInlineCuenta"></span></div>
@@ -290,6 +287,7 @@
                     <option value="2">2 Cuotas</option>
                     <option value="3">3 Cuotas</option>
                     <option value="4">4 Cuotas</option>
+                    <option value="5">5 Cuotas</option>
                     <option value="6">6 Cuotas</option>
                 </select>
             </div>
@@ -307,7 +305,7 @@
         </div>
     </div>
 
-    <!-- ==== MODAL: LOGIN EMPLEADO ==== -->
+    <!-- ===== MODAL: LOGIN EMPLEADO ===== -->
     <div id="modalLoginEmpleado" class="modal-overlay">
         <div class="modal">
             <h3>🔍 Iniciar Sesión</h3>
@@ -319,7 +317,7 @@
                     autocomplete="username">
             </div>
             <div class="form-group">
-                <label>🔑 Contraseña</label>
+                <label>🔒 Contraseña</label>
                 <input type="password" id="loginPassword" placeholder="Tu contraseña" autocomplete="current-password">
             </div>
             <div id="loginError" class="alert alert-danger" style="display:none;margin-bottom:1rem;"></div>
@@ -351,7 +349,7 @@
             <input type="hidden" id="vendedorNombre">
             <div class="modal-botones">
                 <button class="btn btn-danger" onclick="cerrarSesionEmpleado()">🚪 Cerrar Sesión</button>
-                <button class="btn btn-success" onclick="confirmarAbrirCaja()">✅ Abrir Caja</button>
+                <button class="btn btn-success" onclick="confirmarAbrirCaja()">🔓 Abrir Caja</button>
             </div>
         </div>
     </div>
@@ -372,7 +370,7 @@
                     <input type="number" id="efectivoContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>🏦​ Transferencias</label>
+                    <label>🏦 Transferencias</label>
                     <input type="number" id="transferenciaContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
@@ -396,7 +394,7 @@
                     <input type="number" id="addiContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>💳 Sistecrédito</label>
+                    <label>📋 Sistecrédito</label>
                     <input type="number" id="sistecreditoContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
@@ -409,7 +407,7 @@
             <div class="gastos-container">
                 <h4>🧾 Gastos del Día</h4>
                 <div id="gastosLista"></div>
-                <button class="btn-agregar-gasto" onclick="agregarGasto()">+ Agregar Gasto</button>
+                <button class="btn-agregar-gasto" onclick="agregarGasto()">➕ Agregar Gasto</button>
                 <div class="gastos-total">
                     <span>Total Gastos:</span>
                     <span id="totalGastos">$0</span>
@@ -445,7 +443,7 @@
     <!-- ===== MODAL: EDITAR PRECIO ===== -->
     <div id="modalEditarPrecio" class="modal-overlay">
         <div class="modal">
-            <h3>✏️ Modificar Precio</h3>
+            <h3>Modificar Precio</h3>
             <p id="nombreProductoEditar" style="font-weight:600; margin-bottom:1rem; color:var(--primary);"></p>
             <div class="form-group">
                 <label>Precio original</label>
@@ -506,14 +504,14 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: PROVEEDORES Y PAGOS ===== -->
+    <!-- ====== MODAL: PROVEEDORES Y PAGOS ====== -->
     <div id="modalProveedoresPOS" class="modal-overlay">
         <div class="modal" style="max-width: 700px;">
             <div class="modal-header"
                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                 <h3 style="margin:0;">🏭 Proveedores - Cuentas por Pagar</h3>
                 <button class="modal-close" onclick="cerrarModalProveedoresPOS()"
-                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌​</button>
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌</button>
             </div>
             <div class="search-box" style="margin-bottom:1rem;">
                 <span class="search-icon">🔍</span>
@@ -545,7 +543,7 @@
                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                 <h3 style="margin:0;">🧾 Registrar Pago a Proveedor</h3>
                 <button class="modal-close" onclick="cerrarModalAbonoProveedor()"
-                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌​</button>
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="abonoProveedorId">
@@ -596,14 +594,14 @@
         </div>
     </div>
 
-    <!-- MODAL: REGISTRAR ADELANTO DE NÓMINA -->
+    <!-- ====== MODAL: REGISTRAR ADELANTO DE NÓMINA ====== -->
     <div id="modalAdelantoNomina" class="modal-overlay">
         <div class="modal" style="max-width: 500px;">
             <div class="modal-header"
                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                 <h3 style="margin:0;">💵 Registrar Adelanto de Nómina</h3>
                 <button class="modal-close" onclick="cerrarModalAdelantoNomina()"
-                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌​</button>
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">❌</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
@@ -639,7 +637,7 @@
         </div>
     </div>
 
-    <!-- MODAL ABONO CRÉDITO MOTERO -->
+    <!-- ====== MODAL ABONO CRÉDITO MOTERO ====== -->
     <div id="modalAbonoCredito" class="modal-overlay">
         <div class="modal">
             <div
@@ -697,7 +695,7 @@
                             <select id="metodoAbonoCredito" class="search-input"
                                 style="padding:0.75rem; font-size:0.9rem; height:auto; width:100%;">
                                 <option value="Efectivo">💵 Efectivo</option>
-                                <option value="Transferencia">📱 Transferencia</option>
+                                <option value="Transferencia">🏭 Transferencia</option>
                                 <option value="Tarjeta">💳 Tarjeta</option>
                                 <option value="Daviplata">📱 Daviplata</option>
                                 <option value="Nequi">📱 Nequi</option>
@@ -750,7 +748,7 @@
                             <option value="Lavado">🧼 Lavado Premium</option>
                             <option value="Tapizado">💺 Tapizado / Forro</option>
                             <option value="Polichado">✨ Polichado / Brillo</option>
-                            <option value="Tallas">📏 Arreglo de Tallas</option>
+                            <option value="Tallas">📏 Ajuste de Tallas</option>
                             <option value="Otros">🛠️ Otros Arreglos</option>
                         </select>
                     </div>
@@ -800,95 +798,72 @@
 
             <div class="modal-botones" style="margin-top:2rem;">
                 <button onclick="registrarServicio()" class="btn btn-success"
-                    style="padding:1rem; font-size:1rem; flex:2;">
-                    ✅ Registrar Servicio
-                </button>
+                    style="flex:2; padding:1rem; font-size:1rem;">✅ Guardar y Usar</button>
                 <button onclick="cerrarModalServicios()" class="btn btn-outline"
-                    style="padding:1rem; font-size:1rem; flex:1;">
-                    Cancelar
-                </button>
-            </div>
-
-            <div style="margin-top:1.5rem; border-top:1px solid #eee; padding-top:1rem; text-align:center;">
-                <a href="#" onclick="abrirBuscadorServicios(); return false;"
-                    style="color:var(--primary); font-weight:600; text-decoration:none; font-size:0.9rem;">🔍 Buscar /
-                    Entregar Servicio Existente</a>
+                    style="flex:1; padding:1rem;">Cancelar</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL BUSCADOR SERVICIOS -->
-    <div id="modalBuscarServicios" class="modal-overlay">
-        <div class="modal" style="max-width:700px;">
+    <!-- ====== MODAL: REGISTRO RÁPIDO DE CLIENTE ====== -->
+    <div id="modalRegistroCliente" class="modal-overlay">
+        <div class="modal" style="max-width: 500px;">
             <div
                 style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:1rem; margin-bottom:1.5rem;">
-                <h3 style="margin:0; color:var(--dark);">🔍 Seguimiento de Servicios</h3>
-                <button onclick="document.getElementById('modalBuscarServicios').style.display='none'"
-                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="search-box">
-                    <input type="text" id="queryServicio" class="search-input"
-                        placeholder="Nombre o Teléfono del cliente..."
-                        onkeyup="if(event.key==='Enter') buscarServicios()">
-                    <button onclick="buscarServicios()" class="btn btn-primary">Buscar</button>
-                </div>
-                <div id="resultadosServicios" style="max-height:400px; overflow-y:auto; margin-top:1rem;">
-                    <!-- Se llena vía JS -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: REGISTRAR CLIENTE -->
-    <div id="modalRegistroCliente" class="modal-overlay">
-        <div class="modal">
-            <div
-                style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #f1f5f9; padding-bottom:1rem; margin-bottom:1.5rem;">
                 <h3 style="margin:0; color:var(--dark);">👤 Registrar Nuevo Cliente</h3>
-                <button onclick="cerrarModal()"
+                <button onclick="cerrarModalRegistroCliente()"
                     style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
             </div>
 
-            <div class="form-group">
-                <label>Nombre Completo <span style="color:var(--danger);">*</span></label>
-                <input type="text" id="nuevoClienteNombre" placeholder="Nombre completo del cliente"
-                    style="width:100%; padding:0.75rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem;">
-            </div>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom:1.2rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.9rem;">Nombre
+                        Completo
+                        *</label>
+                    <input type="text" id="nuevoClienteNombre" class="search-input" placeholder="Ej: Juan Pérez"
+                        style="height:auto; padding:0.8rem; border:2px solid #e2e8f0; border-radius:10px;">
+                </div>
 
-            <div class="form-group">
-                <label>Teléfono / WhatsApp <span style="color:var(--danger);">*</span></label>
-                <input type="tel" id="nuevoClienteTelefono" placeholder="3001234567"
-                    style="width:100%; padding:0.75rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem;">
-            </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.2rem;">
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.9rem;">Cédula
+                            *</label>
+                        <input type="text" id="nuevoClienteCedula" class="search-input" placeholder="123456789"
+                            style="height:auto; padding:0.8rem; border:2px solid #e2e8f0; border-radius:10px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.9rem;">WhatsApp
+                            * <span style="color:var(--danger);">*</span></label>
+                        <input type="tel" id="nuevoClienteTelefono" class="search-input" placeholder="3001234567"
+                            style="height:auto; padding:0.8rem; border:2px solid #e2e8f0; border-radius:10px;">
+                    </div>
+                </div>
 
-            <div class="form-group">
-                <label>Cédula</label>
-                <input type="text" id="nuevoClienteCedula" placeholder="123456789"
-                    style="width:100%; padding:0.75rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem;">
-            </div>
+                <div class="form-group" style="margin-bottom:1.2rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.9rem;">Email</label>
+                    <input type="email" id="nuevoClienteEmail" class="search-input" placeholder="cliente@example.com"
+                        style="height:auto; padding:0.8rem; border:2px solid #e2e8f0; border-radius:10px;">
+                </div>
 
-            <div class="form-group">
-                <label>Dirección</label>
-                <input type="text" id="nuevoClienteDireccion" placeholder="Calle 10 #5-20, Villavicencio"
-                    style="width:100%; padding:0.75rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem;">
-            </div>
-
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="nuevoClienteEmail" placeholder="cliente@example.com"
-                    style="width:100%; padding:0.75rem; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem;">
+                <div class="form-group" style="margin-bottom:1.5rem;">
+                    <label
+                        style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.9rem;">Dirección</label>
+                    <input type="text" id="nuevoClienteDireccion" class="search-input"
+                        placeholder="Calle 123 #45-67 Villavicencio"
+                        style="height:auto; padding:0.8rem; border:2px solid #e2e8f0; border-radius:10px;">
+                </div>
             </div>
 
             <div class="modal-botones" style="display:flex; gap:1rem; margin-top:2rem;">
-                <button class="btn btn-danger" onclick="cerrarModal()" style="flex:1; padding:1rem;">Cancelar</button>
+                <button onclick="cerrarModalRegistroCliente()" class="btn btn-outline"
+                    style="flex:1; padding:1rem; font-weight:600;">Cancelar</button>
                 <button class="btn btn-success" onclick="guardarNuevoCliente()"
-                    style="flex:2; padding:1rem; font-size:1rem;">✅ Guardar y Usar</button>
+                    style="flex:2; padding:1rem; font-size:1rem; font-weight:700;">✅ Guardar y Usar</button>
             </div>
         </div>
     </div>
 
-    <!-- ==== SCRIPTS ==== -->
+    <!-- ====== SCRIPTS ====== -->
     <script src="../js/config.js"></script>
     <script src="../js/security.js"></script>
     <script src="../js/promociones.js"></script>
@@ -896,9 +871,8 @@
     <script src="../js/ia-core.js"></script>
     <script src="../js/ai-widget.js"></script>
     <script>
-        // ==== CONFIGURACIÓN DE ESTA TIENDA
+        // ===== CONFIGURACIÓN DE ESTA TIENDA =====
         // Cambiar estos valores para cada tienda
-        // ====
         const TIENDA = {
             nombre: 'Alcalá',
             tablaInventario: 'inventario_alcala',

@@ -501,7 +501,7 @@ async function mostrarFormProducto() {
     document.getElementById('productoId').value = '';
 
     // Reset inputs
-    const ids = ['productoNombre', 'productoReferencia', 'productoCategoria',
+    const ids = ['productoNombre', 'productoReferencia', 'productoCategoria', 'productoSubcategoria',
         'productoMarca', 'productoProveedor', 'productoVariantes',
         'productoPrecioCompra', 'productoPrecio', 'productoMargen',
         'productoEstado', 'stockAlcala', 'stockLocal01', 'stockJordan', 'stockDigital',
@@ -769,6 +769,7 @@ async function guardarProducto() {
     const id = document.getElementById('productoId').value;
     const nombre = document.getElementById('productoNombre').value.trim();
     const categoria = document.getElementById('productoCategoria').value;
+    const subcategoria = document.getElementById('productoSubcategoria').value.trim();
     const precio = document.getElementById('productoPrecio').value;
     const precioCompra = document.getElementById('productoPrecioCompra').value || 0;
     const marca = document.getElementById('productoMarca').value.trim();
@@ -835,7 +836,7 @@ async function guardarProducto() {
         const stockDigital = parseInt(document.getElementById('stockDigital').value) || 0;
 
         const productoData = {
-            nombre, referencia, categoria, marca,
+            nombre, referencia, categoria, subcategoria, marca,
             proveedor: proveedorId,
             variantes: variantesData, // Array de objetos {color, url}
             tallas: Array.from(new Set(inventarioData.map(i => i.talla))),
@@ -1022,6 +1023,7 @@ async function editarProducto(id) {
     document.getElementById('productoCategoria').value = p.categoria;
     // Trigger update UI for category
     actualizarFormularioPorCategoria();
+    document.getElementById('productoSubcategoria').value = p.subcategoria || '';
     document.getElementById('productoMarca').value = p.marca;
 
     await cargarProveedoresEnSelectProducto(p.proveedor);
@@ -1133,6 +1135,7 @@ async function duplicarProducto(id) {
     document.getElementById('productoNombre').value = p.nombre + ' (Copia)';
     document.getElementById('productoReferencia').value = p.referencia || '';
     document.getElementById('productoCategoria').value = p.categoria;
+    document.getElementById('productoSubcategoria').value = p.subcategoria || '';
     document.getElementById('productoMarca').value = p.marca;
 
     await cargarProveedoresEnSelectProducto(p.proveedor_id);

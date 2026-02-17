@@ -1162,7 +1162,7 @@ function exportarReporteEjecutivoPDF() {
         const fechaFin = document.getElementById('reporteFechaFin').value;
 
         // === LOGO DE MOTEROS ===
-        const logoURL = "https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg";
+        const logoURL = "img/logo-moteros.jpeg";
 
         // Agregar logo (circular, esquina superior izquierda)
         try {

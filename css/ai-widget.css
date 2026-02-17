@@ -45,16 +45,18 @@
     font-weight: 700;
     white-space: nowrap;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    opacity: 0;
-    transform: translateX(10px);
+    opacity: 1;
+    /* ✅ Visible por defecto */
+    transform: translateX(0);
+    /* ✅ Sin desplazamiento inicial */
     transition: all 0.3s ease;
     pointer-events: none;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .ai-fab-container:hover .ai-fab-label {
-    opacity: 1;
-    transform: translateX(0);
+    transform: scale(1.05);
+    /* ✨ Pequeño efecto al hover en lugar de aparecer */
 }
 
 /* Animación de pulso para el botón */

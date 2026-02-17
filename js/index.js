@@ -1,7 +1,7 @@
 ﻿/* ═══════════════════════════════════════════════════════════════
-   MOTEROS SPORTS LINE - INDEX.JS v2.0
-   Catálogo con Carrito, Promociones y Destacados
-   ═══════════════════════════════════════════════════════════════ */
+  MOTEROS SPORTS LINE - INDEX.JS v2.0
+  Catálogo con Carrito, Promociones y Destacados
+  ═══════════════════════════════════════════════════════════════ */
 
 // ═══════════════════════════════════════════════════════════════
 // CONFIGURACIÓN E INICIALIZACIÓN
@@ -18,6 +18,30 @@ let promocionesActivas = [];
 let productosPromo = [];
 let carrito = JSON.parse(localStorage.getItem('carrito_moteros') || '[]');
 let posicionCarruselPromo = 0;
+
+// Mapa de Iconos Premium (SVGs Lineales)
+const ICONOS_MOTO = {
+    'CASCOS': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M416 192c0-88.4-71.6-160-160-160S96 103.6 96 192v64a160 160 0 1 0 320 0v-64zM256 64c70.7 0 128 57.3 128 128v64c0 14.1-2.3 27.6-6.5 40.3-10.7-10.7-25.2-16.3-41.5-16.3-31.8 0-58.5 21.6-66.5 51.1C264.4 330.4 256 331 256 331s-8.4-.6-13.5-2.8c-8-29.5-34.7-51.1-66.5-51.1-16.3 0-30.8 5.6-41.5 16.3-4.2-12.7-6.5-26.2-6.5-40.3v-64c0-70.7 57.3-128 128-128z"/></svg>',
+    'GUANTES': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M432 192h-32v-64c0-35.3-28.7-64-64-64s-64 28.7-64 64v64h-32v-64c0-35.3-28.7-64-64-64s-64 28.7-64 64v224c0 35.3 28.7 64 64 64h192c35.3 0 64-28.7 64-64V256c0-35.3-28.7-64-64-64z"/></svg>',
+    'CHAQUETAS': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M448 64c-35.3 0-64 28.7-64 64v32H128v-32c0-35.3-28.7-64-64-64S0 92.7 0 128v320l256 64 256-64V128c0-35.3-28.7-64-64-64zM128 416H64V128h64v288zm320 0h-64V128h64v288z"/></svg>',
+    'BOTAS': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M464 336c-26.5 0-48 21.5-48 48s21.5 48 48 48h16l-32 80H128l-32-80h16c26.5 0 48-21.5 48-48s-21.5-48-48-48H64v-64l128-128V32h128v112l128 128v64h-48z"/></svg>',
+    'MALETEROS': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M128 64V32c0-17.7 14.3-32 32-32h192c17.7 0 32 14.3 32 32v32h64c35.3 0 64 28.7 64 64v320c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128c0-35.3 28.7-64 64-64h64zm320 128H64v256h384V192zM160 32v32h192V32H160z"/></svg>',
+    'ACCESORIOS': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M256 0c-44.2 0-80 35.8-80 80s35.8 80 80 80 80-35.8 80-80-35.8-80-80-80zm0 128c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48zM128 192c-35.3 0-64 28.7-64 64v192c0 35.3 28.7 64 64 64h256c35.3 0 64-28.7 64-64V256c0-35.3-28.7-64-64-64H128zm288 256c0 17.7-14.3 32-32 32H128c-17.7 0-32-14.3-32-32V256c0-17.7 14.3-32 32-32h256c17.7 0 32 14.3 32 32v192z"/></svg>'
+};
+
+// Utilidad para normalizar texto (quitar tildes y dejar en mayúsculas)
+function normalizarTexto(txt) {
+    if (!txt) return "";
+    return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+}
+
+// Configuración de Navegación (Mapeo Robusto)
+const MAPEO_NAV = {
+    'CASCOS': ['CASCO'],
+    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR'],
+    'TRAJES DE PROTECCION': ['TRAJE', 'GUANTE', 'IMPERMEABLE', 'BOTA', 'PROTECCION', 'PROTECCIÓN', 'CHAQUETA', 'PANTALON', 'PANTALÓN'],
+    'MALETEROS': ['MALETERO', 'BAUL', 'ALFORJA', 'MALETA']
+};
 let autoPlayPromo = null;
 const INTERVALO_AUTO = 5000;
 
@@ -704,76 +728,124 @@ async function contarCategorias() {
 }
 
 async function cargarCategoriasDinamicas() {
-    const grid = document.getElementById('categoriasGrid');
-    if (!grid) return;
+    const nav = document.getElementById('mainNav'); // Fila de categorías
+    if (!nav) return;
 
     const client = getSupabase();
     if (!client) return;
 
     try {
-        // 1. Obtener todas las categorías
-        const { data: categorias, error: errCat } = await client
-            .from('categorias')
-            .select('*')
-            .order('nombre');
+        const { data: categorias, error: errCat } = await client.from('categorias').select('*').order('nombre');
+        const { data: productos, error: errProd } = await client.from('productos').select('categoria, subcategoria, marca, url_imagen').eq('estado', 'Activo');
 
-        if (errCat) {
-            console.error("❌ Error Supabase (Categorías):", errCat);
-            throw errCat;
-        }
-        // 2. Obtener TODOS los productos (solo campos necesarios) para conteo preciso y case-insensitive
-        const { data: productos, error: errProd } = await client
-            .from('productos')
-            .select('id, categoria')
-            .eq('estado', 'Activo');
+        if (errCat || errProd) throw errCat || errProd;
 
-        if (errProd) {
-            console.error("❌ Error Supabase (Productos):", errProd);
-            throw errProd;
-        }
-        if (!categorias || categorias.length === 0) {
-            console.warn("⚠️ No se encontraron categorías en Supabase.");
-            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Próximamente nuevas categorías</p>';
-            return;
-        }
+        // Limpiar nav
+        nav.innerHTML = '';
 
-        // 3. Contar productos por categoría (normalizando a mayúsculas para comparar)
-        const conteoMap = {};
-        (productos || []).forEach(p => {
-            if (p.categoria) {
-                const catNorm = p.categoria.trim().toUpperCase();
-                conteoMap[catNorm] = (conteoMap[catNorm] || 0) + 1;
-            }
+        const productosValidos = (productos || []);
+
+        // Generar items según el MAPEO_NAV
+        Object.keys(MAPEO_NAV).forEach(nombrePadre => {
+            const hijasKeywords = MAPEO_NAV[nombrePadre].map(k => normalizarTexto(k));
+            const nombrePadreNorm = normalizarTexto(nombrePadre);
+
+            // Obtener productos que coincidan con alguna keyword de la categoría padre
+            const productosGrupo = productosValidos.filter(p => {
+                const catNorm = normalizarTexto(p.categoria);
+                // Cambiamos a una lógica más permisiva para asegurar que aparezcan las 4 secciones
+                return hijasKeywords.some(key => catNorm.includes(key)) || catNorm.includes(nombrePadreNorm);
+            });
+
+            // Forzamos que aparezcan aunque el filtro de productos sea estricto inicialmente
+            const link = document.createElement('a');
+            link.href = `catalogo.html?categoria=${encodeURIComponent(nombrePadre)}`;
+            link.textContent = nombrePadre.toUpperCase();
+            link.className = 'nav-item-has-mega';
+
+            // Al pasar el mouse, mostramos el Mega Menú con todos los productos del grupo
+            link.addEventListener('mouseenter', () => mostrarMegaMenu(nombrePadre, productosGrupo));
+            nav.appendChild(link);
         });
 
-        // 4. Mapear categorías con sus cuentas
-        const categoriasConCuenta = categorias.map(cat => {
-            const nombreNorm = cat.nombre.trim().toUpperCase();
-            // Sumar coincidencias (puede que 'Cascos' y 'CASCOS' existan como keys si la normalización fallara en otro contexto, pero aquí normalizamos todo)
-            // En este caso, buscaremos la coincidencia exacta de la categoría normalizada
-            const count = conteoMap[nombreNorm] || 0;
-            return { ...cat, count, nombreDisplay: nombreNorm };
-        });
-
-        // 5. Ordenar: primero los que tienen productos, luego alfabético
-        categoriasConCuenta.sort((a, b) => {
-            if (b.count !== a.count) return b.count - a.count;
-            return a.nombreDisplay.localeCompare(b.nombreDisplay);
-        });
-
-        // 6. Renderizar
-        grid.innerHTML = categoriasConCuenta.map(cat => `
-            <div class="categoria-card" onclick="irATienda('${cat.nombre}')">
-                <div class="categoria-icon">${cat.icono || '📁'}</div>
-                <h3>${cat.nombreDisplay}</h3>
-                <p>${cat.count} ${cat.count === 1 ? 'producto' : 'productos'}</p>
-            </div>
-        `).join('');
+        // Evento para cerrar menú al salir del header
+        const header = document.querySelector('.header');
+        header.addEventListener('mouseleave', ocultarMegaMenu);
 
     } catch (error) {
-        if (window.registrarLogSistema) window.registrarLogSistema('error_sistema', 'Error cargando categorías dinámicas', error.message);
-        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Error al cargar categorías</p>';
+        console.error("Error Mega Menu:", error);
     }
+}
+
+function mostrarMegaMenu(categoria, productos) {
+    console.log("Mostrando Mega Menú para:", categoria, productos.length, "productos");
+    const mega = document.getElementById('megaMenu');
+    const sections = document.getElementById('megaMenuSections');
+    const brandsCont = document.getElementById('megaMenuBrands');
+    const promoCont = document.getElementById('megaMenuPromo');
+
+    if (!mega || !sections || !brandsCont) {
+        console.error("No se encontraron los elementos del Mega Menú");
+        return;
+    }
+
+    // 1. Agrupar por Subcategoría
+    const subcats = {};
+    const categoriaNorm = normalizarTexto(categoria);
+
+    productos.forEach(p => {
+        let sub = p.subcategoria;
+        const pCatNorm = normalizarTexto(p.categoria);
+
+        if (!sub && pCatNorm !== categoriaNorm) {
+            sub = p.categoria;
+        }
+
+        const label = sub || 'Ver Todo';
+        if (!subcats[label]) subcats[label] = p.url_imagen;
+    });
+
+    // 2. Renderizar Subcategorías con Iconos
+    sections.innerHTML = Object.keys(subcats).map(subLabel => {
+        // Fallback robusto para iconos
+        const iconKey = normalizarTexto(subLabel);
+        const icon = ICONOS_MOTO[iconKey] || ICONOS_MOTO['ACCESORIOS'];
+
+        const pEjemplo = productos.find(p => (p.subcategoria || p.categoria) === subLabel);
+        const catReal = pEjemplo ? pEjemplo.categoria : categoria;
+
+        return `
+            <a href="catalogo.html?categoria=${encodeURIComponent(catReal)}${pEjemplo?.subcategoria ? `&subcategoria=${encodeURIComponent(pEjemplo.subcategoria)}` : ''}" class="mega-menu-item">
+                <div class="mega-menu-icon">${icon}</div>
+                <span>${subLabel}</span>
+            </a>
+        `;
+    }).join('');
+
+    // 3. Renderizar Marcas
+    const marcasRaw = [...new Set(productos.map(p => p.marca).filter(m => m))];
+    brandsCont.innerHTML = marcasRaw.slice(0, 10).map(m => `
+        <a href="catalogo.html?marca=${encodeURIComponent(m)}">${m}</a>
+    `).join('');
+
+    // 4. Promo
+    if (productos.length > 0 && promoCont) {
+        promoCont.innerHTML = `
+            <img src="${productos[0].url_imagen}" alt="Oferta ${categoria}">
+            <div class="promo-overlay"><span>VER OFERTAS</span></div>
+        `;
+    }
+
+    // ACTIVACIÓN FINAL
+    mega.style.display = 'block'; // Forzamos display antes de opacity
+    setTimeout(() => {
+        mega.classList.add('active');
+    }, 10);
+}
+
+function ocultarMegaMenu() {
+    const mega = document.getElementById('megaMenu');
+    if (mega) mega.classList.remove('active');
 }
 
 function irATienda(categoria) {
@@ -878,4 +950,3 @@ async function cargarImagenHero() {
         console.warn('Nota: Usando hero default');
     }
 }
-

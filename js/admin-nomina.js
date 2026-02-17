@@ -435,7 +435,7 @@ function verDetalleNomina(id) {
                 <div id="modalDetalleNominaTicket" class="ticket-container" style="font-family: 'Courier New', Courier, monospace; color: #000; width: 340px; background: white; padding: 15px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
                     
                     <div style="text-align: center; margin-bottom: 10px;">
-                        <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
+                        <img src="img/logo-moteros.jpeg" 
                              alt="Moteros Logo" style="width: 60px; height: 60px; border-radius: 50%; filter: grayscale(100%);">
                         <h3 style="margin: 5px 0 2px 0; font-size: 0.9rem; text-transform: uppercase;">MOTEROS SPORTS LINE</h3>
                         <p style="margin: 0; font-size: 0.75rem;">Villavicencio - Meta</p>

@@ -77,7 +77,7 @@ button {
 
 /* HEADER */
 .header {
-    background: var(--white);
+    background: #000000;
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -98,7 +98,7 @@ button {
 }
 
 .logo img {
-    height: 50px;
+    height: 100px;
     width: auto;
     object-fit: contain;
 }
@@ -122,7 +122,7 @@ button {
     border-radius: var(--radius);
     font-weight: 500;
     font-size: 0.95rem;
-    color: var(--gray-600);
+    color: #ffffff;
     transition: var(--transition);
 }
 
@@ -881,5 +881,32 @@ button {
 @media (max-width: 768px) {
     .chart-wrapper {
         height: 250px;
+    }
+}
+
+.header-slogan {
+    text-align: center;
+    color: #ffffff;
+}
+
+.header-slogan h1 {
+    font-size: 1.1rem;
+    /* ◄ Letra principal más pequeña */
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.header-slogan p {
+    font-size: 0.7rem;
+    /* ◄ Subtítulo muy pequeño y fino */
+    margin: 0;
+    opacity: 0.8;
+}
+
+/* En celulares mejor ocultarlo o reducirlo porque no hay espacio */
+@media (max-width: 992px) {
+    .header-slogan {
+        display: none;
     }
 }

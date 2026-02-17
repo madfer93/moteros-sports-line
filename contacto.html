@@ -1,17 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contacto y Ubicacion | Moteros Sport Line Villavicencio</title>
-    <link rel="icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="icon" href="img/logo-moteros.jpeg">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff6b00">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="apple-touch-icon" href="img/logo-moteros.jpeg">
     <meta name="description"
         content="Contactanos en nuestros 3 locales en Villavicencio: Alcala, Jordan y Local 01. WhatsApp 311 340 8416. Horarios y direcciones de Moteros Sport Line.">
 
@@ -26,11 +24,11 @@
     <meta property="og:title" content="Contacto - Moteros Sport Line">
     <meta property="og:description"
         content="Visitanos en nuestros 3 locales en Villavicencio o escribenos por WhatsApp 311 340 8416.">
-    <meta property="og:image"
-        content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <meta property="og:image" content="img/logo-moteros.jpeg">
 
     <link rel="canonical" href="https://moterossportline.store/contacto.html">
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/index.css">
 
     <style>
         :root {
@@ -541,27 +539,71 @@
         <a href="contacto.html">Contacto</a>
     </div>
 
-    <!-- Header -->
+    <!-- Header Principal (Base Global) -->
     <header class="header">
-        <div class="container">
-            <a href="index.html" class="logo" style="text-decoration:none;">
-                <img id="siteLogo"
-                    src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                    alt="Moteros Sports Line" style="height:50px;">
-                <h1 id="siteTitle">MOTEROS SPORT LINE</h1>
-            </a>
-            <nav class="nav">
-                <a href="index.html">Inicio</a>
-                <a href="catalogo.html">Tienda</a>
-                <a href="nosotros.html">Nosotros</a>
-                <a href="blog.html">Blog</a>
-                <a href="contacto.html" class="active">Contacto</a>
-            </nav>
-            <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+        <div class="container header-grid">
+            <div class="header-left">
+                <a href="index.html" class="logo">
+                    <img src="img/logo-moteros.jpeg" alt="Moteros Sports Line" width="100" height="100"
+                        fetchpriority="high">
+                </a>
+            </div>
+
+            <div class="header-center">
+                <div class="header-slogan">
+                    <h1>LA CASA OFICIAL DE LOS MOTEROS</h1>
+                    <p>en Villavicencio el Meta y Colombia</p>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <nav class="nav" id="topNav">
+                    <a href="index.html">Inicio</a>
+                    <a href="catalogo.html">Tienda</a>
+                    <a href="nosotros.html">Nosotros</a>
+                    <a href="contacto.html" class="active">Contacto</a>
+                </nav>
+                <div class="header-search">
+                    <input type="text" id="headerSearch" placeholder="¿Qué buscas?">
+                    <button class="search-btn"><i class="fas fa-search"></i></button>
+                </div>
+                <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()"
+                    aria-label="Abrir menú de navegación">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Fila de Categorías (Mega Menú Trigger) -->
+        <div class="header-nav-bar">
+            <div class="container">
+                <nav class="nav-categories" id="mainNav">
+                    <!-- Dinámico: Categorías aquí -->
+                </nav>
+            </div>
+        </div>
+
+        <!-- Mega Menú Container -->
+        <div id="megaMenu" class="mega-menu">
+            <div class="container">
+                <div class="mega-menu-grid">
+                    <div class="mega-menu-spacer"></div>
+                    <div class="mega-menu-sections" id="megaMenuSections">
+                        <!-- Subcategorías e Iconos -->
+                    </div>
+                    <div class="mega-menu-brands">
+                        <h4>MARCAS</h4>
+                        <div class="brands-grid" id="megaMenuBrands">
+                            <!-- Marcas -->
+                        </div>
+                    </div>
+                    <div class="mega-menu-promo" id="megaMenuPromo">
+                        <!-- Imagen de oferta -->
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -633,21 +675,21 @@
                                 <span class="texto">Verificando...</span>
                             </div>
                             <div class="local-detail">
-                                <span class="local-detail-icon">📍</span>
+                                <span class="local-detail-icon"><i class="fas fa-map-marker-alt"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Direccion</strong>
                                     <span>Barrio Alcala, Calle Principal<br>Villavicencio, Meta</span>
                                 </div>
                             </div>
                             <div class="local-detail">
-                                <span class="local-detail-icon">📞</span>
+                                <span class="local-detail-icon"><i class="fas fa-phone"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Telefono</strong>
                                     <a href="tel:+573113408416">311 340 8416</a>
                                 </div>
                             </div>
                             <div class="local-detail">
-                                <span class="local-detail-icon">🕐</span>
+                                <span class="local-detail-icon"><i class="fas fa-clock"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Horario</strong>
                                     <span id="horarioDetalleAlcala">Lunes a Sabado: 9:00 AM - 7:00 PM<br>Domingo:
@@ -708,21 +750,21 @@
                                 <span class="texto">Verificando...</span>
                             </div>
                             <div class="local-detail">
-                                <span class="local-detail-icon">📍</span>
+                                <span class="local-detail-icon"><i class="fas fa-map-marker-alt"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Direccion</strong>
                                     <span>Barrio 01<br>Villavicencio, Meta</span>
                                 </div>
                             </div>
                             <div class="local-detail">
-                                <span class="local-detail-icon">📞</span>
+                                <span class="local-detail-icon"><i class="fas fa-phone"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Telefono</strong>
                                     <a href="tel:+573113408416">311 340 8416</a>
                                 </div>
                             </div>
                             <div class="local-detail">
-                                <span class="local-detail-icon">🕐</span>
+                                <span class="local-detail-icon"><i class="fas fa-clock"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Horario</strong>
                                     <span id="horarioDetalleLocal01">Lunes a Sabado: 8:00 AM - 6:00 PM<br>Domingo:
@@ -877,6 +919,7 @@
     <script src="js/security.js"></script>
     <script src="js/ia-core.js"></script>
     <script src="js/ai-widget.js"></script>
+    <script src="js/index.js"></script>
     <script>
         // Menu movil
         function toggleMobileMenu() {
@@ -909,11 +952,11 @@
                             horariosConfig[local].dias.push(0);
                         }
                     } else if (texto.includes('lun-sab') || texto.includes('lunes a sabado')) {
-                        // Forzar exclusión de domingo si el admin especifica lun-sab
+                        // Forzar exclusi�n de domingo si el admin especifica lun-sab
                         horariosConfig[local].dias = [1, 2, 3, 4, 5, 6];
                     }
 
-                    // Intento muy básico de detectar horas (ej: "9am-7pm")
+                    // Intento muy b�sico de detectar horas (ej: "9am-7pm")
                     const matchHoras = texto.match(/(\d+)(am|pm).*?(\d+)(am|pm)/);
                     if (matchHoras) {
                         let h1 = parseInt(matchHoras[1]);

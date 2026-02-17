@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         widgetContainer.innerHTML = `
             <div class="ai-fab-label">💡 Moteros IA</div>
             <button id="aiFabBtn" class="ai-fab-btn" title="Asistente IA">
-                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
+                <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
                      alt="IA" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
             </button>
         `;
@@ -55,11 +55,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatWindow.innerHTML = `
         <div class="ai-header">
             <h4>
-                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
+                <img id="siteLogo" src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" 
                      alt="Logo" class="ai-header-logo">
                 <span class="ai-status-dot"></span> Moteros IA ${isInsideAdmin ? '(Modo Prueba)' : ''}
             </h4>
-            ${!isInsideAdmin ? '<button id="aiCloseBtn" class="ai-close-btn">×</button>' : ''}
+            ${!isInsideAdmin ? '<button id="aiCloseBtn" class="ai-close-btn">❌</button>' : ''}
         </div>
         <div id="aiMessages" class="ai-messages"></div>
         <div id="aiLeadCapture" class="ai-lead-capture hidden">

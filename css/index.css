@@ -1084,6 +1084,34 @@
     }
 }
 
+/* 4. Posicionamiento Especial Hero Locales */
+.hero-locations-col {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1.5rem !important;
+    flex: 1 !important;
+}
+
+.location-img {
+    width: 100% !important;
+    height: 180px !important;
+    object-fit: cover !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+.map-iframe-container {
+    grid-column: span 2 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+}
+
+.hero-map-iframe {
+    width: 100% !important;
+    height: 200px !important;
+    border: none !important;
+}
+
 @media (max-width: 480px) {
     .hero-logo-img {
         width: 140px;
@@ -1093,4 +1121,113 @@
     .hero-wrapper {
         padding: 0 1rem;
     }
+
+    .hero-locations-col {
+        grid-template-columns: 1fr !important;
+    }
+
+    .map-iframe-container {
+        grid-column: span 1 !important;
+    }
+}
+
+/* 
+   MEJORAS DE INTERFAZ (PAGOS, FOOTER Y MEGA MENÚ)
+    */
+
+/* 1. Carrusel de Pagos (Marquee) */
+.payment-marquee {
+    background: #0a0a1a;
+    padding: 1.5rem 0;
+    overflow: hidden;
+    border-top: 1px solid rgba(255, 107, 0, 0.1);
+    border-bottom: 1px solid rgba(255, 107, 0, 0.1);
+    white-space: nowrap;
+    position: relative;
+    z-index: 5;
+    margin-top: -1px;
+}
+
+.marquee-content {
+    display: inline-flex;
+    gap: 5rem;
+    animation: marquee-scroll 30s linear infinite;
+    align-items: center;
+}
+
+.marquee-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: white;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.marquee-item img {
+    height: 35px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 6px;
+    background: white;
+    padding: 4px 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes marquee-scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.payment-marquee:hover .marquee-content {
+    animation-play-state: paused;
+}
+
+/* 2. Footer Modernizado */
+@media (min-width: 1024px) {
+    .footer .footer-content {
+        grid-template-columns: repeat(6, 1fr) !important;
+        gap: 2rem !important;
+    }
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-links li {
+    margin-bottom: 0.5rem;
+}
+
+.footer-links a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.footer-links a:hover {
+    color: var(--primary);
+}
+
+.footer-payments-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+.footer-payments-grid img {
+    width: 100%;
+    height: 35px;
+    object-fit: contain;
+    background: white;
+    border-radius: 4px;
+    padding: 3px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }

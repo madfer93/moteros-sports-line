@@ -917,7 +917,7 @@ function imprimirReporteProveedor() {
         <body>
             <div class="header">
                 <div class="company-info" style="display:flex; align-items:center; gap:15px;">
-                    <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" style="width:60px; height:60px; border-radius:50%; object-fit:cover;">
+                    <img src="img/logo-moteros.jpeg" style="width:60px; height:60px; border-radius:50%; object-fit:cover;">
                     <div>
                         <h1>Moteros Sport Line</h1>
                         <p style="margin:5px 0 0 0; color:#64748b; font-size:0.8rem;">Villavicencio, Meta</p>
@@ -3650,7 +3650,7 @@ async function verDetalleCredito(id) {
                 </div>
                 <div id="ticketImprimir" style="padding:2rem;font-family:monospace;font-size:0.9rem;line-height:1.2;">
                     <div style="text-align:center;margin-bottom:1rem;">
-                        <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" style="width:60px;margin-bottom:0.5rem;">
+                        <img src="img/logo-moteros.jpeg" style="width:60px;margin-bottom:0.5rem;">
                         <div style="font-weight:bold;font-size:1.1rem;">MOTEROS SPORT LINE</div>
                         <div>Villavicencio - Meta</div>
                         <div>NIT: 123456789-0</div>
@@ -6608,7 +6608,7 @@ function exportarProductosPDF() {
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        const logoUrl = 'https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg';
+        const logoUrl = 'img/logo-moteros.jpeg';
 
         // Logo y Encabezado
         doc.addImage(logoUrl, 'JPEG', 14, 10, 20, 20);
@@ -6848,7 +6848,7 @@ function exportarInventarioPDF() {
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        const logoUrl = 'https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg';
+        const logoUrl = 'img/logo-moteros.jpeg';
 
         // Logo y Encabezado
         doc.addImage(logoUrl, 'JPEG', 14, 10, 20, 20);
@@ -8674,9 +8674,9 @@ function renderizarProductosPromo() {
         return `
                     <div onclick="toggleProductoPromo('${p.id}')" 
                          style="display:flex; align-items:center; gap:1rem; padding:1rem; border-radius:0.75rem; cursor:pointer; margin-bottom:0.75rem; transition:all 0.2s; border:1px solid ${isSelected ? '#ff6b00' : '#e2e8f0'}; background:${isSelected ? '#fff7ed' : 'white'}; box-shadow:${isSelected ? '0 4px 12px rgba(255,107,0,0.1)' : 'none'};">
-                        <img src="${p.url_imagen || 'https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg'}" 
+                        <img src="${p.url_imagen || 'img/logo-moteros.jpeg'}" 
                              style="width:50px; height:50px; border-radius:0.5rem; object-fit:cover; background:#eee; border:1px solid #eee;"
-                             onerror="this.src='https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg'">
+                             onerror="this.src='img/logo-moteros.jpeg'">
                         <div style="flex:1;">
                             <div style="font-weight:700; font-size:0.95rem; color:#1e293b;">${p.nombre}</div>
                             <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.25rem;">
@@ -10234,7 +10234,7 @@ window.exportarEventoPDF = async function (id, dataPrevia = null) {
         }
 
         const { evento, totalIngresos, totalGastos, productosVendidos, personal, nombresEmp } = evData;
-        const logoUrl = 'https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg';
+        const logoUrl = 'img/logo-moteros.jpeg';
 
         let ventana = window.open('', 'PRINT', 'height=800,width=1000');
         ventana.document.write(`

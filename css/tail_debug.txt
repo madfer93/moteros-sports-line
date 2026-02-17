@@ -1,0 +1,10 @@
+@media (max-width: 480px) {
+    .hero-logo-img {
+        width: 140px;
+        height: 140px;
+    }
+
+    .hero-wrapper {
+        padding: 0 1rem;
+    }
+}

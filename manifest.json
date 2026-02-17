@@ -9,13 +9,13 @@
     "orientation": "any",
     "icons": [
         {
-            "src": "https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg",
+            "src": "img/logo-moteros.jpeg",
             "sizes": "192x192",
             "type": "image/jpeg",
             "purpose": "any maskable"
         },
         {
-            "src": "https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg",
+            "src": "img/logo-moteros.jpeg",
             "sizes": "512x512",
             "type": "image/jpeg",
             "purpose": "any"
