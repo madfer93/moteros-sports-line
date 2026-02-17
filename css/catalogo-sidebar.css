@@ -1,0 +1,392 @@
+/* ═══════════════════════════════════════════════════════════════
+   CATÁLOGO - SIDEBAR DE FILTROS
+   Layout: Sidebar fijo izquierdo + Productos grid
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Layout principal */
+.catalogo-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 200px);
+    position: relative;
+}
+
+/* ── Sidebar ── */
+.filtros-sidebar {
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    padding: 1.5rem;
+    position: sticky;
+    top: 80px;
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    z-index: 50;
+}
+
+/* Scrollbar del sidebar */
+.filtros-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.filtros-sidebar::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+}
+
+/* Header del sidebar */
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #1a1a1a;
+    margin-bottom: 1rem;
+}
+
+.sidebar-header h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.btn-limpiar-sidebar {
+    background: none;
+    border: none;
+    color: #ff6b00;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.btn-limpiar-sidebar:hover {
+    color: #e05a00;
+}
+
+/* Buscador */
+.sidebar-search {
+    margin-bottom: 1rem;
+}
+
+.sidebar-search input {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: #f9fafb;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.sidebar-search input:focus {
+    outline: none;
+    border-color: #ff6b00;
+    background: #fff;
+}
+
+/* ── Grupo de filtro (acordeón) ── */
+.filtro-group {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.filtro-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    transition: color 0.2s;
+}
+
+.filtro-toggle:hover {
+    color: #ff6b00;
+}
+
+.filtro-arrow {
+    transition: transform 0.3s ease;
+    color: #9ca3af;
+}
+
+.filtro-toggle.active .filtro-arrow {
+    transform: rotate(180deg);
+}
+
+/* Opciones del filtro */
+.filtro-options {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    padding: 0;
+}
+
+.filtro-options.open {
+    max-height: 1000px;
+    /* Aumentado para permitir dropdowns largos */
+    padding-bottom: 1rem;
+    overflow: visible;
+    /* CRÍTICO: Permite que el dropdown salga del contenedor */
+}
+
+/* Selects dentro del sidebar */
+.filtro-options select {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    color: #374151;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.filtro-options select:focus {
+    outline: none;
+    border-color: #ff6b00;
+}
+
+/* Lista de checkboxes (para marcas) */
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.checkbox-list label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.88rem;
+    color: #4b5563;
+    cursor: pointer;
+    padding: 0.25rem 0;
+}
+
+.checkbox-list input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #ff6b00;
+    cursor: pointer;
+}
+
+/* ── Área de productos ── */
+.productos-main {
+    padding: 1.5rem 2rem;
+    background: #f9fafb;
+    min-height: 100vh;
+}
+
+.productos-main .contador {
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+.productos-main .productos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
+}
+
+/* ── Botón móvil ── */
+.filtros-mobile-btn {
+    display: none;
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 900;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: background 0.2s;
+    gap: 0.5rem;
+}
+
+.filtros-mobile-btn:hover {
+    background: #ff6b00;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .catalogo-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .filtros-sidebar {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 300px;
+        height: 100vh;
+        z-index: 1001;
+        transition: left 0.3s ease;
+        box-shadow: none;
+        border-right: none;
+    }
+
+    .filtros-sidebar.open {
+        left: 0;
+        box-shadow: 5px 0 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .filtros-mobile-btn {
+        display: flex;
+        align-items: center;
+    }
+
+    .productos-main {
+        padding: 1rem;
+    }
+
+    .productos-main .productos-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 1rem;
+    }
+}
+
+/* Overlay para móvil */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CUSTOM SELECT CON ICONOS (Subcategoría)
+   ═══════════════════════════════════════════════════════════════ */
+
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select {
+    position: relative;
+    width: 100%;
+    user-select: none;
+}
+
+.custom-select-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0.8rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    font-size: 0.88rem;
+    color: #374151;
+}
+
+.custom-select-trigger:hover {
+    border-color: #ff6b00;
+}
+
+.custom-select.open .custom-select-trigger {
+    border-color: #ff6b00;
+    background: #fff;
+}
+
+.custom-select-trigger svg {
+    width: 10px;
+    height: 6px;
+    color: #9ca3af;
+    transition: transform 0.2s;
+}
+
+.custom-select.open .custom-select-trigger svg {
+    transform: rotate(180deg);
+}
+
+.custom-options {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+    z-index: 100;
+}
+
+.custom-select.open .custom-options {
+    max-height: 300px;
+    opacity: 1;
+    overflow-y: auto;
+}
+
+.custom-option {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.88rem;
+    color: #374151;
+}
+
+.custom-option:hover {
+    background: #f9fafb;
+}
+
+.custom-option.selected {
+    background: #fff5ed;
+    color: #ff6b00;
+    font-weight: 600;
+}
+
+.custom-option img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.custom-option span {
+    flex: 1;
+}
+
+/* Scrollbar para opciones */
+.custom-options::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-options::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+}

@@ -21,13 +21,46 @@ let posicionCarruselPromo = 0;
 
 // Mapa de Iconos Premium (SVGs Lineales)
 const ICONOS_MOTO = {
-    'CASCOS': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M416 192c0-88.4-71.6-160-160-160S96 103.6 96 192v64a160 160 0 1 0 320 0v-64zM256 64c70.7 0 128 57.3 128 128v64c0 14.1-2.3 27.6-6.5 40.3-10.7-10.7-25.2-16.3-41.5-16.3-31.8 0-58.5 21.6-66.5 51.1C264.4 330.4 256 331 256 331s-8.4-.6-13.5-2.8c-8-29.5-34.7-51.1-66.5-51.1-16.3 0-30.8 5.6-41.5 16.3-4.2-12.7-6.5-26.2-6.5-40.3v-64c0-70.7 57.3-128 128-128z"/></svg>',
-    'GUANTES': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M432 192h-32v-64c0-35.3-28.7-64-64-64s-64 28.7-64 64v64h-32v-64c0-35.3-28.7-64-64-64s-64 28.7-64 64v224c0 35.3 28.7 64 64 64h192c35.3 0 64-28.7 64-64V256c0-35.3-28.7-64-64-64z"/></svg>',
-    'CHAQUETAS': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M448 64c-35.3 0-64 28.7-64 64v32H128v-32c0-35.3-28.7-64-64-64S0 92.7 0 128v320l256 64 256-64V128c0-35.3-28.7-64-64-64zM128 416H64V128h64v288zm320 0h-64V128h64v288z"/></svg>',
-    'BOTAS': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M464 336c-26.5 0-48 21.5-48 48s21.5 48 48 48h16l-32 80H128l-32-80h16c26.5 0 48-21.5 48-48s-21.5-48-48-48H64v-64l128-128V32h128v112l128 128v64h-48z"/></svg>',
-    'MALETEROS': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M128 64V32c0-17.7 14.3-32 32-32h192c17.7 0 32 14.3 32 32v32h64c35.3 0 64 28.7 64 64v320c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128c0-35.3 28.7-64 64-64h64zm320 128H64v256h384V192zM160 32v32h192V32H160z"/></svg>',
-    'ACCESORIOS': '<svg viewBox="0 0 512 512" style="fill: currentColor;"><path d="M256 0c-44.2 0-80 35.8-80 80s35.8 80 80 80 80-35.8 80-80-35.8-80-80-80zm0 128c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48zM128 192c-35.3 0-64 28.7-64 64v192c0 35.3 28.7 64 64 64h256c35.3 0 64-28.7 64-64V256c0-35.3-28.7-64-64-64H128zm288 256c0 17.7-14.3 32-32 32H128c-17.7 0-32-14.3-32-32V256c0-17.7 14.3-32 32-32h256c17.7 0 32 14.3 32 32v192z"/></svg>'
+    // ── Tipos de Cascos (iconos PNG profesionales) ──
+    'CASCOS': '<img src="img/icons/integral.png" alt="Cascos" style="width:100%;height:100%;object-fit:contain">',
+    'INTEGRALES': '<img src="img/icons/integral.png" alt="Integral" style="width:100%;height:100%;object-fit:contain">',
+    'ABATIBLES': '<img src="img/icons/abatible.png" alt="Abatible" style="width:100%;height:100%;object-fit:contain">',
+    'ABIERTOS': '<img src="img/icons/abierto.png" alt="Abierto" style="width:100%;height:100%;object-fit:contain">',
+    'MULTIPROPOSITO': '<img src="img/icons/multiproposito.png" alt="Multipropósito" style="width:100%;height:100%;object-fit:contain">',
+    'CROSS': '<img src="img/icons/cross.png" alt="Cross" style="width:100%;height:100%;object-fit:contain">',
+    'MODULARES': '<img src="img/icons/modular.png" alt="Modular" style="width:100%;height:100%;object-fit:contain">',
+
+    // ── Otras Categorías (iconos PNG profesionales) ──
+    'GUANTES': '<img src="img/icons/guantes.png" alt="Guantes" style="width:100%;height:100%;object-fit:contain">',
+    'CHAQUETAS': '<img src="img/icons/chaqueta.png" alt="Chaquetas" style="width:100%;height:100%;object-fit:contain">',
+    'BOTAS': '<img src="img/icons/botas.png" alt="Botas" style="width:100%;height:100%;object-fit:contain">',
+    'IMPERMEABLES': '<img src="img/icons/impermeable.png" alt="Impermeables" style="width:100%;height:100%;object-fit:contain">',
+    'IMPERMEABLES Y BOTAS': '<img src="img/icons/impermeable.png" alt="Impermeables y Botas" style="width:100%;height:100%;object-fit:contain">',
+    'MALETEROS': '<img src="img/icons/maletero.png" alt="Maleteros" style="width:100%;height:100%;object-fit:contain">',
+    'ACCESORIOS': '<img src="img/icons/accesorios.png" alt="Accesorios" style="width:100%;height:100%;object-fit:contain">',
+    'CANDADOS': '<img src="img/icons/candado.png" alt="Candados" style="width:100%;height:100%;object-fit:contain">',
+    'VISORES': '<img src="img/icons/visor.png" alt="Visores" style="width:100%;height:100%;object-fit:contain">',
+    'INTERCOMUNICADORES': '<img src="img/icons/intercomunicador.png" alt="Intercomunicadores" style="width:100%;height:100%;object-fit:contain">',
+    'PANTALONES': '<img src="img/icons/pantalones.png" alt="Pantalones" style="width:100%;height:100%;object-fit:contain">',
+    'RODILLERAS': '<img src="img/icons/rodilleras.png" alt="Rodilleras" style="width:100%;height:100%;object-fit:contain">',
+    'VER TODO': '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="20" height="20" rx="3"/><rect x="36" y="8" width="20" height="20" rx="3"/><rect x="8" y="36" width="20" height="20" rx="3"/><rect x="36" y="36" width="20" height="20" rx="3"/></svg>'
 };
+
+// Alias en singular para que coincida con lo que viene de la BD
+ICONOS_MOTO['CASCO'] = ICONOS_MOTO['CASCOS'];
+ICONOS_MOTO['INTEGRAL'] = ICONOS_MOTO['INTEGRALES'];
+ICONOS_MOTO['ABATIBLE'] = ICONOS_MOTO['ABATIBLES'];
+ICONOS_MOTO['ABIERTO'] = ICONOS_MOTO['ABIERTOS'];
+ICONOS_MOTO['MODULAR'] = ICONOS_MOTO['MODULARES'];
+ICONOS_MOTO['GUANTE'] = ICONOS_MOTO['GUANTES'];
+ICONOS_MOTO['CHAQUETA'] = ICONOS_MOTO['CHAQUETAS'];
+ICONOS_MOTO['BOTA'] = ICONOS_MOTO['BOTAS'];
+ICONOS_MOTO['IMPERMEABLE'] = ICONOS_MOTO['IMPERMEABLES'];
+ICONOS_MOTO['MALETERO'] = ICONOS_MOTO['MALETEROS'];
+ICONOS_MOTO['ACCESORIO'] = ICONOS_MOTO['ACCESORIOS'];
+ICONOS_MOTO['CANDADO'] = ICONOS_MOTO['CANDADOS'];
+ICONOS_MOTO['VISOR'] = ICONOS_MOTO['VISORES'];
+ICONOS_MOTO['INTERCOMUNICADOR'] = ICONOS_MOTO['INTERCOMUNICADORES'];
 
 // Utilidad para normalizar texto (quitar tildes y dejar en mayúsculas)
 function normalizarTexto(txt) {

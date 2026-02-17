@@ -2,6 +2,9 @@
 // MOTEROS SPORTS LINE - CATÁLOGO JAVASCRIPT
 // ═══════════════════════════════════════════════════════════════
 
+
+
+
 // Cliente Supabase
 // Cliente Supabase (Reutilizar global si existe para evitar warning GoTrueClient)
 const supabaseClient = window.supabaseClient || supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
@@ -16,6 +19,130 @@ let productoActual = null;
 const PLACEHOLDER_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect fill="#f1f5f9" width="400" height="300"/><text fill="#94a3b8" font-family="system-ui" font-size="16" x="50%" y="50%" text-anchor="middle" dy="0.3em">Sin imagen</text></svg>');
 const PLACEHOLDER_LG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"><rect fill="#f1f5f9" width="600" height="600"/><text fill="#94a3b8" font-family="system-ui" font-size="20" x="50%" y="50%" text-anchor="middle" dy="0.3em">Sin imagen</text></svg>');
 
+// ═══════════════════════════════════════════════════════════════
+// NAVEGACIÓN VISUAL DE SUBCATEGORÍAS (TIPO INDUCASCOS)
+// ═══════════════════════════════════════════════════════════════
+
+const SUBCATEGORIAS_VISUALES = {
+    'Cascos': [
+        { nombre: 'INTEGRALES', icono: 'img/icons/integral.png' },
+        { nombre: 'ABATIBLES', icono: 'img/icons/abatible.png' },
+        { nombre: 'ABIERTOS', icono: 'img/icons/abierto.png' },
+        { nombre: 'MULTIPROPOSITO', icono: 'img/icons/multiproposito.png' },
+        { nombre: 'CROSS', icono: 'img/icons/cross.png' },
+        { nombre: 'MODULARES', icono: 'img/icons/modular.png' }
+    ],
+    'Accesorios': [
+        { nombre: 'MALETEROS', icono: 'img/icons/maletero.png' },
+        { nombre: 'IMPERMEABLES', icono: 'img/icons/impermeable.png' },
+        { nombre: 'INTERCOMUNICADORES', icono: 'img/icons/intercomunicador.png' },
+        { nombre: 'CANDADOS', icono: 'img/icons/candado.png' },
+        { nombre: 'VISORES', icono: 'img/icons/visor.png' },
+        { nombre: 'RODILLERAS', icono: 'img/icons/rodilleras.png' }
+    ],
+    'Chaquetas': [
+        { nombre: 'CHAQUETAS', icono: 'img/icons/chaqueta.png' },
+        { nombre: 'IMPERMEABLES', icono: 'img/icons/impermeable.png' } // Ojo: Impermeables se repite en accesorios
+    ],
+    'Guantes': [
+        { nombre: 'GUANTES', icono: 'img/icons/guantes.png' }
+    ],
+    'Botas': [
+        { nombre: 'BOTAS', icono: 'img/icons/botas.png' }
+    ]
+};
+
+function renderizarSubcategoriasVisuales(categoria) {
+
+    const container = document.getElementById('categoriasVisuales');
+    const grid = document.getElementById('gridCategoriasVisuales');
+    const titulo = document.getElementById('tituloCategoriaVisual');
+    const filtroSubcat = document.getElementById('filtroSubcategoria');
+
+    // Normalizar búsqueda (Case Insensitive)
+    let categoriaKey = null;
+    if (categoria) {
+        categoriaKey = Object.keys(SUBCATEGORIAS_VISUALES).find(k => k.toLowerCase() === categoria.toLowerCase());
+    }
+
+
+
+    // Si no hay categoría válida o no tiene subcategorías visuales definidas
+    if (!categoriaKey) {
+        if (container) container.style.display = 'none';
+        return;
+    }
+
+    const subcategorias = SUBCATEGORIAS_VISUALES[categoriaKey];
+
+    // Mostrar contenedor
+    if (container) container.style.display = 'block';
+    if (titulo) titulo.textContent = `${categoriaKey}`;
+    if (grid) {
+        grid.innerHTML = ''; // Limpiar contenido previo para evitar duplicados
+
+        // Aplicar estilos al contenedor GRID directamente para asegurar horizontalidad
+        grid.style.display = 'flex';
+        grid.style.flexWrap = 'nowrap';
+        grid.style.justifyContent = 'flex-start';
+        grid.style.gap = '3rem';
+        grid.style.overflowX = 'auto';
+        grid.style.padding = '10px';
+
+        subcategorias.forEach(sub => {
+            const item = document.createElement('div');
+            item.className = 'categoria-visual-item';
+
+            // Estilos INLINE para forzar tamaño y disposición
+            item.style.cssText = `
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                gap: 10px; 
+                cursor: pointer; 
+                width: 140px; /* Aumentado para mas tamaño */
+                flex-shrink: 0;
+            `;
+
+            // Marcar activo si ya está filtrado
+            if (filtroSubcat && filtroSubcat.value === sub.nombre) {
+                item.classList.add('active');
+            }
+
+            // Evento Click
+            item.onclick = () => {
+                if (filtroSubcat) {
+                    if (item.classList.contains('active')) {
+                        filtroSubcat.value = '';
+                        item.classList.remove('active');
+                    } else {
+                        filtroSubcat.value = sub.nombre;
+                        document.querySelectorAll('.categoria-visual-item').forEach(i => i.classList.remove('active'));
+                        item.classList.add('active');
+                    }
+                    aplicarFiltros();
+                    document.getElementById('productosGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            };
+
+            const activeStyle = (filtroSubcat && filtroSubcat.value === sub.nombre)
+                ? 'border-color:#ea580c; background-color:white; transform:scale(1.05);'
+                : 'border-color:transparent; background-color:#f8f9fa;';
+
+            const activeImgStyle = (filtroSubcat && filtroSubcat.value === sub.nombre)
+                ? 'filter:none;'
+                : 'filter:grayscale(100%); opacity:0.7;';
+
+            item.innerHTML = `
+                <div class="categoria-visual-icon" style="width:110px; height:110px; border-radius:50%; display:flex; justify-content:center; align-items:center; border:2px solid; padding:20px; transition:all 0.3s; ${activeStyle}">
+                    <img src="${sub.icono}" alt="${sub.nombre}" class="categoria-visual-item-img" style="width:100%; height:100%; object-fit:contain; transition:all 0.3s; ${activeImgStyle}">
+                </div>
+                <span style="font-size:0.85rem; font-weight:700; text-align:center; color:#64748b; text-transform:uppercase;">${sub.nombre}</span>
+            `;
+            grid.appendChild(item);
+        });
+    }
+}
 // ═══════════════════════════════════════════════════════════════
 // UI & MENÚ
 // ═══════════════════════════════════════════════════════════════
@@ -290,6 +417,8 @@ async function cargarProductos() {
             const stockTotal = stockMap[p.id] || stockMap[p.id_producto] || 0;
             return {
                 ...p,
+                categoria: (p.categoria || '').trim(),
+                subcategoria: (p.subcategoria || '').trim(),
                 rating: c ? (c.sum / c.count).toFixed(1) : 0,
                 ratingCount: c ? c.count : 0,
                 stockTotal: stockTotal
@@ -343,12 +472,18 @@ function calcularRelevancia(producto, termino) {
 
 function aplicarFiltros() {
     const cat = document.getElementById('filtroCategoria').value;
+    const subcat = document.getElementById('filtroSubcategoria') ? document.getElementById('filtroSubcategoria').value : '';
+
+    // Actualizar UI Visual (al principio para asegurar ejecución)
+    renderizarSubcategoriasVisuales(cat);
+
     const talEl = document.getElementById('filtroTalla'); // Nuevo filtro
     const tal = talEl ? talEl.value : '';
     const rate = document.getElementById('filtroCalificacion') ? document.getElementById('filtroCalificacion').value : '';
     const bus = document.getElementById('buscarProducto').value.toLowerCase();
 
     productosFiltrados = todosLosProductos.filter(p => {
+        // ... (mismo filtro) ...
         // Filtro Categoría (Case Insensitive)
         if (cat) {
             const catProd = (p.categoria || '').toLowerCase().trim();
@@ -356,15 +491,18 @@ function aplicarFiltros() {
             if (catProd !== catFiltro) return false;
         }
 
+        // Filtro Subcategoría (Case Insensitive)
+        if (subcat) {
+            const subcatProd = (p.subcategoria || '').toLowerCase().trim();
+            const subcatFiltro = subcat.toLowerCase().trim();
+            if (subcatProd !== subcatFiltro) return false;
+        }
+
         if (tal) {
             let pTallas = [];
             if (Array.isArray(p.tallas)) pTallas = p.tallas;
             else if (typeof p.tallas === 'string') pTallas = p.tallas.split(',').map(t => t.trim());
-
-            // Si el producto no tiene tallas definidas, no pasa el filtro si se seleccionó una talla
             if (pTallas.length === 0) return false;
-
-            // Verificar si incluye la talla seleccionada (exact match)
             if (!pTallas.includes(tal)) return false;
         }
         if (rate) {
@@ -382,10 +520,24 @@ function aplicarFiltros() {
         productosFiltrados.sort((a, b) => {
             const scoreA = calcularRelevancia(a, bus);
             const scoreB = calcularRelevancia(b, bus);
-            return scoreB - scoreA; // Mayor score primero
+            return scoreB - scoreA;
         });
     }
+    // Ordenar normal si no hay relevancia
+    else {
+        const ordenEl = document.getElementById('ordenarProductos');
+        const orden = ordenEl ? ordenEl.value : '';
+        if (orden === 'precio_asc') {
+            productosFiltrados.sort((a, b) => (a.precio || 0) - (b.precio || 0));
+        } else if (orden === 'precio_desc') {
+            productosFiltrados.sort((a, b) => (b.precio || 0) - (a.precio || 0));
+        } else {
+            // Relevancia (default por nombre o id)
+            productosFiltrados.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+        }
+    }
 
+    if (window.logDebug) window.logDebug('Mostrando productos...');
     mostrarProductos();
 }
 
@@ -768,7 +920,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function cargarCategoriasFiltro() {
     const select = document.getElementById('filtroCategoria');
-    if (!select) return;
+    // Si no existe o NO es un select (es input hidden del custom dropdown), no hacemos nada
+    if (!select || select.tagName !== 'SELECT') return;
 
     try {
         const { data, error } = await supabaseClient
@@ -805,15 +958,24 @@ function checkUrlParams() {
     if (catParam) {
         const select = document.getElementById('filtroCategoria');
         if (select) {
+            // Intentar match directo
             select.value = catParam;
-            // Si el valor no existe en el select (legacy vs db mismatch), lo ignorará o quedará vacío.
-            // Forzamos filtro si hay valor
+
+            // Si falló (value vacío o default), intentar match case-insensitive
+            if (!select.value) {
+                Array.from(select.options).forEach(opt => {
+                    if (opt.value && opt.value.toLowerCase() === catParam.toLowerCase()) {
+                        select.value = opt.value;
+                    }
+                });
+            }
+
+            // Si se seleccionó algo, aplicar filtros
             if (select.value) {
                 aplicarFiltros();
             }
         }
     }
-
 }
 
 function actualizarVarianteCombinada() {
@@ -1119,3 +1281,7 @@ function cargarTallasFiltro() {
         select.appendChild(option);
     });
 }
+
+// Fin del archivo
+
+

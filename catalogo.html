@@ -34,6 +34,8 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/ai-widget.css">
+    <link rel="stylesheet" href="css/catalogo-sidebar.css">
+    <link rel="stylesheet" href="css/mega-menu-fix.css">
 
     <style>
         :root {
@@ -676,19 +678,19 @@
         }
 
         .ai-fab-container {
-            bottom: 7rem !important;
+            bottom: 14rem !important;
             right: 2rem !important;
             z-index: 9999 !important;
         }
 
         .ai-chat-window:not(.admin-box) {
-            bottom: 12rem !important;
+            bottom: 19rem !important;
             right: 2rem !important;
             z-index: 10000 !important;
         }
 
         .cart-floating {
-            bottom: 12rem !important;
+            bottom: 7rem !important;
             right: 2rem !important;
             z-index: 9999 !important;
         }
@@ -776,6 +778,7 @@
         gtag('config', 'G-MGGG89S8XM');
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/mega-menu-fix.css">
 </head>
 
 <body oncontextmenu="return false;">
@@ -813,8 +816,9 @@
             <div class="header-right">
                 <nav class="nav" id="topNav">
                     <a href="index.html">Inicio</a>
-                    <a href="catalogo.html" class="active">Tienda</a>
+                    <a href="catalogo.html">Tienda</a>
                     <a href="nosotros.html">Nosotros</a>
+                    <a href="blog.html">Blog</a>
                     <a href="contacto.html">Contacto</a>
                 </nav>
                 <div class="header-search">
@@ -861,44 +865,135 @@
         </div>
     </header>
 
-    <!-- Filtros -->
-    <section class="filtros-section">
-        <div class="container">
-            <h2 class="filtros-title">Encuentra tu producto ideal</h2>
-            <div class="filtros-container">
-                <select id="filtroCategoria" onchange="aplicarFiltros()">
-                    <option value="">Todas las categorías</option>
-                    <option value="Cascos">Cascos</option>
-                    <option value="Guantes">Guantes</option>
-                    <option value="Chaquetas">Chaquetas</option>
-                    <option value="Botas">Botas</option>
-                    <option value="Intercomunicadores">Intercomunicadores</option>
-                    <option value="Camaras">Cámaras</option>
-                    <option value="Accesorios">Accesorios</option>
-                </select>
-                <select id="filtroTalla" onchange="aplicarFiltros()">
-                    <option value="">Todas las tallas</option>
-                    <!-- Se llena dinmicamente con JS -->
-                </select>
-                <select id="filtroCalificacion" onchange="aplicarFiltros()">
-                    <option value="">Todas las calificaciones</option>
-                    <option value="4">⭐⭐⭐⭐ 4+ Estrellas</option>
-                    <option value="5">⭐⭐⭐⭐⭐ 5 Estrellas</option>
-                </select>
-                <input type="text" id="buscarProducto" placeholder="🔍 Buscar por nombre o marca..."
-                    onkeyup="aplicarFiltros()">
-                <button class="btn-limpiar" onclick="limpiarFiltros()">Limpiar filtros</button>
+    <!-- Catálogo Layout: Sidebar + Productos -->
+    <div class="catalogo-layout">
+        <!-- Sidebar de Filtros -->
+        <aside class="filtros-sidebar" id="filtrosSidebar">
+            <div class="sidebar-header">
+                <h3>Filtros</h3>
+                <button class="btn-limpiar-sidebar" onclick="limpiarFiltros()">Limpiar todo</button>
             </div>
-        </div>
-    </section>
 
-    <!-- Productos -->
-    <section class="productos-section">
-        <div class="container">
+            <div class="sidebar-search">
+                <input type="text" id="buscarProducto" placeholder="🔍 Buscar producto..." onkeyup="aplicarFiltros()">
+            </div>
+
+            <!-- Filtro Categoría -->
+            <div class="filtro-group">
+                <button class="filtro-toggle active" onclick="toggleFiltro(this)">
+                    <span>Categoría</span>
+                    <svg class="filtro-arrow" width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" fill="none" />
+                    </svg>
+                </button>
+                <div class="filtro-options open">
+                    <select id="filtroCategoria" onchange="aplicarFiltros()">
+                        <option value="">Todas las categorías</option>
+                        <option value="Cascos">Cascos</option>
+                        <option value="Guantes">Guantes</option>
+                        <option value="Chaquetas">Chaquetas</option>
+                        <option value="Botas">Botas</option>
+                        <option value="Intercomunicadores">Intercomunicadores</option>
+                        <option value="Accesorios">Accesorios</option>
+                        <option value="Impermeables">Impermeables</option>
+                        <option value="Maleteros">Maleteros</option>
+                        <option value="Candados">Candados</option>
+                        <option value="Visores">Visores</option>
+                        <option value="Pantalones">Pantalones</option>
+                        <option value="Rodilleras">Rodilleras</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filtro Subcategoría (Dinámico para Cascos) -->
+            <div class="filtro-group" id="grupoSubcategoria" style="display: none;">
+                <button class="filtro-toggle active" onclick="toggleFiltro(this)">
+                    <span>Subcategoría</span>
+                    <svg class="filtro-arrow" width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" fill="none" />
+                    </svg>
+                </button>
+                <div class="filtro-options open">
+                    <select id="filtroSubcategoria" onchange="aplicarFiltros()">
+                        <option value="">Todas las subcategorías</option>
+                        <option value="Integrales">Integrales</option>
+                        <option value="Abatibles">Abatibles</option>
+                        <option value="Abiertos">Abiertos</option>
+                        <option value="Multipropósito">Multipropósito</option>
+                        <option value="Cross">Cross</option>
+                        <option value="Modulares">Modulares</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filtro Marca (dinámico desde JS) -->
+            <div class="filtro-group">
+                <button class="filtro-toggle" onclick="toggleFiltro(this)">
+                    <span>Marca</span>
+                    <svg class="filtro-arrow" width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" fill="none" />
+                    </svg>
+                </button>
+                <div class="filtro-options">
+                    <div id="filtroMarcaCheckboxes" class="checkbox-list">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtro Talla -->
+            <div class="filtro-group">
+                <button class="filtro-toggle" onclick="toggleFiltro(this)">
+                    <span>Talla</span>
+                    <svg class="filtro-arrow" width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" fill="none" />
+                    </svg>
+                </button>
+                <div class="filtro-options">
+                    <select id="filtroTalla" onchange="aplicarFiltros()">
+                        <option value="">Todas las tallas</option>
+                        <!-- Se llena dinámicamente con JS -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filtro Calificación -->
+            <div class="filtro-group">
+                <button class="filtro-toggle" onclick="toggleFiltro(this)">
+                    <span>Calificación</span>
+                    <svg class="filtro-arrow" width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" fill="none" />
+                    </svg>
+                </button>
+                <div class="filtro-options">
+                    <select id="filtroCalificacion" onchange="aplicarFiltros()">
+                        <option value="">Todas</option>
+                        <option value="4">⭐⭐⭐⭐ 4+ Estrellas</option>
+                        <option value="5">⭐⭐⭐⭐⭐ 5 Estrellas</option>
+                    </select>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Botón móvil para abrir filtros -->
+        <button class="filtros-mobile-btn" id="filtrosMobileBtn" onclick="toggleSidebarMobile()">
+            <i class="fas fa-sliders-h"></i> Filtros
+        </button>
+
+        <!-- Productos -->
+        <main class="productos-main">
+            <!-- Navegación Visual de Subcategorías (Dinámica) -->
+            <div id="categoriasVisuales" class="categorias-visuales-container" style="display: none;">
+                <h2 id="tituloCategoriaVisual">Explora por Categoría</h2>
+                <div class="categorias-visuales-grid" id="gridCategoriasVisuales">
+                    <!-- Se llena con JS -->
+                </div>
+            </div>
+
             <p class="contador" id="contadorProductos">Cargando productos...</p>
             <div class="productos-grid" id="productosGrid"></div>
-        </div>
-    </section>
+        </main>
+    </div>
 
     <div id="modalDetalle" class="modal">
         <div class="modal-content">
@@ -991,10 +1086,37 @@
                 </div>
                 <div class="footer-section">
                     <h4>Legal</h4>
-                    <p><a href="terminos.html" style="color:white;">Terminos y Condiciones</a></p>
-                    <p><a href="privacidad.html" style="color:white;">Politica de Privacidad</a></p>
-                    <p><a href="habeas-data.html" style="color:white;">Habeas Data</a></p>
-                    <p><a href="politicas-domicilios.html" style="color:white;">Politicas de Domicilios</a></p>
+                    <ul class="footer-links">
+                        <li><a href="terminos.html">Terminos y Condiciones</a></li>
+                        <li><a href="privacidad.html">Politica de Privacidad</a></li>
+                        <li><a href="habeas-data.html">Habeas Data</a></li>
+                        <li><a href="politicas-domicilios.html">Politicas de Domicilios</a></li>
+                    </ul>
+                </div>
+                <!-- Métodos de Pago -->
+                <div class="footer-section">
+                    <h4>Pagos</h4>
+                    <div class="footer-payments-grid">
+                        <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
+                            alt="Nequi" title="Nequi">
+                        <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
+                            alt="Daviplata" title="Daviplata">
+                        <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
+                            alt="Addi" title="Addi">
+                        <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
+                            alt="Sistecredito" title="Sistecredito">
+                        <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
+                            alt="Fodegas" title="Fodegas">
+                    </div>
+                </div>
+                <!-- Domicilios -->
+                <div class="footer-section">
+                    <h4>Envíos</h4>
+                    <ul class="footer-shipping-info">
+                        <li>✅ Domicilios Villavicencio</li>
+                        <li>✅ Envíos Nacionales</li>
+                        <li>❌ No contraentrega</li>
+                    </ul>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -1037,6 +1159,34 @@
                 behavior: 'smooth'
             });
         }
+    </script>
+    <script>
+        // === Sidebar Filtros: Acordeón y Móvil ===
+        function toggleFiltro(btn) {
+            btn.classList.toggle('active');
+            const options = btn.nextElementSibling;
+            options.classList.toggle('open');
+        }
+
+        function toggleSidebarMobile() {
+            const sidebar = document.getElementById('filtrosSidebar');
+            sidebar.classList.toggle('open');
+            // Overlay
+            let overlay = document.querySelector('.sidebar-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'sidebar-overlay';
+                overlay.onclick = () => toggleSidebarMobile();
+                document.body.appendChild(overlay);
+            }
+            overlay.classList.toggle('active');
+        }
+
+        // Inicializar: abrir el primer filtro (Categoría)
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstToggle = document.querySelector('.filtro-toggle');
+            if (firstToggle) firstToggle.classList.add('active');
+        });
     </script>
     <script src="js/security.js"></script>
 </body>
