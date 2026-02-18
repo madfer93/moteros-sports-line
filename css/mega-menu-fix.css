@@ -20,27 +20,30 @@
 .nav-item-has-mega {
     color: #fff;
     text-decoration: none;
-    padding: 0.75rem 1.5rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+    /* Dimensions for Top Icons */
+    width: 100px;
+    height: 90px;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s ease;
     position: relative;
     cursor: pointer;
+    border-radius: 12px;
+    /* Smooth corners */
 }
 
 .nav-item-has-mega:hover,
 .nav-item-has-mega.active {
-    color: var(--primary, #ff6b00);
-    background: rgba(255, 107, 0, 0.08);
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+    /* Gentle zoom */
 }
 
 .nav-item-has-mega::after {
-    content: '▾';
-    margin-left: 6px;
-    font-size: 0.7rem;
-    opacity: 0.6;
+    display: none;
+    /* Hide the text arrow */
 }
 
 /* ── Contenedor del Mega Menú ── */
@@ -67,15 +70,16 @@
 /* ── Grid Principal del Mega Menú ── */
 .mega-menu-grid {
     display: grid;
-    grid-template-columns: 160px 1fr 280px 300px;
-    gap: 3rem;
+    /* Redistributed columns: 1fr (categories), 220px (brands), 500px (promos side-by-side) */
+    grid-template-columns: 1fr 220px 500px;
+    gap: 2rem;
     padding: 2.5rem 2rem;
     align-items: start;
 }
 
-/* Spacer (ocupa el espacio de las categorías a la izquierda) */
+/* Spacer (oculto) */
 .mega-menu-spacer {
-    display: block;
+    display: none;
 }
 
 /* ── Secciones / Subcategorías ── */
@@ -83,6 +87,17 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+}
+
+.mega-menu-sections h4 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gray-900, #1a1a2e);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary, #ff6b00);
 }
 
 .mega-menu-item {
@@ -104,9 +119,10 @@
     transform: translateX(4px);
 }
 
+/* 3. Fix Iconos Gigantes (Forzar tamaño - Definición original) */
 .mega-menu-icon {
-    width: 40px;
-    height: 40px;
+    width: 60px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -117,8 +133,8 @@
 }
 
 .mega-menu-icon svg {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     fill: var(--gray-600, #666);
     transition: fill 0.2s ease;
 }
@@ -167,23 +183,25 @@
     color: var(--primary, #ff6b00);
 }
 
-/* ── Promo / Imagen destacada ── */
+/* ── Promo / Imagen destacada (Contenedor) ── */
 .mega-menu-promo {
+    display: grid;
+    /* Changed from block to grid to allow side-by-side */
+    grid-template-columns: 1fr 1fr;
+    /* Two columns */
+    gap: 3.5rem;
+    /* Increased gap to separate images more */
+    /* Removed wrapper styling because children (.mega-promo-link) handle it */
     position: relative;
-    border-radius: 14px;
-    overflow: hidden;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
-}
-
-.mega-menu-promo:hover {
-    transform: scale(1.02);
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
 }
 
 .mega-menu-promo img {
+    /* Reset default styling if any */
     width: 100%;
-    height: 280px;
+    height: auto;
     object-fit: cover;
     display: block;
 }
@@ -250,4 +268,80 @@
         padding-left: 0;
         padding-top: 1rem;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PATCHES: BLACK LABEL & FIXED ICON SIZES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1. Compatibilidad con clase JS 'mega-promo-link' */
+.mega-promo-link {
+    position: relative;
+    display: block;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+    height: 100%;
+    /* Fill the grid cell */
+}
+
+.mega-promo-link:hover {
+    transform: scale(1.02);
+}
+
+.mega-promo-link img {
+    width: 100%;
+    /* Reduced height for side-by-side layout, or aspect-ratio */
+    height: 200px;
+    object-fit: cover;
+    display: block;
+}
+
+/* 2. Etiqueta Negra (Black Label) */
+.promo-overlay.black-label {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    padding: 8px 16px;
+    background: #000;
+    color: #fff;
+    text-align: center;
+    border-radius: 0;
+    z-index: 10;
+}
+
+.promo-overlay.black-label span {
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    display: block;
+}
+
+/* 3. Fix Iconos Gigantes (Forzar tamaño) */
+.mega-menu-icon {
+    width: 60px !important;
+    height: 60px !important;
+    margin: 0 auto;
+    /* Centrar si es flex column */
+    background: transparent !important;
+    /* Limpiar fondo gris si se prefiere */
+}
+
+/* Asegurar que la imagen interna respete el contenedor */
+.mega-menu-icon img,
+.mega-menu-icon svg {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    max-width: 100%;
+    max-height: 100%;
 }

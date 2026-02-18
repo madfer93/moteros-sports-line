@@ -4,20 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moteros Sport Line - Accesorios para Motos en Villavicencio</title>
+    <link rel="canonical" href="https://moterossportline.store/">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Moteros">
-    <link rel="apple-touch-icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
-    <link rel="manifest" href="manifest.json">
-    <meta name="google-site-verification" content="_JVyhCOFLSXI4bt0PVr3q6W-3d2KDqECW9P62Iej198" />
-    <title>Moteros Sport Line | Accesorios para Motociclistas en Villavicencio</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
-    <link rel="shortcut icon"
-        href="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+    <link rel="manifest" href="img/site.webmanifest">
     <!-- Resource Preconnects -->
     <link rel="preconnect" href="https://pbblthbrdkevuyjxyuar.supabase.co">
     <link rel="preconnect" href="https://www.googletagmanager.com">
@@ -450,7 +446,7 @@
         <div class="container">
             <div class="header-left">
                 <a href="index.html" class="logo">
-                    <img src="img/logo-moteros.jpeg" alt="Moteros Sports Line" width="100" height="100"
+                    <img src="img/logo-moteros.jpeg" alt="Moteros Sports Line" width="150" height="150"
                         fetchpriority="high">
                 </a>
             </div>
@@ -634,6 +630,32 @@
                     alt="Bodegas">
                 <span>FODEGAS</span>
             </div>
+            <!-- Bloque 3 (Triplicado para pantallas anchas) -->
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
+                    alt="Nequi">
+                <span>NEQUI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
+                    alt="Daviplata">
+                <span>DAVIPLATA</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
+                    alt="Addi">
+                <span>ADDI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
+                    alt="Sistecredito">
+                <span>SISTECREDITO</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
+                    alt="Bodegas">
+                <span>FODEGAS</span>
+            </div>
         </div>
     </div>
 
@@ -672,38 +694,168 @@
         </div>
     </section>
 
-    <!-- Locales -->
-    <section class="contacto">
+    <!-- Reseñas de la Comunidad -->
+    <section class="reviews-section" id="comunidadResenas">
         <div class="container">
-            <h2>Nuestros Locales</h2>
-            <div id="localesGrid" class="locales-grid">
-                <div class="local-card">
-                    <h3>📍 Alcalá</h3>
-                    <p><strong>Dirección:</strong> Barrio Alcalá, Villavicencio</p>
-                    <p><strong>Teléfono:</strong> <a href="tel:+573113408416">311 340 8416</a></p>
-                    <p><strong>Horario:</strong> <span id="horarioAlcala">Lun-Sáb 9AM-7PM</span></p>
-                    <a href="https://maps.app.goo.gl/MitBYM19LbGGZ9kz8" target="_blank" class="btn-secondary"
-                        style="margin-top:1rem; display:inline-block;">📍 Ver en Google Maps</a>
+            <div class="reviews-header">
+                <span class="reviews-badge">⭐ Opiniones Reales</span>
+                <h2>Lo Que Dice Nuestra Comunidad</h2>
+                <p>Reseñas verificadas de nuestros clientes</p>
+            </div>
+            <div class="reviews-carousel">
+                <div class="reviews-grid" id="reviewsGrid">
+                    <!-- Se cargan dinámicamente -->
+                    <div class="review-card review-skeleton">
+                        <div class="skeleton-stars"></div>
+                        <div class="skeleton-text"></div>
+                        <div class="skeleton-name"></div>
+                    </div>
+                    <div class="review-card review-skeleton">
+                        <div class="skeleton-stars"></div>
+                        <div class="skeleton-text"></div>
+                        <div class="skeleton-name"></div>
+                    </div>
+                    <div class="review-card review-skeleton">
+                        <div class="skeleton-stars"></div>
+                        <div class="skeleton-text"></div>
+                        <div class="skeleton-name"></div>
+                    </div>
                 </div>
-                <div class="local-card">
-                    <h3>📍 Local 01</h3>
-                    <p><strong>Dirección:</strong> Local 01, Villavicencio</p>
-                    <p><strong>Teléfono:</strong> <a href="tel:+573113408416">311 340 8416</a></p>
-                    <p><strong>Horario:</strong> <span id="horarioLocal01">Lun-Sáb 8AM-6PM</span></p>
-                    <a href="https://maps.app.goo.gl/Z2pDJt11sAgE9WH97" target="_blank" class="btn-secondary"
-                        style="margin-top:1rem; display:inline-block;">📍 Ver en Google Maps</a>
-                </div>
-                <div class="local-card">
-                    <h3>📍 Jordán</h3>
-                    <p><strong>Dirección:</strong> Sector Jordán, Villavicencio</p>
-                    <p><strong>Teléfono:</strong> <a href="tel:+573113408416">311 340 8416</a></p>
-                    <p><strong>Horario:</strong> <span id="horarioJordan">Lun-Dom 10AM-8PM</span></p>
-                    <a href="https://maps.app.goo.gl/xey3kPoAxGBKRLSL6" target="_blank" class="btn-secondary"
-                        style="margin-top:1rem; display:inline-block;">📍 Ver en Google Maps</a>
-                </div>
+                <div class="reviews-dots" id="reviewsDots"></div>
             </div>
         </div>
     </section>
+
+    <script>
+        // ═══ CARRUSEL DE RESEÑAS ═══
+        (function () {
+            let allReviews = [];
+            let currentPage = 0;
+            let rotationInterval = null;
+
+            async function loadReviews() {
+                // Esperar a que supabaseClient esté disponible
+                const maxWait = 10;
+                let waited = 0;
+                while (!window.supabaseClient && waited < maxWait) {
+                    await new Promise(r => setTimeout(r, 500));
+                    waited++;
+                }
+                if (!window.supabaseClient) return;
+
+                try {
+                    // Cargar reseñas aprobadas con comentario no vacío
+                    const { data: resenas, error } = await window.supabaseClient
+                        .from('producto_resenas')
+                        .select('*')
+                        .eq('aprobado', true)
+                        .neq('comentario', '')
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    if (!resenas || resenas.length === 0) return;
+
+                    // Cargar nombres de productos
+                    const ids = [...new Set(resenas.map(r => r.id_producto))];
+                    const { data: productos } = await window.supabaseClient
+                        .from('productos')
+                        .select('id, nombre')
+                        .in('id', ids);
+
+                    const prodMap = {};
+                    if (productos) productos.forEach(p => prodMap[p.id] = p.nombre);
+
+                    allReviews = resenas.map(r => ({
+                        nombre: r.nombre_cliente || 'Anónimo',
+                        estrellas: parseInt(r.estrellas || 5),
+                        comentario: r.comentario,
+                        producto: prodMap[r.id_producto] || 'Producto',
+                        fecha: new Date(r.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+                    }));
+
+                    renderPage(0);
+                    renderDots();
+                    startRotation();
+                } catch (e) {
+                    console.error('Error cargando reseñas:', e);
+                }
+            }
+
+            function renderPage(page) {
+                const grid = document.getElementById('reviewsGrid');
+                if (!grid || allReviews.length === 0) return;
+
+                const perPage = 3;
+                const totalPages = Math.ceil(allReviews.length / perPage);
+                currentPage = page % totalPages;
+                const start = currentPage * perPage;
+                const items = allReviews.slice(start, start + perPage);
+
+                grid.style.opacity = '0';
+                grid.style.transform = 'translateY(10px)';
+
+                setTimeout(() => {
+                    grid.innerHTML = items.map(r => {
+                        const stars = '★'.repeat(r.estrellas) + '☆'.repeat(5 - r.estrellas);
+                        const initial = r.nombre.charAt(0).toUpperCase();
+                        return `
+                    <div class="review-card">
+                        <div class="review-stars">${stars}</div>
+                        <p class="review-text">"${r.comentario}"</p>
+                        <div class="review-footer">
+                            <div class="review-avatar">${initial}</div>
+                            <div class="review-info">
+                                <span class="review-name">${r.nombre}</span>
+                                <span class="review-product">sobre <strong>${r.producto}</strong></span>
+                            </div>
+                        </div>
+                    </div>`;
+                    }).join('');
+
+                    grid.style.opacity = '1';
+                    grid.style.transform = 'translateY(0)';
+                }, 300);
+
+                updateDots();
+            }
+
+            function renderDots() {
+                const dots = document.getElementById('reviewsDots');
+                if (!dots) return;
+                const totalPages = Math.ceil(allReviews.length / 3);
+                if (totalPages <= 1) { dots.style.display = 'none'; return; }
+
+                dots.innerHTML = Array.from({ length: totalPages }, (_, i) =>
+                    `<button class="review-dot ${i === 0 ? 'active' : ''}" onclick="window.__reviewGoTo(${i})"></button>`
+                ).join('');
+            }
+
+            function updateDots() {
+                document.querySelectorAll('.review-dot').forEach((d, i) => {
+                    d.classList.toggle('active', i === currentPage);
+                });
+            }
+
+            function startRotation() {
+                if (rotationInterval) clearInterval(rotationInterval);
+                rotationInterval = setInterval(() => {
+                    renderPage(currentPage + 1);
+                }, 25000);
+            }
+
+            window.__reviewGoTo = function (page) {
+                renderPage(page);
+                startRotation(); // reiniciar timer al navegar manualmente
+            };
+
+            // Iniciar cuando el DOM esté listo
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadReviews);
+            } else {
+                loadReviews();
+            }
+        })();
+    </script>
 
     <!-- Modal Carrito -->
     <div id="modalCarrito" class="modal">

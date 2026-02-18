@@ -610,42 +610,97 @@
     </header>
 
     <!-- Hero -->
-    <section class="hero" style="padding: 5rem 1rem; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
-        <div class="container" style="text-align: center; color: white;">
-            <h1 style="font-size: clamp(2.2rem, 5vw, 3.5rem); margin-bottom: 1rem; font-weight: 800;">Contactanos</h1>
-            <p style="font-size: 1.3rem; opacity: 0.9; max-width: 700px; margin: 0 auto; color: #cbd5e1;">
-                Visitanos en cualquiera de nuestras 3 tiendas en Villavicencio
-            </p>
+    <!-- Header / Hero Contacto Nuevo Diseño -->
+    <section class="contacto-hero"
+        style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 5rem 0 5rem 0; position: relative;">
+        <div class="container">
+            <div class="contacto-split"
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
+
+                <!-- Izquierda: Titulo y Texto -->
+                <div class="contacto-text" style="color: white; text-align: left;">
+                    <h1
+                        style="font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; margin-bottom: 1.5rem; line-height: 1.1;">
+                        Contactanos
+                    </h1>
+                    <p style="font-size: 1.4rem; color: #cbd5e1; max-width: 500px; line-height: 1.6;">
+                        Visitanos en cualquiera de nuestras 3 tiendas en Villavicencio o comunícate directamente con
+                        nosotros.
+                    </p>
+                </div>
+
+                <!-- Derecha: Card Flotante (Linea Principal + Redes) -->
+                <div class="contacto-card-wrapper">
+                    <div
+                        style="background: white; border-radius: 1.5rem; padding: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+
+                        <!-- Linea Principal -->
+                        <div style="text-align: center;">
+                            <h2
+                                style="color: #64748b; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">
+                                Línea Principal</h2>
+                            <a href="tel:+573113408416"
+                                style="display: block; font-size: 2.5rem; font-weight: 800; color: #1e293b; text-decoration: none; margin-bottom: 0.5rem;">311
+                                340 8416</a>
+                            <p style="color: #16a34a; font-weight: 600; font-size: 0.95rem; margin-bottom: 1.5rem;">
+                                <i class="fab fa-whatsapp"></i> Atención inmediata
+                            </p>
+
+                            <a href="https://wa.me/573113408416?text=Hola!%20Me%20interesa%20informacion%20sobre%20sus%20productos"
+                                target="_blank"
+                                style="display: inline-block; background: #25D366; color: white; font-weight: 700; padding: 1rem 2rem; border-radius: 2rem; text-decoration: none; font-size: 1.1rem; box-shadow: 0 4px 6px -1px rgba(37, 211, 102, 0.4); transition: transform 0.2s;">
+                                Escribir por WhatsApp
+                            </a>
+                        </div>
+
+                        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 2rem 0;">
+
+                        <!-- Redes Sociales -->
+                        <div style="text-align: center;">
+                            <h3
+                                style="color: #64748b; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 1rem;">
+                                Síguenos en redes</h3>
+                            <div class="redes-sociales" style="justify-content: center; gap: 0.75rem;">
+                                <a href="https://www.facebook.com/MoterosSportLine/" target="_blank"
+                                    class="red-social facebook"
+                                    style="padding: 0.75rem 1rem; font-size: 1rem;">Facebook</a>
+                                <a href="https://www.instagram.com/moteros.sportline/" target="_blank"
+                                    class="red-social instagram"
+                                    style="padding: 0.75rem 1rem; font-size: 1rem;">Instagram</a>
+                                <a href="https://www.tiktok.com/@moterossportline" target="_blank"
+                                    class="red-social tiktok" style="padding: 0.75rem 1rem; font-size: 1rem;">TikTok</a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <style>
+                @media (max-width: 900px) {
+                    .contacto-split {
+                        grid-template-columns: 1fr !important;
+                        text-align: center;
+                    }
+
+                    .contacto-text {
+                        text-align: center !important;
+                        margin: 0 auto;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                    }
+                }
+            </style>
         </div>
     </section>
 
-    <!-- Contacto Principal -->
-    <section class="contacto-page">
+    <!-- Seccion Locales (Continuacion) -->
+    <section class="locales-page-section" style="padding: 0 0 5rem 0; background: #f8fafc;">
         <div class="container">
-            <!-- Info General -->
-            <div class="contacto-info-general">
-                <h2>Linea Principal</h2>
-                <span class="telefono-grande"><a href="tel:+573113408416">311 340 8416</a></span>
-                <p style="font-size:1.2rem; opacity:0.95;">Atencion inmediata por WhatsApp</p>
-                <a href="https://wa.me/573113408416?text=Hola!%20Me%20interesa%20informacion%20sobre%20sus%20productos"
-                    target="_blank" class="btn-whatsapp"
-                    style="display:inline-block; margin-top:1.5rem; padding:1rem 2.5rem; font-size:1.2rem; border-radius:2rem;">
-                    Escribir por WhatsApp
-                </a>
-            </div>
-
-            <!-- Redes Sociales -->
-            <div class="redes-section">
-                <h3>Siguenos en Redes Sociales</h3>
-                <div class="redes-sociales">
-                    <a href="https://www.facebook.com/MoterosSportLine/" target="_blank"
-                        class="red-social facebook">Facebook</a>
-                    <a href="https://www.instagram.com/moteros.sportline/" target="_blank"
-                        class="red-social instagram">Instagram</a>
-                    <a href="https://www.tiktok.com/@moterossportline" target="_blank"
-                        class="red-social tiktok">TikTok</a>
-                </div>
-            </div>
+            <!-- Espaciador -->
+            <div style="margin-top: 3rem;"></div>
 
             <!-- Locales con Tabs -->
             <div class="locales-section">
@@ -944,6 +999,7 @@
         <i class="fab fa-whatsapp"></i>
     </a>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
     <script src="js/security.js"></script>
     <script src="js/ia-core.js"></script>

@@ -33,6 +33,7 @@ const ICONOS_MOTO = {
     // ── Otras Categorías (iconos PNG profesionales) ──
     'GUANTES': '<img src="img/icons/guantes.png" alt="Guantes" style="width:100%;height:100%;object-fit:contain">',
     'CHAQUETAS': '<img src="img/icons/chaqueta.png" alt="Chaquetas" style="width:100%;height:100%;object-fit:contain">',
+    'TRAJES DE PROTECCION': '<img src="img/icons/chaqueta.png" alt="Trajes" style="width:100%;height:100%;object-fit:contain">',
     'BOTAS': '<img src="img/icons/botas.png" alt="Botas" style="width:100%;height:100%;object-fit:contain">',
     'IMPERMEABLES': '<img src="img/icons/impermeable.png" alt="Impermeables" style="width:100%;height:100%;object-fit:contain">',
     'IMPERMEABLES Y BOTAS': '<img src="img/icons/impermeable.png" alt="Impermeables y Botas" style="width:100%;height:100%;object-fit:contain">',
@@ -793,7 +794,12 @@ async function cargarCategoriasDinamicas() {
             // Forzamos que aparezcan aunque el filtro de productos sea estricto inicialmente
             const link = document.createElement('a');
             link.href = `catalogo.html?categoria=${encodeURIComponent(nombrePadre)}`;
-            link.textContent = nombrePadre.toUpperCase();
+            link.title = nombrePadre; // Tooltip para saber qué es el icono
+
+            // Usar icono en lugar de texto
+            const iconHtml = ICONOS_MOTO[nombrePadre] || nombrePadre;
+            link.innerHTML = iconHtml;
+
             link.className = 'nav-item-has-mega';
 
             // Al pasar el mouse, mostramos el Mega Menú con todos los productos del grupo
@@ -834,12 +840,12 @@ function mostrarMegaMenu(categoria, productos) {
             sub = p.categoria;
         }
 
-        const label = sub || 'Ver Todo';
+        const label = sub || categoria;
         if (!subcats[label]) subcats[label] = p.url_imagen;
     });
 
     // 2. Renderizar Subcategorías con Iconos
-    sections.innerHTML = Object.keys(subcats).map(subLabel => {
+    sections.innerHTML = `<h4>CATEGORÍAS</h4>` + Object.keys(subcats).map(subLabel => {
         // Fallback robusto para iconos
         const iconKey = normalizarTexto(subLabel);
         const icon = ICONOS_MOTO[iconKey] || ICONOS_MOTO['ACCESORIOS'];
@@ -850,7 +856,7 @@ function mostrarMegaMenu(categoria, productos) {
         return `
             <a href="catalogo.html?categoria=${encodeURIComponent(catReal)}${pEjemplo?.subcategoria ? `&subcategoria=${encodeURIComponent(pEjemplo.subcategoria)}` : ''}" class="mega-menu-item">
                 <div class="mega-menu-icon">${icon}</div>
-                <span>${subLabel}</span>
+                <span style="text-transform:uppercase;">${subLabel}</span>
             </a>
         `;
     }).join('');
@@ -861,12 +867,34 @@ function mostrarMegaMenu(categoria, productos) {
         <a href="catalogo.html?marca=${encodeURIComponent(m)}">${m}</a>
     `).join('');
 
-    // 4. Promo
+    // 4. Promo — Ofertas y Nuevos
     if (productos.length > 0 && promoCont) {
-        promoCont.innerHTML = `
-            <img src="${productos[0].url_imagen}" alt="Oferta ${categoria}">
-            <div class="promo-overlay"><span>VER OFERTAS</span></div>
-        `;
+        const ahora = new Date().toISOString();
+        const enOferta = productos.find(p => p.en_oferta && (!p.fecha_oferta_hasta || p.fecha_oferta_hasta > ahora));
+        const esNuevo = productos.find(p => p.es_nuevo && (!p.fecha_nuevo_hasta || p.fecha_nuevo_hasta > ahora));
+
+        let promoHTML = '';
+
+        // 1. FOTO "OFERTA" (Redirige a filtro oferta=1)
+        // Usamos producto en oferta o el primero disponible como imagen
+        const imgOferta = enOferta ? enOferta.url_imagen : (productos[0]?.url_imagen || '');
+        if (imgOferta) {
+            promoHTML += `<a href="catalogo.html?categoria=${encodeURIComponent(categoria)}&oferta=1" class="mega-promo-link">
+                <img src="${imgOferta}" alt="Oferta ${categoria}">
+                <div class="promo-overlay black-label"><span>OFERTA</span></div>
+            </a>`;
+        }
+
+        // 2. FOTO "NUEVO" (Redirige a filtro nuevo=1)
+        // Usamos producto nuevo o el segundo disponible (o el primero) como imagen
+        const imgNuevo = esNuevo ? esNuevo.url_imagen : (productos.length > 1 ? productos[1].url_imagen : (productos[0]?.url_imagen || ''));
+        if (imgNuevo) {
+            promoHTML += `<a href="catalogo.html?categoria=${encodeURIComponent(categoria)}&nuevo=1" class="mega-promo-link">
+                <img src="${imgNuevo}" alt="Nuevo ${categoria}">
+                <div class="promo-overlay black-label"><span>NUEVO</span></div>
+            </a>`;
+        }
+        promoCont.innerHTML = promoHTML;
     }
 
     // ACTIVACIÓN FINAL

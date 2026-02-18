@@ -19,6 +19,38 @@ let productoActual = null;
 const PLACEHOLDER_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect fill="#f1f5f9" width="400" height="300"/><text fill="#94a3b8" font-family="system-ui" font-size="16" x="50%" y="50%" text-anchor="middle" dy="0.3em">Sin imagen</text></svg>');
 const PLACEHOLDER_LG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"><rect fill="#f1f5f9" width="600" height="600"/><text fill="#94a3b8" font-family="system-ui" font-size="20" x="50%" y="50%" text-anchor="middle" dy="0.3em">Sin imagen</text></svg>');
 
+// Mapa de Colores Global
+const colorMap = {
+    'negro': '#000', 'blanco': '#fff', 'rojo': '#ef4444',
+    'azul': '#3b82f6', 'verde': '#22c55e', 'amarillo': '#eab308',
+    'dorado': '#ffd700', 'humo': '#555', 'gris': '#94a3b8',
+    'naranja': '#f97316', 'rosa': '#ec4899', 'morado': '#a855f7',
+    'plata': '#c0c0c0', 'grafito': '#374151', 'fucsia': '#d946ef',
+    'beige': '#f5f5dc', 'cafe': '#8b4513', 'marron': '#a52a2a',
+    'multicolor': 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)'
+};
+
+function obtenerEstiloColor(nombreColor) {
+    if (!nombreColor) return '#cbd5e1';
+    // Limpiar y dividir por guion, barra o coma
+    const partes = nombreColor.split(/[-/,]/).map(p => p.trim().toLowerCase());
+
+    if (partes.length > 1) {
+        // Generar conic-gradient
+        const paso = 100 / partes.length;
+        let gradiente = 'conic-gradient(';
+        partes.forEach((p, i) => {
+            const colorHex = colorMap[p] || '#cbd5e1';
+            const start = i * paso;
+            const end = (i + 1) * paso;
+            gradiente += `${colorHex} ${start}% ${end}%, `;
+        });
+        return gradiente.slice(0, -2) + ')';
+    } else {
+        return colorMap[nombreColor.toLowerCase()] || '#cbd5e1';
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // NAVEGACIÓN VISUAL DE SUBCATEGORÍAS (TIPO INDUCASCOS)
 // ═══════════════════════════════════════════════════════════════
@@ -429,7 +461,8 @@ async function cargarProductos() {
 
         mostrarProductos();
         await cargarCategoriasFiltro();
-        cargarTallasFiltro(); // Nueva función para llenar el filtro de tallas
+        cargarTallasFiltro();
+        cargarMarcasFiltro(); // Nueva función para llenar el filtro de marcas
         actualizarContadorCarrito();
 
     } catch (err) {
@@ -445,30 +478,7 @@ async function cargarProductos() {
     }
 }
 
-// Calcula relevancia de un producto respecto al término de búsqueda
-function calcularRelevancia(producto, termino) {
-    let score = 0;
-    const nombre = (producto.nombre || '').toLowerCase();
-    const marca = (producto.marca || '').toLowerCase();
-    const categoria = (producto.categoria || '').toLowerCase();
-    const desc = (producto.descripcion_corta || '').toLowerCase();
-
-    // Nombre empieza con el término → máxima relevancia
-    if (nombre.startsWith(termino)) score += 10;
-    // Nombre contiene el término (como palabra)
-    else if (nombre.includes(termino)) score += 6;
-
-    // Categoría coincide
-    if (categoria.includes(termino)) score += 5;
-
-    // Marca coincide
-    if (marca.includes(termino)) score += 3;
-
-    // Solo descripción → baja relevancia
-    if (score === 0 && desc.includes(termino)) score += 1;
-
-    return score;
-}
+// ... calcularRelevancia ...
 
 function aplicarFiltros() {
     const cat = document.getElementById('filtroCategoria').value;
@@ -477,10 +487,13 @@ function aplicarFiltros() {
     // Actualizar UI Visual (al principio para asegurar ejecución)
     renderizarSubcategoriasVisuales(cat);
 
-    const talEl = document.getElementById('filtroTalla'); // Nuevo filtro
+    const talEl = document.getElementById('filtroTalla');
     const tal = talEl ? talEl.value : '';
     const rate = document.getElementById('filtroCalificacion') ? document.getElementById('filtroCalificacion').value : '';
     const bus = document.getElementById('buscarProducto').value.toLowerCase();
+
+    // Obtener marcas seleccionadas
+    const marcasSeleccionadas = Array.from(document.querySelectorAll('input[name="filtroMarca"]:checked')).map(cb => cb.value.toLowerCase());
 
     productosFiltrados = todosLosProductos.filter(p => {
         // ... (mismo filtro) ...
@@ -491,11 +504,31 @@ function aplicarFiltros() {
             if (catProd !== catFiltro) return false;
         }
 
-        // Filtro Subcategoría (Case Insensitive)
+        // Filtro Subcategoría (Case Insensitive + Sinónimos)
         if (subcat) {
             const subcatProd = (p.subcategoria || '').toLowerCase().trim();
             const subcatFiltro = subcat.toLowerCase().trim();
-            if (subcatProd !== subcatFiltro) return false;
+
+            if (subcatProd === subcatFiltro) {
+                // Coincide
+            } else {
+                const SINONIMOS = {
+                    'maleteros': ['baul', 'baúl', 'cajon', 'top case', 'maleta'],
+                    'impermeables': ['impermeable', 'traje impermeable', 'gabardina'],
+                    'intercomunicadores': ['intercom', 'bluetooth'],
+                    'candados': ['candado', 'bloqueo', 'seguridad'],
+                    'visores': ['visor', 'pantalla', 'mica']
+                };
+                const terminosAlternativos = SINONIMOS[subcatFiltro] || [];
+                const esSinonimo = terminosAlternativos.some(t => subcatProd.includes(t));
+                if (!esSinonimo) return false;
+            }
+        }
+
+        // Filtro Marca
+        if (marcasSeleccionadas.length > 0) {
+            const marcaProd = (p.marca || '').toLowerCase().trim();
+            if (!marcasSeleccionadas.includes(marcaProd)) return false;
         }
 
         if (tal) {
@@ -512,9 +545,20 @@ function aplicarFiltros() {
             const busqueda = `${p.nombre} ${p.marca} ${p.categoria || ''} ${p.descripcion_corta || ''}`.toLowerCase();
             if (!busqueda.includes(bus)) return false;
         }
+        // Filtro Etiquetas
+        const ahora = new Date().toISOString();
+        const filtOferta = document.getElementById('filtroOferta');
+        const filtNuevo = document.getElementById('filtroNuevo');
+        if (filtOferta && filtOferta.checked) {
+            if (!p.en_oferta || (p.fecha_oferta_hasta && p.fecha_oferta_hasta < ahora)) return false;
+        }
+        if (filtNuevo && filtNuevo.checked) {
+            if (!p.es_nuevo || (p.fecha_nuevo_hasta && p.fecha_nuevo_hasta < ahora)) return false;
+        }
         return true;
     });
 
+    // ... sort ...
     // Ordenar por relevancia si hay búsqueda de texto
     if (bus) {
         productosFiltrados.sort((a, b) => {
@@ -523,7 +567,6 @@ function aplicarFiltros() {
             return scoreB - scoreA;
         });
     }
-    // Ordenar normal si no hay relevancia
     else {
         const ordenEl = document.getElementById('ordenarProductos');
         const orden = ordenEl ? ordenEl.value : '';
@@ -532,7 +575,6 @@ function aplicarFiltros() {
         } else if (orden === 'precio_desc') {
             productosFiltrados.sort((a, b) => (b.precio || 0) - (a.precio || 0));
         } else {
-            // Relevancia (default por nombre o id)
             productosFiltrados.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
         }
     }
@@ -547,8 +589,69 @@ function limpiarFiltros() {
     if (talEl) talEl.value = '';
     if (document.getElementById('filtroCalificacion')) document.getElementById('filtroCalificacion').value = '';
     document.getElementById('buscarProducto').value = '';
+
+    // Limpiar marcas
+    document.querySelectorAll('input[name="filtroMarca"]').forEach(cb => cb.checked = false);
+
+    // Limpiar etiquetas
+    const filtOferta = document.getElementById('filtroOferta'); if (filtOferta) filtOferta.checked = false;
+    const filtNuevo = document.getElementById('filtroNuevo'); if (filtNuevo) filtNuevo.checked = false;
+
     aplicarFiltros();
 }
+
+// ... mostrarProductos ...
+
+// Nueva función para cargar marcas dinámicamente
+function cargarMarcasFiltro() {
+    const container = document.getElementById('filtroMarcaCheckboxes');
+    if (!container) return;
+
+    // Obtener marcas únicas
+    const marcas = new Set();
+    todosLosProductos.forEach(p => {
+        if (p.marca) marcas.add(p.marca.trim());
+    });
+
+    // Ordenar alfabéticamente
+    const sortedMarcas = Array.from(marcas).sort((a, b) => a.localeCompare(b));
+
+    container.innerHTML = '';
+    sortedMarcas.forEach(marca => {
+        const div = document.createElement('div');
+        div.className = 'checkbox-item';
+        div.innerHTML = `
+            <label>
+                <input type="checkbox" name="filtroMarca" value="${marca}" onchange="aplicarFiltros()">
+                ${marca}
+            </label>
+        `;
+        container.appendChild(div);
+    });
+
+    // Chequear si hay marca en URL para preseleccionar
+    // checkUrlParams ya se llama, pero necesita lógica para marcar checkboxes
+    const params = new URLSearchParams(window.location.search);
+    const marcaParam = params.get('marca');
+    if (marcaParam) {
+        const cb = container.querySelector(`input[value="${marcaParam}"]`);
+        // Intentar case-insensitive si no encuentra directo
+        if (!cb) {
+            const cbCase = Array.from(container.querySelectorAll('input')).find(i => i.value.toLowerCase() === marcaParam.toLowerCase());
+            if (cbCase) cbCase.checked = true;
+        } else {
+            cb.checked = true;
+        }
+        aplicarFiltros();
+    }
+}
+
+// Actualizar checkUrlParams para soportar marca
+// (Nota: checkUrlParams ya tenía el placeholder, pero ahora que cargarMarcasFiltro maneja su propia carga inicial de URL param,
+// podemos dejarlo así o centralizarlo.
+// Dado que cargarMarcasFiltro se llama al final de cargarProductos, es seguro que checkUrlParams de categoria ya corrió.
+// PERO checkUrlParams corre DESPUES de cargarCategoriasFiltro.
+// Mejor dejar que cargarMarcasFiltro maneje su preselección ya que es async respecto a categorías.)
 
 function mostrarProductos() {
     const grid = document.getElementById('productosGrid');
@@ -589,6 +692,21 @@ function mostrarProductos() {
             }
         }
 
+        // Lógica para mostrar colores (chips)
+        let coloresHTML = '';
+        if (p.variantes && Array.isArray(p.variantes)) {
+            const coloresUnicos = Array.from(new Set(p.variantes.map(v => v.color).filter(Boolean)));
+            if (coloresUnicos.length > 0) {
+                coloresHTML = `
+                 <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center; margin-bottom:2px;">
+                    ${coloresUnicos.slice(0, 5).map(c => `
+                        <span title="${c}" style="width:14px; height:14px; border-radius:50%; background:${obtenerEstiloColor(c)}; border:1px solid #cbd5e1; display:inline-block; box-shadow:0 1px 2px rgba(0,0,0,0.1);"></span>
+                    `).join('')}
+                    ${coloresUnicos.length > 5 ? '<span style="font-size:0.7rem; color:#94a3b8;">+</span>' : ''}
+                 </div>`;
+            }
+        }
+
         return `
         <div class="producto-card" onclick="verDetalle('${p.id}')">
             <div class="producto-imagen-wrapper">
@@ -599,6 +717,19 @@ function mostrarProductos() {
                      onerror="this.src='${PLACEHOLDER_IMG}'">
                 <span class="badge-categoria">${p.categoria}</span>
                 ${p.stockTotal <= 0 ? '<span class="badge-agotado">No disponible</span>' : ''}
+                ${(() => {
+                const now = new Date().toISOString();
+                let badges = '';
+                if (p.en_oferta && (!p.fecha_oferta_hasta || p.fecha_oferta_hasta > now)) {
+                    badges += `<span style="position:absolute;top:8px;left:8px;background:#dc2626;color:#fff;font-weight:800;font-size:0.85rem;padding:3px 10px;border-radius:6px;z-index:3;box-shadow:0 2px 6px rgba(220,38,38,0.4);">${p.porcentaje_oferta ? '-' + p.porcentaje_oferta + '%' : 'OFERTA'}</span>`;
+                }
+                if (p.es_nuevo && (!p.fecha_nuevo_hasta || p.fecha_nuevo_hasta > now)) {
+                    /* Si ya hay oferta, bajamos el badge de nuevo */
+                    const topStyle = badges ? 'top:42px;' : 'top:8px;';
+                    badges += `<span style="position:absolute;${topStyle}left:8px;background:#059669;color:#fff;font-weight:800;font-size:0.85rem;padding:3px 10px;border-radius:6px;z-index:3;box-shadow:0 2px 6px rgba(5,150,105,0.4);">NUEVO</span>`;
+                }
+                return badges;
+            })()}
             </div>
             <div class="producto-info">
                 <h3 class="producto-nombre">${p.nombre}</h3>
@@ -610,7 +741,10 @@ function mostrarProductos() {
                 <div class="producto-footer" style="flex-direction: column; gap: 0.5rem; align-items: stretch;">
                     <div style="display: flex; justify-content: space-between; align-items: center; min-height: 38px;">
                         <span class="producto-precio" style="display:none;">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
-                        ${tallasHTML}
+                        <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+                            ${coloresHTML}
+                            ${tallasHTML}
+                        </div>
                         <button class="btn-agregar-inline" onclick="event.stopPropagation(); agregarAlCarritoRapido('${p.id}')" ${p.stockTotal <= 0 ? 'disabled' : ''}>
                             <span>${p.stockTotal <= 0 ? '🚫 Agotado' : '🛒 Agregar'}</span>
                         </button>
@@ -629,6 +763,24 @@ function mostrarProductos() {
 // ═══════════════════════════════════════════════════════════════
 // MODAL DETALLE
 // ═══════════════════════════════════════════════════════════════
+
+// Helper para ordenar tallas
+function compararTallas(a, b) {
+    const ordenTallas = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+    const idxA = ordenTallas.indexOf(a.toUpperCase());
+    const idxB = ordenTallas.indexOf(b.toUpperCase());
+
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+
+    // Si son números
+    const numA = parseFloat(a);
+    const numB = parseFloat(b);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+
+    return a.localeCompare(b);
+}
 
 async function verDetalle(id) {
     productoActual = todosLosProductos.find(p => p.id === id);
@@ -769,8 +921,6 @@ async function verDetalle(id) {
     };
 
     // Renderizar Colores
-    // Renderizar Colores
-    const colorMap = { 'negro': '#000', 'blanco': '#fff', 'rojo': '#ef4444', 'azul': '#3b82f6', 'verde': '#22c55e', 'amarillo': '#eab308', 'dorado': '#ffd700', 'humo': '#555' };
     const contenedorColores = document.getElementById('contenedorVariantes');
 
     // Prioridad: Colores definidos en variantes del producto, luego los encontrados en stock
@@ -782,7 +932,8 @@ async function verDetalle(id) {
         const btn = document.createElement('button');
         btn.className = 'variant-chip color';
         btn.title = color;
-        btn.style.cssText = `width:30px; height:30px; border-radius:50%; background:${colorMap[color.toLowerCase()] || '#cbd5e1'}; border:2px solid #e2e8f0; cursor:pointer;`;
+        // Rotar 45deg para que se vea mas estetico
+        btn.style.cssText = `width:30px; height:30px; border-radius:50%; background:${obtenerEstiloColor(color)}; border:2px solid #e2e8f0; cursor:pointer; transform: rotate(45deg); box-shadow: 0 2px 4px rgba(0,0,0,0.1);`;
         btn.onclick = () => seleccionarColor(color, true);
         contenedorColores.appendChild(btn);
     });
@@ -816,6 +967,9 @@ async function verDetalle(id) {
         if (tallas.length === 0) {
             tallas = Array.from(new Set(stock.filter(s => !s.color || s.color === '').map(s => s.talla))).filter(Boolean);
         }
+
+        // Ordenar tallas
+        tallas.sort(compararTallas);
 
         if (tallas.length === 0) {
             container.innerHTML = '<span style="color:#64748b; font-size:0.9rem;">Estándar</span>';
@@ -920,30 +1074,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function cargarCategoriasFiltro() {
     const select = document.getElementById('filtroCategoria');
-    // Si no existe o NO es un select (es input hidden del custom dropdown), no hacemos nada
     if (!select || select.tagName !== 'SELECT') return;
 
     try {
+        // 1. Obtener categorías de la DB
         const { data, error } = await supabaseClient
             .from('categorias')
             .select('nombre')
             .order('nombre');
 
-        if (error) throw error;
+        // 2. Obtener categorías de productos existentes (para asegurar que no falte ninguna)
+        const categoriasEnUso = new Set();
+        todosLosProductos.forEach(p => {
+            if (p.categoria) categoriasEnUso.add(p.categoria.trim().toUpperCase());
+        });
 
-        // Limpiar opciones manteniendo la default
+        // 3. Unificar listas
+        const categoriasFinales = new Set();
+        if (data) data.forEach(c => categoriasFinales.add(c.nombre.trim().toUpperCase()));
+        categoriasEnUso.forEach(c => categoriasFinales.add(c));
+
+        // 4. Ordenar alfabéticamente
+        const sortedCats = Array.from(categoriasFinales).sort((a, b) => a.localeCompare(b));
+
+        // 5. Llenar Select
         select.innerHTML = '<option value="">Todas las Categorías</option>';
+        sortedCats.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            select.appendChild(option);
+        });
 
-        if (data) {
-            data.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.nombre;
-                option.textContent = cat.nombre;
-                select.appendChild(option);
-            });
-        }
-
-        // Verificar URL param después de cargar opciones
+        // 6. Verificar URL param después de cargar opciones
         checkUrlParams();
 
     } catch (e) {
@@ -951,30 +1114,90 @@ async function cargarCategoriasFiltro() {
     }
 }
 
+function cargarSubcategoriasFiltro(categoriaSeleccionada) {
+    const subSelect = document.getElementById('filtroSubcategoria');
+    const subGroup = document.getElementById('grupoSubcategoria');
+    if (!subSelect || !subGroup) return;
+
+    // Limpiar opciones anteriores
+    subSelect.innerHTML = '<option value="">Todas las subcategorías</option>';
+
+    if (!categoriaSeleccionada) {
+        subGroup.style.display = 'none';
+        return;
+    }
+
+    // Filtrar productos de la categoría seleccionada para encontrar subcategorías
+    const subcategorias = new Set();
+    todosLosProductos.forEach(p => {
+        if ((p.categoria || '').toLowerCase() === categoriaSeleccionada.toLowerCase()) {
+            if (p.subcategoria) subcategorias.add(p.subcategoria.trim());
+        }
+    });
+
+    // Si no hay subcategorías, ocultar el filtro
+    if (subcategorias.size === 0) {
+        subGroup.style.display = 'none';
+        return;
+    }
+
+    // Llenar select
+    const sortedSubs = Array.from(subcategorias).sort((a, b) => a.localeCompare(b));
+    sortedSubs.forEach(sub => {
+        const option = document.createElement('option');
+        option.value = sub;
+        option.textContent = sub;
+        subSelect.appendChild(option);
+    });
+
+    // Mostrar filtro
+    subGroup.style.display = 'block';
+}
+
 function checkUrlParams() {
     const params = new URLSearchParams(window.location.search);
     const catParam = params.get('categoria');
+    const subcatParam = params.get('subcategoria');
+    const marcaParam = params.get('marca'); // También chequear marca si viene
 
+    let shouldFilter = false;
+
+    // 1. Aplicar Categoría
     if (catParam) {
         const select = document.getElementById('filtroCategoria');
         if (select) {
-            // Intentar match directo
-            select.value = catParam;
+            // Intentar match directo o case-insensitive
+            let match = Array.from(select.options).find(opt => opt.value === catParam || opt.value.toLowerCase() === catParam.toLowerCase());
+            if (match) {
+                select.value = match.value;
 
-            // Si falló (value vacío o default), intentar match case-insensitive
-            if (!select.value) {
-                Array.from(select.options).forEach(opt => {
-                    if (opt.value && opt.value.toLowerCase() === catParam.toLowerCase()) {
-                        select.value = opt.value;
-                    }
-                });
-            }
-
-            // Si se seleccionó algo, aplicar filtros
-            if (select.value) {
-                aplicarFiltros();
+                // Cargar subcategorías basadas en la elección
+                cargarSubcategoriasFiltro(select.value);
+                shouldFilter = true;
             }
         }
+    }
+
+    // 2. Aplicar Subcategoría (después de cargar las opciones)
+    if (subcatParam && shouldFilter) {
+        const subSelect = document.getElementById('filtroSubcategoria');
+        if (subSelect) {
+            let matchSub = Array.from(subSelect.options).find(opt => opt.value === subcatParam || opt.value.toLowerCase() === subcatParam.toLowerCase());
+            if (matchSub) {
+                subSelect.value = matchSub.value;
+            }
+        }
+    }
+
+    // 3. Aplicar Etiquetas desde URL
+    const ofertaParam = params.get('oferta');
+    const nuevoParam = params.get('nuevo');
+    if (ofertaParam === '1') { const cb = document.getElementById('filtroOferta'); if (cb) cb.checked = true; shouldFilter = true; }
+    if (nuevoParam === '1') { const cb = document.getElementById('filtroNuevo'); if (cb) cb.checked = true; shouldFilter = true; }
+
+    // Si hubo algún cambio por URL, aplicar filtros
+    if (shouldFilter || catParam || subcatParam || marcaParam) {
+        aplicarFiltros();
     }
 }
 
@@ -1254,20 +1477,8 @@ function cargarTallasFiltro() {
         }
     });
 
-    // Ordenar tallas (lógica simple: intentar numérico, luego alfabético)
-    const ordenTallas = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
-    const tallasArray = Array.from(tallasSet).sort((a, b) => {
-        const idxA = ordenTallas.indexOf(a.toUpperCase());
-        const idxB = ordenTallas.indexOf(b.toUpperCase());
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        // Si son números
-        const numA = parseFloat(a);
-        const numB = parseFloat(b);
-        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-        return a.localeCompare(b);
-    });
+    // Ordenar tallas
+    const tallasArray = Array.from(tallasSet).sort(compararTallas);
 
     // Limpiar opciones excepto la primera
     while (select.options.length > 1) {
@@ -1282,6 +1493,11 @@ function cargarTallasFiltro() {
     });
 }
 
+// Exportar funciones para uso inline en HTML
+window.aplicarFiltros = aplicarFiltros;
+window.limpiarFiltros = limpiarFiltros;
+window.toggleFiltro = typeof toggleFiltro !== 'undefined' ? toggleFiltro : null;
+window.cargarSubcategoriasFiltro = typeof cargarSubcategoriasFiltro !== 'undefined' ? cargarSubcategoriasFiltro : null;
+window.toggleSidebarMobile = typeof toggleSidebarMobile !== 'undefined' ? toggleSidebarMobile : null;
+
 // Fin del archivo
-
-

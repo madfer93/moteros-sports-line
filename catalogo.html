@@ -5,12 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de Productos | Moteros Sport Line Villavicencio</title>
-    <link rel="icon" href="img/logo-moteros.jpeg">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ff6b00">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="img/logo-moteros.jpeg">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+    <link rel="manifest" href="img/site.webmanifest">
     <meta name="description"
         content="Explora nuestro catálogo de cascos, guantes, chaquetas, botas, intercomunicadores y accesorios para motociclistas. Los mejores precios en Villavicencio, Meta.">
 
@@ -25,7 +23,8 @@
     <meta property="og:title" content="Catálogo - Moteros Sport Line">
     <meta property="og:description"
         content="Encuentra cascos, guantes, chaquetas y más para tu moto. Precios competitivos en Villavicencio.">
-    <meta property="og:image" content="img/logo-moteros.jpeg">
+    <meta property="og:image"
+        content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
 
     <link rel="canonical" href="https://moterossportline.store/catalogo.html">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -887,20 +886,9 @@
                     </svg>
                 </button>
                 <div class="filtro-options open">
-                    <select id="filtroCategoria" onchange="aplicarFiltros()">
+                    <select id="filtroCategoria" onchange="cargarSubcategoriasFiltro(this.value); aplicarFiltros()">
                         <option value="">Todas las categorías</option>
-                        <option value="Cascos">Cascos</option>
-                        <option value="Guantes">Guantes</option>
-                        <option value="Chaquetas">Chaquetas</option>
-                        <option value="Botas">Botas</option>
-                        <option value="Intercomunicadores">Intercomunicadores</option>
-                        <option value="Accesorios">Accesorios</option>
-                        <option value="Impermeables">Impermeables</option>
-                        <option value="Maleteros">Maleteros</option>
-                        <option value="Candados">Candados</option>
-                        <option value="Visores">Visores</option>
-                        <option value="Pantalones">Pantalones</option>
-                        <option value="Rodilleras">Rodilleras</option>
+                        <!-- Se llena dinámicamente con JS -->
                     </select>
                 </div>
             </div>
@@ -916,12 +904,7 @@
                 <div class="filtro-options open">
                     <select id="filtroSubcategoria" onchange="aplicarFiltros()">
                         <option value="">Todas las subcategorías</option>
-                        <option value="Integrales">Integrales</option>
-                        <option value="Abatibles">Abatibles</option>
-                        <option value="Abiertos">Abiertos</option>
-                        <option value="Multipropósito">Multipropósito</option>
-                        <option value="Cross">Cross</option>
-                        <option value="Modulares">Modulares</option>
+                        <!-- Se llena dinámicamente con JS -->
                     </select>
                 </div>
             </div>
@@ -973,6 +956,28 @@
                     </select>
                 </div>
             </div>
+
+            <!-- Filtro Etiquetas -->
+            <div class="filtro-group">
+                <button class="filtro-toggle active" onclick="toggleFiltro(this)">
+                    <span>🏷️ Etiquetas</span>
+                    <svg class="filtro-arrow" width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" fill="none" />
+                    </svg>
+                </button>
+                <div class="filtro-options open">
+                    <div class="checkbox-list">
+                        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; padding:0.35rem 0;">
+                            <input type="checkbox" id="filtroOferta" onchange="aplicarFiltros()">
+                            <span style="color:#dc2626; font-weight:600;">🏷️ En Oferta</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; padding:0.35rem 0;">
+                            <input type="checkbox" id="filtroNuevo" onchange="aplicarFiltros()">
+                            <span style="color:#059669; font-weight:600;">✨ Lo Nuevo</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
         </aside>
 
         <!-- Botón móvil para abrir filtros -->
@@ -997,7 +1002,7 @@
 
     <div id="modalDetalle" class="modal">
         <div class="modal-content">
-            <button class="modal-close" onclick="cerrarModalDetalle()">?</button>
+            <button class="modal-close" onclick="cerrarModalDetalle()">❌​</button>
             <div id="contenidoDetalle"></div>
         </div>
     </div>
@@ -1016,7 +1021,7 @@
     <!-- Modal Carrito -->
     <div id="modalCarrito" class="modal">
         <div class="modal-content">
-            <button class="modal-close" onclick="cerrarModalCarrito()">?</button>
+            <button class="modal-close" onclick="cerrarModalCarrito()">❌</button>
             <div style="padding: 3rem;">
                 <h2 style="text-align:center; color: var(--primary); margin-bottom: 2rem; font-size: 2rem;">🛒 Mi
                     Carrito</h2>

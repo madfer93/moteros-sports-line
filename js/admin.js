@@ -2339,6 +2339,14 @@ function limpiarFormProducto() {
     const cat = document.getElementById('productoCategoria'); if (cat) cat.value = '';
     const est = document.getElementById('productoEstado'); if (est) est.value = 'Activo';
     const margen = document.getElementById('productoMargen'); if (margen) margen.value = '0%';
+    // Limpiar etiquetas
+    const chkOferta = document.getElementById('productoEnOferta'); if (chkOferta) chkOferta.checked = false;
+    const chkNuevo = document.getElementById('productoEsNuevo'); if (chkNuevo) chkNuevo.checked = false;
+    const fechaOf = document.getElementById('productoOfertaHasta'); if (fechaOf) fechaOf.value = '';
+    const fechaNu = document.getElementById('productoNuevoHasta'); if (fechaNu) fechaNu.value = '';
+    const pctOf = document.getElementById('productoPorcentajeOferta'); if (pctOf) pctOf.value = '';
+    const grpOf = document.getElementById('grupoFechaOferta'); if (grpOf) grpOf.style.display = 'none';
+    const grpNu = document.getElementById('grupoFechaNuevo'); if (grpNu) grpNu.style.display = 'none';
     removerPreview('producto');
 }
 
@@ -2365,6 +2373,12 @@ async function editarProducto(id) {
         document.getElementById('productoDescTecnica').value = data.descripcion_tecnica || '';
         document.getElementById('productoImagen').value = data.url_imagen || '';
         document.getElementById('productoEstado').value = data.estado || 'Activo';
+        // Cargar etiquetas
+        const chkOf = document.getElementById('productoEnOferta'); if (chkOf) { chkOf.checked = !!data.en_oferta; toggleFechaOferta(); }
+        const chkNu = document.getElementById('productoEsNuevo'); if (chkNu) { chkNu.checked = !!data.es_nuevo; toggleFechaNuevo(); }
+        if (data.fecha_oferta_hasta) { const el = document.getElementById('productoOfertaHasta'); if (el) el.value = data.fecha_oferta_hasta.substring(0, 10); }
+        if (data.fecha_nuevo_hasta) { const el = document.getElementById('productoNuevoHasta'); if (el) el.value = data.fecha_nuevo_hasta.substring(0, 10); }
+        if (data.porcentaje_oferta) { const el = document.getElementById('productoPorcentajeOferta'); if (el) el.value = data.porcentaje_oferta; }
         calcularMargen();
         if (data.url_imagen) { const preview = document.getElementById('previewProducto'); const container = document.getElementById('previewContainerProducto'); if (preview && container) { preview.src = data.url_imagen; container.style.display = 'inline-block'; } }
         await cargarStockTiendas(data.id_producto);
@@ -2396,6 +2410,12 @@ async function duplicarProducto(id) {
         document.getElementById('productoDescTecnica').value = data.descripcion_tecnica || '';
         document.getElementById('productoImagen').value = data.url_imagen || '';
         document.getElementById('productoEstado').value = data.estado || 'Activo';
+        // Cargar etiquetas al duplicar
+        const chkOf2 = document.getElementById('productoEnOferta'); if (chkOf2) { chkOf2.checked = !!data.en_oferta; toggleFechaOferta(); }
+        const chkNu2 = document.getElementById('productoEsNuevo'); if (chkNu2) { chkNu2.checked = !!data.es_nuevo; toggleFechaNuevo(); }
+        if (data.fecha_oferta_hasta) { const el = document.getElementById('productoOfertaHasta'); if (el) el.value = data.fecha_oferta_hasta.substring(0, 10); }
+        if (data.fecha_nuevo_hasta) { const el = document.getElementById('productoNuevoHasta'); if (el) el.value = data.fecha_nuevo_hasta.substring(0, 10); }
+        if (data.porcentaje_oferta) { const el = document.getElementById('productoPorcentajeOferta'); if (el) el.value = data.porcentaje_oferta; }
 
         calcularMargen();
 
@@ -2495,7 +2515,13 @@ async function guardarProducto() {
     }
     const variantesInput = document.getElementById('productoVariantes').value;
     const variantes = variantesInput ? variantesInput.split(',').map(v => v.trim()).filter(v => v) : [];
-    const producto = { nombre, referencia: document.getElementById('productoReferencia').value.trim() || `REF-${Date.now()}`, categoria, marca, variantes, precio: parseFloat(precio) || 0, precio_compra: parseFloat(precioCompra) || 0, descripcion_corta: document.getElementById('productoDescCorta').value.trim(), descripcion_tecnica: document.getElementById('productoDescTecnica').value.trim(), url_imagen: urlImagen, estado: document.getElementById('productoEstado').value, id_producto: idProductoFinal };
+    // Etiquetas
+    const enOferta = document.getElementById('productoEnOferta')?.checked || false;
+    const esNuevo = document.getElementById('productoEsNuevo')?.checked || false;
+    const fechaOfertaHasta = document.getElementById('productoOfertaHasta')?.value || null;
+    const fechaNuevoHasta = document.getElementById('productoNuevoHasta')?.value || null;
+    const porcentajeOferta = parseInt(document.getElementById('productoPorcentajeOferta')?.value) || null;
+    const producto = { nombre, referencia: document.getElementById('productoReferencia').value.trim() || `REF-${Date.now()}`, categoria, marca, variantes, precio: parseFloat(precio) || 0, precio_compra: parseFloat(precioCompra) || 0, descripcion_corta: document.getElementById('productoDescCorta').value.trim(), descripcion_tecnica: document.getElementById('productoDescTecnica').value.trim(), url_imagen: urlImagen, estado: document.getElementById('productoEstado').value, id_producto: idProductoFinal, en_oferta: enOferta, es_nuevo: esNuevo, fecha_oferta_hasta: fechaOfertaHasta ? new Date(fechaOfertaHasta + 'T23:59:59').toISOString() : null, fecha_nuevo_hasta: fechaNuevoHasta ? new Date(fechaNuevoHasta + 'T23:59:59').toISOString() : null, porcentaje_oferta: porcentajeOferta };
     const stockAlcala = parseInt(document.getElementById('stockAlcala')?.value) || 0;
     const stockLocal01 = parseInt(document.getElementById('stockLocal01')?.value) || 0;
     const stockJordan = parseInt(document.getElementById('stockJordan')?.value) || 0;
@@ -2551,6 +2577,27 @@ async function toggleDestacado(id, valor) {
         showToast('Error: ' + e.message, 'error');
     }
 }
+// Toggle visibilidad de fechas de etiquetas
+function toggleFechaOferta() {
+    const checked = document.getElementById('productoEnOferta')?.checked;
+    const grupo = document.getElementById('grupoFechaOferta');
+    if (grupo) grupo.style.display = checked ? 'block' : 'none';
+    if (checked && !document.getElementById('productoOfertaHasta')?.value) {
+        const d = new Date(); d.setDate(d.getDate() + 14);
+        document.getElementById('productoOfertaHasta').value = d.toISOString().substring(0, 10);
+    }
+}
+function toggleFechaNuevo() {
+    const checked = document.getElementById('productoEsNuevo')?.checked;
+    const grupo = document.getElementById('grupoFechaNuevo');
+    if (grupo) grupo.style.display = checked ? 'block' : 'none';
+    if (checked && !document.getElementById('productoNuevoHasta')?.value) {
+        const d = new Date(); d.setDate(d.getDate() + 7);
+        document.getElementById('productoNuevoHasta').value = d.toISOString().substring(0, 10);
+    }
+}
+window.toggleFechaOferta = toggleFechaOferta;
+window.toggleFechaNuevo = toggleFechaNuevo;
 window.toggleDestacado = toggleDestacado;
 
 // ---------------------------------------------------------------

@@ -1,30 +1,30 @@
 /* ---------------------------------------------------------------
    POS MOTEROS SPORTS LINE - JAVASCRIPT UNIFICADO v2.0
-   Compatible con tiendas fÌsicas (Alcal·, 01, Jord·n) y Digital
+   Compatible con tiendas f√≠sicas (Alcal√°, 01, Jord√°n) y Digital
    ---------------------------------------------------------------*/
 
 // ---------------------------------------------------------------
-// CONFIGURACI”N DE SUPABASE (se carga desde config.js)
+// CONFIGURACI√ìN DE SUPABASE (se carga desde config.js)
 // ---------------------------------------------------------------
 const { createClient } = supabase;
 const db = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 
-// Alias para compatibilidad con cÛdigo existente
+// Alias para compatibilidad con c√≥digo existente
 const supabaseClient = db;
 
 // ---------------------------------------------------------------
-// CONFIGURACI”N POR TIENDA (se define en cada HTML)
+// CONFIGURACI√ìN POR TIENDA (se define en cada HTML)
 // TIENDA = { 
-//   nombre: 'Alcal·' | '01' | 'Jord·n' | 'Digital', 
+//   nombre: 'Alcal√°' | '01' | 'Jord√°n' | 'Digital', 
 //   tablaInventario: 'inventario_alcala' | 'inventario_01' | etc,
 //   storageKey: 'pos_caja_alcala' | etc,
 //   esDigital: false | true
 // }
 // ---------------------------------------------------------------
 
-const LOGO_URL = 'img/logo-moteros.jpeg';
+const LOGO_URL = 'https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg';
 
-// MÈtodos de crÈdito (requieren datos adicionales)
+// M√©todos de cr√©dito (requieren datos adicionales)
 const METODOS_CREDITO = ['Credito Motero', 'Addi', 'Sistecredito', 'Fodegas', 'Contraentrega'];
 
 // ---------------------------------------------------------------
@@ -38,13 +38,13 @@ let itemEditandoIdx = null;
 let datosCaja = null;
 let resumenVentas = null;
 let gastosDelDia = [];
-let empleadoLogueado = null; // Datos del empleado con sesiÛn activa
+let empleadoLogueado = null; // Datos del empleado con sesi√≥n activa
 let productoParaVariante = null; // Variable para manejo de variantes
 let clienteSeleccionado = null; // { id, nombre, telefono, cedula, promocion }
 let tipoClienteActual = 'consumidor'; // 'consumidor' | 'registrado'
 
 // ---------------------------------------------------------------
-// INICIALIZACI”N
+// INICIALIZACI√ìN
 // ---------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', async () => {
     const tipoTienda = TIENDA.esDigital ? 'Digital' : `${TIENDA.nombre}`;
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cargar vendedores
     await cargarVendedores();
 
-    // SincronizaciÛn autom·tica de ventas offline
+    // Sincronizaci√≥n autom√°tica de ventas offline
     if (window.OfflineManager) {
         window.OfflineManager.sincronizarPendientes(db);
         setInterval(() => window.OfflineManager.sincronizarPendientes(db), 60000); // Cada minuto
@@ -151,7 +151,7 @@ async function verificarLogin() {
     const errorDiv = document.getElementById('loginError');
 
     if (!usuario || !password) {
-        errorDiv.textContent = 'Por favor ingresa usuario y contraseÒa';
+        errorDiv.textContent = 'Por favor ingresa usuario y contrase√±a';
         errorDiv.style.display = 'block';
         return;
     }
@@ -168,10 +168,10 @@ async function verificarLogin() {
             empleadoLogueado = empLocal;
             document.getElementById('modalLoginEmpleado').classList.remove('visible');
             abrirModalCajaConEmpleado();
-            mostrarAlerta('SesiÛn iniciada (Modo Offline)', 'info');
+            mostrarAlerta('Sesi√≥n iniciada (Modo Offline)', 'info');
             return;
         } else if (empLocal) {
-            errorDiv.textContent = 'ContraseÒa incorrecta (Offline)';
+            errorDiv.textContent = 'Contrase√±a incorrecta (Offline)';
             errorDiv.style.display = 'block';
             return;
         } else {
@@ -186,7 +186,7 @@ async function verificarLogin() {
 
 
     try {
-        // Buscar empleado por usuario o cÈdula
+        // Buscar empleado por usuario o c√©dula
         const { data: empleado, error } = await db
             .from('empleados_tienda')
             .select('*')
@@ -200,9 +200,9 @@ async function verificarLogin() {
             return;
         }
 
-        // Verificar contraseÒa (simple hash comparison - en producciÛn usar bcrypt)
+        // Verificar contrase√±a (simple hash comparison - en producci√≥n usar bcrypt)
         if (empleado.password !== password) {
-            errorDiv.textContent = 'ContraseÒa incorrecta';
+            errorDiv.textContent = 'Contrase√±a incorrecta';
             errorDiv.style.display = 'block';
 
             // Registrar intento fallido
@@ -226,7 +226,7 @@ async function verificarLogin() {
         // Login exitoso
         empleadoLogueado = empleado;
 
-        // Guardar sesiÛn en localStorage
+        // Guardar sesi√≥n en localStorage
         localStorage.setItem('empleado_logueado_' + TIENDA.storageKey, JSON.stringify({
             id: empleado.id,
             nombre: empleado.nombre,
@@ -234,7 +234,7 @@ async function verificarLogin() {
             fecha: new Date().toISOString()
         }));
 
-        // Registrar sesiÛn en Supabase
+        // Registrar sesi√≥n en Supabase
         await db.from('sesiones_empleados').insert({
             empleado_id: empleado.id,
             local: TIENDA.nombre,
@@ -248,12 +248,12 @@ async function verificarLogin() {
 
     } catch (e) {
         console.error('Error en login:', e);
-        // Si la tabla no existe, permitir login sin verificaciÛn (modo legacy)
+        // Si la tabla no existe, permitir login sin verificaci√≥n (modo legacy)
         if (e.message && e.message.includes('does not exist')) {
             console.warn('Tabla empleados_tienda no existe, usando modo legacy');
             abrirModalCajaLegacy();
         } else {
-            errorDiv.textContent = 'Error de conexiÛn. Intenta de nuevo.';
+            errorDiv.textContent = 'Error de conexi√≥n. Intenta de nuevo.';
             errorDiv.style.display = 'block';
         }
     }
@@ -273,7 +273,7 @@ async function abrirModalCajaConEmpleado() {
     // Configurar base de caja
     document.getElementById('montoInicial').value = TIENDA.esDigital ? '0' : '100000';
 
-    // Si estamos en la p·gina de eventos, cargar eventos activos
+    // Si estamos en la p√°gina de eventos, cargar eventos activos
     const selectEvento = document.getElementById('selectEventoActivo');
     if (selectEvento) {
         try {
@@ -295,8 +295,8 @@ async function abrirModalCajaConEmpleado() {
 }
 
 function abrirModalCajaLegacy() {
-    // Modo legacy - sin verificaciÛn de empleados (para compatibilidad)
-    const nombre = prompt('?? Ingresa tu nombre completo:');
+    // Modo legacy - sin verificaci√≥n de empleados (para compatibilidad)
+    const nombre = prompt('‚úÖ‚Äã Ingresa tu nombre completo:');
     if (!nombre || !nombre.trim()) {
         mostrarAlerta('Debes ingresar tu nombre', 'warning');
         return;
@@ -328,7 +328,7 @@ async function cerrarSesionEmpleado() {
     empleadoLogueado = null;
     localStorage.removeItem('empleado_logueado_' + TIENDA.storageKey);
     cerrarModal();
-    mostrarAlerta('SesiÛn cerrada correctamente', 'info');
+    mostrarAlerta('Sesi√≥n cerrada correctamente', 'info');
 }
 
 function verificarSesionExistente() {
@@ -339,7 +339,7 @@ function verificarSesionExistente() {
             const hoy = new Date().toISOString().split('T')[0];
             const fechaSesion = datos.fecha.split('T')[0];
 
-            // Si la sesiÛn es de hoy, restaurarla
+            // Si la sesi√≥n es de hoy, restaurarla
             if (fechaSesion === hoy) {
                 empleadoLogueado = datos;
                 return true;
@@ -355,11 +355,11 @@ function verificarSesionExistente() {
 
 function abrirModalCaja() {
     if (cajaAbierta) {
-        mostrarAlerta('La caja ya est· abierta', 'warning');
+        mostrarAlerta('La caja ya est√° abierta', 'warning');
         return;
     }
 
-    // Verificar si hay sesiÛn existente
+    // Verificar si hay sesi√≥n existente
     if (verificarSesionExistente()) {
         abrirModalCajaConEmpleado();
     } else {
@@ -432,7 +432,7 @@ async function confirmarAbrirCaja() {
                 // Si es error de duplicado (409), intentar recuperar la existente nuevamente por seguridad
                 if (error.code === '23505' || error.message.includes('duplicate key')) {
                     console.warn('Conflicto de caja duplicada, intentando recuperar...');
-                    // LÛgica de recuperaciÛn simple o fallback local
+                    // L√≥gica de recuperaci√≥n simple o fallback local
                     // En este caso, si falla insert, dejamos que el catch lo maneje o asumimos local.
                     throw error;
                 }
@@ -480,31 +480,31 @@ async function mostrarModalCerrarCaja() {
             .eq('local', TIENDA.nombre)
             .gte('created_at', hoy + 'T00:00:00');
 
-        // Consultar abonos a proveedores del dÌa por LOCAL
+        // Consultar abonos a proveedores del d√≠a por LOCAL
         const { data: abonosProv } = await db.from('pagos_proveedor')
             .select('monto, metodo_pago, proveedores(razon_social)')
             .eq('local', TIENDA.nombre)
             .gte('created_at', hoy + 'T00:00:00');
 
-        // Consultar adelantos de nÛmina del dÌa por LOCAL
+        // Consultar adelantos de n√≥mina del d√≠a por LOCAL
         const { data: adelantosNom } = await db.from('adelantos_nomina')
             .select('monto, registrado_por')
             .eq('local', TIENDA.nombre)
             .gte('created_at', hoy + 'T00:00:00');
 
-        // Consultar abonos a CR…DITOS del dÌa por LOCAL
+        // Consultar abonos a CR√âDITOS del d√≠a por LOCAL
         const { data: abonosCred } = await db.from('pagos_credito')
-            .select('monto_pagado, local, metodo_pago') // AÒadido metodo_pago que faltaba
+            .select('monto_pagado, local, metodo_pago') // A√±adido metodo_pago que faltaba
             .eq('local', TIENDA.nombre)
             .gte('fecha_pago', hoy + 'T00:00:00');
 
-        // Consultar abonos de SERVICIOS del dÌa por LOCAL
+        // Consultar abonos de SERVICIOS del d√≠a por LOCAL
         const { data: abonosServ } = await db.from('pagos_servicios')
             .select('monto, metodo_pago')
             .eq('local', TIENDA.nombre)
             .gte('created_at', hoy + 'T00:00:00');
 
-        // Consultar abonos de DEUDORES del dÌa (Si la tabla existe)
+        // Consultar abonos de DEUDORES del d√≠a (Si la tabla existe)
         const { data: abonosDeudores } = await db.from('pagos_deudor')
             .select('monto, metodo_pago')
             .gte('fecha_pago', hoy);
@@ -521,7 +521,7 @@ async function mostrarModalCerrarCaja() {
         const totalAbonosServicios = abonosServiciosDelDia.reduce((sum, a) => sum + (a.monto || 0), 0);
         const totalAbonosDeudores = abonosDeudoresDelDia.reduce((sum, a) => sum + (a.monto || 0), 0);
 
-        // Estructura de totales seg˙n tipo de tienda
+        // Estructura de totales seg√∫n tipo de tienda
         const totales = TIENDA.esDigital ? {
             transferencia: 0, nequi: 0, daviplata: 0, tarjeta: 0,
             contraentrega: 0, addi: 0, sistecredito: 0, fodegas: 0
@@ -549,9 +549,9 @@ async function mostrarModalCerrarCaja() {
             if (metodos.includes('daviplata')) totales.daviplata += montoPorMetodo;
             if (metodos.includes('nequi')) totales.nequi += montoPorMetodo;
             if (metodos.includes('addi')) totales.addi += montoPorMetodo;
-            if (metodos.includes('datafono') || metodos.includes('dat·fono')) totales.datafono = (totales.datafono || 0) + montoPorMetodo;
-            if (metodos.includes('sistecredito') || metodos.includes('sistecrÈdito')) totales.sistecredito += montoPorMetodo;
-            if (metodos.includes('credito motero') || metodos.includes('crÈdito motero')) totales.credito_motero = (totales.credito_motero || 0) + montoPorMetodo;
+            if (metodos.includes('datafono') || metodos.includes('dat√°fono')) totales.datafono = (totales.datafono || 0) + montoPorMetodo;
+            if (metodos.includes('sistecredito') || metodos.includes('sistecrdito')) totales.sistecredito += montoPorMetodo;
+            if (metodos.includes('credito motero') || metodos.includes('crdito motero')) totales.credito_motero = (totales.credito_motero || 0) + montoPorMetodo;
             if (metodos.includes('fodegas')) totales.fodegas += montoPorMetodo;
             if (metodos.includes('contraentrega')) totales.contraentrega = (totales.contraentrega || 0) + montoPorMetodo;
         });
@@ -591,24 +591,24 @@ async function mostrarModalCerrarCaja() {
         const resumenHTML = `
             <div class="resumen-cierre-premium">
                 <div class="resumen-seccion" style="border-left-color: var(--primary);">
-                    <h4>?? VENTAS DE PRODUCTOS</h4>
+                    <h4>üíµ‚Äã VENTAS DE PRODUCTOS</h4>
                     <div class="resumen-row"><span class="label">Transacciones</span><span class="value">${resumenVentas.numTransacciones}</span></div>
                     <div class="resumen-row"><span class="label">Unidades Vendidas</span><span class="value">${resumenVentas.totalUnidades}</span></div>
                     <div class="resumen-row total-section"><span class="label">Subtotal Ventas</span><span class="value">$${Math.round(totalGeneralVentas).toLocaleString('es-CO')}</span></div>
                 </div>
 
                 <div class="resumen-seccion" style="border-left-color: #3b82f6;">
-                    <h4>?? OTROS INGRESOS</h4>
-                    <div class="resumen-row"><span class="label">Abonos CrÈditos</span><span class="value">+$${Math.round(totalAbonosCreditos).toLocaleString('es-CO')}</span></div>
+                    <h4>üíµ‚Äã  OTROS INGRESOS</h4>
+                    <div class="resumen-row"><span class="label">Abonos Cr√©ditos</span><span class="value">+$${Math.round(totalAbonosCreditos).toLocaleString('es-CO')}</span></div>
                     <div class="resumen-row"><span class="label">Abonos Deudores</span><span class="value">+$${Math.round(totalAbonosDeudores).toLocaleString('es-CO')}</span></div>
                     <div class="resumen-row"><span class="label">Ingresos Servicios</span><span class="value">+$${Math.round(totalAbonosServicios).toLocaleString('es-CO')}</span></div>
                     <div class="resumen-row total-section" style="color:#3b82f6;"><span class="label">Subtotal Otros</span><span class="value">$${Math.round(totalAbonosCreditos + totalAbonosDeudores + totalAbonosServicios).toLocaleString('es-CO')}</span></div>
                 </div>
 
                 <div class="resumen-seccion" style="border-left-color: #ef4444;">
-                    <h4>?? EGRESOS DEL DÕA</h4>
+                    <h4>üíµ‚Äã EGRESOS DEL D√çA</h4>
                     <div class="resumen-row"><span class="label">Gastos Registrados</span><span class="value">-$${Math.round(totalGastos).toLocaleString('es-CO')}</span></div>
-                    <div class="resumen-row"><span class="label">Adelantos NÛmina</span><span class="value">-$${Math.round(totalAdelantos).toLocaleString('es-CO')}</span></div>
+                    <div class="resumen-row"><span class="label">Adelantos N√≥mina</span><span class="value">-$${Math.round(totalAdelantos).toLocaleString('es-CO')}</span></div>
                     <div class="resumen-row"><span class="label">Pagos a Proveedor</span><span class="value">-$${Math.round(totalAbonosProv).toLocaleString('es-CO')}</span></div>
                     <div class="resumen-row total-section" style="color:#ef4444;"><span class="label">Total Egresos</span><span class="value">-$${Math.round(totalGastos + totalAdelantos + totalAbonosProv).toLocaleString('es-CO')}</span></div>
                 </div>
@@ -619,12 +619,12 @@ async function mostrarModalCerrarCaja() {
                     </div>
                     <div class="resumen-group" style="padding: 0 1rem; border-left: 2px solid rgba(255,255,255,0.1);">
                         <div class="resumen-row" style="font-weight:700;">
-                            <span class="label" style="color:#cbd5e1;">?? EFECTIVO ESPERADO</span>
+                            <span class="label" style="color:#cbd5e1;">üíµ‚Äã EFECTIVO ESPERADO</span>
                             <span class="value" style="font-size:1.3rem; color:#10b981;">$${Math.round(efectivoEsperado).toLocaleString('es-CO')}</span>
                         </div>
                     </div>
                     <div class="resumen-row total-final">
-                        <span class="label">?? CONSOLIDADO SISTEMA</span>
+                        <span class="label">üíµ‚Äã CONSOLIDADO SISTEMA</span>
                         <span class="value">$${Math.round(resumenVentas.totalGeneralCierre).toLocaleString('es-CO')}</span>
                     </div>
                 </div>
@@ -637,7 +637,7 @@ async function mostrarModalCerrarCaja() {
         document.getElementById('resumenCierreModal').innerHTML = resumenHTML;
 
         // Auto-completar campos de medios digitales con valores del sistema
-        // El efectivo se deja en blanco para obligar al conteo fÌsico
+        // El efectivo se deja en blanco para obligar al conteo f√≠sico
         if (TIENDA.esDigital) {
             if (document.getElementById('transferenciaContado')) document.getElementById('transferenciaContado').value = Math.round(totales.transferencia || 0);
             if (document.getElementById('nequiContado')) document.getElementById('nequiContado').value = Math.round(totales.nequi || 0);
@@ -647,7 +647,7 @@ async function mostrarModalCerrarCaja() {
             if (document.getElementById('sistecreditoContado')) document.getElementById('sistecreditoContado').value = Math.round(totales.sistecredito || 0);
             if (document.getElementById('fodegasContado')) document.getElementById('fodegasContado').value = Math.round(totales.fodegas || 0);
         } else {
-            // Tienda FÌsica: Auto-completar todo EXCEPTO efectivo
+            // Tienda F√≠sica: Auto-completar todo EXCEPTO efectivo
             if (document.getElementById('transferenciaContado')) document.getElementById('transferenciaContado').value = Math.round(totales.transferencia || 0);
             if (document.getElementById('nequiContado')) document.getElementById('nequiContado').value = Math.round(totales.nequi || 0);
             if (document.getElementById('daviplataContado')) document.getElementById('daviplataContado').value = Math.round(totales.daviplata || 0);
@@ -657,14 +657,14 @@ async function mostrarModalCerrarCaja() {
             if (document.getElementById('sistecreditoContado')) document.getElementById('sistecreditoContado').value = Math.round(totales.sistecredito || 0);
             if (document.getElementById('fodegasContado')) document.getElementById('fodegasContado').value = Math.round(totales.fodegas || 0);
 
-            // Efectivo vacÌo para obligar al conteo
+            // Efectivo vac√≠o para obligar al conteo
             if (document.getElementById('efectivoContado')) document.getElementById('efectivoContado').value = '';
         }
 
         const obsEl = document.getElementById('observacionesCierre');
         if (obsEl) obsEl.value = '';
 
-        // Gastos solo para tiendas fÌsicas
+        // Gastos solo para tiendas f√≠sicas
         if (!TIENDA.esDigital) {
             gastosDelDia = [];
             renderizarGastos();
@@ -768,7 +768,7 @@ async function confirmarCerrarCaja() {
         datosCaja = null;
         actualizarUICaja();
 
-        mostrarAlerta('?? Cierre guardado correctamente', 'success');
+        mostrarAlerta('‚úÖ‚Äã Cierre guardado correctamente', 'success');
 
     } catch (e) {
         console.error('Error cerrando caja:', e);
@@ -834,7 +834,7 @@ async function confirmarCerrarCajaDigital() {
         cajaAbierta = false;
         actualizarUICaja();
 
-        mostrarAlerta('?? Cierre guardado', 'success');
+        mostrarAlerta('‚úÖ‚Äã Cierre guardado', 'success');
 
     } catch (e) {
         console.error('Error:', e);
@@ -853,22 +853,22 @@ function mostrarResumenFinal(efectivoContado, diferenciaEfectivo, diferenciaTota
     document.getElementById('resumenCierreCompleto').classList.remove('hidden');
     document.getElementById('resumenCierreCompleto').innerHTML = `
         <div class="resumen-final">
-            <h2>?? Caja Cerrada</h2>
+            <h2>‚úÖ‚Äã Caja Cerrada</h2>
             <p class="numero-cierre">Cierre guardado exitosamente</p>
             <div class="resumen-cierre">
-                <div class="resumen-row"><span class="label">?? Fecha</span><span class="value">${new Date().toLocaleDateString('es-CO')}</span></div>
-                <div class="resumen-row"><span class="label">?? Tienda</span><span class="value">${TIENDA.nombre}</span></div>
-                <div class="resumen-row"><span class="label">?? Vendedor</span><span class="value">${datosCaja?.vendedor || 'N/A'}</span></div>
-                <div class="resumen-row"><span class="label">?? Transacciones</span><span class="value">${resumenVentas?.numTransacciones || 0}</span></div>
-                <div class="resumen-row"><span class="label"> Unidades</span><span class="value">${resumenVentas?.totalUnidades || 0}</span></div>
-                <div class="resumen-row"><span class="label">?? Total Ventas</span><span class="value">$${(resumenVentas?.totalGeneral || 0).toLocaleString('es-CO')}</span></div>
-                <div class="resumen-row"><span class="label">?? Total Gastos</span><span class="value">$${totalGastos.toLocaleString('es-CO')}</span></div>
-                <div class="resumen-row"><span class="label">?? Efectivo Contado</span><span class="value">$${efectivoContado.toLocaleString('es-CO')}</span></div>
-                <div class="resumen-row"><span class="label">?? Dif. Efectivo</span><span class="value ${difEfClass}">$${diferenciaEfectivo.toLocaleString('es-CO')}</span></div>
+                <div class="resumen-row"><span class="label">üìÖ‚Äã Fecha</span><span class="value">${new Date().toLocaleDateString('es-CO')}</span></div>
+                <div class="resumen-row"><span class="label">üè™‚Äã Tienda</span><span class="value">${TIENDA.nombre}</span></div>
+                <div class="resumen-row"><span class="label">üë§ Vendedor</span><span class="value">${datosCaja?.vendedor || 'N/A'}</span></div>
+                <div class="resumen-row"><span class="label">üè¶‚Äã Transacciones</span><span class="value">${resumenVentas?.numTransacciones || 0}</span></div>
+                <div class="resumen-row"><span class="label">üßÆ‚Äã Unidades</span><span class="value">${resumenVentas?.totalUnidades || 0}</span></div>
+                <div class="resumen-row"><span class="label">üí∞ Total Ventas</span><span class="value">$${(resumenVentas?.totalGeneral || 0).toLocaleString('es-CO')}</span></div>
+                <div class="resumen-row"><span class="label">üí∏ Total Gastos</span><span class="value">$${totalGastos.toLocaleString('es-CO')}</span></div>
+                <div class="resumen-row"><span class="label">üíµ Efectivo Contado</span><span class="value">$${efectivoContado.toLocaleString('es-CO')}</span></div>
+                <div class="resumen-row"><span class="label">üßÆ Dif. Efectivo</span><span class="value ${difEfClass}">$${diferenciaEfectivo.toLocaleString('es-CO')}</span></div>
                 <div class="resumen-row total"><span class="label">Dif. Total</span><span class="value ${difTotClass}">$${diferenciaTotal.toLocaleString('es-CO')}</span></div>
             </div>
             ${window._productosCierreHTML || ''}
-            <button class="btn btn-success btn-large btn-full mt-1" onclick="reiniciarPantallaCaja()">?? Abrir Nueva Caja</button>
+            <button class="btn btn-success btn-large btn-full mt-1" onclick="reiniciarPantallaCaja()">üîì‚Äã Abrir Nueva Caja</button>
         </div>
     `;
 }
@@ -883,16 +883,16 @@ function mostrarResumenFinalDigital(totalContado, diferenciaTotal) {
     document.getElementById('resumenCierreCompleto').classList.remove('hidden');
     document.getElementById('resumenCierreCompleto').innerHTML = `
         <div class="resumen-final">
-            <h2>?? Caja Cerrada</h2>
+            <h2>üîí Caja Cerrada</h2>
             <p class="numero-cierre">Digital - ${new Date().toLocaleDateString('es-CO')}</p>
             <div class="resumen-cierre">
-                <div class="resumen-row"><span class="label"> Pedidos</span><span class="value">${resumenVentas?.numTransacciones || 0}</span></div>
-                <div class="resumen-row"><span class="label">?? Total Ventas</span><span class="value">$${(resumenVentas?.totalGeneral || 0).toLocaleString('es-CO')}</span></div>
-                <div class="resumen-row"><span class="label">?? Total Contado</span><span class="value">$${totalContado.toLocaleString('es-CO')}</span></div>
+                <div class="resumen-row"><span class="label">üè¶‚Äã Pedidos</span><span class="value">${resumenVentas?.numTransacciones || 0}</span></div>
+                <div class="resumen-row"><span class="label">üí∞ Total Ventas</span><span class="value">$${(resumenVentas?.totalGeneral || 0).toLocaleString('es-CO')}</span></div>
+                <div class="resumen-row"><span class="label">üíµ Total Contado</span><span class="value">$${totalContado.toLocaleString('es-CO')}</span></div>
                 <div class="resumen-row total"><span class="label">Diferencia</span><span class="value ${difTotClass}">$${diferenciaTotal.toLocaleString('es-CO')}</span></div>
             </div>
             ${window._productosCierreHTML || ''}
-            <button class="btn btn-success btn-large btn-full mt-1" onclick="reiniciarPantallaCaja()">?? Abrir Nueva Caja</button>
+            <button class="btn btn-success btn-large btn-full mt-1" onclick="reiniciarPantallaCaja()">üîì‚Äã Abrir Nueva Caja</button>
         </div>
     `;
 }
@@ -904,7 +904,7 @@ function reiniciarPantallaCaja() {
 }
 
 // ---------------------------------------------------------------
-// GASTOS DEL DIA (solo tiendas fÌsicas)
+// GASTOS DEL DIA (solo tiendas f√≠sicas)
 // ---------------------------------------------------------------
 function agregarGasto() {
     gastosDelDia.push({ descripcion: '', monto: 0 });
@@ -929,21 +929,21 @@ function renderizarGastos() {
 
     container.innerHTML = gastosDelDia.map((g, idx) => `
         <div class="gasto-item" style="display:flex; gap:5px; align-items:center; margin-bottom:5px;">
-            <input type="text" placeholder="DescripciÛn" value="${g.descripcion}" 
+            <input type="text" placeholder="Descripci√≥n" value="${g.descripcion}" 
                    onchange="actualizarGasto(${idx}, 'descripcion', this.value)" style="flex:2">
             <input type="number" placeholder="$0" value="${g.monto || ''}" 
                    onchange="actualizarGasto(${idx}, 'monto', this.value)" style="flex:1">
             
             <div style="position:relative; width:30px; overflow:hidden;">
-               <label for="file-${idx}" style="cursor:pointer; font-size:1.2em;" title="Adjuntar Foto">??</label>
+               <label for="file-${idx}" style="cursor:pointer; font-size:1.2em;" title="Adjuntar Foto">üì∑‚Äã</label>
                <input type="file" id="file-${idx}" accept="image/*" 
                       onchange="subirEvidenciaGasto(${idx}, this)" 
                       style="position:absolute; left:0; top:0; opacity:0; width:100%;">
             </div>
             
-            ${g.evidenciaUrl ? `<a href="${g.evidenciaUrl}" target="_blank" title="Ver evidencia">???</a>` : ''}
+            ${g.evidenciaUrl ? `<a href="${g.evidenciaUrl}" target="_blank" title="Ver evidencia">üßæ‚Äã</a>` : ''}
             
-            <button onclick="eliminarGasto(${idx})" style="padding:0 8px;">???</button>
+            <button onclick="eliminarGasto(${idx})" style="padding:0 8px;">‚ùå</button>
         </div>
     `).join('');
 
@@ -955,7 +955,7 @@ async function subirEvidenciaGasto(idx, input) {
     const file = input.files[0];
     if (!file) return;
 
-    // Validar tamaÒo (max 5MB)
+    // Validar tama√±o (max 5MB)
     if (file.size > 5 * 1024 * 1024) return mostrarAlerta('Imagen muy grande (Max 5MB)', 'warning');
 
     try {
@@ -1024,7 +1024,7 @@ async function cargarProductos() {
         if (!navigator.onLine && window.OfflineManager) {
             console.warn('Offline: Cargando productos desde IndexedDB...');
             const prodsCached = await window.OfflineManager.obtenerProductosOffline();
-            const localFilter = TIENDA.esDigital || TIENDA.nombre === 'Admin' ? 'Todas' : (TIENDA.nombre === '01' ? '01' : (TIENDA.nombre === 'Alcal·' ? 'Alcal·' : (TIENDA.nombre === 'Jord·n' ? 'Jord·n' : TIENDA.nombre)));
+            const localFilter = TIENDA.esDigital || TIENDA.nombre === 'Admin' ? 'Todas' : (TIENDA.nombre === '01' ? '01' : (TIENDA.nombre === 'Alcal√°' ? 'Alcal√°' : (TIENDA.nombre === 'Jord√°n' ? 'Jord√°n' : TIENDA.nombre)));
             const invCached = await window.OfflineManager.obtenerInventarioOffline(localFilter);
 
             if (prodsCached.length > 0) {
@@ -1062,19 +1062,19 @@ async function cargarProductos() {
         // 2. Procesar Productos
         productos = (prods || []).map(p => {
             // Normalizar ID a string para buscar en inventario
-            // IMPORTANTE: El inventario usa 'id_producto' (texto/cÛdigo) para relacionar, NO el UUID por defecto
+            // IMPORTANTE: El inventario usa 'id_producto' (texto/c√≥digo) para relacionar, NO el UUID por defecto
             const pId = p.id_producto ? String(p.id_producto) : String(p.id);
 
             let stockTotal = 0;
             let stockDetallado = {}; // Estructura: { "Color": { "S": 5, "M": 3 } }
-            let stocksGlobales = {}; // Estructura: { 'Alcal·': { 'Color': { 'S': 5 } } }
+            let stocksGlobales = {}; // Estructura: { 'Alcal√°': { 'Color': { 'S': 5 } } }
 
             if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
-                // LÛgica Digital: Desglosar por tienda y talla
+                // L√≥gica Digital: Desglosar por tienda y talla
                 const tiendasKeys = [
-                    { key: 'alcala', nombre: 'Alcal·' },
+                    { key: 'alcala', nombre: 'Alcal√°' },
                     { key: 'local01', nombre: '01' },
-                    { key: 'jordan', nombre: 'Jord·n' }
+                    { key: 'jordan', nombre: 'Jord√°n' }
                 ];
 
                 tiendasKeys.forEach(t => {
@@ -1085,7 +1085,7 @@ async function cargarProductos() {
                         stocksGlobales[t.nombre] = {};
                         itemsProducto.forEach(item => {
                             const cant = item.cantidad || 0;
-                            const talla = item.talla || '⁄nica';
+                            const talla = item.talla || '√önica';
                             const color = item.color || '';
 
                             stockTotal += cant;
@@ -1095,14 +1095,14 @@ async function cargarProductos() {
                     }
                 });
             } else {
-                // LÛgica Tienda FÌsica: Stock de esta tienda desglosado por talla y color
+                // L√≥gica Tienda F√≠sica: Stock de esta tienda desglosado por talla y color
                 const items = inventarios.actual || [];
                 // Filtrar items de este producto
                 const variantesStock = items.filter(i => String(i.id_producto) === pId);
 
                 variantesStock.forEach(v => {
                     const cant = v.cantidad || 0;
-                    const talla = v.talla || '⁄nica';
+                    const talla = v.talla || '√önica';
                     const color = v.color || '';
 
                     stockTotal += cant;
@@ -1159,11 +1159,11 @@ function renderizarProductos() {
             if (p.stocks_globales && Object.keys(p.stocks_globales).length > 0) {
                 Object.entries(p.stocks_globales).forEach(([tienda, coloresObj]) => {
 
-                    // Determinar clase de color seg˙n tienda
+                    // Determinar clase de color seg√∫n tienda
                     let claseTienda = 'btn-stock-defecto';
-                    if (tienda.includes('Alcal·')) claseTienda = 'btn-stock-alcala';
+                    if (tienda.includes('Alcal√°')) claseTienda = 'btn-stock-alcala';
                     else if (tienda.includes('01')) claseTienda = 'btn-stock-local01';
-                    else if (tienda.includes('Jord·n')) claseTienda = 'btn-stock-jordan';
+                    else if (tienda.includes('Jord√°n')) claseTienda = 'btn-stock-jordan';
                     else if (tienda.includes('Digital')) claseTienda = 'btn-stock-digital';
 
                     Object.entries(coloresObj).forEach(([color, tallasObj]) => {
@@ -1175,7 +1175,7 @@ function renderizarProductos() {
                                     onclick="agregarAlCarrito('${p.id_producto}', '${tienda}', '${talla}', '${color}')"
                                     title="Vender de ${tienda} - ${color ? `Color ${color} - ` : ''}Talla ${talla}">
                                     <span class="tienda-name">${tienda}</span>
-                                    <span class="talla-qty">${color ? `${color} ` : ''}${talla === '⁄nica' ? '⁄NICA' : talla} (${cant})</span>
+                                    <span class="talla-qty">${color ? `${color} ` : ''}${talla === '√önica' ? '√öNICA' : talla} (${cant})</span>
                                 </button>`;
                             }
                         });
@@ -1190,7 +1190,7 @@ function renderizarProductos() {
                 ${p.url_imagen ? `<div class="producto-img"><img src="${p.url_imagen}" alt="${p.nombre}" onerror="this.style.display='none'"></div>` : ''}
                 <div class="producto-info">
                     <h4 style="font-size:1rem; color:#1e293b; margin-bottom:4px;">${p.nombre}</h4>
-                    <small style="display:block; margin-bottom:8px; color:#64748b;">${p.marca || 'Sin marca'} ï ${p.id_producto}</small>
+                    <small style="display:block; margin-bottom:8px; color:#64748b;">${p.marca || 'Sin marca'} ‚Ä¢ ${p.id_producto}</small>
                     <div class="stock-breakdown" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
                         ${htmlStock}
                     </div>
@@ -1200,7 +1200,7 @@ function renderizarProductos() {
                 </div>
             </div>`;
         } else {
-            // Renderizado normal para FÌsica
+            // Renderizado normal para F√≠sica
             const stockClass = p.stock > 5 ? 'stock-ok' : p.stock > 0 ? 'stock-bajo' : 'stock-no';
 
             let htmlTallas = '';
@@ -1224,9 +1224,9 @@ function renderizarProductos() {
                     
                     <div class="producto-info">
                         <h4 style="margin: 0 0 5px 0; font-size: 0.95rem;">${p.nombre}</h4>
-                        <small style="color:#64748b;">${p.marca || 'Generico'} ï ${p.id_producto}</small>
+                        <small style="color:#64748b;">${p.marca || 'Generico'} ‚Ä¢ ${p.id_producto}</small>
                         
-                        <!-- SECCI”N COLORES -->
+                        <!-- SECCI√ìN COLORES -->
                         ${p.variantes && p.variantes.length > 0 ? `
                             <div class="colores-grid" style="margin-top: 5px; display:flex; flex-wrap:wrap; gap:4px;">
                                 ${p.variantes.map(c => `
@@ -1238,7 +1238,7 @@ function renderizarProductos() {
                             </div>
                         ` : ''}
 
-                        <!-- SECCI”N TALLAS -->
+                        <!-- SECCI√ìN TALLAS -->
                         ${Object.keys(p.stock_detallado).length > 0 ? `
                             <div class="tallas-grid" style="margin-top: 8px; display:flex; flex-wrap:wrap; gap:4px;">
                                 ${Object.entries(p.stock_detallado)
@@ -1311,26 +1311,26 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
         }
     }
 
-    // L”GICA FÕSICA
+    // L√ìGICA F√çSICA
     if (!TIENDA.esDigital) {
         const tallaSeleccionada = arg2;
-        let colorSeleccionado = arg3; // Ahora el color puede venir directamente del botÛn de talla si no hay botones de color
+        let colorSeleccionado = arg3; // Ahora el color puede venir directamente del bot√≥n de talla si no hay botones de color
 
         // 1. Validar Color si aplica (si hay botones de color, se debe seleccionar uno)
         if (prod.variantes && prod.variantes.length > 0) {
             const card = document.getElementById(`card-producto-${idProducto}`);
             const btnColor = card ? card.querySelector('.btn-color.seleccionado') : null;
-            if (!btnColor && !colorSeleccionado) { // Si hay variantes pero no se seleccionÛ color ni se pasÛ por arg
-                mostrarAlerta('?? Selecciona un color primero', 'warning');
+            if (!btnColor && !colorSeleccionado) { // Si hay variantes pero no se seleccion√≥ color ni se pas√≥ por arg
+                mostrarAlerta('‚Äã‚ö†Ô∏è‚Äã Selecciona un color primero', 'warning');
                 return;
             }
             if (btnColor) colorSeleccionado = btnColor.dataset.color || btnColor.textContent;
         }
 
         // 2. Validar Talla
-        // Si el producto tiene stock detallado (por color/talla) y no se seleccionÛ talla
+        // Si el producto tiene stock detallado (por color/talla) y no se seleccion√≥ talla
         if (prod.stock_detallado && Object.keys(prod.stock_detallado).length > 0 && !tallaSeleccionada) {
-            mostrarAlerta('?? Selecciona una talla', 'warning');
+            mostrarAlerta('‚Äã‚ö†Ô∏è‚Äã Selecciona una talla', 'warning');
             return;
         }
 
@@ -1338,7 +1338,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
         let stockDisponible = 0;
         if (prod.stock_detallado) {
             const colorKey = colorSeleccionado || '';
-            const tallaKey = tallaSeleccionada || '⁄nica';
+            const tallaKey = tallaSeleccionada || '√önica';
             if (prod.stock_detallado[colorKey]) {
                 stockDisponible = prod.stock_detallado[colorKey][tallaKey] || 0;
             }
@@ -1348,7 +1348,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
         }
 
         if (stockDisponible <= 0) {
-            mostrarAlerta(`? Sin stock para ${colorSeleccionado || ''} [${tallaSeleccionada || '⁄nica'}]`, 'error');
+            mostrarAlerta(`? Sin stock para ${colorSeleccionado || ''} [${tallaSeleccionada || '√önica'}]`, 'error');
             return;
         }
 
@@ -1360,7 +1360,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
 
         if (existe) {
             if (existe.cantidad >= stockDisponible) {
-                mostrarAlerta(`Stock m·ximo alcanzado`, 'warning');
+                mostrarAlerta(`Stock m√°ximo alcanzado`, 'warning');
                 return;
             }
             existe.cantidad++;
@@ -1368,7 +1368,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
             // Nombre descriptivo
             let descripcion = prod.nombre;
             if (colorSeleccionado) descripcion += ` (${colorSeleccionado})`;
-            if (tallaSeleccionada && tallaSeleccionada !== '⁄nica') descripcion += ` [${tallaSeleccionada}]`;
+            if (tallaSeleccionada && tallaSeleccionada !== '√önica') descripcion += ` [${tallaSeleccionada}]`;
 
             carrito.push({
                 id_producto: prod.id_producto,
@@ -1390,14 +1390,14 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
         return;
     }
 
-    // L”GICA DIGITAL
+    // L√ìGICA DIGITAL
     else {
         const tiendaOrigen = arg2;
-        const tallaDigital = arg3 || '⁄nica'; // Recibimos la talla o asumimos ˙nica
+        const tallaDigital = arg3 || '√önica'; // Recibimos la talla o asumimos √önica
         const colorDigital = arg4 || '';
         if (!tiendaOrigen) return mostrarAlerta('Error: tienda origen no definida', 'error');
 
-        // B˙squeda de stock m·s precisa usando stocks_globales
+        // B√∫squeda de stock m√°s precisa usando stocks_globales
         let stockDisp = 0;
         if (prod.stocks_globales && prod.stocks_globales[tiendaOrigen]) {
             if (prod.stocks_globales[tiendaOrigen][colorDigital]) {
@@ -1416,7 +1416,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
 
         if (existe) {
             if (existe.cantidad >= stockDisp) {
-                mostrarAlerta(`Stock m·ximo de ${tallaDigital} en ${tiendaOrigen} alcanzado`, 'warning');
+                mostrarAlerta(`Stock m√°ximo de ${tallaDigital} en ${tiendaOrigen} alcanzado`, 'warning');
                 return;
             }
             existe.cantidad++;
@@ -1461,7 +1461,7 @@ function renderizarCarrito() {
     const totalFinal = subtotal - descuentoCliente;
 
     if (carrito.length === 0) {
-        container.innerHTML = `<div class="carrito-vacio">?? ${TIENDA.esDigital ? 'El pedido est· vacÌo' : 'El carrito est· vacÌo'}</div>`;
+        container.innerHTML = `<div class="carrito-vacio">‚ö†Ô∏è ${TIENDA.esDigital ? 'El pedido est√° vac√≠o' : 'El carrito est√° vac√≠o'}</div>`;
         totalEl.innerHTML = '$0';
         actualizarBotonVender();
         return;
@@ -1486,16 +1486,16 @@ function renderizarCarrito() {
                     <strong>${item.nombre}</strong>
                     <small>
                         ${tieneDescuento ? `<span class="precio-descuento">$${item.precioOriginal.toLocaleString('es-CO')}</span>` : ''}
-                        $${item.precio.toLocaleString('es-CO')} ◊ ${item.cantidad} = $${(item.precio * item.cantidad).toLocaleString('es-CO')}
-                        ${tieneDescuento ? `<span class="motivo-descuento">?? ${item.motivo}</span>` : ''}
+                        $${item.precio.toLocaleString('es-CO')} √ó ${item.cantidad} = $${(item.precio * item.cantidad).toLocaleString('es-CO')}
+                        ${tieneDescuento ? `<span class="motivo-descuento">‚è≥ ${item.motivo}</span>` : ''}
                     </small>
                 </div>
                 <div class="carrito-item-acciones">
-                    <button class="btn-editar-precio" onclick="abrirEditarPrecio(${idx})">??</button>
-                    <button class="btn-cantidad-menos" onclick="cambiarCantidad(${idx}, -1)">-</button>
+                    <button class="btn-editar-precio" onclick="abrirEditarPrecio(${idx})">‚úèÔ∏è‚Äã</button>
+                    <button class="btn-cantidad-menos" onclick="cambiarCantidad(${idx}, -1)">‚ûñ</button>
                     <span class="cantidad-display">${item.cantidad}</span>
-                    <button class="btn-cantidad-mas" onclick="cambiarCantidad(${idx}, 1)">+</button>
-                    <button class="btn-quitar" onclick="quitarDelCarrito(${idx})">◊</button>
+                    <button class="btn-cantidad-mas" onclick="cambiarCantidad(${idx}, 1)">‚ûï</button>
+                    <button class="btn-quitar" onclick="quitarDelCarrito(${idx})">‚ùå</button>
                 </div>
             </div>
         `;
@@ -1509,7 +1509,7 @@ function cambiarCantidad(idx, delta) {
     const nuevaCant = item.cantidad + delta;
 
     if (nuevaCant <= 0) quitarDelCarrito(idx);
-    else if (nuevaCant > item.stockMax) mostrarAlerta('Stock m·ximo alcanzado', 'warning');
+    else if (nuevaCant > item.stockMax) mostrarAlerta('Stock m√°ximo alcanzado', 'warning');
     else { item.cantidad = nuevaCant; renderizarCarrito(); }
 }
 
@@ -1575,8 +1575,7 @@ function toggleMetodo(el) {
         infoEl.classList.remove('visible');
     }
 
-    // NUEVO: Mostrar/Ocultar secciÛn de voucher
-    // NUEVO: Mostrar/Ocultar secciÛn de voucher
+    // NUEVO: Mostrar/Ocultar secci√≥n de voucher
     const seccionVoucher = document.getElementById('seccionVoucher');
     if (seccionVoucher) {
         // Mostrar referencia para todo MENOS Efectivo y Credito Motero
@@ -1593,7 +1592,7 @@ function toggleMetodo(el) {
     actualizarCredito();
     actualizarBotonVender();
 
-    // Mostrar/Ocultar secciÛn de pago a proveedor
+    // Mostrar/Ocultar secci√≥n de pago a proveedor
     const seccionProv = document.getElementById('seccionPagoProveedor');
     if (seccionProv) {
         const mostrarProv = metodosSeleccionados.has('Pago Proveedor');
@@ -1612,7 +1611,7 @@ function actualizarCredito() {
     const datosCredito = document.getElementById('datosCredito');
 
     if (datosCredito) {
-        // En tienda fÌsica, verificar destino
+        // En tienda f√≠sica, verificar destino
         const destino = document.getElementById('selectDestino')?.value || 'tienda';
         if (TIENDA.esDigital) {
             datosCredito.classList.toggle('visible', tieneCredito);
@@ -1630,7 +1629,7 @@ function actualizarBotonVender() {
 }
 
 // ---------------------------------------------------------------
-// REGISTRAR CLIENTE AUTOM¡TICAMENTE (TIENDA DIGITAL)
+// REGISTRAR CLIENTE AUTOM√ÅTICAMENTE (TIENDA DIGITAL)
 // ---------------------------------------------------------------
 async function registrarClienteDigital() {
     // Solo para tienda digital
@@ -1645,7 +1644,7 @@ async function registrarClienteDigital() {
     if (!nombre || !telefono) return null;
 
     try {
-        // Buscar si el cliente ya existe por cÈdula o telÈfono
+        // Buscar si el cliente ya existe por cdula o telfono
         let { data: clienteExistente } = await db
             .from('clientes')
             .select('*')
@@ -1676,7 +1675,7 @@ async function registrarClienteDigital() {
 
         // Enviar mensaje de bienvenida por WhatsApp
         if (nuevoCliente && telefono) {
-            const mensaje = `°Hola ${nombre} ! ??\n\nGracias por tu compra en * Moteros Sports Line * ???\n\nTu pedido ha sido registrado exitosamente y ser· procesado para envÌo.\n\nøTienes alguna pregunta ? °Estamos aquÌ para ayudarte!\n\n_Moteros Sports Line - Tu tienda de confianza_ ?`;
+            const mensaje = `¬°Hola ${nombre} ! üéâ\n\nGracias por tu compra en * Moteros Sports Line * üèçÔ∏è\n\nTu pedido ha sido registrado exitosamente y ser√° procesado para env√≠o.\n\n¬øTienes alguna pregunta? ¬°Estamos aqu√≠ para ayudarte!\n\n_Moteros Sports Line - Tu tienda de confianza_ üèçÔ∏è`;
             // Log removido por seguridad (opcional, se puede comentar si no se desea)
             // window.open(urlWhatsApp, '_blank');
 
@@ -1691,17 +1690,17 @@ async function registrarClienteDigital() {
 }
 
 // ---------------------------------------------------------------
-// PROCESAR VENTA (TIENDA FÕSICA)
+// PROCESAR VENTA (TIENDA F√çSICA)
 // ---------------------------------------------------------------
 async function procesarVenta() {
     if (!cajaAbierta) return mostrarAlerta(' Primero abre la caja', 'error');
-    if (carrito.length === 0) return mostrarAlerta('El carrito est· vacÌo', 'error');
-    if (metodosSeleccionados.size === 0) return mostrarAlerta('Selecciona al menos un mÈtodo de pago', 'error');
+    if (carrito.length === 0) return mostrarAlerta('El carrito est√° vac√≠o', 'error');
+    if (metodosSeleccionados.size === 0) return mostrarAlerta('Selecciona al menos un m√©todo de pago', 'error');
 
     const destino = document.getElementById('selectDestino')?.value || 'tienda';
     const tieneCredito = [...metodosSeleccionados].some(m => METODOS_CREDITO.includes(m));
 
-    // Validar datos de crÈdito
+    // Validar datos de cr√©dito
     if (destino === 'tienda' && tieneCredito) {
         const nombre = document.getElementById('creditoNombre')?.value.trim();
         const telefono = document.getElementById('creditoTelefono')?.value.trim();
@@ -1710,7 +1709,7 @@ async function procesarVenta() {
         const autoriza = document.getElementById('creditoAutoriza')?.value;
 
         if (!nombre || !telefono || !cedula || !direccion || !autoriza) {
-            return mostrarAlerta('Completa todos los datos del crÈdito', 'error');
+            return mostrarAlerta('Completa todos los datos del cr√©dito', 'error');
         }
     }
 
@@ -1728,13 +1727,13 @@ async function procesarVenta() {
                 ? new Date(fechaPersonalizadaInput.value).toISOString()
                 : new Date().toISOString();
 
-            // Si hay una fecha personalizada, ajustar tambiÈn el ID para que sea m·s ˙nico/rastreable
+            // Si hay una fecha personalizada, ajustar tambi√©n el ID para que sea m√°s √∫nico/rastreable
             const timestampId = (fechaPersonalizadaInput && fechaPersonalizadaInput.value)
                 ? new Date(fechaPersonalizadaInput.value).getTime()
                 : Date.now();
 
             // Determinar local real:
-            // 1. Si el item ya trae tiendaOrigen (porque se eligiÛ con botÛn especÌfico), usar esa.
+            // 1. Si el item ya trae tiendaOrigen (porque se eligi√≥ con bot√≥n espec√≠fico), usar esa.
             // 2. Si no, usar el selector global del Admin POS.
             // 3. Fallback al localRegistro standard.
             const origenReal = item.tiendaOrigen || document.getElementById('origenVentaReal')?.value || localRegistro;
@@ -1743,7 +1742,7 @@ async function procesarVenta() {
 
             const voucherCode = document.getElementById('voucherCode')?.value.trim() || null;
 
-            // Registrar cliente autom·ticamente si es tienda digital
+            // Registrar cliente autom√°ticamente si es tienda digital
             let clienteDigital = null;
             if (TIENDA.esDigital) {
                 clienteDigital = await registrarClienteDigital();
@@ -1770,7 +1769,7 @@ async function procesarVenta() {
                 id_producto: item.id_producto,
                 nombre_producto: item.nombre,
                 cantidad: item.cantidad,
-                precio_unitario: item.precio, // Precio unitario base de la lÌnea
+                precio_unitario: item.precio, // Precio unitario base de la l√≠nea
                 total: totalItem, // Total con descuento aplicado
                 descuento_valor: descuentoValor,
                 descuento_motivo: descuentoMotivo,
@@ -1786,7 +1785,7 @@ async function procesarVenta() {
             if (errorVenta) {
                 // MODO OFFLINE: Si falla por red, intentar encolar localmente
                 if (!navigator.onLine && window.OfflineManager) {
-                    console.warn('Offline: Venta fallÛ en Supabase, encolando localmente...');
+                    console.warn('Offline: Venta fall√° en Supabase, encolando localmente...');
                     const ventaOffline = {
                         id_venta: id_venta,
                         local: origenReal,
@@ -1814,7 +1813,7 @@ async function procesarVenta() {
                 }
             }
 
-            // Descontar stock SOLO si est· marcado o si no existe el checkbox (comportamiento normal)
+            // Descontar stock SOLO si est√° marcado o si no existe el checkbox (comportamiento normal)
             const checkInventario = document.getElementById('afectarInventario');
             const debeAfectarInventario = !checkInventario || checkInventario.checked;
 
@@ -1859,7 +1858,7 @@ async function procesarVenta() {
         }
         const total = subtotalVenta - descuentoTotalCliente;
 
-        // Si es CrÈdito Motero, registrar en tabla creditos_motero
+        // Si es Cr√©dito Motero, registrar en tabla creditos_motero
         if (destino === 'tienda' && metodosSeleccionados.has('Credito Motero')) {
             const nombre = document.getElementById('creditoNombre')?.value.trim() || 'Sin nombre';
             const telefono = document.getElementById('creditoTelefono')?.value.trim() || '';
@@ -1868,21 +1867,21 @@ async function procesarVenta() {
             const autoriza = document.getElementById('creditoAutoriza')?.value || 'No especificado';
             const cuotas = parseInt(document.getElementById('creditoCuotas')?.value) || 1;
 
-            // Generar n˙mero de crÈdito ˙nico con nombre
+            // Generar n√∫mero de cr√©dito √∫nico con nombre
             const nombreCorto = nombre.split(' ')[0].toUpperCase().substring(0, 10);
             const numeroCredito = 'CM-' + Date.now().toString(36).toUpperCase() + '-' + nombreCorto;
 
-            // Calcular fecha de vencimiento (cuotas * 30 dÌas)
+            // Calcular fecha de vencimiento (cuotas * 30 d√≠as)
             const fechaVencimiento = new Date();
             fechaVencimiento.setDate(fechaVencimiento.getDate() + (cuotas * 30));
 
             const valorCuota = Math.ceil(total / cuotas);
 
-            // Formato de notas parseable: CrÈdito: NOMBRE | CC: xxx | Tel: xxx | Dir: xxx
+            // Formato de notas parseable: Cr√©dito: NOMBRE | CC: xxx | Tel: xxx | Dir: xxx
             const productosLista = carrito.map(i => `${i.nombre} x${i.cantidad}`).join(', ');
-            const notasCredito = `CrÈdito: ${nombre} | CC: ${cedula} | Tel: ${telefono} | Dir: ${direccion} | Autoriza: ${autoriza} | Productos: ${productosLista}`;
+            const notasCredito = `Cr√©dito: ${nombre} | CC: ${cedula} | Tel: ${telefono} | Dir: ${direccion} | Autoriza: ${autoriza} | Productos: ${productosLista}`;
 
-            // Insertar el crÈdito (sin vincular a clientes_credito ya que no existe la tabla)
+            // Insertar el cr√©dito (sin vincular a clientes_credito ya que no existe la tabla)
             const { error: errorCredito } = await db.from('creditos_motero').insert({
                 numero_credito: numeroCredito,
                 cliente_id: null,
@@ -1897,8 +1896,8 @@ async function procesarVenta() {
             });
 
             if (errorCredito) {
-                console.error('Error registrando crÈdito:', errorCredito);
-                mostrarAlerta(' Venta ok, pero error al registrar crÈdito: ' + errorCredito.message, 'warning');
+                console.error('Error registrando cr√©dito:', errorCredito);
+                mostrarAlerta(' Venta ok, pero error al registrar cr√©dito: ' + errorCredito.message, 'warning');
             } else {
             }
         }
@@ -1917,7 +1916,7 @@ async function procesarVenta() {
 
         mostrarAlerta(msg, 'success');
 
-        // Actualizar estadÌsticas del cliente si no es Consumidor Final
+        // Actualizar estad√≠sticas del cliente si no es Consumidor Final
         if (clienteId && clienteId !== 1) {
             await actualizarEstadisticasCliente(clienteId, total);
         }
@@ -1925,7 +1924,7 @@ async function procesarVenta() {
         limpiarDespuesVenta();
         await cargarProductos();
 
-        // Imprimir tirilla si se solicitÛ (y si no es digital, aunque digital podrÌa imprimir PDF)
+        // Imprimir tirilla si se solicit√≥ (y si no es digital, aunque digital podr√≠a imprimir PDF)
         if (imprimeTirilla && destino !== 'digital') {
             const clienteInfo = clienteId && clienteId !== 1 ? (clienteDigital || clienteSeleccionado) : null;
             imprimirTicketVenta(carrito, total, id_venta, clienteInfo, metodoPagoStr);
@@ -1945,7 +1944,7 @@ async function procesarVenta() {
 // ---------------------------------------------------------------
 function imprimirTicketVenta(items, total, idVenta, cliente, metodoPago) {
     if (!window.TicketPrinter) {
-        alert('Error: MÛdulo de impresiÛn no cargado');
+        alert('Error: M√≥dulo de impresi√≥n no cargado');
         return;
     }
 
@@ -2006,20 +2005,20 @@ function imprimirTicketVenta(items, total, idVenta, cliente, metodoPago) {
     const contenido = htmlCliente + htmlItems;
 
     // Firma opcional (footer del ticket)
-    const firma = '°Gracias por su compra!<br>Regrese pronto';
+    const firma = '¬°Gracias por su compra!<br>Regrese pronto';
 
     TicketPrinter.print('FACTURA DE VENTA', contenido, firma);
 }
 
 // ---------------------------------------------------------------
-// PROCESAR VENTA (TIENDA DIGITAL) + CREAR ENVÕO
+// PROCESAR VENTA (TIENDA DIGITAL) + CREAR ENV√çO
 // ---------------------------------------------------------------
 async function procesarVentaDigital() {
     if (!cajaAbierta) return mostrarAlerta('Abre la caja', 'error');
-    if (carrito.length === 0) return mostrarAlerta('Pedido vacÌo', 'error');
-    if (metodosSeleccionados.size === 0) return mostrarAlerta('Selecciona mÈtodo de pago', 'error');
+    if (carrito.length === 0) return mostrarAlerta('Pedido vac√≠o', 'error');
+    if (metodosSeleccionados.size === 0) return mostrarAlerta('Selecciona m√©todo de pago', 'error');
 
-    // Validar datos de envÌo (obligatorios para digital)
+    // Validar datos de env√≠o (obligatorios para digital)
     const clienteNombre = document.getElementById('clienteNombre').value.trim();
     const clienteTelefono = document.getElementById('clienteTelefono').value.trim();
     const clienteCedula = document.getElementById('clienteCedula').value.trim();
@@ -2029,10 +2028,10 @@ async function procesarVentaDigital() {
     const notasEnvio = document.getElementById('notasEnvio').value.trim();
 
     if (!clienteNombre || !clienteTelefono || !clienteCedula || !direccionEnvio || !ciudadEnvio || !departamentoEnvio) {
-        return mostrarAlerta('ù? Completa todos los datos de envÌo', 'error');
+        return mostrarAlerta('‚ö†Ô∏è Completa todos los datos de env√≠o', 'error');
     }
 
-    // Validar crÈdito
+    // Validar cr√©dito
     const tieneCredito = [...metodosSeleccionados].some(m => METODOS_CREDITO.includes(m));
     let creditoAutoriza = '';
     let creditoCuotas = 1;
@@ -2040,12 +2039,12 @@ async function procesarVentaDigital() {
     if (tieneCredito) {
         creditoAutoriza = document.getElementById('creditoAutoriza').value;
         creditoCuotas = parseInt(document.getElementById('creditoCuotas').value) || 1;
-        if (!creditoAutoriza) return mostrarAlerta('ù? Selecciona quiÈn autoriza el crÈdito', 'error');
+        if (!creditoAutoriza) return mostrarAlerta('‚ö†Ô∏è Selecciona qui√©n autoriza el cr√©dito', 'error');
     }
 
     const btnVender = document.getElementById('btnVender');
     btnVender.disabled = true;
-    btnVender.innerHTML = 'èÛ Procesando...';
+    btnVender.innerHTML = '‚è≥‚Äã Procesando...';
 
     const metodoPagoStr = [...metodosSeleccionados].join(' + ');
     const pedidoTimestamp = Date.now();
@@ -2098,7 +2097,7 @@ async function procesarVentaDigital() {
             // Descontar stock de la tienda de origen
             if (item.tiendaOrigen) {
                 const tablaDestino =
-                    item.tiendaOrigen === 'Alcal·' ? 'inventario_alcala' :
+                    item.tiendaOrigen === 'Alcal√°' ? 'inventario_alcala' :
                         item.tiendaOrigen === 'Local 01' ? 'inventario_01' :
                             'inventario_jordan';
 
@@ -2114,7 +2113,7 @@ async function procesarVentaDigital() {
                         .eq('id_producto', item.id_producto);
                 }
             } else {
-                // Fallback por si acaso (no deberÌa ocurrir en nueva logica)
+                // Fallback por si acaso (no deber√≠a ocurrir en nueva logica)
                 console.warn('Item digital sin tienda origen:', item);
             }
         }
@@ -2149,8 +2148,8 @@ async function procesarVentaDigital() {
 
         const { error: errorEnvio } = await db.from('envios').insert(envioData);
         if (errorEnvio) {
-            console.error('Error creando envÌo:', errorEnvio);
-            // No interrumpir - la venta ya se registrÛ
+            console.error('Error creando env√≠o:', errorEnvio);
+            // No interrumpir - la venta ya se registr√≥
         }
         // ---------------------------------------------------------------
 
@@ -2218,7 +2217,7 @@ function limpiarDespuesVentaDigital() {
     const vI = document.getElementById('voucherCode');
     if (vI) vI.value = '';
 
-    // Limpiar formulario envÌo
+    // Limpiar formulario env√≠o
     ['clienteNombre', 'clienteTelefono', 'clienteCedula', 'direccionEnvio', 'ciudadEnvio', 'notasEnvio'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
@@ -2251,7 +2250,7 @@ function limpiarFormCredito() {
 }
 
 // ---------------------------------------------------------------
-// GESTI”N DE CLIENTES
+// GESTI√ìN DE CLIENTES
 // ---------------------------------------------------------------
 
 // Inicializar cliente predeterminado al cargar
@@ -2287,7 +2286,7 @@ function seleccionarTipoCliente(tipo) {
 async function buscarCliente() {
     const cedula = document.getElementById('inputCedulaCliente')?.value.trim();
     if (!cedula) {
-        mostrarAlerta('Ingresa una cÈdula para buscar', 'warning');
+        mostrarAlerta('Ingresa una c√©dula para buscar', 'warning');
         return;
     }
 
@@ -2305,7 +2304,7 @@ async function buscarCliente() {
             return;
         }
 
-        // Buscar promociÛn activa
+        // Buscar promoci√≥n activa
         const { data: promo } = await db
             .from('promociones_clientes')
             .select('descuento_porcentaje, promocion_id')
@@ -2346,7 +2345,7 @@ async function buscarCliente() {
 function mostrarBotonSugerencia(sugerencias, clienteId) {
     let container = document.getElementById('containerSugerenciaPromo');
     if (!container) {
-        const infoDiv = document.querySelector('#infoClienteEncontrado'); // CorrecciÛn selector
+        const infoDiv = document.querySelector('#infoClienteEncontrado'); // Correcci√≥n selector
         container = document.createElement('div');
         container.id = 'containerSugerenciaPromo';
         container.style.marginTop = '10px';
@@ -2356,7 +2355,7 @@ function mostrarBotonSugerencia(sugerencias, clienteId) {
     container.innerHTML = `
         <button onclick='window.abrirModalSugerencia(${JSON.stringify(sugerencias)}, ${clienteId})' 
                 class="btn btn-warning" style="width:100%; animation: pulse 2s infinite;">
-            ?? °Tienes ${sugerencias.length} Oferta(s) Disponible(s)!
+            üéâ ¬°Tienes ${sugerencias.length} Oferta(s) Disponible(s)!
         </button>
     `;
     container.style.display = 'block';
@@ -2376,11 +2375,11 @@ window.abrirModalSugerencia = function (sugerencias, clienteId) {
 Cliente cumple: ${sug.regla}
 Motivo: ${sug.motivo}
 
-?? PromociÛn: ${sug.promocion.nombre}
-?? Descuento: ${sug.promocion.descuento}%
+üéâ Promoci√≥n: ${sug.promocion.nombre}
+‚ûñ Descuento: ${sug.promocion.descuento}%
 
-øAUTORIZAR y aplicar esta promociÛn al cliente?
-(Requiere autorizaciÛn de Admin)
+AUTORIZAR y aplicar esta promoci√≥n al cliente?
+(Requiere autorizaci√≥n de Admin)
     `);
 
     if (confirmacion) {
@@ -2389,19 +2388,19 @@ Motivo: ${sug.motivo}
 };
 
 async function autorizarPromocion(clienteId, promoId) {
-    // AquÌ se podrÌa pedir clave de admin
-    /* const pass = prompt("?? Clave de Administrador:");
+    // Aqu√≠ se podr√≠a pedir clave de admin
+    /* const pass = prompt("üîí Clave de Administrador:");
        if (pass !== "1234") return alert("Clave incorrecta"); */
 
     try {
         await PromocionesManager.asignarPromocionCliente(clienteId, promoId, 'Admin POS');
-        alert("? PromociÛn asignada correctamente. El cliente debe volver a ser cargado.");
+        alert("üéâ Promoci√≥n asignada correctamente. El cliente debe volver a ser cargado.");
         limpiarInfoCliente(); // Forzar recarga
-        document.getElementById('inputCedulaCliente').value = document.getElementById('clienteCedulaDisplay').textContent.replace('?? ', '').trim();
+        document.getElementById('inputCedulaCliente').value = document.getElementById('clienteCedulaDisplay').textContent.replace('üìÑ‚Äã ', '').trim();
         buscarCliente(); // Recargar
     } catch (e) {
         console.error(e);
-        alert("Error asignando promociÛn");
+        alert("‚ö†Ô∏è‚Äã Error asignando promoci√≥n");
     }
 }
 
@@ -2411,16 +2410,16 @@ function mostrarInfoCliente(cliente, promocion) {
 
     document.getElementById('clienteSeleccionadoId').value = cliente.id;
     document.getElementById('clienteNombreDisplay').textContent = cliente.nombre;
-    document.getElementById('clienteTelefonoDisplay').textContent = `?? ${cliente.telefono || 'N/A'}`;
-    document.getElementById('clienteCedulaDisplay').textContent = `?? ${cliente.cedula || 'N/A'}`;
+    document.getElementById('clienteTelefonoDisplay').textContent = `üì±‚Äã ${cliente.telefono || 'N/A'}`;
+    document.getElementById('clienteCedulaDisplay').textContent = `üìÑ‚Äã ${cliente.cedula || 'N/A'}`;
 
-    // Mostrar estadÌsticas
+    // Mostrar estad√≠sticas
     const estadisticasEl = document.getElementById('clienteEstadisticasDisplay');
     if (estadisticasEl) {
         estadisticasEl.textContent = `${cliente.numero_compras || 0} compras | $${(cliente.total_compras || 0).toLocaleString('es-CO')} total`;
     }
 
-    // Mostrar promociÛn si existe
+    // Mostrar promoci√≥n si existe
     const promoDiv = document.getElementById('clientePromoDisplay');
     if (promoDiv) {
         if (promocion) {
@@ -2474,7 +2473,7 @@ async function guardarNuevoCliente() {
 
     // Validar campos obligatorios
     if (!nombre || !telefono) {
-        mostrarAlerta('Nombre y TelÈfono son obligatorios', 'error');
+        mostrarAlerta('Nombre y Tel√©fono son obligatorios', 'error');
         return;
     }
 
@@ -2526,24 +2525,24 @@ async function guardarNuevoCliente() {
 }
 
 function enviarWhatsAppBienvenida(cliente) {
-    const mensaje = `°Hola ${cliente.nombre}! ??
+    const mensaje = `¬°Hola ${cliente.nombre}! üëã‚Äã
 
-°Bienvenido a Moteros Sports Line! ???
+Bienvenido a Moteros Sports Line! üèçÔ∏è‚Äã
 
 Gracias por tu compra de hoy. Ahora eres parte de nuestra familia motera.
 
-Como cliente registrado disfrutar·s de:
-? Promociones exclusivas
-? Descuentos especiales
-? CrÈdito Motero
-? AtenciÛn prioritaria
+Como cliente registrado disfrutar√°s de:
+üéÅ Promociones exclusivas
+‚ûñ Descuentos especiales
+üèçÔ∏è‚Äã Cr√©dito Motero
+‚ö†Ô∏è Atenci√≥n prioritaria
 
-°Nos vemos pronto!
+¬°Nos vemos pronto!
 
 Moteros Sports Line
-?? Villavicencio - Meta
-?? 304-578-8873
-?? https://moteros-sports-line.vercel.app`;
+üìç Villavicencio - Meta
+üìû 3113408416
+üåê https://moterossportline.store`;
 
     const telefonoLimpio = cliente.telefono.replace(/\D/g, '');
     const url = `https://wa.me/57${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
@@ -2571,7 +2570,7 @@ async function actualizarEstadisticasCliente(clienteId, montoVenta) {
                 .eq('id', clienteId);
         }
     } catch (error) {
-        console.error('Error actualizando estadÌsticas:', error);
+        console.error('Error actualizando estad√≠sticas:', error);
     }
 }
 
@@ -2621,15 +2620,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalHTML = `
     <div id="modalSeleccionVariante" class="modal-overlay">
         <div class="modal" style="max-width: 500px;">
-            <h3>® Seleccionar Variante</h3>
+            <h3>" Seleccionar Variante</h3>
             <p id="nombreProductoVariante" style="font-weight:600; margin-bottom:1rem; color:var(--primary);"></p>
             
             <div id="contenedorOpcionesVariante" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
-                <!-- Opciones din·micas -->
+                <!-- Opciones din√°micas -->
             </div>
 
             <div class="modal-botones">
-                <button class="btn btn-danger" onclick="cerrarModalVariante()">Cancelar</button>
+                <button class="btn btn-danger" onclick="cerrarModalVariante()"‚ùåCancelar</button>
             </div>
         </div>
     </div>
@@ -2667,7 +2666,7 @@ function cerrarModalVariante() {
 }
 
 // Interceptar o manejar clicks para agregar
-// NOTA: Esta funciÛn se debe llamar desde el renderizado de productos
+// NOTA: Esta funci√≥n se debe llamar desde el renderizado de productos
 function iniciarSeleccionVariante(producto) {
     productoParaVariante = producto;
     const modal = document.getElementById('modalSeleccionVariante');
@@ -2682,11 +2681,11 @@ function iniciarSeleccionVariante(producto) {
     const stockVar = producto.stock_variantes || {};
 
     if (opciones.length === 0) {
-        // Fallback si no hay stock definido pero hay variantes teÛricas
-        contenedor.innerHTML = '<p class="text-danger"> No hay stock detallado para inventario. Se agregar· como genÈrico.</p>';
+        // Fallback si no hay stock definido pero hay variantes te√≥ricas
+        contenedor.innerHTML = '<p class="text-danger"> No hay stock detallado para inventario. Se agregar como gen√©rico.</p>';
         const btn = document.createElement('button');
         btn.className = 'btn btn-primary btn-full';
-        btn.textContent = 'Agregar GenÈrico';
+        btn.textContent = 'Agregar Gen√©rico';
         btn.onclick = () => { confirmAgregarVariante(null); };
         contenedor.appendChild(btn);
     } else {
@@ -2711,7 +2710,7 @@ function confirmAgregarVariante(varianteNombre) {
 }
 
 // Modificar agregarAlCarrito existente o crear uno nuevo que soporte variantes
-// Buscaremos la funciÛn agregarAlCarrito original para reemplazarla o sobrecargarla
+// Buscaremos la funci√≥n agregarAlCarrito original para reemplazarla o sobrecargarla
 
 // ---------------------------------------------------------------
 // 
@@ -2719,7 +2718,7 @@ function confirmAgregarVariante(varianteNombre) {
 // 
 
 async function abrirModalTraslado() {
-    if (!cajaAbierta) return mostrarAlerta('?? Abre la caja primero', 'error');
+    if (!cajaAbierta) return mostrarAlerta('‚ö†Ô∏è Abre la caja primero', 'error');
 
     try {
         // 1. Cargar inventario con cantidad > 0 (Incluyendo Talla)
@@ -2751,9 +2750,9 @@ async function abrirModalTraslado() {
         const itemsCombinados = inventario.map(item => {
             const prod = productosMap[item.id_producto];
             return {
-                id_inventario: item.id, // Usamos ID de fila para identificar unÌvocamente (prod + talla)
+                id_inventario: item.id, // Usamos ID de fila para identificar un√≠vocamente (prod + talla)
                 id_producto: item.id_producto,
-                talla: item.talla || '⁄nica',
+                talla: item.talla || '√∫nica',
                 cantidad: item.cantidad,
                 nombre: prod ? prod.nombre : 'Producto ' + item.id_producto,
                 marca: prod ? prod.marca : ''
@@ -2780,11 +2779,11 @@ async function abrirModalTraslado() {
         // Limpiar para no duplicar si se abre varias veces
         selectDestino.innerHTML = `
             <option value="">Seleccionar...</option>
-            <option value="Alcal·">Alcal·</option>
+            <option value="Alcal√°">Alcal√°</option>
             <option value="01">Local 01</option>
-            <option value="Jord·n">Jord·n</option>
+            <option value="Jord√°n">Jord√°n</option>
             <option value="Digital">Digital</option>
-            <option value="Evento">?? Evento (Actual)</option>
+            <option value="Evento">üé™‚Äã Evento (Actual)</option>
         `;
 
         if (eventosActivos && eventosActivos.length > 0) {
@@ -2792,12 +2791,12 @@ async function abrirModalTraslado() {
                 // Si no es el evento actual (para evitar confusiones)
                 const option = document.createElement('option');
                 option.value = 'Evento:' + ev.id;
-                option.textContent = '?? ' + ev.nombre_evento;
+                option.textContent = 'üé™‚Äã ' + ev.nombre_evento;
                 selectDestino.appendChild(option);
             });
         }
 
-        // Filtrar destino actual (evitar trasladar a sÌ mismo)
+        // Filtrar destino actual (evitar trasladar a s√≠ mismo)
         Array.from(selectDestino.options).forEach(opt => {
             if (opt.value === TIENDA.nombre || opt.value === TIENDA.nombre.replace('Local ', '')) {
                 opt.disabled = true;
@@ -2821,7 +2820,7 @@ async function procesarTraslado() {
     const cantidad = parseInt(document.getElementById('trasladoCantidad').value);
 
     if (!productoDataRaw || !destino || !cantidad || cantidad <= 0) {
-        return mostrarAlerta(' Completa todos los campos', 'error');
+        return mostrarAlerta('‚ö†Ô∏è Completa todos los campos', 'error');
     }
 
     // Parsear datos del producto seleccionado
@@ -2847,9 +2846,9 @@ async function procesarTraslado() {
         let tablaDestino = '';
         let eventoActivoId = null;
 
-        if (destino === 'Alcal·') tablaDestino = 'inventario_alcala';
+        if (destino === 'Alcal√°') tablaDestino = 'inventario_alcala';
         else if (destino === '01' || destino === 'Local 01') tablaDestino = 'inventario_01';
-        else if (destino === 'Jord·n') tablaDestino = 'inventario_jordan';
+        else if (destino === 'Jord√°n') tablaDestino = 'inventario_jordan';
         else if (destino === 'Digital') tablaDestino = 'inventario_digital';
         else if (destino === 'Evento' || destino.startsWith('Evento:')) {
             tablaDestino = 'inventario_evento';
@@ -2858,9 +2857,9 @@ async function procesarTraslado() {
             }
         }
 
-        if (!tablaDestino) return mostrarAlerta('Destino no v·lido', 'error');
+        if (!tablaDestino) return mostrarAlerta('Destino no v√°lido', 'error');
 
-        // 1. Descontar de inventario origen (Usando ID de fila especÌfico para seguridad)
+        // 1. Descontar de inventario origen (Usando ID de fila espec√≠fico para seguridad)
         // re-verificamos stock DB por seguridad
         const { data: stockOrigen } = await db
             .from(TIENDA.tablaInventario)
@@ -2915,7 +2914,7 @@ async function procesarTraslado() {
             mostrarAlerta('Traslado realizado pero error al guardar historial', 'warning');
         }
 
-        mostrarAlerta('? Traslado realizado con Èxito', 'success');
+        mostrarAlerta('‚úÖ‚Äã Traslado realizado con √©xito', 'success');
         cerrarModal('modalTraslado');
 
         // Limpiar
@@ -2939,7 +2938,7 @@ let proveedoresCache = [];
 let proveedorSeleccionado = null;
 
 async function abrirModalProveedoresPOS() {
-    if (!cajaAbierta) return mostrarAlerta(' Abre la caja primero', 'error');
+    if (!cajaAbierta) return mostrarAlerta('‚ö†Ô∏è Abre la caja primero', 'error');
 
     document.getElementById('modalProveedoresPOS').classList.add('visible');
     document.getElementById('modalProveedoresPOS').style.display = 'flex';
@@ -3047,7 +3046,7 @@ function abrirModalAbonoProveedor(id, nombre, saldo, banco, tipoCuenta, numeroCu
         datosBancarios = `
             <strong>Banco:</strong> ${banco}<br>
             <strong>Tipo:</strong> ${tipoCuenta}<br>
-            <strong>N˙mero:</strong> ${numeroCuenta}<br>
+            <strong>N√∫mero:</strong> ${numeroCuenta}<br>
             <strong>Titular:</strong> ${titular}
         `;
     } else {
@@ -3074,11 +3073,11 @@ async function confirmarAbonoProveedor() {
 
     // Validaciones
     if (!monto || monto <= 0) {
-        return mostrarAlerta(' Ingresa un monto v·lido', 'error');
+        return mostrarAlerta(' ‚ö†Ô∏è Ingresa un monto v√°lido', 'error');
     }
 
     if (!metodo) {
-        return mostrarAlerta(' Selecciona el mÈtodo de pago', 'error');
+        return mostrarAlerta(' ‚ö†Ô∏è Selecciona el m√©todo de pago', 'error');
     }
 
     if (monto > proveedorSeleccionado.saldo) {
@@ -3103,7 +3102,7 @@ async function confirmarAbonoProveedor() {
         // 2. Descontar del saldo_pendiente de las compras (FIFO)
         let montoRestante = monto;
 
-        // Obtener compras pendientes ordenadas por fecha (m·s antiguas primero)
+        // Obtener compras pendientes ordenadas por fecha (m√°s antiguas primero)
         const { data: comprasPendientes } = await db
             .from('compras_proveedor')
             .select('id, saldo_pendiente')
@@ -3166,7 +3165,7 @@ function cerrarModalAbonoProveedor() {
 }
 
 // ---------------------------------------------------------------
-// ADELANTOS DE N”MINA - L”GICA
+// ADELANTOS DE N√ìMINA - L√ìGICA
 // ---------------------------------------------------------------
 
 async function abrirModalAdelantoNomina() {
@@ -3214,8 +3213,8 @@ async function guardarAdelantoNomina() {
     const motivo = document.getElementById('adelantoMotivo').value.trim();
 
     if (!empleadoId) return mostrarAlerta('Selecciona un empleado', 'warning');
-    if (!monto || monto <= 0) return mostrarAlerta('Ingresa un monto v·lido', 'warning');
-    if (!autoriza) return mostrarAlerta('Ingresa quiÈn autoriza el adelanto', 'warning');
+    if (!monto || monto <= 0) return mostrarAlerta('Ingresa un monto v√°lido', 'warning');
+    if (!autoriza) return mostrarAlerta('Ingresa qui√©n autoriza el adelanto', 'warning');
 
     try {
         const { error } = await db.from('adelantos_nomina').insert({
@@ -3230,11 +3229,11 @@ async function guardarAdelantoNomina() {
 
         if (error) throw error;
 
-        mostrarAlerta(`Adelanto de $${monto.toLocaleString('es-CO')} registrado con Èxito`, 'success');
+        mostrarAlerta(`Adelanto de $${monto.toLocaleString('es-CO')} registrado con √©xito`, 'success');
         cerrarModalAdelantoNomina();
 
         if (window.moterosIA) {
-            window.moterosIA.aprenderEvento('Adelanto de nÛmina registrado', {
+            window.moterosIA.aprenderEvento('Adelanto de n√≥mina registrado', {
                 monto,
                 autoriza,
                 tienda: TIENDA.nombre
@@ -3247,7 +3246,7 @@ async function guardarAdelantoNomina() {
 }
 
 // ---------------------------------------------------------------
-// ABONOS A CR…DITO MOTERO DESDE EL POS
+// ABONOS A CR√âDITO MOTERO DESDE EL POS
 // ---------------------------------------------------------------
 
 function abrirModalAbonoCredito() {
@@ -3285,7 +3284,7 @@ async function buscarCreditoCliente() {
 
         if (error) throw error;
 
-        // Filtrado en memoria (m·s flexible para b˙squedas cruzadas)
+        // Filtrado en memoria (m√°s flexible para b√∫squedas cruzadas)
         const filtrados = (creditos || []).filter(c => {
             const cliente = c.clientes_credito;
             // Buscar en datos del cliente vinculado
@@ -3293,14 +3292,14 @@ async function buscarCreditoCliente() {
             const cedula = (cliente ? (cliente.cedula || cliente.identificacion || '') : '').toLowerCase();
             const telefono = (cliente ? (cliente.telefono || '') : '').toLowerCase();
 
-            // Buscar en notas (fallback para crÈditos sin cliente vinculado o migrados)
+            // Buscar en notas (fallback para cr√©ditos sin cliente vinculado o migrados)
             const notas = (c.notas || '').toLowerCase();
 
             return nombre.includes(q) || cedula.includes(q) || telefono.includes(q) || notas.includes(q);
         });
 
         if (filtrados.length === 0) {
-            lista.innerHTML = 'No se encontraron crÈditos activos que coincidan.';
+            lista.innerHTML = 'No se encontraron cr√©ditos activos que coincidan.';
             return;
         }
 
@@ -3311,15 +3310,15 @@ async function buscarCreditoCliente() {
 
             if (c.clientes_credito) {
                 nombreMostrar = `${c.clientes_credito.nombres} ${c.clientes_credito.apellidos || ''}`;
-                infoExtra = `CC: ${c.clientes_credito.cedula || c.clientes_credito.identificacion || '?'} | ?? ${c.clientes_credito.telefono || ''}`;
+                infoExtra = `CC: ${c.clientes_credito.cedula || c.clientes_credito.identificacion || '?'} | üì±‚Äã ${c.clientes_credito.telefono || ''}`;
             } else if (c.notas) {
                 // Intentar extraer de notas si no hay cliente vinculado
-                const mN = c.notas.match(/CrÈdito:\s*([^|]+)/i);
+                const mN = c.notas.match(/Cr√©dito:\s*([^|]+)/i);
                 if (mN) nombreMostrar = mN[1].trim();
                 const mC = c.notas.match(/CC:\s*([^|]+)/i);
                 if (mC) infoExtra += `CC: ${mC[1].trim()} `;
                 const mT = c.notas.match(/Tel:\s*([^|]+)/i);
-                if (mT) infoExtra += `| ?? ${mT[1].trim()}`;
+                if (mT) infoExtra += `| üìÑ ${mT[1].trim()}`;
             }
 
             return `
@@ -3338,7 +3337,7 @@ async function buscarCreditoCliente() {
 
     } catch (e) {
         console.error(e);
-        lista.innerHTML = 'Error al buscar crÈditos.';
+        lista.innerHTML = '‚ö†Ô∏è Error al buscar cr√©ditos.';
     }
 }
 
@@ -3365,7 +3364,7 @@ async function seleccionarCreditoParaAbono(id) {
         if (c.clientes_credito) {
             nombreMostrar = `${c.clientes_credito.nombres} ${c.clientes_credito.apellidos || ''}`;
         } else if (c.notas) {
-            const mN = c.notas.match(/CrÈdito:\s*([^|]+)/i);
+            const mN = c.notas.match(/Cr√©dito:\s*([^|]+)/i);
             if (mN) nombreMostrar = mN[1].trim();
         }
 
@@ -3384,7 +3383,7 @@ async function seleccionarCreditoParaAbono(id) {
 
     } catch (e) {
         console.error(e);
-        mostrarAlerta('Error al seleccionar el crÈdito', 'error');
+        mostrarAlerta('‚ö†Ô∏è Error al seleccionar el cr√©dito', 'error');
     }
 }
 
@@ -3393,11 +3392,11 @@ async function confirmarAbonoCredito() {
     const monto = parseFloat(document.getElementById('montoAbonoCredito').value);
 
     if (!monto || monto <= 0 || !creditoSeleccionado) {
-        return mostrarAlerta('Ingresa un monto v·lido', 'warning');
+        return mostrarAlerta('Ingresa un monto v√°lido', 'warning');
     }
 
     if (monto > creditoSeleccionado.saldo_pendiente) {
-        if (!confirm('øEl abono es mayor al saldo pendiente? Se ajustar· al saldo exacto.')) return;
+        if (!confirm('¬øEl abono es mayor al saldo pendiente? Se ajustar√° al saldo exacto.')) return;
     }
 
     const metodoPago = document.getElementById('metodoAbonoCredito')?.value || 'Efectivo';
@@ -3405,9 +3404,9 @@ async function confirmarAbonoCredito() {
 
     try {
         const nuevoSaldo = creditoSeleccionado.saldo_pendiente - montoFinal;
-        const nuevoEstado = nuevoSaldo <= 100 ? 'pagado' : 'activo'; // Margen de error pequeÒo
+        const nuevoEstado = nuevoSaldo <= 100 ? 'pagado' : 'activo'; // Margen de error peque√±o
 
-        // 1. Registrar el pago en pagos_credito (tabla correcta para crÈditos motero)
+        // 1. Registrar el pago en pagos_credito (tabla correcta para cr√©ditos motero)
         const { error: errorPago } = await db.from('pagos_credito').insert({
             credito_id: id,
             monto_pagado: montoFinal,
@@ -3420,7 +3419,7 @@ async function confirmarAbonoCredito() {
 
         if (errorPago) throw errorPago;
 
-        // 2. Actualizar el saldo del crÈdito
+        // 2. Actualizar el saldo del cr√©dito
         const updates = {
             saldo_pendiente: nuevoSaldo,
             ultimo_pago_fecha: new Date().toISOString().split('T')[0]
@@ -3429,7 +3428,7 @@ async function confirmarAbonoCredito() {
         if (nuevoEstado === 'pagado') {
             updates.estado = 'pagado';
         } else if (creditoSeleccionado.estado === 'mora') {
-            // Si estaba en mora y abona, podrÌamos cambiarlo a activo si pone al dÌa, 
+            // Si estaba en mora y abona, podr√≠amos cambiarlo a activo si pone al d√≠a, 
             // pero por simplicidad en POS solo actualizamos saldo.
             // Opcional: updates.estado = 'activo';
         }
@@ -3438,11 +3437,11 @@ async function confirmarAbonoCredito() {
 
         if (errorCredito) throw errorCredito;
 
-        mostrarAlerta(`Abono de $${montoFinal.toLocaleString('es-CO')} registrado con Èxito`, 'success');
+        mostrarAlerta(`Abono de $${montoFinal.toLocaleString('es-CO')} registrado con √©xito`, 'success');
         cerrarModalAbonoCredito();
 
         if (window.moterosIA) {
-            window.moterosIA.aprenderEvento('Abono crÈdito registrado', {
+            window.moterosIA.aprenderEvento('Abono cr√©dito registrado', {
                 monto: montoFinal,
                 tienda: TIENDA.nombre,
                 saldo_restante: nuevoSaldo
@@ -3455,7 +3454,7 @@ async function confirmarAbonoCredito() {
 }
 
 // ---------------------------------------------------------------
-// M”DULO DE SERVICIOS (LAVADOS, ARREGLOS, ETC.)
+// M√ìDULO DE SERVICIOS (LAVADOS, ARREGLOS, ETC.)
 // ---------------------------------------------------------------
 
 async function abrirModalServicios() {
@@ -3477,7 +3476,7 @@ async function cargarEmpleadosServicio() {
     const select = document.getElementById('servEmpleado');
     if (!select) return;
 
-    // Si ya tiene opciones (m·s que la default), no recargar cada vez si no es necesario
+    // Si ya tiene opciones (m√°s que la default), no recargar cada vez si no es necesario
     if (select.options.length > 1) return;
 
     try {
@@ -3508,8 +3507,8 @@ async function registrarServicio() {
     const precioTotal = parseFloat(document.getElementById('servPrecioTotal').value) || 0;
     const abono = parseFloat(document.getElementById('servAbono').value) || 0;
 
-    if (!empleadoId) return mostrarAlerta('Selecciona al empleado que realizar· el servicio.', 'warning');
-    if (!cliente || !telefono) return mostrarAlerta('Nombre y telÈfono del cliente son obligatorios.', 'warning');
+    if (!empleadoId) return mostrarAlerta('Selecciona al empleado que realiz√≥ el servicio.', 'warning');
+    if (!cliente || !telefono) return mostrarAlerta('Nombre y tel√©fono del cliente son obligatorios.', 'warning');
     if (precioTotal <= 0) return mostrarAlerta('Ingresa el precio total del servicio.', 'warning');
 
     try {
@@ -3539,7 +3538,7 @@ async function registrarServicio() {
             });
         }
 
-        mostrarAlerta('°Servicio registrado exitosamente!', 'success');
+        mostrarAlerta('‚úÖ Servicio registrado exitosamente!', 'success');
         cerrarModalServicios();
 
     } catch (e) {
@@ -3551,7 +3550,7 @@ async function registrarServicio() {
 function abrirBuscadorServicios() {
     cerrarModalServicios();
     document.getElementById('modalBuscarServicios').style.display = 'flex';
-    document.getElementById('resultadosServicios').innerHTML = '<p style="text-align:center; color:var(--gray);">Ingresa el nombre o telÈfono para buscar.</p>';
+    document.getElementById('resultadosServicios').innerHTML = '<p style="text-align:center; color:var(--gray);">üîé‚Äã Ingresa el nombre o tel√©fono para buscar.</p>';
 }
 
 async function buscarServicios() {
@@ -3590,7 +3589,7 @@ async function buscarServicios() {
                             <h4 style="margin:0; color:var(--dark);">${s.tipo_servicio} - #${s.numero_servicio}</h4>
                             <p style="margin:0.2rem 0; font-size:0.85rem; color:#64748b;"><strong>Cliente:</strong> ${s.cliente_nombre} (${s.cliente_telefono})</p>
                             <p style="margin:0; font-size:0.85rem; color:#64748b;"><strong>Empleado:</strong> ${s.empleados_tienda?.nombre || 'N/A'}</p>
-                            ${s.casco_prestado ? `<p style="margin:0.2rem 0; font-size:0.8rem; background:#f1f5f9; padding:0.3rem; border-radius:4px;">?? Casco: ${s.casco_prestado}</p>` : ''}
+                            ${s.casco_prestado ? `<p style="margin:0.2rem 0; font-size:0.8rem; background:#f1f5f9; padding:0.3rem; border-radius:4px;">ü™ñ‚Äã Casco: ${s.casco_prestado}</p>` : ''}
                         </div>
                         <div style="text-align:right;">
                             <span class="badge" style="background:${s.estado === 'pendiente' ? '#fef3c7' : '#dbeafe'}; color:${s.estado === 'pendiente' ? '#92400e' : '#1e40af'}; text-transform:uppercase; font-size:0.75rem;">${s.estado}</span>
@@ -3599,9 +3598,9 @@ async function buscarServicios() {
                     </div>
                     <div style="margin-top:1rem; display:flex; gap:0.5rem;">
                         ${s.estado !== 'entregado' ? `
-                            <button onclick="registrarAbonoServicio('${s.id}', ${s.saldo_pendiente})" class="btn btn-sm btn-success">?? Abonar/Pagar</button>
+                            <button onclick="registrarAbonoServicio('${s.id}', ${s.saldo_pendiente})" class="btn btn-sm btn-success">üíµ Abonar/Pagar</button>
                             ${s.estado === 'pendiente' ? `<button onclick="cambiarEstadoServicio('${s.id}', 'listo')" class="btn btn-sm btn-primary">? Listo</button>` : ''}
-                            ${s.estado === 'listo' && s.saldo_pendiente <= 0 ? `<button onclick="cambiarEstadoServicio('${s.id}', 'entregado')" class="btn btn-sm btn-info">?? Entregar</button>` : ''}
+                            ${s.estado === 'listo' && s.saldo_pendiente <= 0 ? `<button onclick="cambiarEstadoServicio('${s.id}', 'entregado')" class="btn btn-sm btn-info">‚úÖ Entregar</button>` : ''}
                         ` : '<span style="color:#10b981; font-weight:700;">? Servicio Completado</span>'}
                     </div>
                 </div>
@@ -3611,7 +3610,7 @@ async function buscarServicios() {
 
     } catch (e) {
         console.error('Error buscando servicios:', e);
-        mostrarAlerta('Error en la b˙squeda.', 'error');
+        mostrarAlerta('Error en la b√∫squeda.', 'error');
     }
 }
 
@@ -3630,7 +3629,7 @@ async function cambiarEstadoServicio(id, nuevoEstado) {
 }
 
 async function registrarAbonoServicio(id, saldo) {
-    const monto = parseFloat(prompt(`Saldo pendiente: $${saldo.toLocaleString('es-CO')}\nøCu·nto desea abonar?`, saldo));
+    const monto = parseFloat(prompt(`Saldo pendiente: $${saldo.toLocaleString('es-CO')}\n¬øCu√°nto desea abonar?`, saldo));
     if (isNaN(monto) || monto <= 0) return;
     if (monto > saldo) return mostrarAlerta('El abono no puede superar el saldo.', 'warning');
 
@@ -3665,16 +3664,12 @@ async function registrarAbonoServicio(id, saldo) {
 }
 
 // ---------------------------------------------------------------
-// PAGO PROVEEDOR INLINE (desde grilla de mÈtodos de pago)
-// ---------------------------------------------------------------
-// ---------------------------------------------------------------
-// PAGO PROVEEDOR INLINE (desde grilla de mÈtodos de pago)
-// ---------------------------------------------------------------
+// PAGO PROVEEDOR INLINE (desde grilla de m√©todos de pago)
 let _proveedoresInlineCache = [];
 
 async function cargarProveedoresInline() {
     try {
-        // Consultar a travÈs de compras_proveedor para obtener el saldo real pendiente
+        // Consultar a trav√©s de compras_proveedor para obtener el saldo real pendiente
         // (Igual que en cargarProveedoresConSaldo)
         const { data, error } = await db
             .from('compras_proveedor')
@@ -3721,7 +3716,7 @@ async function cargarProveedoresInline() {
 
         select.innerHTML = '<option value="">Seleccionar proveedor...</option>';
         _proveedoresInlineCache.forEach(p => {
-            select.innerHTML += `<option value="${p.id}">${p.razon_social} ó $${(p.saldo_pendiente || 0).toLocaleString('es-CO')}</option>`;
+            select.innerHTML += `<option value="${p.id}">${p.razon_social} ‚Äî $${(p.saldo_pendiente || 0).toLocaleString('es-CO')}</option>`;
         });
     } catch (e) {
         console.error('Error cargando proveedores inline:', e);
@@ -3759,7 +3754,7 @@ async function confirmarPagoProveedorInline() {
 
     if (!select?.value) return mostrarAlerta('Selecciona un proveedor', 'warning');
     const monto = parseFloat(montoInput?.value) || 0;
-    if (monto <= 0) return mostrarAlerta('Ingresa un monto v·lido', 'warning');
+    if (monto <= 0) return mostrarAlerta('Ingresa un monto v√°lido', 'warning');
 
     const id = parseInt(select.value);
     const prov = _proveedoresInlineCache.find(p => p.id === id);
@@ -3790,11 +3785,11 @@ async function confirmarPagoProveedorInline() {
 
             } catch (uploadErr) {
                 console.warn('Error subiendo comprobante (continuando sin foto):', uploadErr);
-                mostrarAlerta('No se pudo subir la foto, se guardar· el pago sin ella.', 'warning');
+                mostrarAlerta('No se pudo subir la foto, se guardar√° el pago sin ella.', 'warning');
             }
         }
 
-        // 2. Determinar mÈtodo de pago basado en la info bancaria del proveedor
+        // 2. Determinar m√©todo de pago basado en la info bancaria del proveedor
         let metodoPago = 'Transferencia';
         if (prov.banco?.toLowerCase().includes('nequi')) metodoPago = 'Nequi';
         else if (prov.banco?.toLowerCase().includes('daviplata')) metodoPago = 'Daviplata';
@@ -3847,7 +3842,7 @@ async function confirmarPagoProveedorInline() {
                 await db.from('proveedores').update({ saldo_pendiente: nuevoSaldoGlobal }).eq('id', id);
             }
         } catch (e) {
-            console.error("Error actualizando saldo global proveedor (no crÌtico):", e);
+            console.error("Error actualizando saldo global proveedor (no cr√≠tico):", e);
         }
 
         // 6. Limpiar formulario
@@ -3859,7 +3854,7 @@ async function confirmarPagoProveedorInline() {
         select.value = '';
         document.getElementById('infoProveedorInline').style.display = 'none';
 
-        // Deseleccionar el mÈtodo "Pago Proveedor"
+        // Deseleccionar el m√©todo "Pago Proveedor"
         const btnProv = document.querySelector('[data-metodo="Pago Proveedor"]');
         if (btnProv) {
             metodosSeleccionados.delete('Pago Proveedor');
@@ -3917,7 +3912,7 @@ function generarDesgloseProductos() {
     return `
         <div style="margin-top:1rem; border-top:1px solid #e2e8f0; padding-top:1rem;">
             <h4 style="margin:0 0 0.6rem; font-size:0.9rem; color:#475569; cursor:pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                ?? Desglose de Productos ?
+                üßæ Desglose de Productos ?
             </h4>
             <div style="max-height:250px; overflow-y:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
@@ -3974,7 +3969,7 @@ function procesarProductosOffline(prodsCached, invCached) {
 
         variantesStock.forEach(v => {
             const cant = v.cantidad || 0;
-            const talla = v.talla || '⁄nica';
+            const talla = v.talla || '√∫nica';
             const color = v.color || '';
             stockTotal += cant;
             if (!stockDetallado[color]) stockDetallado[color] = {};

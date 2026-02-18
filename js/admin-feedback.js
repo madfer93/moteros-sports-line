@@ -99,8 +99,11 @@ async function cargarResenasProductos() {
                 <td style="max-width:300px;">${r.comentario || '-'}</td>
                 <td><span class="badge ${r.aprobado ? 'badge-success' : 'badge-warning'}">${r.aprobado ? 'Aprobado' : 'Pendiente'}</span></td>
                 <td>
-                    ${!r.aprobado ? `<button class="btn btn-sm btn-success" onclick="aprobarResena('${r.id}')">✓ Aprobar</button>` : ''}
-                    <button class="btn btn-sm btn-danger" onclick="eliminarResena('${r.id}')">🗑️</button>
+                    ${r.aprobado
+                    ? `<button class="btn btn-sm btn-warning" onclick="rechazarResena('${r.id}')" title="Rechazar">❌ Rechazar</button>`
+                    : `<button class="btn btn-sm btn-success" onclick="aprobarResena('${r.id}')" title="Aprobar">✅​ Aprobar</button>`
+                }
+                    <button class="btn btn-sm btn-danger" onclick="eliminarResena('${r.id}')" title="Eliminar">🗑️</button>
                 </td>
             </tr>
         `;
@@ -159,6 +162,21 @@ async function aprobarResena(id) {
     }
 }
 
+async function rechazarResena(id) {
+    try {
+        const { error } = await supabaseClient
+            .from('producto_resenas')
+            .update({ aprobado: false })
+            .eq('id', id);
+
+        if (error) throw error;
+        showToast('Reseña rechazada', 'warning');
+        cargarResenasProductos();
+    } catch (error) {
+        showToast('Error al rechazar reseña', 'error');
+    }
+}
+
 async function eliminarResena(id) {
     if (!confirm('¿Eliminar esta reseña?')) return;
 
@@ -181,4 +199,5 @@ window.cargarFeedback = cargarFeedback;
 window.aprobarComentario = aprobarComentario;
 window.eliminarComentario = eliminarComentario;
 window.aprobarResena = aprobarResena;
+window.rechazarResena = rechazarResena;
 window.eliminarResena = eliminarResena;

@@ -507,6 +507,16 @@ async function mostrarFormProducto() {
         'productoEstado', 'stockAlcala', 'stockLocal01', 'stockJordan', 'stockDigital',
         'productoDescCorta', 'productoDescTecnica', 'productoImagen'];
 
+    // Hacer readonly los inputs de totales para evitar edición manual (se calculan de la tabla)
+    ['stockAlcala', 'stockLocal01', 'stockJordan'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.setAttribute('readonly', true);
+            el.style.backgroundColor = '#f3f4f6';
+            el.title = "Calculado automáticamente desde la tabla de tallas";
+        }
+    });
+
     ids.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = (id === 'productoEstado') ? 'Activo' : '';
@@ -753,12 +763,13 @@ window.agregarFilaTalla = function (talla = '', color = '', stockA = 0, stockL =
             </select>
         </td>
         <td style="padding: 4px;"><input type="text" class="form-control form-control-sm input-talla" value="${talla}" placeholder="${place}" style="padding: 2px 4px; height: 30px;"></td>
-        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-alcala" value="${stockA}" min="0" style="padding: 2px 4px; height: 30px;"></td>
-        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-local01" value="${stockL}" min="0" style="padding: 2px 4px; height: 30px;"></td>
-        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-jordan" value="${stockJ}" min="0" style="padding: 2px 4px; height: 30px;"></td>
-        <td style="padding: 4px; text-align: center;"><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()" title="Eliminar Variantes" style="padding: 0 6px;">🗑️</button></td>
+        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-alcala" value="${stockA}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
+        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-local01" value="${stockL}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
+        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-jordan" value="${stockJ}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
+        <td style="padding: 4px; text-align: center;"><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); sumarStocksGenerales();" title="Eliminar Variantes" style="padding: 0 6px;">🗑️</button></td>
     `;
     tbody.appendChild(tr);
+    sumarStocksGenerales(); // Actualizar al agregar fila (si viene con datos)
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -846,22 +857,27 @@ async function guardarProducto() {
             estado,
             descripcion_corta: descripcionCorta,
             descripcion_tecnica: descripcionTecnica,
-            url_imagen: urlImagen
+            stock_digital: stockDigital,
+            estado,
+            descripcion_corta: descripcionCorta,
+            descripcion_tecnica: descripcionTecnica,
+            url_imagen: urlImagen,
+            // Etiquetas Promocionales
+            en_oferta: document.getElementById('productoEnOferta')?.checked || false,
+            es_nuevo: document.getElementById('productoEsNuevo')?.checked || false,
+            fecha_oferta_hasta: document.getElementById('productoOfertaHasta')?.value || null,
+            fecha_nuevo_hasta: document.getElementById('productoNuevoHasta')?.value || null,
+            porcentaje_oferta: parseInt(document.getElementById('productoPorcentajeOferta')?.value) || null
         };
 
         let prodTextId;
         if (id) {
             const { data, error } = await supabaseClient.from('productos').update(productoData).eq('id', id).select();
             if (error) throw error;
-            prodTextId = data[0].id_producto;
-        } else {
-            productoData.id_producto = 'PROD' + Date.now() + Math.floor(Math.random() * 1000);
-            const { data, error } = await supabaseClient.from('productos').insert(productoData).select();
-            if (error) throw error;
-            prodTextId = data[0].id_producto;
+            prodTextId = data[0].id_producto || data[0].id;
         }
 
-        // GUARDAR INVENTARIO (NUEVA LÓGICA)
+        // GUARDAR INVENTARIO (ESTRATEGIA DELETE-INSERT PARA EVITAR 409)
         const sedes = [
             { id: 'Alcalá', tabla: 'inventario_alcala', key: 'alcala' },
             { id: 'Local 01', tabla: 'inventario_01', key: 'local01' },
@@ -869,71 +885,60 @@ async function guardarProducto() {
         ];
 
         for (const sede of sedes) {
-            // 1. Borrar lo que ya no está en la matriz para este producto
-            const { data: actuales } = await supabaseClient.from(sede.tabla).select('talla, color').eq('id_producto', prodTextId);
+            // 1. Borrar TODO el inventario de este producto en la sede
+            // Esto es más seguro que upsert cuando las constraints son dudosas o hay conflictos de PK
+            await supabaseClient.from(sede.tabla).delete().eq('id_producto', prodTextId);
 
-            if (actuales) {
-                const aBorrar = actuales.filter(act =>
-                    !inventarioData.some(n => n.talla === act.talla && (act.color || '') === (n.color || ''))
-                );
-
-                for (const item of aBorrar) {
-                    let query = supabaseClient.from(sede.tabla).delete().eq('id_producto', prodTextId).eq('talla', item.talla);
-
-                    // Manejo seguro de NULL o vacío para color en el borrado
-                    if (!item.color) {
-                        // Intentar borrar ambos por si acaso, pero el nuevo standard es ''
-                        await query.is('color', null);
-                        await supabaseClient.from(sede.tabla).delete().eq('id_producto', prodTextId).eq('talla', item.talla).eq('color', '');
-                    } else {
-                        await query.eq('color', item.color);
-                    }
-                }
-            }
-
-            // 2. Upsert
+            // 2. Insertar los nuevos registros
             const opsSede = inventarioData.map(i => ({
                 id_producto: prodTextId,
                 talla: i.talla,
                 color: i.color,
                 cantidad: i[sede.key],
                 ultima_actualizacion: new Date().toISOString()
-            }));
+            })).filter(op => op.cantidad >= 0);
 
             if (opsSede.length > 0) {
-                await supabaseClient.from(sede.tabla).upsert(opsSede, { onConflict: 'id_producto, talla, color' });
-            }
-        }
-
-        // 3. Actualizar Tabla Unificada 'inventario'
-        // Primero obtener actuales para limpiar lo que no está
-        const { data: unifiedActuales } = await supabaseClient.from('inventario').select('producto_id, local_id, talla, color').eq('producto_id', prodTextId);
-
-        if (unifiedActuales) {
-            const staleUnified = unifiedActuales.filter(act =>
-                !inventarioData.some(n => n.talla === act.talla && (n.color || '') === (act.color || ''))
-            );
-            for (const item of staleUnified) {
-                let q = supabaseClient.from('inventario').delete().eq('producto_id', prodTextId).eq('local_id', item.local_id).eq('talla', item.talla);
-                if (!item.color) {
-                    await q.is('color', null);
-                    await supabaseClient.from('inventario').delete().eq('producto_id', prodTextId).eq('local_id', item.local_id).eq('talla', item.talla).eq('color', '');
-                } else {
-                    await q.eq('color', item.color);
+                const { error: errInsert } = await supabaseClient.from(sede.tabla).insert(opsSede);
+                if (errInsert) {
+                    console.error(`Error guardando inventario ${sede.id}:`, errInsert);
+                    // Si falla insert masivo, intentar uno a uno (fallback)
+                    for (const op of opsSede) {
+                        await supabaseClient.from(sede.tabla).insert(op);
+                    }
                 }
             }
         }
 
+        // 3. Actualizar Tabla Unificada 'inventario'
+        // ESTRATEGIA DELETE-INSERT (Igual que por sedes, para evitar conflictos y asegurar limpieza)
+        await supabaseClient.from('inventario').delete().eq('producto_id', prodTextId);
+
+        const opsUnified = [];
         for (const i of inventarioData) {
             for (const sede of sedes) {
-                await supabaseClient.from('inventario').upsert({
-                    producto_id: prodTextId,
-                    local_id: sede.id,
-                    talla: i.talla,
-                    color: i.color || '',
-                    cantidad: i[sede.key],
-                    ultima_actualizacion: new Date().toISOString()
-                }, { onConflict: 'producto_id, local_id, talla, color' });
+                // Solo agregar si la cantidad es válida (aunque sea 0)
+                if (i[sede.key] !== undefined && i[sede.key] !== null) {
+                    opsUnified.push({
+                        producto_id: prodTextId,
+                        local_id: sede.id,
+                        talla: i.talla,
+                        color: i.color || '',
+                        cantidad: i[sede.key],
+                        ultima_actualizacion: new Date().toISOString()
+                    });
+                }
+            }
+        }
+
+        if (opsUnified.length > 0) {
+            const { error: errUni } = await supabaseClient.from('inventario').insert(opsUnified);
+            if (errUni) {
+                console.error('Error guardando inventario unificado:', errUni);
+                // Fallback uno a uno si falla lote
+                for (const op of opsUnified) {
+                    await supabaseClient.from('inventario').insert(op);
+                }
             }
         }
 
@@ -1051,6 +1056,13 @@ async function editarProducto(id) {
     document.getElementById('productoDescTecnica').value = p.descripcion_tecnica || '';
     document.getElementById('productoImagen').value = p.url_imagen || '';
 
+    // Cargar etiquetas
+    const chkOf = document.getElementById('productoEnOferta'); if (chkOf) { chkOf.checked = !!p.en_oferta; if (window.toggleFechaOferta) toggleFechaOferta(); }
+    const chkNu = document.getElementById('productoEsNuevo'); if (chkNu) { chkNu.checked = !!p.es_nuevo; if (window.toggleFechaNuevo) toggleFechaNuevo(); }
+    if (p.fecha_oferta_hasta) { const el = document.getElementById('productoOfertaHasta'); if (el) el.value = p.fecha_oferta_hasta.substring(0, 10); }
+    if (p.fecha_nuevo_hasta) { const el = document.getElementById('productoNuevoHasta'); if (el) el.value = p.fecha_nuevo_hasta.substring(0, 10); }
+    if (p.porcentaje_oferta) { const el = document.getElementById('productoPorcentajeOferta'); if (el) el.value = p.porcentaje_oferta; }
+
     const preview = document.getElementById('previewImgProducto');
     const container = document.getElementById('previewContainerProducto');
     if (preview && container) {
@@ -1118,6 +1130,8 @@ async function editarProducto(id) {
         console.error('Error cargando stock detallado:', e);
         document.getElementById('tbodyTallasStock').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error cargando stock</td></tr>';
     }
+    // Recalcular totales basados en lo cargado
+    sumarStocksGenerales();
 }
 
 async function duplicarProducto(id) {
@@ -1200,44 +1214,34 @@ window.cargarCategoriasSelect = cargarCategoriasSelect;
 window.actualizarStatsDashboard = actualizarStatsDashboard;
 
 // ═══════════════════════════════════════════════════════════════
-// SINCRONIZACIÓN STOCK SIMPLE <-> TABLA (UX MEJORADA)
+// SINCRONIZACIÓN STOCK (TABLA -> TOTALES)
 // ═══════════════════════════════════════════════════════════════
-function initStockSync() {
-    const inputs = ['stockAlcala', 'stockLocal01', 'stockJordan', 'stockDigital']; // Digital is mostly read-only/separate but good to include
-    const mapClass = {
-        'stockAlcala': '.input-stock-alcala',
-        'stockLocal01': '.input-stock-local01',
-        'stockJordan': '.input-stock-jordan'
-        // Digital not in table row usually
-    };
 
-    inputs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('input', function () {
-                const val = parseInt(this.value) || 0;
-                const tbody = document.getElementById('tbodyTallasStock');
-                if (!tbody) return;
-                const rows = tbody.querySelectorAll('tr');
+window.sumarStocksGenerales = function () {
+    const sedes = [
+        { idInput: 'stockAlcala', classInput: '.input-stock-alcala' },
+        { idInput: 'stockLocal01', classInput: '.input-stock-local01' },
+        { idInput: 'stockJordan', classInput: '.input-stock-jordan' }
+    ];
 
-                // Sincronizar SIEMPRE si hay una única fila
-                // O si todas las filas tienen talla vacía/única (caso raro pero posible)
-                if (rows.length === 1) {
-                    const row = rows[0];
-                    const targetClass = mapClass[id];
-                    if (targetClass) {
-                        const targetInput = row.querySelector(targetClass);
-                        if (targetInput) targetInput.value = val;
-                    }
-                }
-            });
+    sedes.forEach(sede => {
+        const inputs = document.querySelectorAll(sede.classInput);
+        let total = 0;
+        inputs.forEach(inp => {
+            total += (parseInt(inp.value) || 0);
+        });
+
+        const elTotal = document.getElementById(sede.idInput);
+        if (elTotal) {
+            elTotal.value = total;
+            // Visual feedback (opcional)
+            elTotal.style.backgroundColor = '#f0fdf4'; // Light green to indicate "calculated"
         }
     });
-}
 
-// Inicializar listeners cuando el DOM esté listo (o al cargar este script si ya lo está)
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initStockSync);
-} else {
-    initStockSync();
-}
+    // Digital suele ser manual, pero si se quisiera sumar de tabla se agregaría aqui.
+    // Por ahora Digital sigue siendo manual separado o sin desglose.
+};
+
+// Se elimina initStockSync (Total -> Tabla) para evitar conflictos.
+// La fuente de la verdad es ahora la tabla de detalles.

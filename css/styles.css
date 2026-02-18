@@ -98,7 +98,7 @@ button {
 }
 
 .logo img {
-    height: 100px;
+    height: 150px;
     width: auto;
     object-fit: contain;
 }
@@ -909,4 +909,43 @@ button {
     .header-slogan {
         display: none;
     }
+}
+
+/* ESTILOS DE FOOTER AÑADIDOS */
+.footer-payments-grid {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.footer-payments-grid img {
+    height: 35px;
+    width: auto;
+    object-fit: contain;
+    background: white;
+    padding: 4px;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+}
+
+.footer-payments-grid img:hover {
+    transform: translateY(-3px);
+}
+
+.footer-shipping-info {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-shipping-info li {
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+    color: var(--gray-400); /* Ajustado a variable existente */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }

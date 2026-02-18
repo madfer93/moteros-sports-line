@@ -1135,6 +1135,218 @@
    MEJORAS DE INTERFAZ (PAGOS, FOOTER Y MEGA MENÚ)
     */
 
+/* ═══════════════════════════════════════════════════════════════
+   SECCIÓN RESEÑAS DE LA COMUNIDAD
+   ═══════════════════════════════════════════════════════════════ */
+.reviews-section {
+    padding: 4rem 0;
+    background: linear-gradient(135deg, #faf8f5 0%, #fff 50%, #f5f0eb 100%);
+}
+
+.reviews-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.reviews-badge {
+    display: inline-block;
+    background: rgba(255, 107, 0, 0.1);
+    border: 1px solid rgba(255, 107, 0, 0.25);
+    color: #ff6b00;
+    padding: 0.35rem 1rem;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.8rem;
+}
+
+.reviews-header h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin-bottom: 0.4rem;
+}
+
+.reviews-header p {
+    font-size: 1rem;
+    color: #777;
+}
+
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.review-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0ece8;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.review-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.review-stars {
+    font-size: 1.3rem;
+    color: #f59e0b;
+    letter-spacing: 2px;
+}
+
+.review-text {
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.55;
+    font-style: italic;
+    flex: 1;
+}
+
+.review-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid #f0ece8;
+}
+
+.review-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b00, #ff8533);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.review-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.review-name {
+    font-weight: 700;
+    color: #1a1a1a;
+    font-size: 0.85rem;
+}
+
+.review-product {
+    font-size: 0.75rem;
+    color: #999;
+}
+
+.review-product strong {
+    color: #ff6b00;
+}
+
+/* Puntos de navegación */
+.reviews-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.review-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s;
+    padding: 0;
+}
+
+.review-dot.active {
+    background: #ff6b00;
+    border-color: #ff6b00;
+    transform: scale(1.2);
+}
+
+.review-dot:hover {
+    border-color: #ff6b00;
+}
+
+/* Skeleton loading */
+.review-skeleton {
+    animation: skeleton-pulse 1.5s infinite;
+}
+
+.skeleton-stars,
+.skeleton-text,
+.skeleton-name {
+    background: #e8e4e0;
+    border-radius: 6px;
+}
+
+.skeleton-stars {
+    width: 100px;
+    height: 18px;
+}
+
+.skeleton-text {
+    width: 100%;
+    height: 50px;
+}
+
+.skeleton-name {
+    width: 120px;
+    height: 16px;
+}
+
+@keyframes skeleton-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .reviews-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .reviews-section {
+        padding: 2.5rem 0;
+    }
+
+    .reviews-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .reviews-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .review-card {
+        padding: 1.2rem;
+    }
+}
+
 /* 1. Carrusel de Pagos (Marquee) */
 .payment-marquee {
     background: #0a0a1a;
@@ -1150,8 +1362,8 @@
 
 .marquee-content {
     display: inline-flex;
-    gap: 5rem;
-    animation: marquee-scroll 30s linear infinite;
+    gap: 3.5rem;
+    animation: marquee-scroll 22s linear infinite;
     align-items: center;
 }
 
@@ -1180,7 +1392,7 @@
     }
 
     100% {
-        transform: translateX(-50%);
+        transform: translateX(-33.33%);
     }
 }
 
