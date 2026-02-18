@@ -21,13 +21,52 @@ const PLACEHOLDER_LG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="h
 
 // Mapa de Colores Global
 const colorMap = {
+    // 🎨 COLORES BÁSICOS
     'negro': '#000', 'blanco': '#fff', 'rojo': '#ef4444',
     'azul': '#3b82f6', 'verde': '#22c55e', 'amarillo': '#eab308',
-    'dorado': '#ffd700', 'humo': '#555', 'gris': '#94a3b8',
     'naranja': '#f97316', 'rosa': '#ec4899', 'morado': '#a855f7',
-    'plata': '#c0c0c0', 'grafito': '#374151', 'fucsia': '#d946ef',
-    'beige': '#f5f5dc', 'cafe': '#8b4513', 'marron': '#a52a2a',
-    'multicolor': 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)'
+    'cafe': '#8b4513', 'marron': '#a52a2a', 'beige': '#f5f5dc',
+    'gris': '#94a3b8', 'plata': '#c0c0c0', 'grafito': '#374151',
+    'dorado': '#ffd700', 'fucsia': '#d946ef', 'humo': '#555',
+
+    // ✨ TORNASOLES Y CAMALEONES
+    'gris tornasol': 'linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%)', // Plata oscuro
+    'camaleon': 'linear-gradient(135deg, #5f2c82, #49a09d)',             // Morado-Verde
+    'tornasol': 'linear-gradient(45deg, #85FFBD 0%, #FFFB7D 100%)',       // Verde-Amarillo suave
+    'galaxy': 'linear-gradient(to right, #667db6, #0082c8, #0082c8, #667db6)',
+    'aurora': 'linear-gradient(to right, #00c6ff, #0072ff)',
+    'petroleo': 'linear-gradient(to right, #1f4037, #99f2c8)',
+    'arcoiris': 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)',
+
+    // ⚡ NEÓN / VISIBLE
+    'verde neon': '#39ff14',
+    'amarillo neon': '#ccff00',
+    'naranja neon': '#ff5f1f',
+    'rosa neon': '#ff00ff',
+    'azul neon': '#4d4dff',
+
+    // 🛡️ MATE
+    'negro mate': '#2c2c2c',
+    'gris mate': '#555',
+    'rojo mate': '#8b0000',
+    'azul mate': '#00008b',
+    'verde militar': '#4b5320',
+
+    // 🏆 METÁLICOS / PREMIUM
+    'titanio': '#878681',
+    'cobre': '#b87333',
+    'bronce': '#cd7f32',
+    'oro rosa': '#b76e79',
+    'perla': '#f0ead6',
+    'cromado': 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 50%, #e0e0e0 100%)',
+
+    // 🏁 TEXTURAS / PATRONES
+    'fibra carbono': 'repeating-linear-gradient(45deg, #111 0, #111 4px, #333 4px, #333 8px)',
+    'comic': 'repeating-linear-gradient(45deg, #fff 0, #fff 10px, #000 10px, #000 12px)',
+    'camuflado': 'repeating-radial-gradient(circle, #556b2f, #556b2f 10px, #8b4513 10px, #8b4513 20px)',
+
+    // 🧩 MULTICOLOR (Default)
+    'multicolor': 'linear-gradient(45deg, red, orange, yellow, green, blue)'
 };
 
 function obtenerEstiloColor(nombreColor) {
