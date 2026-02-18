@@ -81,7 +81,8 @@ const CONFIG = {
     POS: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_POS) || '',
     CATALOGO: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_INDEX) || ''
   },
-  AI_MODEL: (typeof process !== 'undefined' && process.env?.AI_MODEL) || 'llama-3.3-70b-versatile'
+  AI_MODEL: (typeof process !== 'undefined' && process.env?.AI_MODEL) || 'llama-3.3-70b-versatile',
+  VERSION: '2026-02-18-17-15'
 };
 
 // ═══════════════════════════════════════════════════════════════

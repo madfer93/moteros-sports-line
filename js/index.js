@@ -69,11 +69,9 @@ ICONOS_MOTO['TANK BAG'] = ICONOS_MOTO['TANK BAGS'];
 ICONOS_MOTO['CORTAVIENTO'] = ICONOS_MOTO['CORTAVIENTOS'];
 ICONOS_MOTO['ARNES'] = ICONOS_MOTO['ARNES'];
 ICONOS_MOTO['PIERNERA'] = '<img src="img/icons/piernera.png" alt="Piernera" style="width:100%;height:100%;object-fit:contain">';
-ICONOS_MOTO['MULTICLAVA'] = '<img src="img/icons/multiclava.png" alt="Multiclava" style="width:100%;height:100%;object-fit:contain">';
 ICONOS_MOTO['PORTA CELULAR'] = '<img src="img/icons/porta-celular.png" alt="Porta Celular" style="width:100%;height:100%;object-fit:contain">';
 
 ICONOS_MOTO['PIERNERAS'] = ICONOS_MOTO['PIERNERA'];
-ICONOS_MOTO['MULTICLAVAS'] = ICONOS_MOTO['MULTICLAVA'];
 ICONOS_MOTO['PORTA CELULARES'] = ICONOS_MOTO['PORTA CELULAR'];
 
 // Utilidad para normalizar texto (quitar tildes y dejar en mayúsculas)
@@ -92,7 +90,6 @@ const MAPEO_NAV = {
     'CORTAVIENTOS': ['CORTAVIENTO'],
     'ARNES': ['ARNES'],
     'PIERNERAS': ['PIERNERA'],
-    'MULTICLAVAS': ['MULTICLAVA'],
     'PORTA CELULARES': ['PORTA CELULAR']
 };
 let autoPlayPromo = null;
