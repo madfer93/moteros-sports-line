@@ -109,10 +109,7 @@ const SUBCATEGORIAS_VISUALES = {
         { nombre: 'INTERCOMUNICADORES', icono: 'img/icons/intercomunicador.png' },
         { nombre: 'CANDADOS', icono: 'img/icons/candado.png' },
         { nombre: 'VISORES', icono: 'img/icons/visor.png' },
-        { nombre: 'RODILLERAS', icono: 'img/icons/rodilleras.png' },
-        { nombre: 'TANK BAG', icono: 'img/icons/tank-bag.png' },
-        { nombre: 'CORTAVIENTO', icono: 'img/icons/cortaviento.png' },
-        { nombre: 'ARNES', icono: 'img/icons/arnes-nino.png' }
+        { nombre: 'RODILLERAS', icono: 'img/icons/rodilleras.png' }
     ],
     'Chaquetas': [
         { nombre: 'CHAQUETAS', icono: 'img/icons/chaqueta.png' },
@@ -123,8 +120,27 @@ const SUBCATEGORIAS_VISUALES = {
     ],
     'Botas': [
         { nombre: 'BOTAS', icono: 'img/icons/botas.png' }
+    ],
+    'Tank Bags': [
+        { nombre: 'TANK BAG', icono: 'img/icons/tank-bag.png' }
+    ],
+    'Cortavientos': [
+        { nombre: 'CORTAVIENTO', icono: 'img/icons/cortaviento.png' }
+    ],
+    'Arnes': [
+        { nombre: 'ARNES', icono: 'img/icons/arnes-nino.png' }
+    ],
+    'Pierneras': [
+        { nombre: 'PIERNERA', icono: 'img/icons/piernera.png' }
+    ],
+    'Multiclavas': [
+        { nombre: 'MULTICLAVA', icono: 'img/icons/multiclava.png' }
+    ],
+    'Porta Celulares': [
+        { nombre: 'PORTA CELULAR', icono: 'img/icons/porta-celular.png' }
     ]
 };
+
 
 function renderizarSubcategoriasVisuales(categoria) {
 
@@ -1535,12 +1551,27 @@ function cargarTallasFiltro() {
     });
 }
 
+function toggleSidebarMobile() {
+    const sidebar = document.querySelector('.filtros-sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (sidebar) sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('active');
+}
+
 // Exportar funciones para uso inline en HTML
 window.aplicarFiltros = aplicarFiltros;
 window.limpiarFiltros = limpiarFiltros;
 window.toggleFiltro = typeof toggleFiltro !== 'undefined' ? toggleFiltro : null;
 window.cargarSubcategoriasFiltro = typeof cargarSubcategoriasFiltro !== 'undefined' ? cargarSubcategoriasFiltro : null;
-window.toggleSidebarMobile = typeof toggleSidebarMobile !== 'undefined' ? toggleSidebarMobile : null;
+window.toggleSidebarMobile = toggleSidebarMobile;
+
+// Evento para cerrar sidebar al hacer click en overlay
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (overlay) {
+        overlay.addEventListener('click', toggleSidebarMobile);
+    }
+});
 
 // Fin del archivo
 

@@ -68,6 +68,13 @@ ICONOS_MOTO['INTERCOMUNICADOR'] = ICONOS_MOTO['INTERCOMUNICADORES'];
 ICONOS_MOTO['TANK BAG'] = ICONOS_MOTO['TANK BAGS'];
 ICONOS_MOTO['CORTAVIENTO'] = ICONOS_MOTO['CORTAVIENTOS'];
 ICONOS_MOTO['ARNES'] = ICONOS_MOTO['ARNES'];
+ICONOS_MOTO['PIERNERA'] = '<img src="img/icons/piernera.png" alt="Piernera" style="width:100%;height:100%;object-fit:contain">';
+ICONOS_MOTO['MULTICLAVA'] = '<img src="img/icons/multiclava.png" alt="Multiclava" style="width:100%;height:100%;object-fit:contain">';
+ICONOS_MOTO['PORTA CELULAR'] = '<img src="img/icons/porta-celular.png" alt="Porta Celular" style="width:100%;height:100%;object-fit:contain">';
+
+ICONOS_MOTO['PIERNERAS'] = ICONOS_MOTO['PIERNERA'];
+ICONOS_MOTO['MULTICLAVAS'] = ICONOS_MOTO['MULTICLAVA'];
+ICONOS_MOTO['PORTA CELULARES'] = ICONOS_MOTO['PORTA CELULAR'];
 
 // Utilidad para normalizar texto (quitar tildes y dejar en mayúsculas)
 function normalizarTexto(txt) {
@@ -80,7 +87,13 @@ const MAPEO_NAV = {
     'CASCOS': ['CASCO'],
     'TRAJES DE PROTECCION': ['TRAJE', 'GUANTE', 'IMPERMEABLE', 'BOTA', 'PROTECCION', 'PROTECCIÓN', 'CHAQUETA', 'PANTALON', 'PANTALÓN'],
     'MALETEROS': ['MALETERO', 'BAUL', 'ALFORJA', 'MALETA'],
-    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR', 'TANK BAG', 'CORTAVIENTO', 'ARNES']
+    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR', 'RODILLERA'],
+    'TANK BAGS': ['TANK BAG', 'TANKBAG'],
+    'CORTAVIENTOS': ['CORTAVIENTO'],
+    'ARNES': ['ARNES'],
+    'PIERNERAS': ['PIERNERA'],
+    'MULTICLAVAS': ['MULTICLAVA'],
+    'PORTA CELULARES': ['PORTA CELULAR']
 };
 let autoPlayPromo = null;
 const INTERVALO_AUTO = 5000;

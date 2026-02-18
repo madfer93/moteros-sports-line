@@ -821,7 +821,7 @@
                     <a href="contacto.html">Contacto</a>
                 </nav>
                 <div class="header-search">
-                    <input type="text" id="headerSearch" placeholder="¿Qué buscas?">
+                    <input type="search" id="headerSearch" placeholder="¿Qué buscas?">
                     <button class="search-btn"><i class="fas fa-search"></i></button>
                 </div>
                 <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()"
@@ -1166,25 +1166,11 @@
         }
     </script>
     <script>
-        // === Sidebar Filtros: Acordeón y Móvil ===
+        // === Sidebar Filtros: Acordeón ===
         function toggleFiltro(btn) {
             btn.classList.toggle('active');
             const options = btn.nextElementSibling;
             options.classList.toggle('open');
-        }
-
-        function toggleSidebarMobile() {
-            const sidebar = document.getElementById('filtrosSidebar');
-            sidebar.classList.toggle('open');
-            // Overlay
-            let overlay = document.querySelector('.sidebar-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.className = 'sidebar-overlay';
-                overlay.onclick = () => toggleSidebarMobile();
-                document.body.appendChild(overlay);
-            }
-            overlay.classList.toggle('active');
         }
 
         // Inicializar: abrir el primer filtro (Categoría)
