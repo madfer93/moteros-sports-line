@@ -1540,3 +1540,66 @@ window.cargarSubcategoriasFiltro = typeof cargarSubcategoriasFiltro !== 'undefin
 window.toggleSidebarMobile = typeof toggleSidebarMobile !== 'undefined' ? toggleSidebarMobile : null;
 
 // Fin del archivo
+
+// ═══════════════════════════════════════════════════════════════
+// INICIALIZACIÓN Y EVENTOS DOM
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Cargar Productos
+    if (typeof cargarProductos === 'function') {
+        cargarProductos();
+    }
+
+    // 2. Sincronizar Buscador Header <-> Filtro Sidebar
+    const headerSearch = document.getElementById('headerSearch');
+    const buscarProducto = document.getElementById('buscarProducto');
+
+    if (headerSearch && buscarProducto) {
+        // Input Header -> Input Filtro
+        headerSearch.addEventListener('input', (e) => {
+            buscarProducto.value = e.target.value;
+            // Debounce opcional o aplicar directo
+            aplicarFiltros();
+        });
+
+        // Enter en Header
+        headerSearch.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                buscarProducto.value = headerSearch.value;
+                aplicarFiltros();
+                const grid = document.getElementById('productosGrid');
+                if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+
+        // Click Botón Lupa Header
+        const btnSearch = headerSearch.nextElementSibling;
+        if (btnSearch && btnSearch.tagName === 'BUTTON') {
+            btnSearch.addEventListener('click', () => {
+                buscarProducto.value = headerSearch.value;
+                aplicarFiltros();
+                const grid = document.getElementById('productosGrid');
+                if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // Input Filtro -> Sync Header (Opcional, visual)
+        buscarProducto.addEventListener('input', (e) => {
+            headerSearch.value = e.target.value;
+        });
+    }
+
+    // 3. Leer parámetro URL 'busqueda' (desde Index)
+    const params = new URLSearchParams(window.location.search);
+    const busquedaQuery = params.get('busqueda');
+    if (busquedaQuery) {
+        if (buscarProducto) buscarProducto.value = busquedaQuery;
+        if (headerSearch) headerSearch.value = busquedaQuery;
+
+        // El filtro se aplicará cuando carguen los productos (checkUrlParams o similar)
+        // Pero por seguridad:
+        setTimeout(() => {
+            if (typeof aplicarFiltros === 'function') aplicarFiltros();
+        }, 800);
+    }
+});

@@ -978,6 +978,31 @@ window.addEventListener('resize', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// BUSCADOR HEADER (MÓVIL Y DESKTOP)
+// ═══════════════════════════════════════════════════════════════
+const headerSearch = document.getElementById('headerSearch');
+if (headerSearch) {
+    // Función para ejecutar búsqueda
+    const ejecutarBusqueda = () => {
+        const query = headerSearch.value.trim();
+        if (query) {
+            window.location.href = `catalogo.html?busqueda=${encodeURIComponent(query)}`;
+        }
+    };
+
+    // Evento Click Botón
+    const btnSearch = headerSearch.nextElementSibling; // El botón está justo después
+    if (btnSearch && btnSearch.tagName === 'BUTTON') {
+        btnSearch.addEventListener('click', ejecutarBusqueda);
+    }
+
+    // Evento Enter
+    headerSearch.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') ejecutarBusqueda();
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
 // EXPORTS GLOBALES (para onclick en HTML)
 
 // La lógica de categorías ahora se maneja exclusivamente mediante cargarCategoriasDinamicas()

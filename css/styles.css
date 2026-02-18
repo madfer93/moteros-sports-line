@@ -763,6 +763,55 @@ button {
     .contacto {
         padding: 3rem 0;
     }
+
+    /* Header Mobile Adjustments */
+    .header .container {
+        padding: 0.5rem 1rem;
+    }
+
+    .logo img {
+        height: 40px;
+        /* Reduce logo size on mobile */
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .header-search {
+        display: flex;
+        align-items: center;
+        background: white;
+        border-radius: 20px;
+        padding: 4px 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .header-search input {
+        border: none;
+        outline: none;
+        background: transparent;
+        width: 100px;
+        /* Compact width for mobile */
+        font-size: 0.85rem;
+        padding: 0 4px;
+    }
+
+    .header-search input:focus {
+        width: 140px;
+        /* Expand on focus */
+        transition: width 0.3s ease;
+    }
+
+    .header-search button {
+        background: none;
+        border: none;
+        color: var(--primary);
+        padding: 0;
+        cursor: pointer;
+    }
 }
 
 @media (max-width: 480px) {
@@ -927,7 +976,7 @@ button {
     background: white;
     padding: 4px;
     border-radius: 6px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease;
 }
 
@@ -944,7 +993,8 @@ button {
 .footer-shipping-info li {
     margin-bottom: 0.8rem;
     font-size: 0.95rem;
-    color: var(--gray-400); /* Ajustado a variable existente */
+    color: var(--gray-400);
+    /* Ajustado a variable existente */
     display: flex;
     align-items: center;
     gap: 0.5rem;
