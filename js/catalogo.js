@@ -110,7 +110,8 @@ const SUBCATEGORIAS_VISUALES = {
         { nombre: 'CANDADOS', icono: 'img/icons/candado.png' },
         { nombre: 'VISORES', icono: 'img/icons/visor.png' },
         { nombre: 'RODILLERAS', icono: 'img/icons/rodilleras.png' },
-        { nombre: 'TANK BAGS', icono: 'img/icons/tank-bag.png' }
+        { nombre: 'TANK BAG', icono: 'img/icons/tank-bag.png' },
+        { nombre: 'CORTAVIENTO', icono: 'img/icons/cortaviento.png' }
     ],
     'Chaquetas': [
         { nombre: 'CHAQUETAS', icono: 'img/icons/chaqueta.png' },

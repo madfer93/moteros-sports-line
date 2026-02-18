@@ -45,6 +45,7 @@ const ICONOS_MOTO = {
     'PANTALONES': '<img src="img/icons/pantalones.png" alt="Pantalones" style="width:100%;height:100%;object-fit:contain">',
     'RODILLERAS': '<img src="img/icons/rodilleras.png" alt="Rodilleras" style="width:100%;height:100%;object-fit:contain">',
     'TANK BAGS': '<img src="img/icons/tank-bag.png" alt="Tank Bags" style="width:100%;height:100%;object-fit:contain">',
+    'CORTAVIENTOS': '<img src="img/icons/cortaviento.png" alt="Cortavientos" style="width:100%;height:100%;object-fit:contain">',
     'VER TODO': '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="20" height="20" rx="3"/><rect x="36" y="8" width="20" height="20" rx="3"/><rect x="8" y="36" width="20" height="20" rx="3"/><rect x="36" y="36" width="20" height="20" rx="3"/></svg>'
 };
 
@@ -63,6 +64,8 @@ ICONOS_MOTO['ACCESORIO'] = ICONOS_MOTO['ACCESORIOS'];
 ICONOS_MOTO['CANDADO'] = ICONOS_MOTO['CANDADOS'];
 ICONOS_MOTO['VISOR'] = ICONOS_MOTO['VISORES'];
 ICONOS_MOTO['INTERCOMUNICADOR'] = ICONOS_MOTO['INTERCOMUNICADORES'];
+ICONOS_MOTO['TANK BAG'] = ICONOS_MOTO['TANK BAGS'];
+ICONOS_MOTO['CORTAVIENTO'] = ICONOS_MOTO['CORTAVIENTOS'];
 
 // Utilidad para normalizar texto (quitar tildes y dejar en mayúsculas)
 function normalizarTexto(txt) {
@@ -75,7 +78,7 @@ const MAPEO_NAV = {
     'CASCOS': ['CASCO'],
     'TRAJES DE PROTECCION': ['TRAJE', 'GUANTE', 'IMPERMEABLE', 'BOTA', 'PROTECCION', 'PROTECCIÓN', 'CHAQUETA', 'PANTALON', 'PANTALÓN'],
     'MALETEROS': ['MALETERO', 'BAUL', 'ALFORJA', 'MALETA'],
-    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR', 'TANK BAG']
+    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR', 'TANK BAG', 'CORTAVIENTO']
 };
 let autoPlayPromo = null;
 const INTERVALO_AUTO = 5000;
