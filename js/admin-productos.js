@@ -875,6 +875,10 @@ async function guardarProducto() {
             const { data, error } = await supabaseClient.from('productos').update(productoData).eq('id', id).select();
             if (error) throw error;
             prodTextId = data[0].id_producto || data[0].id;
+        } else {
+            const { data, error } = await supabaseClient.from('productos').insert(productoData).select();
+            if (error) throw error;
+            prodTextId = data[0].id_producto || data[0].id;
         }
 
         // GUARDAR INVENTARIO (ESTRATEGIA DELETE-INSERT PARA EVITAR 409)
@@ -1149,13 +1153,25 @@ async function duplicarProducto(id) {
     document.getElementById('productoNombre').value = p.nombre + ' (Copia)';
     document.getElementById('productoReferencia').value = p.referencia || '';
     document.getElementById('productoCategoria').value = p.categoria;
+
+    // Trigger update UI for category
+    actualizarFormularioPorCategoria();
+
     document.getElementById('productoSubcategoria').value = p.subcategoria || '';
     document.getElementById('productoMarca').value = p.marca;
 
     await cargarProveedoresEnSelectProducto(p.proveedor_id);
 
+    // Cargar Variantes (Colores) al estilo nuevo
+    document.getElementById('containerColoresFotos').innerHTML = '';
     if (p.variantes && Array.isArray(p.variantes)) {
-        document.getElementById('productoVariantes').value = p.variantes.join(', ');
+        p.variantes.forEach(v => {
+            if (typeof v === 'string') {
+                agregarFilaColor(v, '');
+            } else {
+                agregarFilaColor(v.color, v.url);
+            }
+        });
     }
 
     document.getElementById('productoPrecio').value = p.precio;
@@ -1168,7 +1184,21 @@ async function duplicarProducto(id) {
     document.getElementById('productoDescCorta').value = p.descripcion_corta || '';
     document.getElementById('productoDescTecnica').value = p.descripcion_tecnica || '';
     document.getElementById('productoImagen').value = '';
-    removerPreview('producto');
+
+    // IMPORTANTE: Limpiar preview de imagen principal al duplicar
+    const previewContainer = document.getElementById('previewContainerProducto');
+    const dropzone = document.getElementById('dropzoneProducto');
+    if (previewContainer) previewContainer.style.display = 'none';
+    if (dropzone) {
+        Array.from(dropzone.children).forEach(child => {
+            child.style.visibility = 'visible';
+        });
+    }
+
+    if (window.archivosTemporal) window.archivosTemporal['producto'] = null;
+    const fileInput = document.getElementById('fileInputProducto');
+    if (fileInput) fileInput.value = '';
+
 
     document.getElementById('stockDigital').value = p.stock_digital || p.stock_tiendas?.digital || 0;
 
