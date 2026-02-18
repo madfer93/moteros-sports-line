@@ -15,21 +15,21 @@ const CONFIG = {
   TIENDAS: {
     'Alcala': {
       nombre: 'Alcalá',
-      telefono: '3101112222',
+      telefono: '3113408416',
       direccion: 'Calle Nueva 1 #12-34',
       email: 'alcala@moterossl.com',
       horario: 'Lun-Sáb 9AM-7PM'
     },
     '01': {
       nombre: '01',
-      telefono: '3112223333',
+      telefono: '3113408416',
       direccion: 'Avenida Nueva 2 #56-78',
       email: '01@moterossl.com',
       horario: 'Lun-Sáb 8AM-6PM'
     },
     'Jordan': {
       nombre: 'Jordán',
-      telefono: '3123334444',
+      telefono: '3113408416',
       direccion: 'Carrera Nueva 3 #90-12',
       email: 'jordan@moterossl.com',
       horario: 'Lun-Dom 10AM-8PM'
