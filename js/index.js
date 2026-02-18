@@ -44,6 +44,7 @@ const ICONOS_MOTO = {
     'INTERCOMUNICADORES': '<img src="img/icons/intercomunicador.png" alt="Intercomunicadores" style="width:100%;height:100%;object-fit:contain">',
     'PANTALONES': '<img src="img/icons/pantalones.png" alt="Pantalones" style="width:100%;height:100%;object-fit:contain">',
     'RODILLERAS': '<img src="img/icons/rodilleras.png" alt="Rodilleras" style="width:100%;height:100%;object-fit:contain">',
+    'TANK BAGS': '<img src="img/icons/tank-bag.png" alt="Tank Bags" style="width:100%;height:100%;object-fit:contain">',
     'VER TODO': '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="20" height="20" rx="3"/><rect x="36" y="8" width="20" height="20" rx="3"/><rect x="8" y="36" width="20" height="20" rx="3"/><rect x="36" y="36" width="20" height="20" rx="3"/></svg>'
 };
 
@@ -72,9 +73,9 @@ function normalizarTexto(txt) {
 // Configuración de Navegación (Mapeo Robusto)
 const MAPEO_NAV = {
     'CASCOS': ['CASCO'],
-    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR'],
     'TRAJES DE PROTECCION': ['TRAJE', 'GUANTE', 'IMPERMEABLE', 'BOTA', 'PROTECCION', 'PROTECCIÓN', 'CHAQUETA', 'PANTALON', 'PANTALÓN'],
-    'MALETEROS': ['MALETERO', 'BAUL', 'ALFORJA', 'MALETA']
+    'MALETEROS': ['MALETERO', 'BAUL', 'ALFORJA', 'MALETA'],
+    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR', 'TANK BAG']
 };
 let autoPlayPromo = null;
 const INTERVALO_AUTO = 5000;
