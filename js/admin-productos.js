@@ -874,8 +874,33 @@ async function guardarProducto() {
         if (id) {
             const { data, error } = await supabaseClient.from('productos').update(productoData).eq('id', id).select();
             if (error) throw error;
-            prodTextId = data[0].id_producto || data[0].id;
+            prodTextId = data[0].id_producto || data[0].id; // Use existing if updated
         } else {
+            // INSERTAR NUEVO con ID ROBUSTO
+            let slugBase = 'producto';
+
+            // Intentar normalizar nombre
+            try {
+                if (typeof window.normalizarTexto === 'function') {
+                    slugBase = window.normalizarTexto(nombre);
+                } else if (typeof normalizarTexto === 'function') {
+                    slugBase = normalizarTexto(nombre);
+                } else {
+                    slugBase = nombre.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                }
+            } catch (e) {
+                slugBase = nombre.replace(/[^a-zA-Z0-9 ]/g, '');
+            }
+
+            slugBase = (slugBase || 'nuevo').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+            const randomSuffix = Math.floor(Math.random() * 100000);
+            const newIdProducto = `${slugBase}-${randomSuffix}`;
+
+            productoData.id_producto = newIdProducto;
+
+            console.log('Insertando producto:', productoData);
+
             const { data, error } = await supabaseClient.from('productos').insert(productoData).select();
             if (error) throw error;
             prodTextId = data[0].id_producto || data[0].id;
