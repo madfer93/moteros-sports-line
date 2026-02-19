@@ -1229,12 +1229,15 @@ function renderizarProductos() {
                         <!-- SECCIÓN COLORES -->
                         ${p.variantes && p.variantes.length > 0 ? `
                             <div class="colores-grid" style="margin-top: 5px; display:flex; flex-wrap:wrap; gap:4px;">
-                                ${p.variantes.map(c => `
+                                ${p.variantes.map(c => {
+                const nombreColor = (typeof c === 'object' && c !== null) ? (c.nombre || c.color || c.value || 'Indefinido') : c;
+                return `
                                     <button class="btn-color" 
-                                            onclick="event.stopPropagation(); seleccionarColor('${p.id_producto}', this, '${c}')"
+                                            onclick="event.stopPropagation(); seleccionarColor('${p.id_producto}', this, '${nombreColor}')"
                                             style="padding: 2px 6px; font-size: 0.75rem; border:1px solid #cbd5e1; border-radius:4px; background:white; cursor:pointer;"
-                                            title="${c}">${c}</button>
-                                `).join('')}
+                                            title="${nombreColor}">${nombreColor}</button>
+                                `;
+            }).join('')}
                             </div>
                         ` : ''}
 
@@ -1348,7 +1351,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
         }
 
         if (stockDisponible <= 0) {
-            mostrarAlerta(`? Sin stock para ${colorSeleccionado || ''} [${tallaSeleccionada || 'Única'}]`, 'error');
+            mostrarAlerta(`⚠️ Sin stock para ${colorSeleccionado || ''} [${tallaSeleccionada || 'Única'}]`, 'error');
             return;
         }
 
