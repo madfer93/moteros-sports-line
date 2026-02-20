@@ -47,6 +47,11 @@ const ICONOS_MOTO = {
     'TANK BAGS': '<img src="img/icons/tank-bag.png" alt="Tank Bags" style="width:100%;height:100%;object-fit:contain">',
     'CORTAVIENTOS': '<img src="img/icons/cortaviento.png" alt="Cortavientos" style="width:100%;height:100%;object-fit:contain">',
     'ARNES': '<img src="img/icons/arnes-nino.png" alt="Arnés" style="width:100%;height:100%;object-fit:contain">',
+    'PIJAMA CON BAUL': '<img src="img/icons/pijama con baul.png" alt="Pijama con Baúl" style="width:100%;height:100%;object-fit:contain">',
+    'PIJAMA SIN BAUL': '<img src="img/icons/pijama sin baul.png" alt="Pijama sin Baúl" style="width:100%;height:100%;object-fit:contain">',
+    'TIRAS REFLECTIVAS': '<img src="img/icons/tiras reflectivas.png" alt="Tiras Reflectivas" style="width:100%;height:100%;object-fit:contain">',
+    'CAMPANAS': '<img src="img/icons/campana motera.png" alt="Campanas" style="width:100%;height:100%;object-fit:contain">',
+    'GAFAS CROSS': '<img src="img/icons/gafas cross.PNG" alt="Gafas Cross" style="width:100%;height:100%;object-fit:contain">',
     'VER TODO': '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="20" height="20" rx="3"/><rect x="36" y="8" width="20" height="20" rx="3"/><rect x="8" y="36" width="20" height="20" rx="3"/><rect x="36" y="36" width="20" height="20" rx="3"/></svg>'
 };
 
@@ -70,6 +75,15 @@ ICONOS_MOTO['CORTAVIENTO'] = ICONOS_MOTO['CORTAVIENTOS'];
 ICONOS_MOTO['ARNES'] = ICONOS_MOTO['ARNES'];
 ICONOS_MOTO['PIERNERA'] = '<img src="img/icons/piernera.png" alt="Piernera" style="width:100%;height:100%;object-fit:contain">';
 ICONOS_MOTO['PORTA CELULAR'] = '<img src="img/icons/porta-celular.png" alt="Porta Celular" style="width:100%;height:100%;object-fit:contain">';
+ICONOS_MOTO['TIRA REFLECTIVA'] = ICONOS_MOTO['TIRAS REFLECTIVAS'];
+ICONOS_MOTO['TIRA'] = ICONOS_MOTO['TIRAS REFLECTIVAS'];
+ICONOS_MOTO['CAMPANA'] = ICONOS_MOTO['CAMPANAS'];
+ICONOS_MOTO['GAFAS CROSS'] = ICONOS_MOTO['GAFAS CROSS'];
+ICONOS_MOTO['GAFAS'] = ICONOS_MOTO['GAFAS CROSS'];
+ICONOS_MOTO['PIJAMAS'] = ICONOS_MOTO['PIJAMA SIN BAUL']; // Default para plural
+ICONOS_MOTO['PIJAMA SIN BAUL'] = ICONOS_MOTO['PIJAMA SIN BAUL'];
+ICONOS_MOTO['PIJAMA CON BAUL'] = ICONOS_MOTO['PIJAMA CON BAUL'];
+ICONOS_MOTO['PIJAMA'] = ICONOS_MOTO['PIJAMA SIN BAUL']; // Alias genérico
 
 ICONOS_MOTO['PIERNERAS'] = ICONOS_MOTO['PIERNERA'];
 ICONOS_MOTO['PORTA CELULARES'] = ICONOS_MOTO['PORTA CELULAR'];
@@ -83,9 +97,9 @@ function normalizarTexto(txt) {
 // Configuración de Navegación (Mapeo Robusto)
 const MAPEO_NAV = {
     'CASCOS': ['CASCO'],
-    'TRAJES DE PROTECCION': ['TRAJE', 'GUANTE', 'IMPERMEABLE', 'BOTA', 'PROTECCION', 'PROTECCIÓN', 'CHAQUETA', 'PANTALON', 'PANTALÓN'],
+    'TRAJES DE PROTECCION': ['TRAJE', 'GUANTE', 'IMPERMEABLE', 'BOTA', 'PROTECCION', 'PROTECCIÓN', 'CHAQUETA', 'PANTALON', 'PANTALÓN', 'TIRA', 'TIRAS REFLECTIVAS'],
     'MALETEROS': ['MALETERO', 'BAUL', 'ALFORJA', 'MALETA'],
-    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR', 'RODILLERA'],
+    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR', 'RODILLERA', 'PIJAMA', 'CAMPANA', 'GAFAS'],
     'TANK BAGS': ['TANK BAG', 'TANKBAG'],
     'CORTAVIENTOS': ['CORTAVIENTO'],
     'ARNES': ['ARNES'],

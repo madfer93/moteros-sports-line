@@ -85,12 +85,12 @@
 /* ── Secciones / Subcategorías ── */
 /* ── Secciones / Subcategorías ── */
 .mega-menu-sections {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    /* Dos columnas exactas */
-    gap: 1rem;
-    /* Más espacio entre items */
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    /* Volver a 2 columnas */
+    gap: 1.5rem;
     align-content: start;
+    padding: 1rem 0;
 }
 
 .mega-menu-sections h4 {
@@ -109,25 +109,25 @@
 
 .mega-menu-item {
     display: flex;
+    flex-direction: row;
+    /* Volver a fila para 2 columnas */
     align-items: center;
-    gap: 0.75rem;
-    /* Separación icono-texto */
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
+    justify-content: flex-start;
+    gap: 1rem;
+    padding: 0.8rem;
+    border-radius: 12px;
+    background: #f8fafc;
+    transition: all 0.3s ease;
     text-decoration: none;
     color: var(--gray-700, #4b5563);
-    background: #f8fafc;
-    /* Fondo suave para dar estructura */
     border: 1px solid transparent;
 }
 
 .mega-menu-item:hover {
-    background: #fff;
-    color: var(--primary, #ff6b00);
+    background: white;
+    border-color: var(--primary);
     transform: translateX(5px);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    border-color: #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 /* 3. Fix Iconos Gigantes (Forzar tamaño - Definición original) */
@@ -149,13 +149,25 @@
 }
 
 .mega-menu-item span {
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: 0.85rem;
+    font-weight: 700;
     line-height: 1.2;
+    text-align: left;
+    text-transform: uppercase;
 }
 
 .mega-menu-item:hover .mega-menu-icon {
     background: var(--primary, #ff6b00);
+}
+
+/* Asegurar que la imagen interna respete el contenedor */
+.mega-menu-icon img,
+.mega-menu-icon svg {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 .mega-menu-item:hover .mega-menu-icon svg {
@@ -343,12 +355,23 @@
 
 /* 3. Fix Iconos Gigantes (Forzar tamaño) */
 .mega-menu-icon {
-    width: 60px !important;
-    height: 60px !important;
-    margin: 0 auto;
-    /* Centrar si es flex column */
-    background: transparent !important;
-    /* Limpiar fondo gris si se prefiere */
+    width: 50px !important;
+    /* Tamaño más balanceado para 2 columnas */
+    height: 50px !important;
+    background: #fff !important;
+    border-radius: 50% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px !important;
+    border: 2px solid #edf2f7;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.mega-menu-item:hover .mega-menu-icon {
+    border-color: var(--primary) !important;
+    background: white !important;
 }
 
 /* Asegurar que la imagen interna respete el contenedor */

@@ -763,15 +763,14 @@ body {
 }
 
 .categorias-visuales-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    /* Línea horizontal continua */
+    display: flex !important;
+    /* Forzar flex */
+    flex-wrap: nowrap !important;
+    /* Forzar una sola línea */
     justify-content: flex-start;
-    gap: 1.5rem;
+    gap: 2rem;
     overflow-x: auto;
-    /* Scroll horizontal */
-    padding: 0.5rem 1rem 1.5rem 1rem;
-    /* Padding abajo para scrollbar */
+    padding: 1rem;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: #ea580c #f1f5f9;
@@ -795,12 +794,15 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: flex-start;
+    /* Alineación arriba */
+    gap: 0.8rem;
     cursor: pointer;
-    transition: all 0.2s ease;
-    width: 80px;
-    /* Ancho fijo compacto */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 110px;
+    /* Ancho uniforme */
     flex-shrink: 0;
+    padding: 5px;
 }
 
 .categoria-visual-item:hover {
@@ -808,17 +810,20 @@ body {
 }
 
 .categoria-visual-icon {
-    width: 60px;
-    /* Icono PEQUEÑO */
-    height: 60px;
+    width: 100px;
+    /* Tamaño unificado */
+    height: 100px;
     background-color: #f8f9fa;
-    border-radius: 50%;
+    border-radius: 50% !important;
+    /* Forzar circular */
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px;
+    padding: 18px;
     transition: all 0.3s ease;
-    border: 2px solid transparent;
+    border: 3px solid transparent;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
 }
 
 .categoria-visual-item:hover .categoria-visual-icon {
@@ -858,11 +863,14 @@ body {
 
 .categoria-visual-item span {
     font-size: 0.75rem;
-    font-weight: 600;
-    color: #64748b;
+    font-weight: 700;
+    color: #475569;
     text-transform: uppercase;
     text-align: center;
     line-height: 1.2;
+    display: block;
+    width: 100%;
+    overflow-wrap: break-word;
 }
 
 .categoria-visual-item:hover span,

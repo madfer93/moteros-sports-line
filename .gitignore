@@ -69,3 +69,7 @@ out/
 # CONFIGURACIÓN (SUBIDA DIRECTA POR BLOQUEO DE ACTIONS)
 # js/config.js
 DEV_REPORT.md
+
+# HERRAMIENTAS LOCALES DE BRANDING
+branding-studio.html
+branding_tmp/

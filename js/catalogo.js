@@ -105,11 +105,14 @@ const SUBCATEGORIAS_VISUALES = {
     ],
     'Accesorios': [
         { nombre: 'MALETEROS', icono: 'img/icons/maletero.png' },
-        { nombre: 'IMPERMEABLES', icono: 'img/icons/impermeable.png' },
         { nombre: 'INTERCOMUNICADORES', icono: 'img/icons/intercomunicador.png' },
         { nombre: 'CANDADOS', icono: 'img/icons/candado.png' },
         { nombre: 'VISORES', icono: 'img/icons/visor.png' },
-        { nombre: 'RODILLERAS', icono: 'img/icons/rodilleras.png' }
+        { nombre: 'RODILLERAS', icono: 'img/icons/rodilleras.png' },
+        { nombre: 'PIJAMA CON BAUL', icono: 'img/icons/pijama con baul.png' },
+        { nombre: 'PIJAMA SIN BAUL', icono: 'img/icons/pijama sin baul.png' },
+        { nombre: 'CAMPANAS', icono: 'img/icons/campana motera.png' },
+        { nombre: 'GAFAS CROSS', icono: 'img/icons/gafas cross.PNG' }
     ],
     'Chaquetas': [
         { nombre: 'CHAQUETAS', icono: 'img/icons/chaqueta.png' },
@@ -138,6 +141,12 @@ const SUBCATEGORIAS_VISUALES = {
     ],
     'Porta Celulares': [
         { nombre: 'PORTA CELULAR', icono: 'img/icons/porta-celular.png' }
+    ],
+    'Trajes de Protección': [
+        { nombre: 'CHAQUETAS', icono: 'img/icons/chaqueta.png' },
+        { nombre: 'IMPERMEABLES', icono: 'img/icons/impermeable.png' },
+        { nombre: 'PANTALONES', icono: 'img/icons/pantalones.png' },
+        { nombre: 'TIRAS REFLECTIVAS', icono: 'img/icons/tiras reflectivas.png' }
     ]
 };
 
@@ -183,17 +192,6 @@ function renderizarSubcategoriasVisuales(categoria) {
             const item = document.createElement('div');
             item.className = 'categoria-visual-item';
 
-            // Estilos INLINE para forzar tamaño y disposición
-            item.style.cssText = `
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
-                gap: 10px; 
-                cursor: pointer; 
-                width: 140px; /* Aumentado para mas tamaño */
-                flex-shrink: 0;
-            `;
-
             // Marcar activo si ya está filtrado
             if (filtroSubcat && filtroSubcat.value === sub.nombre) {
                 item.classList.add('active');
@@ -224,10 +222,10 @@ function renderizarSubcategoriasVisuales(categoria) {
                 : 'filter:grayscale(100%); opacity:0.7;';
 
             item.innerHTML = `
-                <div class="categoria-visual-icon" style="width:110px; height:110px; border-radius:50%; display:flex; justify-content:center; align-items:center; border:2px solid; padding:20px; transition:all 0.3s; ${activeStyle}">
-                    <img src="${sub.icono}" alt="${sub.nombre}" class="categoria-visual-item-img" style="width:100%; height:100%; object-fit:contain; transition:all 0.3s; ${activeImgStyle}">
+                <div class="categoria-visual-icon">
+                    <img src="${sub.icono}" alt="${sub.nombre}" class="categoria-visual-item-img">
                 </div>
-                <span style="font-size:0.85rem; font-weight:700; text-align:center; color:#64748b; text-transform:uppercase;">${sub.nombre}</span>
+                <span>${sub.nombre}</span>
             `;
             grid.appendChild(item);
         });
@@ -536,7 +534,43 @@ async function cargarProductos() {
     }
 }
 
-// ... calcularRelevancia ...
+/**
+ * Calcula la relevancia de un producto respecto a una búsqueda
+ * @param {Object} p Producto
+ * @param {string} bus Término de búsqueda (ya en minúsculas)
+ * @returns {number} Puntaje de relevancia
+ */
+function calcularRelevancia(p, bus) {
+    if (!bus) return 0;
+    let score = 0;
+    const n = (p.nombre || '').toLowerCase();
+    const m = (p.marca || '').toLowerCase();
+    const c = (p.categoria || '').toLowerCase();
+    const sc = (p.subcategoria || '').toLowerCase();
+    const ref = (p.referencia || '').toLowerCase();
+
+    // 1. Coincidencia exacta o al inicio (Prioridad máxima)
+    if (n === bus || ref === bus) score += 100;
+    else if (n.startsWith(bus) || ref.startsWith(bus)) score += 80;
+
+    // 2. Contiene el término exactamente
+    if (n.includes(bus)) score += 50;
+    if (ref.includes(bus)) score += 60; // Referencias suelen ser búsquedas precisas
+    if (m.includes(bus)) score += 40;
+    if (c.includes(bus)) score += 20;
+    if (sc.includes(bus)) score += 25;
+
+    // 3. Bonus por palabras individuales si es búsqueda multi-palabra
+    const palabras = bus.split(' ').filter(w => w.length > 2);
+    if (palabras.length > 1) {
+        palabras.forEach(pal => {
+            if (n.includes(pal)) score += 10;
+            if (m.includes(pal)) score += 5;
+        });
+    }
+
+    return score;
+}
 
 function aplicarFiltros() {
     const cat = document.getElementById('filtroCategoria').value;
