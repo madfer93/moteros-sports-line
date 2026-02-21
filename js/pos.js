@@ -43,6 +43,13 @@ let productoParaVariante = null; // Variable para manejo de variantes
 let clienteSeleccionado = null; // { id, nombre, telefono, cedula, promocion }
 let tipoClienteActual = 'consumidor'; // 'consumidor' | 'registrado'
 
+// Estado para Selector Visual
+let visualProductoActual = null;
+let visualColorSeleccionado = null;
+let visualTallaSeleccionada = null;
+let visualStockActual = 0;
+
+
 // ---------------------------------------------------------------
 // INICIALIZACIÓN
 // ---------------------------------------------------------------
@@ -1186,15 +1193,23 @@ function renderizarProductos() {
             }
 
             return `
-            <div class="producto digital ${agotado ? 'agotado' : ''}" style="border-left: 5px solid ${agotado ? '#cbd5e1' : '#3b82f6'};">
+            <div id="card-producto-${p.id_producto}" class="producto digital ${agotado ? 'agotado' : ''}" 
+                 style="border-left: 5px solid ${agotado ? '#cbd5e1' : '#3b82f6'}; cursor:pointer;"
+                 onclick="${agotado ? '' : (p.variantes && p.variantes.length > 0 ? `abrirSelectorVisual('${p.id_producto}')` : '')}">
+
                 ${p.url_imagen ? `<div class="producto-img"><img src="${p.url_imagen}" alt="${p.nombre}" onerror="this.style.display='none'"></div>` : ''}
                 <div class="producto-info">
                     <h4 style="font-size:1rem; color:#1e293b; margin-bottom:4px;">${p.nombre}</h4>
                     <small style="display:block; margin-bottom:8px; color:#64748b;">${p.marca || 'Sin marca'} • ${p.id_producto}</small>
                     <div class="stock-breakdown" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
-                        ${htmlStock}
+                        ${(p.variantes && p.variantes.length > 0) ? `
+                            <span class="badge badge-info" style="font-size:0.75rem; background:#3b82f6; color:white; padding:4px 8px; border-radius:6px;">
+                                🛡️ Seleccionar Variante
+                            </span>
+                        ` : htmlStock}
                     </div>
                 </div>
+
                 <div class="producto-precio" style="align-self: flex-start;">
                     <span class="precio" style="font-size:1.1rem; color:#1e293b;">$${(p.precio || 0).toLocaleString('es-CO')}</span>
                 </div>
@@ -1218,7 +1233,8 @@ function renderizarProductos() {
 
             return `
                 <div id="card-producto-${p.id_producto}" class="producto ${agotado ? 'agotado' : ''}" 
-                     onclick="${agotado ? '' : (p.variantes && p.variantes.length > 0 ? '' : `agregarAlCarrito('${p.id_producto}')`)}">
+                     onclick="${agotado ? '' : (p.variantes && p.variantes.length > 0 ? `abrirSelectorVisual('${p.id_producto}')` : `agregarAlCarrito('${p.id_producto}')`)}">
+
                     
                     ${p.url_imagen ? `<div class="producto-img"><img src="${p.url_imagen}" alt="${p.nombre}" onerror="this.style.display='none'"></div>` : ''}
                     
@@ -1226,28 +1242,19 @@ function renderizarProductos() {
                         <h4 style="margin: 0 0 5px 0; font-size: 0.95rem;">${p.nombre}</h4>
                         <small style="color:#64748b;">${p.marca || 'Generico'} • ${p.id_producto}</small>
                         
-                        <!-- SECCIÓN COLORES -->
-                        ${p.variantes && p.variantes.length > 0 ? `
-                            <div class="colores-grid" style="margin-top: 5px; display:flex; flex-wrap:wrap; gap:4px;">
-                                ${p.variantes.map(c => {
-                const nombreColor = (typeof c === 'object' && c !== null) ? (c.nombre || c.color || c.value || 'Indefinido') : c;
-                return `
-                                    <button class="btn-color" 
-                                            onclick="event.stopPropagation(); seleccionarColor('${p.id_producto}', this, '${nombreColor}')"
-                                            style="padding: 2px 6px; font-size: 0.75rem; border:1px solid #cbd5e1; border-radius:4px; background:white; cursor:pointer;"
-                                            title="${nombreColor}">${nombreColor}</button>
-                                `;
-            }).join('')}
+                        <!-- SECCIÓN VARIANTES -->
+                        ${(p.variantes && p.variantes.length > 0) ? `
+                            <div style="margin-top:5px;">
+                                <span class="badge badge-info" style="font-size:0.75rem; background:#3b82f6; color:white; padding:4px 8px; border-radius:6px; cursor:pointer;">
+                                    🔍 Ver Variantes
+                                </span>
                             </div>
-                        ` : ''}
-
-                        <!-- SECCIÓN TALLAS -->
-                        ${Object.keys(p.stock_detallado).length > 0 ? `
+                        ` : (Object.keys(p.stock_detallado).length > 0 ? `
                             <div class="tallas-grid" style="margin-top: 8px; display:flex; flex-wrap:wrap; gap:4px;">
                                 ${Object.entries(p.stock_detallado)
                         .flatMap(([color, tallasObj]) =>
                             Object.entries(tallasObj)
-                                .filter(([t, q]) => q > 0) // Solo mostrar tallas con stock
+                                .filter(([t, q]) => q > 0)
                                 .map(([talla, qty]) => `
                                                 <button class="btn-talla-disponible" 
                                                         onclick="event.stopPropagation(); agregarAlCarrito('${p.id_producto}', '${talla}', '${color}')"
@@ -1256,9 +1263,9 @@ function renderizarProductos() {
                                                 </button>
                                             `)
                         ).join('')}
-                                ${Object.values(p.stock_detallado).every(tallasObj => Object.values(tallasObj).every(qty => qty === 0)) ? '<span style="color:red; font-size:0.8rem;">Agotado</span>' : ''}
                             </div>
-                        ` : `<div style="margin-top:5px;"><span class="stock-badge ${stockClass}">${p.stock} unid.</span></div>`}
+                        ` : `<div style="margin-top:5px;"><span class="stock-badge ${stockClass}">${p.stock} unid.</span></div>`)}
+
 
                     </div>
                     <div class="producto-precio">
@@ -1271,6 +1278,183 @@ function renderizarProductos() {
 }
 
 function filtrarProductos() { renderizarProductos(); }
+
+// ---------------------------------------------------------------
+// SELECTOR VISUAL PREMIUM
+// ---------------------------------------------------------------
+function abrirSelectorVisual(id) {
+    const p = productos.find(prod => String(prod.id_producto) === String(id));
+    if (!p) return;
+
+    visualProductoActual = p;
+    visualColorSeleccionado = null;
+    visualTallaSeleccionada = null;
+    visualStockActual = 0;
+
+    const modal = document.getElementById('modalSelectorVisual');
+    if (!modal) return;
+
+    document.getElementById('visualProductName').textContent = p.nombre;
+    const priceDisplay = document.getElementById('visualPriceDisplay') || document.getElementById('visualProductPrice');
+    if (priceDisplay) priceDisplay.textContent = `$${(p.precio || 0).toLocaleString('es-CO')}`;
+
+    const mainImg = document.getElementById('visualMainImage');
+    if (mainImg) mainImg.src = p.url_imagen || '../img/no-image.png';
+
+    // Reset grids
+    const colorGrid = document.getElementById('visualColorGrid');
+    const tallaGrid = document.getElementById('visualTallaGrid');
+    if (colorGrid) colorGrid.innerHTML = '';
+    if (tallaGrid) tallaGrid.innerHTML = '';
+
+    const stockInfo = document.getElementById('visualStockInfo');
+    if (stockInfo) stockInfo.innerHTML = '';
+
+    const btnConfirmar = document.getElementById('btnConfirmarVisual') || document.getElementById('btnConfirmarSeleccion');
+    if (btnConfirmar) btnConfirmar.disabled = true;
+
+    // Poblar colores si existen variantes
+    let colores = [];
+    if (p.variantes && Array.isArray(p.variantes)) {
+        p.variantes.forEach(v => {
+            const nombreC = (typeof v === 'object') ? (v.nombre || v.color || v.value) : v;
+            if (nombreC && !colores.includes(nombreC)) colores.push(nombreC);
+        });
+    }
+
+    if (colores.length > 0 && colorGrid) {
+        colores.forEach(c => {
+            const chip = document.createElement('div');
+            chip.className = 'chip';
+            chip.textContent = c;
+            chip.onclick = () => seleccionarColorVisual(c, chip);
+            colorGrid.appendChild(chip);
+        });
+    } else {
+        // Si no hay colores, cargar tallas directamente
+        actualizarTallasVisual();
+    }
+
+    modal.classList.add('visible');
+    modal.style.display = 'flex'; // Asegurar visibilidad por si acaso
+}
+
+function seleccionarColorVisual(color, element) {
+    visualColorSeleccionado = color;
+
+    // UI update chips
+    document.querySelectorAll('#visualColorGrid .chip').forEach(c => c.classList.remove('active'));
+    element.classList.add('active');
+
+    // Cambiar imagen si la variante tiene una dedicada
+    if (visualProductoActual.variantes) {
+        const variante = visualProductoActual.variantes.find(v => (v.nombre || v.color || v.value) === color);
+        if (variante && variante.url) {
+            document.getElementById('visualMainImage').src = variante.url;
+        } else {
+            document.getElementById('visualMainImage').src = visualProductoActual.url_imagen || '../img/no-image.png';
+        }
+    }
+
+    actualizarTallasVisual();
+}
+
+function actualizarTallasVisual() {
+    const tallaGrid = document.getElementById('visualTallaGrid');
+    if (!tallaGrid) return;
+
+    tallaGrid.innerHTML = '';
+    visualTallaSeleccionada = null;
+
+    const btnConfirmar = document.getElementById('btnConfirmarVisual') || document.getElementById('btnConfirmarSeleccion');
+    if (btnConfirmar) btnConfirmar.disabled = true;
+
+    let tallasDisponibles = {};
+    if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
+        Object.values(visualProductoActual.stocks_globales || {}).forEach(coloresObj => {
+            const tallasColor = coloresObj[visualColorSeleccionado || ''] || coloresObj['Indefinido'] || {};
+            Object.entries(tallasColor).forEach(([t, q]) => {
+                tallasDisponibles[t] = (tallasDisponibles[t] || 0) + q;
+            });
+        });
+    } else {
+        const colorKey = visualColorSeleccionado || '';
+        if (visualProductoActual.stock_detallado) {
+            tallasDisponibles = visualProductoActual.stock_detallado[colorKey] || {};
+        }
+    }
+
+    const entries = Object.entries(tallasDisponibles);
+    if (entries.length > 0) {
+        entries.forEach(([talla, qty]) => {
+            const chip = document.createElement('div');
+            chip.className = `chip ${qty <= 0 ? 'agotado' : ''}`;
+            chip.innerHTML = `${talla} <small>(${qty})</small>`;
+            if (qty > 0) chip.onclick = () => seleccionarTallaVisual(talla, qty, chip);
+            tallaGrid.appendChild(chip);
+        });
+    } else if (!visualColorSeleccionado && visualProductoActual.stock > 0) {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.textContent = 'Única';
+        chip.onclick = () => seleccionarTallaVisual('Única', visualProductoActual.stock, chip);
+        tallaGrid.appendChild(chip);
+    }
+}
+
+function seleccionarTallaVisual(talla, qty, element) {
+    visualTallaSeleccionada = talla;
+    visualStockActual = qty;
+
+    document.querySelectorAll('#visualTallaGrid .chip').forEach(c => c.classList.remove('active'));
+    element.classList.add('active');
+
+    const stockInfo = document.getElementById('visualStockInfo');
+    if (stockInfo) {
+        stockInfo.innerHTML = `
+            <span style="color:#059669; font-weight:700;">✅ Stock Disponible: ${qty} unidades</span>
+        `;
+    }
+
+    const btnConfirmar = document.getElementById('btnConfirmarVisual') || document.getElementById('btnConfirmarSeleccion');
+    if (btnConfirmar) btnConfirmar.disabled = false;
+}
+
+function confirmarSeleccionVisual() {
+    if (!visualProductoActual || !visualTallaSeleccionada) return;
+
+    if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
+        let tiendaOrigen = TIENDA.nombre;
+        // Buscar en qué p* tienda hay stock de esta combinación
+        if (visualProductoActual.stocks_globales) {
+            for (const [t, coloresObj] of Object.entries(visualProductoActual.stocks_globales)) {
+                const q = (coloresObj[visualColorSeleccionado || ''] || {})[visualTallaSeleccionada] || 0;
+                if (q > 0) {
+                    tiendaOrigen = t;
+                    break;
+                }
+            }
+        }
+        agregarAlCarrito(visualProductoActual.id_producto, tiendaOrigen, visualTallaSeleccionada, visualColorSeleccionado);
+    } else {
+        agregarAlCarrito(visualProductoActual.id_producto, visualTallaSeleccionada, visualColorSeleccionado);
+    }
+
+    cerrarSelectorVisual();
+}
+
+function cerrarSelectorVisual() {
+    const modal = document.getElementById('modalSelectorVisual');
+    if (modal) {
+        modal.classList.remove('visible');
+        modal.style.display = 'none';
+    }
+    visualProductoActual = null;
+}
+
+// Alias para botones viejos o HTML inconsistente
+function cerrarModalSelectorVisual() { cerrarSelectorVisual(); }
+
 
 // ---------------------------------------------------------------
 // UI HELPERS
@@ -3888,7 +4072,6 @@ function generarDesgloseProductos() {
         return '';
     }
 
-    // Agrupar por nombre de producto
     const productosMap = {};
     resumenVentas.ventasDelDia.forEach(v => {
         const nombre = v.nombre_producto || 'Producto sin nombre';
@@ -3915,7 +4098,7 @@ function generarDesgloseProductos() {
     return `
         <div style="margin-top:1rem; border-top:1px solid #e2e8f0; padding-top:1rem;">
             <h4 style="margin:0 0 0.6rem; font-size:0.9rem; color:#475569; cursor:pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                🧾 Desglose de Productos ?
+                🧾 Desglose de Productos ▽
             </h4>
             <div style="max-height:250px; overflow-y:auto;">
                 <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
@@ -3966,13 +4149,12 @@ function procesarProductosOffline(prodsCached, invCached) {
     productos = prodsCached.map(p => {
         let stockTotal = 0;
         let stockDetallado = {};
-
-        // Filtrar inventario para este producto
-        const variantesStock = invCached.filter(i => String(i.id_producto) === String(p.id));
+        const pId = String(p.id_producto || p.id);
+        const variantesStock = invCached.filter(i => String(i.id_producto) === pId);
 
         variantesStock.forEach(v => {
             const cant = v.cantidad || 0;
-            const talla = v.talla || 'única';
+            const talla = v.talla || 'Única';
             const color = v.color || '';
             stockTotal += cant;
             if (!stockDetallado[color]) stockDetallado[color] = {};
@@ -3988,3 +4170,4 @@ function procesarProductosOffline(prodsCached, invCached) {
     });
     renderizarProductos();
 }
+

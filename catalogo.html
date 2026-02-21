@@ -28,13 +28,14 @@
 
     <link rel="canonical" href="https://moterossportline.store/catalogo.html">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- CSS externo -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/premium.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/ai-widget.css">
     <link rel="stylesheet" href="css/catalogo-sidebar.css">
     <link rel="stylesheet" href="css/mega-menu-fix.css">
+    <link rel="stylesheet" href="css/catalogo.css">
 
     <style>
         :root {
@@ -66,6 +67,17 @@
 
         /* Header */
         /* El header se gestiona ahora por index.css para consistencia global */
+
+        /* Override: eliminar línea naranja entre header y marquee */
+        .header-nav-bar {
+            border-bottom: none !important;
+        }
+
+        .payment-marquee {
+            margin-top: 0 !important;
+            border-top: none !important;
+            border-bottom: none !important;
+        }
 
         /* Sección Filtros */
         .filtros-section {
@@ -161,7 +173,7 @@
 
         .producto-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 12px 30px rgba(255, 107, 0, 0.2), 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         .producto-imagen-wrapper {
@@ -171,6 +183,25 @@
             /* Aspect ratio 4:3 */
             overflow: hidden;
             background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+        }
+
+        .producto-imagen-wrapper::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 107, 0, 0.08) 0%, rgba(255, 133, 51, 0.12) 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .producto-card:hover .producto-imagen-wrapper::after {
+            opacity: 1;
+        }
+
+        .producto-card:hover .producto-imagen-wrapper {
+            box-shadow: inset 0 -4px 20px rgba(255, 107, 0, 0.25);
         }
 
         .producto-imagen {
@@ -184,8 +215,9 @@
         }
 
         .producto-card:hover .producto-imagen {
-            transform: scale(1.1);
+            transform: scale(1.08);
         }
+
 
         .badge-categoria {
             position: absolute;
@@ -776,8 +808,6 @@
 
         gtag('config', 'G-MGGG89S8XM');
     </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="css/mega-menu-fix.css">
 </head>
 
 <body oncontextmenu="return false;">
@@ -863,6 +893,141 @@
             </div>
         </div>
     </header>
+
+    <!-- Marquee Métodos de Pago -->
+    <div class="payment-marquee">
+        <div class="marquee-content">
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
+                    alt="Nequi">
+                <span>NEQUI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
+                    alt="Daviplata">
+                <span>DAVIPLATA</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
+                    alt="Addi">
+                <span>ADDI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
+                    alt="Sistecredito">
+                <span>SISTECREDITO</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
+                    alt="Bodegas">
+                <span>FODEGAS</span>
+            </div>
+            <!-- Duplicado para scroll infinito -->
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
+                    alt="Nequi">
+                <span>NEQUI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
+                    alt="Daviplata">
+                <span>DAVIPLATA</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
+                    alt="Addi">
+                <span>ADDI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
+                    alt="Sistecredito">
+                <span>SISTECREDITO</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
+                    alt="Bodegas">
+                <span>FODEGAS</span>
+            </div>
+            <!-- Triplicado para pantallas anchas -->
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
+                    alt="Nequi">
+                <span>NEQUI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
+                    alt="Daviplata">
+                <span>DAVIPLATA</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
+                    alt="Addi">
+                <span>ADDI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
+                    alt="Sistecredito">
+                <span>SISTECREDITO</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
+                    alt="Bodegas">
+                <span>FODEGAS</span>
+            </div>
+            <!-- Cuadriplicado para cobertura total -->
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
+                    alt="Nequi">
+                <span>NEQUI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
+                    alt="Daviplata">
+                <span>DAVIPLATA</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
+                    alt="Addi">
+                <span>ADDI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
+                    alt="Sistecredito">
+                <span>SISTECREDITO</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
+                    alt="Bodegas">
+                <span>FODEGAS</span>
+            </div>
+            <!-- Quintuplicado para cobertura total -->
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
+                    alt="Nequi">
+                <span>NEQUI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
+                    alt="Daviplata">
+                <span>DAVIPLATA</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
+                    alt="Addi">
+                <span>ADDI</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
+                    alt="Sistecredito">
+                <span>SISTECREDITO</span>
+            </div>
+            <div class="marquee-item">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
+                    alt="Bodegas">
+                <span>FODEGAS</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Catálogo Layout: Sidebar + Productos -->
     <div class="catalogo-layout">

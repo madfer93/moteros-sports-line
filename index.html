@@ -702,7 +702,8 @@
                 <h2>Lo Que Dice Nuestra Comunidad</h2>
                 <p>Reseñas verificadas de nuestros clientes</p>
             </div>
-            <div class="reviews-carousel">
+            <div class="reviews-carousel" style="position:relative;">
+                <button class="reviews-nav-btn prev" onclick="window.__reviewPrev()" aria-label="Anterior">❮</button>
                 <div class="reviews-grid" id="reviewsGrid">
                     <!-- Se cargan dinámicamente -->
                     <div class="review-card review-skeleton">
@@ -721,6 +722,7 @@
                         <div class="skeleton-name"></div>
                     </div>
                 </div>
+                <button class="reviews-nav-btn next" onclick="window.__reviewNext()" aria-label="Siguiente">❯</button>
                 <div class="reviews-dots" id="reviewsDots"></div>
             </div>
         </div>
@@ -806,7 +808,7 @@
                             <div class="review-avatar">${initial}</div>
                             <div class="review-info">
                                 <span class="review-name">${r.nombre}</span>
-                                <span class="review-product">sobre <strong>${r.producto}</strong></span>
+                                <span class="review-product">sobre <a href="catalogo.html?buscar=${encodeURIComponent(r.producto)}" class="review-product-link"><strong>${r.producto}</strong></a></span>
                             </div>
                         </div>
                     </div>`;
@@ -845,7 +847,19 @@
 
             window.__reviewGoTo = function (page) {
                 renderPage(page);
-                startRotation(); // reiniciar timer al navegar manualmente
+                startRotation();
+            };
+
+            window.__reviewNext = function () {
+                const totalPages = Math.ceil(allReviews.length / 3);
+                renderPage((currentPage + 1) % totalPages);
+                startRotation();
+            };
+
+            window.__reviewPrev = function () {
+                const totalPages = Math.ceil(allReviews.length / 3);
+                renderPage((currentPage - 1 + totalPages) % totalPages);
+                startRotation();
             };
 
             // Iniciar cuando el DOM esté listo

@@ -88,7 +88,8 @@ button {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    /* Se mantiene centrado respecto al logo */
+    padding: 0.5rem 1.5rem;
 }
 
 .logo {
@@ -101,6 +102,51 @@ button {
     height: 150px;
     width: auto;
     object-fit: contain;
+}
+
+.header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.header-search {
+    position: relative;
+    width: 350px;
+    /* Más grande como pidió el usuario */
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.header-search:focus-within {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(255, 107, 0, 0.2);
+}
+
+.header-search input {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 0.6rem 1rem;
+    width: 100%;
+    outline: none;
+    font-size: 0.95rem;
+}
+
+.header-search .search-btn {
+    background: transparent;
+    border: none;
+    color: var(--primary);
+    padding: 0 1rem;
+    cursor: pointer;
+    font-size: 1.1rem;
 }
 
 .logo h1 {

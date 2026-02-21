@@ -35,7 +35,8 @@
 
             <!-- Pantalla inicial para abrir caja -->
             <div id="pantallaAbrirCaja">
-                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Moteros Sports Line" class="locked-logo logo-img">
+                <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
+                    alt="Moteros Sports Line" class="locked-logo logo-img">
                 <h2>🔒 Caja Cerrada</h2>
                 <p class="tienda-nombre tienda-nombre-display">Jordán</p>
                 <p>Abre la caja para comenzar a vender</p>
@@ -49,7 +50,8 @@
     <!-- ====== HEADER ====== -->
     <header class="header">
         <div class="header-left">
-            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Logo" class="header-logo logo-img">
+            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
+                alt="Logo" class="header-logo logo-img">
             <div>
                 <h1>🏪 Moteros - <span class="tienda-nombre-display">Jordán</span></h1>
             </div>
@@ -866,7 +868,46 @@
         </div>
     </div>
 
+    <!-- ====== MODAL: SELECTOR VISUAL ====== -->
+    <div id="modalSelectorVisual" class="modal-overlay">
+        <div class="modal modal-selector-visual">
+            <div class="modal-selector-header">
+                <h3 id="visualProductName">Producto</h3>
+                <button class="modal-close" onclick="cerrarSelectorVisual()">❌</button>
+            </div>
+            <div class="modal-selector-content">
+                <div class="visual-display">
+                    <div class="main-image-container">
+                        <img id="visualMainImage" src="" alt="Producto">
+                    </div>
+                </div>
+                <div class="visual-options">
+                    <div id="visualProductID" style="font-size:0.9rem; color:#64748b; margin-bottom:1rem;"></div>
+                    <div class="option-section">
+                        <label>🎨 Selecciona Color / Diseño:</label>
+                        <div id="visualColorGrid" class="chip-grid"></div>
+                    </div>
+                    <div class="option-section">
+                        <label>📏 Selecciona Talla / Medida:</label>
+                        <div id="visualTallaGrid" class="chip-grid"></div>
+                    </div>
+                    <div id="visualStockInfo" class="visual-stock-info"></div>
+                    <div class="visual-actions">
+                        <div class="price-display">
+                            <span id="visualPriceDisplay">$0</span>
+                        </div>
+                        <button id="btnConfirmarVisual" class="btn btn-success btn-large"
+                            onclick="confirmarSeleccionVisual()" disabled>
+                            🛒 Agregar al Carrito
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ====== SCRIPTS ====== -->
+
     <script src="../js/config.js"></script>
     <script src="../js/security.js"></script>
     <script src="../js/promociones.js"></script>

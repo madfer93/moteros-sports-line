@@ -5,9 +5,9 @@
 
 /* ── Barra de Categorías (trigger del mega menú) ── */
 .header-nav-bar {
-    background: var(--gray-900, #1a1a2e);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    border-bottom: 2px solid var(--primary, #ff6b00);
+    background: #000 !important;
+    border-top: none !important;
+    border-bottom: none !important;
 }
 
 .nav-categories {
@@ -90,7 +90,7 @@
     /* Volver a 2 columnas */
     gap: 1.5rem;
     align-content: start;
-    padding: 1rem 0;
+    padding: 0 0 1rem 0;
 }
 
 .mega-menu-sections h4 {
@@ -99,7 +99,7 @@
     letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--gray-900, #1a1a2e);
-    margin-bottom: 1rem;
+    margin: 0 0 1rem 0; /* Reset margin top */
     padding-bottom: 0.5rem;
     border-bottom: 2px solid var(--primary, #ff6b00);
     grid-column: 1 / -1;
@@ -186,7 +186,7 @@
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--gray-900, #1a1a2e);
-    margin-bottom: 1rem;
+    margin: 0 0 1rem 0; /* Reset margin top */
     padding-bottom: 0.5rem;
     border-bottom: 2px solid var(--primary, #ff6b00);
 }

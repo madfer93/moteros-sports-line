@@ -1282,6 +1282,54 @@
     border-color: #ff6b00;
 }
 
+/* Flechas de navegación del carrusel */
+.reviews-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #ff6b00, #ff8533);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.reviews-nav-btn:hover {
+    background: linear-gradient(135deg, #e55d00, #ff6b00);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
+}
+
+.reviews-nav-btn.prev {
+    left: -22px;
+}
+
+.reviews-nav-btn.next {
+    right: -22px;
+}
+
+/* Enlace de producto en reseña */
+.review-product-link {
+    color: #ff6b00;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.review-product-link:hover {
+    color: #e55d00;
+    border-bottom-color: #e55d00;
+}
+
 /* Skeleton loading */
 .review-skeleton {
     animation: skeleton-pulse 1.5s infinite;
@@ -1344,6 +1392,10 @@
 
     .review-card {
         padding: 1.2rem;
+    }
+
+    .reviews-nav-btn {
+        display: none;
     }
 }
 

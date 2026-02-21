@@ -491,14 +491,26 @@ async function cargarProductos() {
             });
         }
 
-        // Cargar Stock Real (Suma de todas las tiendas y variantes)
-        const { data: stockData } = await supabaseClient.from('inventario').select('producto_id, cantidad');
+        // Cargar Stock Real (Suma de TODAS las tiendas + tabla unificada)
+        const tablasInventario = ['inventario_alcala', 'inventario_01', 'inventario_jordan', 'inventario_digital', 'inventario_evento'];
         const stockMap = {};
-        if (stockData) {
-            stockData.forEach(s => {
-                stockMap[s.producto_id] = (stockMap[s.producto_id] || 0) + s.cantidad;
-            });
-        }
+        // Tablas por tienda usan campo "id_producto"
+        const stockPromises = tablasInventario.map(tabla =>
+            supabaseClient.from(tabla).select('id_producto, cantidad').then(r => r.data || [])
+        );
+        // Tabla unificada usa campo "producto_id"
+        const unificadaPromise = supabaseClient.from('inventario').select('producto_id, cantidad').then(r => r.data || []);
+        const [todosStocks, stockUnificado] = await Promise.all([Promise.all(stockPromises), unificadaPromise]);
+        todosStocks.flat().forEach(s => {
+            if (s.id_producto) {
+                stockMap[s.id_producto] = (stockMap[s.id_producto] || 0) + (s.cantidad || 0);
+            }
+        });
+        stockUnificado.forEach(s => {
+            if (s.producto_id) {
+                stockMap[s.producto_id] = (stockMap[s.producto_id] || 0) + (s.cantidad || 0);
+            }
+        });
 
         todosLosProductos = (data || []).map(p => {
             const c = cal[p.id] || cal[p.id_producto];
@@ -518,8 +530,9 @@ async function cargarProductos() {
         mostrarProductos();
         await cargarCategoriasFiltro();
         cargarTallasFiltro();
-        cargarMarcasFiltro(); // Nueva función para llenar el filtro de marcas
+        cargarMarcasFiltro();
         actualizarContadorCarrito();
+        checkUrlParams();
 
     } catch (err) {
         if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error:', err);
@@ -578,6 +591,9 @@ function aplicarFiltros() {
 
     // Actualizar UI Visual (al principio para asegurar ejecución)
     renderizarSubcategoriasVisuales(cat);
+
+    // Sincronizar marcas disponibles para esta categoría/subcategoría
+    cargarMarcasFiltro();
 
     const talEl = document.getElementById('filtroTalla');
     const tal = talEl ? talEl.value : '';
@@ -689,6 +705,10 @@ function limpiarFiltros() {
     const filtOferta = document.getElementById('filtroOferta'); if (filtOferta) filtOferta.checked = false;
     const filtNuevo = document.getElementById('filtroNuevo'); if (filtNuevo) filtNuevo.checked = false;
 
+    // Forzar recarga de marcas y subcategorías
+    cargarSubcategoriasFiltro('');
+    cargarMarcasFiltro();
+
     aplicarFiltros();
 }
 
@@ -699,42 +719,56 @@ function cargarMarcasFiltro() {
     const container = document.getElementById('filtroMarcaCheckboxes');
     if (!container) return;
 
-    // Obtener marcas únicas
+    const cat = document.getElementById('filtroCategoria').value.toLowerCase();
+    const subcat = document.getElementById('filtroSubcategoria') ? document.getElementById('filtroSubcategoria').value.toLowerCase() : '';
+
+    // Guardar selecciones actuales para intentar preservarlas
+    const marcasSeleccionadasPrev = Array.from(container.querySelectorAll('input:checked')).map(cb => cb.value);
+
+    // Obtener marcas únicas filtradas por categoría/subcategoría
     const marcas = new Set();
     todosLosProductos.forEach(p => {
-        if (p.marca) marcas.add(p.marca.trim());
+        const matchCat = !cat || (p.categoria || '').toLowerCase().trim() === cat;
+        const matchSub = !subcat || (p.subcategoria || '').toLowerCase().trim() === subcat;
+
+        if (matchCat && matchSub && p.marca) {
+            marcas.add(p.marca.trim());
+        }
     });
 
     // Ordenar alfabéticamente
     const sortedMarcas = Array.from(marcas).sort((a, b) => a.localeCompare(b));
 
+    if (sortedMarcas.length === 0) {
+        container.innerHTML = '<p style="font-size:0.85rem; color:#94a3b8; padding:0.5rem;">No hay marcas para esta selección</p>';
+        return;
+    }
+
     container.innerHTML = '';
     sortedMarcas.forEach(marca => {
         const div = document.createElement('div');
         div.className = 'checkbox-item';
+        const isChecked = marcasSeleccionadasPrev.includes(marca);
         div.innerHTML = `
-            <label>
-                <input type="checkbox" name="filtroMarca" value="${marca}" onchange="aplicarFiltros()">
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; padding:3px 0; font-size:0.9rem;">
+                <input type="checkbox" name="filtroMarca" value="${marca}" ${isChecked ? 'checked' : ''} onchange="aplicarFiltros()">
                 ${marca}
             </label>
         `;
         container.appendChild(div);
     });
 
-    // Chequear si hay marca en URL para preseleccionar
-    // checkUrlParams ya se llama, pero necesita lógica para marcar checkboxes
-    const params = new URLSearchParams(window.location.search);
-    const marcaParam = params.get('marca');
-    if (marcaParam) {
-        const cb = container.querySelector(`input[value="${marcaParam}"]`);
-        // Intentar case-insensitive si no encuentra directo
-        if (!cb) {
-            const cbCase = Array.from(container.querySelectorAll('input')).find(i => i.value.toLowerCase() === marcaParam.toLowerCase());
-            if (cbCase) cbCase.checked = true;
-        } else {
-            cb.checked = true;
+    // Chequear URL param solo si es la carga inicial (si no hay nada seleccionado aún)
+    if (marcasSeleccionadasPrev.length === 0) {
+        const params = new URLSearchParams(window.location.search);
+        const marcaParam = params.get('marca');
+        if (marcaParam) {
+            const cb = Array.from(container.querySelectorAll('input')).find(i => i.value.toLowerCase() === marcaParam.toLowerCase());
+            if (cb) {
+                cb.checked = true;
+                aplicarFiltros();
+            }
         }
-        aplicarFiltros();
     }
 }
 
@@ -1244,15 +1278,28 @@ function cargarSubcategoriasFiltro(categoriaSeleccionada) {
 
     // Mostrar filtro
     subGroup.style.display = 'block';
+
+    // Actualizar marcas para esta subcategoría
+    cargarMarcasFiltro();
 }
 
 function checkUrlParams() {
     const params = new URLSearchParams(window.location.search);
     const catParam = params.get('categoria');
     const subcatParam = params.get('subcategoria');
-    const marcaParam = params.get('marca'); // También chequear marca si viene
+    const marcaParam = params.get('marca');
+    const buscarParam = params.get('buscar') || params.get('busqueda');
 
     let shouldFilter = false;
+
+    // 0. Aplicar Búsqueda desde URL
+    if (buscarParam) {
+        const searchInput = document.getElementById('buscarProducto');
+        if (searchInput) {
+            searchInput.value = decodeURIComponent(buscarParam);
+            shouldFilter = true;
+        }
+    }
 
     // 1. Aplicar Categoría
     if (catParam) {
