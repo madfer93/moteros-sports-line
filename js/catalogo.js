@@ -100,7 +100,7 @@ const SUBCATEGORIAS_VISUALES = {
         { nombre: 'ABATIBLES', icono: 'img/icons/abatible.png' },
         { nombre: 'ABIERTOS', icono: 'img/icons/abierto.png' },
         { nombre: 'MULTIPROPOSITO', icono: 'img/icons/multiproposito.png' },
-        { nombre: 'CROSS', icono: 'img/icons/cross.png' },
+        { nombre: 'CROSS', icono: 'img/icons/multiproposito.png' },
         { nombre: 'MODULARES', icono: 'img/icons/modular.png' }
     ],
     'Accesorios': [
@@ -112,7 +112,9 @@ const SUBCATEGORIAS_VISUALES = {
         { nombre: 'PIJAMA CON BAUL', icono: 'img/icons/pijama con baul.png' },
         { nombre: 'PIJAMA SIN BAUL', icono: 'img/icons/pijama sin baul.png' },
         { nombre: 'CAMPANAS', icono: 'img/icons/campana motera.png' },
-        { nombre: 'GAFAS CROSS', icono: 'img/icons/gafas cross.PNG' }
+        { nombre: 'GAFAS CROSS', icono: 'img/icons/gafas cross.PNG' },
+        { nombre: 'PROTECTOR ZAPATO', icono: 'img/icons/protector-zapato.png' },
+        { nombre: 'CACHOS', icono: 'img/icons/cachos.png' }
     ],
     'Chaquetas': [
         { nombre: 'CHAQUETAS', icono: 'img/icons/chaqueta.png' },
@@ -130,8 +132,9 @@ const SUBCATEGORIAS_VISUALES = {
     'Cortavientos': [
         { nombre: 'CORTAVIENTO', icono: 'img/icons/cortaviento.png' }
     ],
-    'Arnes': [
-        { nombre: 'ARNES', icono: 'img/icons/arnes-nino.png' }
+    'NIÑ@S': [
+        { nombre: 'ARNES', icono: 'img/icons/arnes-nino.png' },
+        { nombre: 'NIÑ@S', icono: 'img/icons/niños.png' }
     ],
     'Pierneras': [
         { nombre: 'PIERNERA', icono: 'img/icons/piernera.png' }

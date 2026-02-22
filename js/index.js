@@ -27,7 +27,8 @@ const ICONOS_MOTO = {
     'ABATIBLES': '<img src="img/icons/abatible.png" alt="Abatible" style="width:100%;height:100%;object-fit:contain">',
     'ABIERTOS': '<img src="img/icons/abierto.png" alt="Abierto" style="width:100%;height:100%;object-fit:contain">',
     'MULTIPROPOSITO': '<img src="img/icons/multiproposito.png" alt="Multipropósito" style="width:100%;height:100%;object-fit:contain">',
-    'CROSS': '<img src="img/icons/cross.png" alt="Cross" style="width:100%;height:100%;object-fit:contain">',
+    'CROSS': '<img src="img/icons/multiproposito.png" alt="Cross" style="width:100%;height:100%;object-fit:contain">',
+    'NIÑ@S': '<img src="img/icons/niños.png" alt="Niñ@s" style="width:100%;height:100%;object-fit:contain">',
     'MODULARES': '<img src="img/icons/modular.png" alt="Modular" style="width:100%;height:100%;object-fit:contain">',
 
     // ── Otras Categorías (iconos PNG profesionales) ──
@@ -52,6 +53,7 @@ const ICONOS_MOTO = {
     'TIRAS REFLECTIVAS': '<img src="img/icons/tiras reflectivas.png" alt="Tiras Reflectivas" style="width:100%;height:100%;object-fit:contain">',
     'CAMPANAS': '<img src="img/icons/campana motera.png" alt="Campanas" style="width:100%;height:100%;object-fit:contain">',
     'GAFAS CROSS': '<img src="img/icons/gafas cross.PNG" alt="Gafas Cross" style="width:100%;height:100%;object-fit:contain">',
+    'PROTECTOR ZAPATO': '<img src="img/icons/protector-zapato.png" alt="Protector Zapato" style="width:100%;height:100%;object-fit:contain">',
     'VER TODO': '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="20" height="20" rx="3"/><rect x="36" y="8" width="20" height="20" rx="3"/><rect x="8" y="36" width="20" height="20" rx="3"/><rect x="36" y="36" width="20" height="20" rx="3"/></svg>'
 };
 
@@ -81,9 +83,18 @@ ICONOS_MOTO['CAMPANA'] = ICONOS_MOTO['CAMPANAS'];
 ICONOS_MOTO['GAFAS CROSS'] = ICONOS_MOTO['GAFAS CROSS'];
 ICONOS_MOTO['GAFAS'] = ICONOS_MOTO['GAFAS CROSS'];
 ICONOS_MOTO['PIJAMAS'] = ICONOS_MOTO['PIJAMA SIN BAUL']; // Default para plural
+ICONOS_MOTO['NIÑAS'] = ICONOS_MOTO['NIÑ@S'];
+ICONOS_MOTO['NIÑOS'] = ICONOS_MOTO['NIÑ@S'];
+ICONOS_MOTO['NIÑA'] = ICONOS_MOTO['NIÑ@S'];
+ICONOS_MOTO['NIÑO'] = ICONOS_MOTO['NIÑ@S'];
+ICONOS_MOTO['NINAS'] = ICONOS_MOTO['NIÑ@S'];
+ICONOS_MOTO['NINOS'] = ICONOS_MOTO['NIÑ@S'];
+ICONOS_MOTO['NINA'] = ICONOS_MOTO['NIÑ@S'];
+ICONOS_MOTO['NINO'] = ICONOS_MOTO['NIÑ@S'];
 ICONOS_MOTO['PIJAMA SIN BAUL'] = ICONOS_MOTO['PIJAMA SIN BAUL'];
 ICONOS_MOTO['PIJAMA CON BAUL'] = ICONOS_MOTO['PIJAMA CON BAUL'];
 ICONOS_MOTO['PIJAMA'] = ICONOS_MOTO['PIJAMA SIN BAUL']; // Alias genérico
+ICONOS_MOTO['CACHOS'] = '<img src="img/icons/cachos.png" alt="Cachos" style="width:100%;height:100%;object-fit:contain">';
 
 ICONOS_MOTO['PIERNERAS'] = ICONOS_MOTO['PIERNERA'];
 ICONOS_MOTO['PORTA CELULARES'] = ICONOS_MOTO['PORTA CELULAR'];
@@ -97,12 +108,12 @@ function normalizarTexto(txt) {
 // Configuración de Navegación (Mapeo Robusto)
 const MAPEO_NAV = {
     'CASCOS': ['CASCO'],
+    'NIÑ@S': ['NIÑO', 'NIÑA', 'NIÑOS', 'ARNES', 'NIÑ@S'],
     'TRAJES DE PROTECCION': ['TRAJE', 'GUANTE', 'IMPERMEABLE', 'BOTA', 'PROTECCION', 'PROTECCIÓN', 'CHAQUETA', 'PANTALON', 'PANTALÓN', 'TIRA', 'TIRAS REFLECTIVAS'],
     'MALETEROS': ['MALETERO', 'BAUL', 'ALFORJA', 'MALETA'],
-    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR', 'RODILLERA', 'PIJAMA', 'CAMPANA', 'GAFAS'],
-    'TANK BAGS': ['TANK BAG', 'TANKBAG'],
+    'ACCESORIOS': ['ACCESORIO', 'CANDADO', 'VISOR', 'INTERCOMUNICADOR', 'RODILLERA', 'PIJAMA', 'CAMPANA', 'GAFAS', 'PROTECTOR ZAPATO', 'CACHOS'],
+    'TANK BAGS': ['TANK BAG', 'TANKBAG',],
     'CORTAVIENTOS': ['CORTAVIENTO'],
-    'ARNES': ['ARNES'],
     'PIERNERAS': ['PIERNERA'],
     'PORTA CELULARES': ['PORTA CELULAR']
 };

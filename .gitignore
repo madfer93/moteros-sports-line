@@ -73,3 +73,9 @@ DEV_REPORT.md
 # HERRAMIENTAS LOCALES DE BRANDING
 branding-studio.html
 branding_tmp/
+
+# PRUEBAS (PLAYWRIGHT)
+playwright-report/
+test-results/
+test-results-shards/
+playwright/.cache/
