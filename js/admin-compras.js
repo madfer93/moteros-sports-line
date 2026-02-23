@@ -90,11 +90,23 @@ function renderTablaCompras(data = null) {
 // Cargar caché de productos para el autocompletado
 async function cargarProductosAutocomplete() {
     try {
-        const { data, error } = await supabaseClient.from('productos').select('id, nombre, id_producto, precio, precio_compra');
+        const { data, error } = await supabaseClient.from('productos').select('id, nombre, id_producto, precio, precio_compra, variantes');
         if (!error && data) {
             productosAutocomplete = data;
         }
     } catch (e) { console.error('Error cache productos autocomplete', e); }
+}
+
+async function cargarProveedoresDatalistCompra() {
+    const dl = document.getElementById('listaProveedoresDatalist');
+    if (!dl) return;
+    dl.innerHTML = '';
+    try {
+        const { data, error } = await supabaseClient.from('proveedores').select('razon_social').eq('activo', true).order('razon_social');
+        if (!error && data) {
+            dl.innerHTML = data.map(p => `<option value="${p.razon_social}">`).join('');
+        }
+    } catch (e) { console.error('Error cargando proveedores datalist', e); }
 }
 
 // ------------------------------------------------------------------
@@ -117,7 +129,10 @@ async function mostrarFormCompra() {
     compraItemsProvisionales = [];
 
     // Cargar productos y esperar a que termine antes de llenar la lista
-    await cargarProductosAutocomplete();
+    await Promise.all([
+        cargarProductosAutocomplete(),
+        cargarProveedoresDatalistCompra()
+    ]);
 
     // Llenar datalist de productos
     actualizarDatalistProductos();
@@ -156,6 +171,8 @@ function agregarFilaItemCompra() {
         costo_unitario: 0,
         precio_venta: 0,
         subtotal: 0,
+        margen_porcentaje: 0,
+        costo_anterior: 0,
         distribucion: { alcala: 0, local01: 0, jordan: 0, digital: 0 },
         colores: ''
     });
@@ -174,16 +191,20 @@ function renderHTMLFilaItem(index) {
                 onchange="seleccionarProductoCompra(this, ${index})" placeholder="Buscar producto...">
         </td>
         <td>
-            <input type="number" class="form-control" value="1" min="1" 
+            <input type="number" class="form-control text-center" value="1" min="1" 
                 onchange="actualizarCalculosItem(${index}, 'cantidad', this.value)">
         </td>
         <td>
             <input type="text" class="form-control" placeholder="$0" 
                 onchange="actualizarCalculosItem(${index}, 'costo', this.value)" onblur="formatearMonedaInput(this)">
+            <div id="costoAnterior-${index}" style="font-size:0.7rem; color:#64748b; margin-top:2px;"></div>
         </td>
         <td>
             <input type="text" class="form-control" placeholder="$0" 
                 onchange="actualizarCalculosItem(${index}, 'venta', this.value)" onblur="formatearMonedaInput(this)">
+        </td>
+        <td class="text-center">
+            <span id="margenItem-${index}" class="badge badge-light" style="font-size:0.85rem;">0%</span>
         </td>
         <td id="subtotalItem-${index}" style="font-weight:bold;">$0</td>
         <td>
@@ -207,10 +228,33 @@ function actualizarCalculosItem(index, campo, valor) {
 
     item.subtotal = item.cantidad_total * item.costo_unitario;
 
+    // Calcular Margen
+    let margen = 0;
+    if (item.precio_venta > 0) {
+        margen = ((item.precio_venta - item.costo_unitario) / item.precio_venta) * 100;
+    }
+    item.margen_porcentaje = margen;
+
+    // Actualizar UI Margen
+    const margenEl = document.getElementById(`margenItem-${index}`);
+    if (margenEl) {
+        margenEl.textContent = Math.round(margen) + '%';
+        // Limpiar clases previas de badge
+        margenEl.classList.remove('badge-success', 'badge-warning', 'badge-danger', 'badge-light');
+        if (margen < 15) margenEl.classList.add('badge-danger');
+        else if (margen < 30) margenEl.classList.add('badge-warning');
+        else margenEl.classList.add('badge-success');
+    }
+
     const subtotalEl = document.getElementById(`subtotalItem-${index}`);
     if (subtotalEl) subtotalEl.textContent = '$' + formatearPrecio(item.subtotal);
 
     actualizarTotalGeneralCompra();
+
+    // Si ya estamos en el modal de este item, actualizar suma visual
+    if (indexDistribucionActual === index) {
+        calcularSumaDistribucion();
+    }
 }
 window.actualizarCalculosItem = actualizarCalculosItem;
 
@@ -221,45 +265,218 @@ function actualizarTotalGeneralCompra() {
 }
 
 // Distribución
+// Distribución
 let indexDistribucionActual = -1;
+let variantesDistribucionActual = []; // Array de objetos {color, talla, alcala, local01, jordan, digital, url_imagen}
 
-function abrirModalDistribucion(index) {
+async function abrirModalDistribucion(index) {
     indexDistribucionActual = index;
     const item = compraItemsProvisionales[index];
     if (!item) return;
 
     document.getElementById('modalDistribucion').style.display = 'flex';
     document.getElementById('distProductoTitulo').textContent = item.nombre_producto || 'Producto Nuevo';
+    const errEl = document.getElementById('distError');
+    if (errEl) errEl.style.display = 'none';
 
-    document.getElementById('distColores').value = item.colores || '';
-    document.getElementById('distCantAlcala').value = item.distribucion.alcala || 0;
-    document.getElementById('distCantLocal01').value = item.distribucion.local01 || 0;
-    document.getElementById('distCantJordan').value = item.distribucion.jordan || 0;
-    document.getElementById('distCantDigital').value = item.distribucion.digital || 0;
+    // 1. Si ya tiene distribución detallada en esta sesión, usarla
+    if (Array.isArray(item.distribucion_detallada) && item.distribucion_detallada.length > 0) {
+        variantesDistribucionActual = JSON.parse(JSON.stringify(item.distribucion_detallada));
+        renderizarTablaDistribucion();
+        calcularSumaDistribucion();
+        return;
+    }
 
+    // 2. Si no, consultar el inventario real en base de datos para este producto
+    try {
+        const idProd = item.producto_id;
+        if (idProd && idProd !== 'N/A') {
+            const [invA, invL, invJ] = await Promise.all([
+                supabaseClient.from('inventario_alcala').select('talla, color, cantidad').eq('id_producto', idProd),
+                supabaseClient.from('inventario_01').select('talla, color, cantidad').eq('id_producto', idProd),
+                supabaseClient.from('inventario_jordan').select('talla, color, cantidad').eq('id_producto', idProd)
+            ]);
+
+            // Unificar combinaciones de Color + Talla
+            const combinaciones = new Map();
+            const procesar = (data, sede) => {
+                (data || []).forEach(i => {
+                    const key = `${i.color || ''}|${i.talla || 'Única'}`;
+                    if (!combinaciones.has(key)) {
+                        combinaciones.set(key, { color: i.color || '', talla: i.talla || 'Única', alcala: 0, local01: 0, jordan: 0, digital: 0, url_imagen: '', stock_actual: { alcala: 0, local01: 0, jordan: 0, digital: 0 } });
+                    }
+                    combinaciones.get(key).stock_actual[sede] = i.cantidad || 0;
+                });
+            };
+
+            procesar(invA.data, 'alcala');
+            procesar(invL.data, 'local01');
+            procesar(invJ.data, 'jordan');
+
+            if (combinaciones.size > 0) {
+                // Convertir el mapa a la lista de variantes para el modal
+                variantesDistribucionActual = Array.from(combinaciones.values()).sort((a, b) => a.color.localeCompare(b.color) || a.talla.localeCompare(b.talla));
+            } else {
+                // Fallback: Si no hay inventario previo, crear fila inicial
+                variantesDistribucionActual = [{
+                    color: item.colores || '',
+                    talla: 'Única',
+                    alcala: 0, local01: 0, jordan: 0, digital: 0,
+                    url_imagen: '',
+                    stock_actual: { alcala: 0, local01: 0, jordan: 0, digital: 0 }
+                }];
+            }
+        } else {
+            // Producto nuevo o sin ID
+            variantesDistribucionActual = [{
+                color: '', talla: 'Única',
+                alcala: 0, local01: 0, jordan: 0, digital: 0,
+                url_imagen: '',
+                stock_actual: { alcala: 0, local01: 0, jordan: 0, digital: 0 }
+            }];
+        }
+    } catch (e) {
+        console.error('Error cargando inventario para distribución:', e);
+        variantesDistribucionActual = [{ color: '', talla: 'Única', alcala: 0, local01: 0, jordan: 0, digital: 0, url_imagen: '', stock_actual: { alcala: 0, local01: 0, jordan: 0, digital: 0 } }];
+    }
+
+    renderizarTablaDistribucion();
     calcularSumaDistribucion();
 }
 window.abrirModalDistribucion = abrirModalDistribucion;
 
-function cerrarModalDistribucion() {
-    document.getElementById('modalDistribucion').style.display = 'none';
+function renderizarTablaDistribucion() {
+    const tbody = document.getElementById('tbodyDistribucionCompra');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const item = compraItemsProvisionales[indexDistribucionActual];
+    const prod = productosAutocomplete.find(p => p.id_producto === item.producto_id);
+    const coloresSugeridos = prod && prod.variantes ? (Array.isArray(prod.variantes) ? prod.variantes.map(v => typeof v === 'object' ? (v.color || v.nombre) : v) : [prod.variantes]) : [];
+
+    variantesDistribucionActual.forEach((v, idx) => {
+        const tr = document.createElement('tr');
+        const st = v.stock_actual || { alcala: 0, local01: 0, jordan: 0, digital: 0 };
+
+        tr.innerHTML = `
+            <td class="text-center" style="vertical-align: middle;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <div class="dist-img-preview" style="width: 48px; height: 48px; background: #f1f5f9; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0;">
+                        <img src="${v.url_imagen || 'https://via.placeholder.com/48'}" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <button type="button" class="btn btn-xs btn-outline-info" style="padding: 0 4px; font-size: 10px;" onclick="subirImagenVarianteCompra(${idx})">📷</button>
+                </div>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm dist-color" value="${v.color || ''}" list="listColoresSugeridos-${idx}" oninput="actualizarVarianteTemporal(${idx}, 'color', this.value)">
+                <datalist id="listColoresSugeridos-${idx}">
+                    ${coloresSugeridos.map(c => `<option value="${c}">`).join('')}
+                </datalist>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm dist-talla" value="${v.talla || ''}" placeholder="Talla" oninput="actualizarVarianteTemporal(${idx}, 'talla', this.value)">
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm dist-sede" value="${v.alcala || 0}" min="0" oninput="actualizarVarianteTemporal(${idx}, 'alcala', this.value)">
+                <div style="font-size: 10px; color: #64748b; text-align: center; margin-top: 2px;">Stock: <strong>${st.alcala}</strong></div>
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm dist-sede" value="${v.local01 || 0}" min="0" oninput="actualizarVarianteTemporal(${idx}, 'local01', this.value)">
+                <div style="font-size: 10px; color: #64748b; text-align: center; margin-top: 2px;">Stock: <strong>${st.local01}</strong></div>
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm dist-sede" value="${v.jordan || 0}" min="0" oninput="actualizarVarianteTemporal(${idx}, 'jordan', this.value)">
+                <div style="font-size: 10px; color: #64748b; text-align: center; margin-top: 2px;">Stock: <strong>${st.jordan}</strong></div>
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm dist-sede" value="${v.digital || 0}" min="0" oninput="actualizarVarianteTemporal(${idx}, 'digital', this.value)">
+                <div style="font-size: 10px; color: #64748b; text-align: center; margin-top: 2px;">Stock: <strong>${st.digital}</strong></div>
+            </td>
+            <td class="text-center" style="vertical-align: middle;">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFilaDistribucion(${idx})">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
-window.cerrarModalDistribucion = cerrarModalDistribucion;
+
+function agregarFilaDistribucionCompra() {
+    variantesDistribucionActual.push({
+        color: '', talla: 'Única',
+        alcala: 0, local01: 0, jordan: 0, digital: 0,
+        url_imagen: '',
+        stock_actual: { alcala: 0, local01: 0, jordan: 0, digital: 0 }
+    });
+    renderizarTablaDistribucion();
+}
+window.agregarFilaDistribucionCompra = agregarFilaDistribucionCompra;
+
+function eliminarFilaDistribucion(idx) {
+    variantesDistribucionActual.splice(idx, 1);
+    renderizarTablaDistribucion();
+    calcularSumaDistribucion();
+}
+window.eliminarFilaDistribucion = eliminarFilaDistribucion;
+
+function actualizarVarianteTemporal(idx, campo, valor) {
+    if (!variantesDistribucionActual[idx]) return;
+    if (['alcala', 'local01', 'jordan', 'digital'].includes(campo)) {
+        variantesDistribucionActual[idx][campo] = parseInt(valor) || 0;
+        calcularSumaDistribucion();
+    } else {
+        variantesDistribucionActual[idx][campo] = valor;
+    }
+}
+window.actualizarVarianteTemporal = actualizarVarianteTemporal;
+
+async function subirImagenVarianteCompra(idx) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            showToast('Subiendo imagen de variante...', 'info');
+            // Usar la función global subirImagen (definida en admin.js)
+            const publicUrl = await window.subirImagen(file, 'productos-imagenes');
+            if (publicUrl) {
+                variantesDistribucionActual[idx].url_imagen = publicUrl;
+                renderizarTablaDistribucion();
+                showToast('Imagen subida con éxito');
+            }
+        } catch (err) {
+            console.error('Error subiendo imagen de variante:', err);
+            showToast('Error al subir imagen', 'error');
+        }
+    };
+    input.click();
+}
+window.subirImagenVarianteCompra = subirImagenVarianteCompra;
 
 function calcularSumaDistribucion() {
-    const inputs = document.querySelectorAll('.dist-input');
     let suma = 0;
-    inputs.forEach(inp => suma += (parseInt(inp.value) || 0));
-    document.getElementById('distTotalSuma').textContent = suma;
+    variantesDistribucionActual.forEach(v => {
+        suma += (v.alcala + v.local01 + v.jordan + v.digital);
+    });
+
+    const elSuma = document.getElementById('distTotalSuma');
+    if (elSuma) elSuma.textContent = suma;
+
+    const item = compraItemsProvisionales[indexDistribucionActual];
+    const errEl = document.getElementById('distError');
+
+    if (item && suma === item.cantidad_total) {
+        if (errEl) errEl.style.display = 'none';
+        if (elSuma) elSuma.style.color = '#22c55e'; // Verde
+    } else {
+        if (errEl) errEl.style.display = 'block';
+        if (elSuma) elSuma.style.color = '#ef4444'; // Rojo 
+    }
+
     return suma;
 }
-
-// Listener global delegado
-document.addEventListener('input', function (e) {
-    if (e.target.classList.contains('dist-input')) {
-        calcularSumaDistribucion();
-    }
-});
 
 function guardarDistribucion() {
     if (indexDistribucionActual === -1) return;
@@ -267,22 +484,34 @@ function guardarDistribucion() {
 
     const suma = calcularSumaDistribucion();
 
-    if (suma > item.cantidad_total) {
-        if (confirm(`La suma distribuida (${suma}) es mayor a la cantidad total (${item.cantidad_total}). ¿Actualizar cantidad total?`)) {
-            item.cantidad_total = suma;
-        }
+    if (suma !== item.cantidad_total) {
+        showToast(`La cantidad distribuida (${suma}) debe ser exactamente igual a la total (${item.cantidad_total})`, 'warning');
+        return;
     }
 
-    item.distribucion.alcala = parseInt(document.getElementById('distCantAlcala').value) || 0;
-    item.distribucion.local01 = parseInt(document.getElementById('distCantLocal01').value) || 0;
-    item.distribucion.jordan = parseInt(document.getElementById('distCantJordan').value) || 0;
-    item.distribucion.digital = parseInt(document.getElementById('distCantDigital').value) || 0;
-    item.colores = document.getElementById('distColores').value;
+    // Guardar detalle para persistencia
+    item.distribucion_detallada = [...variantesDistribucionActual];
+
+    // Mantener compatibilidad con cabeceras globales
+    item.distribucion = {
+        alcala: variantesDistribucionActual.reduce((acc, v) => acc + (v.alcala || 0), 0),
+        local01: variantesDistribucionActual.reduce((acc, v) => acc + (v.local01 || 0), 0),
+        jordan: variantesDistribucionActual.reduce((acc, v) => acc + (v.jordan || 0), 0),
+        digital: variantesDistribucionActual.reduce((acc, v) => acc + (v.digital || 0), 0)
+    };
+
+    const setsColores = new Set(variantesDistribucionActual.map(v => v.color).filter(Boolean));
+    item.colores = Array.from(setsColores).join(', ');
 
     cerrarModalDistribucion();
-    actualizarCalculosItem(indexDistribucionActual, 'cantidad', item.cantidad_total); // Recalcular
+    actualizarCalculosItem(indexDistribucionActual, 'cantidad', item.cantidad_total);
 }
 window.guardarDistribucion = guardarDistribucion;
+
+function cerrarModalDistribucion() {
+    document.getElementById('modalDistribucion').style.display = 'none';
+}
+window.cerrarModalDistribucion = cerrarModalDistribucion;
 
 
 // GUARDAR COMPRA FINAL
@@ -333,20 +562,52 @@ async function guardarCompra() {
         if (errHeader) throw errHeader;
         const compraId = compraHeader.id;
 
-        const detallesData = compraItemsProvisionales.map(item => ({
-            compra_id: compraId,
-            nombre_producto: item.nombre_producto,
-            producto_id: item.producto_id || 'N/A',
-            cantidad_total: item.cantidad_total,
-            costo_unitario: item.costo_unitario,
-            precio_venta_sugerido: item.precio_venta,
-            subtotal: item.subtotal,
-            cantidad_alcala: item.distribucion.alcala,
-            cantidad_local01: item.distribucion.local01,
-            cantidad_jordan: item.distribucion.jordan,
-            cantidad_digital: item.distribucion.digital,
-            colores: item.colores
-        }));
+        // 3. Preparar detalles de productos (DESDOBLANDO POR VARIANTE)
+        const detallesData = [];
+        compraItemsProvisionales.forEach(item => {
+            // Si tiene distribución detallada (nuevo sistema), crear una fila por cada variante real
+            if (Array.isArray(item.distribucion_detallada) && item.distribucion_detallada.length > 0) {
+                item.distribucion_detallada.forEach(v => {
+                    const cantVar = (v.alcala + v.local01 + v.jordan + v.digital);
+                    if (cantVar > 0) {
+                        detallesData.push({
+                            compra_id: compraId,
+                            nombre_producto: item.nombre_producto,
+                            producto_id: item.producto_id || 'N/A',
+                            cantidad_total: cantVar,
+                            costo_unitario: item.costo_unitario,
+                            precio_venta_sugerido: item.precio_venta,
+                            subtotal: cantVar * item.costo_unitario,
+                            cantidad_alcala: v.alcala,
+                            cantidad_local01: v.local01,
+                            cantidad_jordan: v.jordan,
+                            cantidad_digital: v.digital,
+                            colores: v.color,
+                            talla: v.talla,
+                            url_imagen: v.url_imagen || ''
+                        });
+                    }
+                });
+            } else {
+                // Fallback para items sin distribución detallada (si no se abrió el modal)
+                detallesData.push({
+                    compra_id: compraId,
+                    nombre_producto: item.nombre_producto,
+                    producto_id: item.producto_id || 'N/A',
+                    cantidad_total: item.cantidad_total,
+                    costo_unitario: item.costo_unitario,
+                    precio_venta_sugerido: item.precio_venta,
+                    subtotal: item.subtotal,
+                    cantidad_alcala: item.distribucion?.alcala || 0,
+                    cantidad_local01: item.distribucion?.local01 || 0,
+                    cantidad_jordan: item.distribucion?.jordan || 0,
+                    cantidad_digital: item.distribucion?.digital || 0,
+                    colores: item.colores,
+                    talla: 'Única',
+                    url_imagen: ''
+                });
+            }
+        });
 
         const { error: errDetalles } = await supabaseClient
             .from('compras_detalles')
@@ -365,7 +626,7 @@ async function guardarCompra() {
 }
 window.guardarCompra = guardarCompra;
 
-function seleccionarProductoCompra(input, index) {
+async function seleccionarProductoCompra(input, index) {
     const val = input.value;
     // IMPORTANTE: Buscar en productosAutocomplete
     const prod = productosAutocomplete.find(p => p.nombre === val || p.id_producto === val);
@@ -375,13 +636,21 @@ function seleccionarProductoCompra(input, index) {
         compraItemsProvisionales[index].producto_id = prod.id_producto;
         compraItemsProvisionales[index].nombre_producto = prod.nombre;
 
+        // Cargar variantes actuales si no tiene colores escritos
+        if (!compraItemsProvisionales[index].colores && prod.variantes) {
+            if (Array.isArray(prod.variantes)) {
+                // Manejar si son objetos (ej: {color: 'Rojo'}) o strings
+                compraItemsProvisionales[index].colores = prod.variantes
+                    .map(v => typeof v === 'object' ? (v.color || v.nombre || v.talla || JSON.stringify(v)) : v)
+                    .join(', ');
+            } else {
+                compraItemsProvisionales[index].colores = prod.variantes;
+            }
+        }
+
         // Actualizar valores visuales
         const tr = document.getElementById(`itemRow-${index}`);
         const inputs = tr.querySelectorAll('input');
-        // inputs[0] es el nombre
-        // inputs[1] es cantidad
-        // inputs[2] costo con formato
-        // inputs[3] venta con formato
 
         // Formatear precio compra y venta
         inputs[2].value = '$' + formatearPrecio(prod.precio_compra || 0);
@@ -389,6 +658,32 @@ function seleccionarProductoCompra(input, index) {
 
         actualizarCalculosItem(index, 'costo', prod.precio_compra);
         actualizarCalculosItem(index, 'venta', prod.precio);
+
+        // HISTORIAL DE COSTOS: Buscar el costo más reciente en compras_detalles
+        try {
+            const { data: rec } = await supabaseClient
+                .from('compras_detalles')
+                .select('costo_unitario, created_at')
+                .eq('producto_id', prod.id_producto)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (rec) {
+                const labelAnterior = document.getElementById(`costoAnterior-${index}`);
+                if (labelAnterior) {
+                    labelAnterior.style.display = 'block'; // Asegurar visibilidad
+                    labelAnterior.textContent = `Ant: $${formatearPrecio(rec.costo_unitario)}`;
+                    labelAnterior.title = `Última compra: ${new Date(rec.created_at).toLocaleDateString()}`;
+                    console.log(`Costo anterior encontrado para item ${index}:`, rec.costo_unitario);
+                }
+                showToast(`Último costo: $${formatearPrecio(rec.costo_unitario)}`, 'info');
+            } else {
+                const labelAnterior = document.getElementById(`costoAnterior-${index}`);
+                if (labelAnterior) labelAnterior.textContent = 'Sin historial';
+            }
+        } catch (e) { console.warn("Error buscando costo reciente", e); }
+
     } else {
         compraItemsProvisionales[index].nombre_producto = val;
     }
@@ -471,37 +766,94 @@ async function verDetalleCompra(id) {
             </tr>
         `).join('') || '<tr><td colspan="5" class="text-center">No se encontraron productos</td></tr>';
 
-        // Renderizar Pagos (Basado en columnas pago_ene, pago_feb...)
-        const meses = [
-            { key: 'pago_ene', label: 'Enero' },
-            { key: 'pago_feb', label: 'Febrero' },
-            { key: 'pago_mar', label: 'Marzo' },
-            { key: 'pago_abr', label: 'Abril' },
-            { key: 'pago_may', label: 'Mayo' },
-            { key: 'pago_jun', label: 'Junio' },
-            { key: 'pago_jul', label: 'Julio' },
-            { key: 'pago_ago', label: 'Agosto' },
-            { key: 'pago_sep', label: 'Septiembre' },
-            { key: 'pago_oct', label: 'Octubre' },
-            { key: 'pago_nov', label: 'Noviembre' },
-            { key: 'pago_dic', label: 'Diciembre' }
-        ];
+        // Renderizar Pagos (Unificar historial detallado y columnas legacy)
+        const { data: historialPagos, error: errHistorial } = await supabaseClient
+            .from('pagos_proveedor')
+            .select('*')
+            .eq('compra_id', id)
+            .order('fecha_pago', { ascending: false });
+
+        if (errHistorial) console.warn('Error cargando historial detallado:', errHistorial);
 
         let totalPagado = 0;
-        const pagosHTML = meses.map(m => {
-            const monto = parseFloat(compra[m.key]) || 0;
-            if (monto === 0) return '';
-            totalPagado += monto;
-            return `
-                <tr>
-                    <td>${m.label}</td>
-                    <td style="text-align:right;">$${formatearPrecio(monto)}</td>
-                    <td style="font-size:0.85rem; color:#64748b;">Abono mensual registrado</td>
-                </tr>
-            `;
-        }).filter(x => x !== '').join('');
+        let pagosHTML = '';
+        const mesesMapeados = {}; // Para rastrear cuánto de cada mes ya se mostró en el historial detallado
 
-        document.getElementById('tbodyDetalleCompraPagos').innerHTML = pagosHTML || '<tr><td colspan="3" class="text-center">No hay pagos registrados</td></tr>';
+        // 1. Mostrar registros de pagos_proveedor (Detalle moderno y POS)
+        if (historialPagos && historialPagos.length > 0) {
+            pagosHTML = historialPagos.map(p => {
+                totalPagado += parseFloat(p.monto);
+
+                // Rastrear mes si la referencia indica uno (ej: "Abono Mes: FEB")
+                if (p.referencia && p.referencia.includes('Abono Mes:')) {
+                    const mesCode = p.referencia.split(': ')[1].toLowerCase();
+                    const key = `pago_${mesCode}`;
+                    mesesMapeados[key] = (mesesMapeados[key] || 0) + parseFloat(p.monto);
+                }
+
+                return `
+                    <tr>
+                        <td>${p.referencia || 'N/A'}</td>
+                        <td><span class="badge badge-outline-secondary" style="font-size:0.7rem;">${p.metodo_pago || 'S/N'}</span></td>
+                        <td style="text-align:right;">$${formatearPrecio(p.monto)}</td>
+                        <td style="text-align:center;">
+                            ${p.comprobante_url ? `
+                                <button class="btn btn-xs btn-outline-info" onclick="ampliarComprobante('${p.comprobante_url}')" title="Ver Comprobante">
+                                    👁️ Ver
+                                </button>
+                            ` : '<span class="text-muted" style="font-size:0.7rem;">Sin foto</span>'}
+                        </td>
+                        <td style="font-size:0.85rem; color:#64748b;">${p.notas || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 2. Mostrar abonos de columnas mensuales que NO estén en pagos_proveedor (Legacy o Errores de sincronización)
+        const meses = [
+            { key: 'pago_ene', label: 'Enero' }, { key: 'pago_feb', label: 'Febrero' }, { key: 'pago_mar', label: 'Marzo' },
+            { key: 'pago_abr', label: 'Abril' }, { key: 'pago_may', label: 'Mayo' }, { key: 'pago_jun', label: 'Junio' },
+            { key: 'pago_jul', label: 'Julio' }, { key: 'pago_ago', label: 'Agosto' }, { key: 'pago_sep', label: 'Septiembre' },
+            { key: 'pago_oct', label: 'Octubre' }, { key: 'pago_nov', label: 'Noviembre' }, { key: 'pago_dic', label: 'Diciembre' },
+            // Extensiones 2025/2026 si existen en la data
+            { key: 'pago_ene_2025', label: 'Ene 2025' }, { key: 'pago_feb_2025', label: 'Feb 2025' },
+            { key: 'pago_ene_2026', label: 'Ene 2026' }, { key: 'pago_feb_2026', label: 'Feb 2026' }
+        ];
+
+        meses.forEach(m => {
+            const montoColumna = parseFloat(compra[m.key]) || 0;
+            const montoYaMostrado = mesesMapeados[m.key] || 0;
+            const diferencia = montoColumna - montoYaMostrado;
+
+            if (diferencia > 10) { // Margen de error para decimales
+                if (montoYaMostrado === 0) {
+                    totalPagado += diferencia;
+                    pagosHTML += `
+                        <tr>
+                            <td>Abono Mes: ${m.label}</td>
+                            <td><span class="badge badge-outline-secondary" style="font-size:0.7rem;">Migrado</span></td>
+                            <td style="text-align:right;">$${formatearPrecio(diferencia)}</td>
+                            <td style="text-align:center;"><small class="text-muted">N/A</small></td>
+                            <td style="font-size:0.85rem; color:#64748b;">Abono previo al nuevo sistema</td>
+                        </tr>
+                    `;
+                } else {
+                    // Si ya hay algo mostrado pero la columna es mayor, mostrar el ajuste
+                    totalPagado += diferencia;
+                    pagosHTML += `
+                        <tr>
+                            <td>Ajuste Mes: ${m.label}</td>
+                            <td><span class="badge badge-outline-secondary" style="font-size:0.7rem;">Legacy</span></td>
+                            <td style="text-align:right;">$${formatearPrecio(diferencia)}</td>
+                            <td style="text-align:center;"><small class="text-muted">N/A</small></td>
+                            <td style="font-size:0.85rem; color:#64748b;">Diferencia en saldos antiguos</td>
+                        </tr>
+                    `;
+                }
+            }
+        });
+
+        document.getElementById('tbodyDetalleCompraPagos').innerHTML = pagosHTML || '<tr><td colspan="5" class="text-center">No hay pagos registrados</td></tr>';
 
         const saldo = (compra.valor_compra || 0) - totalPagado;
         document.getElementById('detalleTotalPagado').textContent = '$' + formatearPrecio(totalPagado);
@@ -523,10 +875,16 @@ function abrirModalPago(compra) {
     document.getElementById('pagoProveedorNombre').textContent = compra.proveedores?.razon_social || 'N/A';
     document.getElementById('pagoFacturaNum').textContent = compra.numero_factura || 'S/N';
 
+    // Resetear campos nuevos
+    document.getElementById('pagoMetodo').value = '';
+    document.getElementById('pagoComprobanteFile').value = '';
+    document.getElementById('pagoComprobantePreview').innerHTML = '<span style="font-size:10px; color:#999">N/A</span>';
+    document.getElementById('pagoNotas').value = '';
+
     // Calcular saldo pendiente actual
     const mesesKeys = ['pago_ene', 'pago_feb', 'pago_mar', 'pago_abr', 'pago_may', 'pago_jun', 'pago_jul', 'pago_ago', 'pago_sep', 'pago_oct', 'pago_nov', 'pago_dic'];
     const totalPagado = mesesKeys.reduce((acc, mk) => acc + (parseFloat(compra[mk]) || 0), 0);
-    const saldo = compra.valor_compra - totalPagado;
+    const saldo = (compra.valor_compra || 0) - totalPagado;
 
     document.getElementById('pagoSaldoPendiente').textContent = '$' + formatearPrecio(saldo > 0 ? saldo : 0);
     document.getElementById('pagoMonto').value = '';
@@ -539,27 +897,66 @@ function cerrarModalPago() {
 }
 window.cerrarModalPago = cerrarModalPago;
 
+function previsualizarComprobante(input) {
+    const preview = document.getElementById('pagoComprobantePreview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            preview.innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.innerHTML = '<span style="font-size:10px; color:#999">N/A</span>';
+    }
+}
+window.previsualizarComprobante = previsualizarComprobante;
+
 async function guardarPagoCompra() {
     const id = document.getElementById('pagoCompraId').value;
     const mesKey = document.getElementById('pagoMes').value;
+    const metodo = document.getElementById('pagoMetodo').value;
     const monto = limpiarMoneda(document.getElementById('pagoMonto').value);
+    const notas = document.getElementById('pagoNotas').value;
+    const fileInput = document.getElementById('pagoComprobanteFile');
 
     if (!mesKey) return showToast('Selecciona un mes', 'warning');
+    if (!metodo) return showToast('Selecciona un método de pago', 'warning');
     if (monto <= 0) return showToast('Ingresa un monto válido', 'warning');
 
     try {
-        // En este esquema de columnas, el "pago" simplemente actualiza la columna del mes.
-        // Podríamos sumar si ya hay algo, o simplemente sobreescribir.
-        // Vamos a intentar obtener el valor actual para sumar.
+        let comprobanteUrl = '';
+        if (fileInput.files && fileInput.files[0]) {
+            showToast('Subiendo comprobante...', 'info');
+            // Usar la función global subirImagen de admin.js
+            comprobanteUrl = await window.subirImagen(fileInput.files[0]);
+        }
+
+        // 1. Insertar en la tabla histórica de pagos (pagos_proveedor)
+        const { error: errPago } = await supabaseClient
+            .from('pagos_proveedor')
+            .insert([{
+                compra_id: id,
+                monto: monto,
+                metodo_pago: metodo,
+                notas: notas,
+                comprobante_url: comprobanteUrl,
+                fecha_pago: new Date().toISOString(),
+                // Guardamos el mes al que abona como referencia
+                referencia: `Abono Mes: ${mesKey.replace('pago_', '').toUpperCase()}`
+            }]);
+
+        if (errPago) throw errPago;
+
+        // 2. Actualizar la columna del mes en compras_proveedor para mantener consistencia con saldo_pendiente
         const { data: current } = await supabaseClient.from('compras_proveedor').select(mesKey).eq('id', id).single();
         const nuevoMonto = (parseFloat(current[mesKey]) || 0) + monto;
 
-        const { error } = await supabaseClient
+        const { error: errUpdate } = await supabaseClient
             .from('compras_proveedor')
-            .update({ [mesKey]: nuevoMonto })
+            .update({ [mesKey]: nuevoMonto, updated_at: new Date().toISOString() })
             .eq('id', id);
 
-        if (error) throw error;
+        if (errUpdate) throw errUpdate;
 
         showToast('Pago registrado correctamente', 'success');
         cerrarModalPago();
@@ -571,6 +968,13 @@ async function guardarPagoCompra() {
     }
 }
 window.guardarPagoCompra = guardarPagoCompra;
+
+function ampliarComprobante(url) {
+    if (!url) return;
+    // Abrir en nueva pestaña o crear un pequeño overlay
+    window.open(url, '_blank');
+}
+window.ampliarComprobante = ampliarComprobante;
 
 async function imprimirCompra(id) {
     try {
@@ -636,6 +1040,13 @@ async function imprimirCompra(id) {
         let saldoAcumulado = 0;
         const tableBody = [];
 
+        // Obtener IDs de todas las compras del historial para traer sus pagos detallados
+        const idsCompras = historial.map(h => h.id);
+        const { data: todosLosPagos } = await supabaseClient
+            .from('pagos_proveedor')
+            .select('*')
+            .in('compra_id', idsCompras);
+
         historial.forEach(c => {
             saldoAcumulado += (c.valor_compra || 0);
             tableBody.push([
@@ -646,19 +1057,37 @@ async function imprimirCompra(id) {
                 `$${formatearPrecio(saldoAcumulado)}`
             ]);
 
-            mesesKeys.forEach(mk => {
-                const monto = parseFloat(c[mk]) || 0;
-                if (monto > 0) {
-                    saldoAcumulado -= monto;
-                    tableBody.push([
-                        new Date(c.updated_at || c.created_at).toLocaleDateString(),
-                        `PAGO REGISTRADO - FAC ${c.numero_factura}`,
-                        '-',
-                        `$${formatearPrecio(monto)}`,
-                        `$${formatearPrecio(saldoAcumulado)}`
-                    ]);
-                }
+            // 1. Pagos Modernos (desde pagos_proveedor)
+            const pagosDeEstaCompra = (todosLosPagos || []).filter(p => p.compra_id === c.id);
+            pagosDeEstaCompra.forEach(p => {
+                saldoAcumulado -= parseFloat(p.monto);
+                tableBody.push([
+                    new Date(p.fecha_pago || p.created_at).toLocaleDateString(),
+                    `PAGO (${p.metodo_pago || 'S/M'}) - FAC ${c.numero_factura}`,
+                    '-',
+                    `$${formatearPrecio(p.monto)}`,
+                    `$${formatearPrecio(saldoAcumulado)}`
+                ]);
             });
+
+            // 2. Pagos Legacy (desde columnas de meses, solo si no hay pagos modernos para esta compra o para cubrir saldo antiguo)
+            // Para evitar duplicados en reportes donde se mezclen ambos sistemas, 
+            // solo sumamos legacy si la suma de pagos modernos es 0 para esa compra.
+            if (pagosDeEstaCompra.length === 0) {
+                mesesKeys.forEach(mk => {
+                    const monto = parseFloat(c[mk]) || 0;
+                    if (monto > 0) {
+                        saldoAcumulado -= monto;
+                        tableBody.push([
+                            new Date(c.updated_at || c.created_at).toLocaleDateString(),
+                            `PAGO (Legacy) - FAC ${c.numero_factura}`,
+                            '-',
+                            `$${formatearPrecio(monto)}`,
+                            `$${formatearPrecio(saldoAcumulado)}`
+                        ]);
+                    }
+                });
+            }
         });
 
         doc.autoTable({

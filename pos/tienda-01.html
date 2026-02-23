@@ -190,12 +190,6 @@
                     <div class="metodo-btn" data-metodo="Transferencia" onclick="toggleMetodo(this)">
                         <span class="icono">🏦</span>Transferencia
                     </div>
-                    <div class="metodo-btn" data-metodo="Nequi" onclick="toggleMetodo(this)">
-                        <span class="icono">📱</span>Nequi
-                    </div>
-                    <div class="metodo-btn" data-metodo="Daviplata" onclick="toggleMetodo(this)">
-                        <span class="icono">📱</span>Daviplata
-                    </div>
                     <div class="metodo-btn" data-metodo="Pago Proveedor" onclick="toggleMetodo(this)">
                         <span class="icono">🏭</span>Pago Proveedor
                     </div>
@@ -216,6 +210,7 @@
                     </div>
                 </div>
                 <div id="metodosSeleccionados" class="metodos-seleccionados"></div>
+
             </div>
 
             <!-- Panel inline Pago a Proveedor (se muestra al seleccionar método "Pago Proveedor") -->
@@ -267,6 +262,12 @@
                     ✅ Confirmar Pago a Proveedor
                 </button>
             </div>
+
+            <!-- NUEVO: Desglose Multimétodo -->
+            <div id="contenedorMontosMultimetodo" class="seccion-montos-multimetodo"></div>
+
+            <!-- NUEVO: Selección de Cuenta Bancaria (Para transferencias) -->
+            <div id="seccionCuentaBancaria" class="seccion-cuenta-bancaria"></div>
 
             <!-- Voucher Code (Solo para Tarjeta/Datáfono) -->
             <div id="seccionVoucher" class="seccion-voucher">

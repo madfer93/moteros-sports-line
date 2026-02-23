@@ -42,6 +42,7 @@ let empleadoLogueado = null; // Datos del empleado con sesión activa
 let productoParaVariante = null; // Variable para manejo de variantes
 let clienteSeleccionado = null; // { id, nombre, telefono, cedula, promocion }
 let tipoClienteActual = 'consumidor'; // 'consumidor' | 'registrado'
+let cuentasBancarias = []; // Cuentas de la empresa para transferencias
 
 // Estado para Selector Visual
 let visualProductoActual = null;
@@ -69,6 +70,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Cargar vendedores
     await cargarVendedores();
+
+    // Cargar cuentas bancarias para transferencias
+    await cargarCuentasBancariasPOS();
 
     // Sincronización automática de ventas offline
     if (window.OfflineManager) {
@@ -546,21 +550,41 @@ async function mostrarModalCerrarCaja() {
             totalGeneralVentas += monto;
             totalUnidades += v.cantidad || 0;
 
-            const metodos = (v.metodo_pago || '').toLowerCase();
-            const numMetodos = (metodos.match(/\+/g) || []).length + 1;
-            const montoPorMetodo = monto / numMetodos;
+            // --- NUEVA LÓGICA DE DESGLOSE EXACTO ---
+            if (v.pago_desglose && typeof v.pago_desglose === 'object') {
+                // Si existe el nuevo campo JSON, usarlo directamente
+                Object.entries(v.pago_desglose).forEach(([metodo, valor]) => {
+                    const mKey = metodo.toLowerCase().replace(/á/g, 'a').replace(/é/g, 'e');
+                    if (totales.hasOwnProperty(mKey)) {
+                        totales[mKey] += valor;
+                    } else if (mKey.includes('tarjeta') || mKey.includes('datafono')) {
+                        totales.tarjeta += valor;
+                    } else if (mKey.includes('credito motero')) {
+                        totales.credito_motero += valor;
+                    }
+                    // Sumar a efectivo total si no es digital
+                    if (mKey === 'efectivo' && !TIENDA.esDigital) {
+                        // Ya se sumó arriba si mKey existe en totales
+                    }
+                });
+            } else {
+                // Fallback: Lógica antigua de división uniforme para ventas viejas
+                const metodos = (v.metodo_pago || '').toLowerCase();
+                const numMetodos = (metodos.match(/\+/g) || []).length + 1;
+                const montoPorMetodo = monto / numMetodos;
 
-            if (metodos.includes('efectivo') && !TIENDA.esDigital) totales.efectivo += montoPorMetodo;
-            if (metodos.includes('transferencia')) totales.transferencia += montoPorMetodo;
-            if (metodos.includes('tarjeta')) totales.tarjeta += montoPorMetodo;
-            if (metodos.includes('daviplata')) totales.daviplata += montoPorMetodo;
-            if (metodos.includes('nequi')) totales.nequi += montoPorMetodo;
-            if (metodos.includes('addi')) totales.addi += montoPorMetodo;
-            if (metodos.includes('datafono') || metodos.includes('datáfono')) totales.datafono = (totales.datafono || 0) + montoPorMetodo;
-            if (metodos.includes('sistecredito') || metodos.includes('sistecrdito')) totales.sistecredito += montoPorMetodo;
-            if (metodos.includes('credito motero') || metodos.includes('crdito motero')) totales.credito_motero = (totales.credito_motero || 0) + montoPorMetodo;
-            if (metodos.includes('fodegas')) totales.fodegas += montoPorMetodo;
-            if (metodos.includes('contraentrega')) totales.contraentrega = (totales.contraentrega || 0) + montoPorMetodo;
+                if (metodos.includes('efectivo') && !TIENDA.esDigital) totales.efectivo += montoPorMetodo;
+                if (metodos.includes('transferencia')) totales.transferencia += montoPorMetodo;
+                if (metodos.includes('tarjeta')) totales.tarjeta += montoPorMetodo;
+                if (metodos.includes('daviplata')) totales.daviplata += montoPorMetodo;
+                if (metodos.includes('nequi')) totales.nequi += montoPorMetodo;
+                if (metodos.includes('addi')) totales.addi += montoPorMetodo;
+                if (metodos.includes('datafono') || metodos.includes('datáfono')) totales.datafono = (totales.datafono || 0) + montoPorMetodo;
+                if (metodos.includes('sistecredito')) totales.sistecredito += montoPorMetodo;
+                if (metodos.includes('credito motero')) totales.credito_motero = (totales.credito_motero || 0) + montoPorMetodo;
+                if (metodos.includes('fodegas')) totales.fodegas += montoPorMetodo;
+                if (metodos.includes('contraentrega')) totales.contraentrega = (totales.contraentrega || 0) + montoPorMetodo;
+            }
         });
 
         const base = datosCaja?.montoInicial || 0;
@@ -1135,7 +1159,22 @@ async function cargarProductos() {
         renderizarProductos();
     } catch (e) {
         console.error('Error cargando productos:', e);
-        mostrarAlerta('Error al cargar productos: ' + e.message, 'error');
+        mostrarAlerta('Error cargando productos: ' + e.message, 'error');
+    }
+}
+
+async function cargarCuentasBancariasPOS() {
+    try {
+        const { data, error } = await db
+            .from('cuentas_bancarias')
+            .select('*')
+            .eq('activa', true);
+
+        if (error) throw error;
+        cuentasBancarias = data || [];
+        console.log('Cuentas bancarias cargadas:', cuentasBancarias.length);
+    } catch (e) {
+        console.error('Error cargando cuentas bancarias:', e);
     }
 }
 
@@ -1566,6 +1605,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
                 marca: prod.marca,
                 precioOriginal: prod.precio,
                 precio: precioFinal,
+                costo_unitario: prod.precio_compra || 0, // CAPTURANDO COSTO
                 cantidad: 1,
                 stockMax: stockDisponible,
                 tiendaOrigen: 'Tienda',
@@ -1580,51 +1620,57 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
     // LÓGICA DIGITAL
     else {
         const tiendaOrigen = arg2;
-        const tallaDigital = arg3 || 'Única'; // Recibimos la talla o asumimos Única
-        const colorDigital = arg4 || '';
+        const talla = arg3 || 'Única'; // Recibimos la talla o asumimos Única
+        const color = arg4 || '';
         if (!tiendaOrigen) return mostrarAlerta('Error: tienda origen no definida', 'error');
 
         // Búsqueda de stock más precisa usando stocks_globales
         let stockDisp = 0;
         if (prod.stocks_globales && prod.stocks_globales[tiendaOrigen]) {
-            if (prod.stocks_globales[tiendaOrigen][colorDigital]) {
-                stockDisp = prod.stocks_globales[tiendaOrigen][colorDigital][tallaDigital] || 0;
+            if (prod.stocks_globales[tiendaOrigen][color]) {
+                stockDisp = prod.stocks_globales[tiendaOrigen][color][talla] || 0;
             }
         }
 
-        if (stockDisp <= 0) return mostrarAlerta(`Sin stock de ${colorDigital ? colorDigital + ' ' : ''}${tallaDigital} en ${tiendaOrigen}`, 'error');
+        if (stockDisp <= 0) return mostrarAlerta(`Sin stock de ${color ? color + ' ' : ''}${talla} en ${tiendaOrigen}`, 'error');
 
         const existe = carrito.find(i =>
             i.id_producto == idProducto &&
             i.tiendaOrigen === tiendaOrigen &&
-            i.variante === tallaDigital &&
-            i.color === colorDigital
+            i.variante === talla &&
+            i.color === color
         );
 
         if (existe) {
             if (existe.cantidad >= stockDisp) {
-                mostrarAlerta(`Stock máximo de ${tallaDigital} en ${tiendaOrigen} alcanzado`, 'warning');
+                mostrarAlerta(`Stock máximo de ${talla} en ${tiendaOrigen} alcanzado`, 'warning');
                 return;
             }
             existe.cantidad++;
         } else {
+            // Nombre descriptivo
+            let descripcion = prod.nombre;
+            if (color) descripcion += ` (${color})`;
+            if (talla && talla !== 'Única') descripcion += ` [${talla}]`;
+
             carrito.push({
                 id_producto: prod.id_producto,
-                nombre: `${prod.nombre} (${tiendaOrigen}) ${colorDigital ? '[' + colorDigital + '] ' : ''}[${tallaDigital}]`,
+                nombre: descripcion,
                 nombreBase: prod.nombre,
+                variante: talla,
+                color: color,
                 marca: prod.marca,
                 precioOriginal: prod.precio,
                 precio: precioFinal,
+                costo_unitario: prod.precio_compra || 0, // CAPTURANDO COSTO
                 cantidad: 1,
-                stockMax: stockDisp,
+                stockMax: 9999, // En digital no bloqueamos por ahora
                 tiendaOrigen: tiendaOrigen,
-                variante: tallaDigital, // Guardamos la talla
-                color: colorDigital,
                 motivo: motivo
             });
         }
         renderizarCarrito();
-        mostrarAlerta('Producto agregado (Digital)', 'success');
+        mostrarAlerta('Producto agregado', 'success');
     }
 }
 
@@ -1667,15 +1713,28 @@ function renderizarCarrito() {
 
     container.innerHTML = carrito.map((item, idx) => {
         const tieneDescuento = item.precio < item.precioOriginal;
+
+        // CALCULO DE MARGEN PARA EL VENDEDOR
+        const margenMonto = item.precio - (item.costo_unitario || 0);
+        const margenPct = item.precio > 0 ? Math.round((margenMonto / item.precio) * 100) : 0;
+        const colorMargen = margenPct < 15 ? '#ef4444' : (margenPct < 30 ? '#f59e0b' : '#10b981');
+
         return `
             <div class="carrito-item">
                 <div class="carrito-item-info">
                     <strong>${item.nombre}</strong>
-                    <small>
-                        ${tieneDescuento ? `<span class="precio-descuento">$${item.precioOriginal.toLocaleString('es-CO')}</span>` : ''}
-                        $${item.precio.toLocaleString('es-CO')} × ${item.cantidad} = $${(item.precio * item.cantidad).toLocaleString('es-CO')}
-                        ${tieneDescuento ? `<span class="motivo-descuento">⏳ ${item.motivo}</span>` : ''}
-                    </small>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <small>
+                            ${tieneDescuento ? `<span class="precio-descuento">$${item.precioOriginal.toLocaleString('es-CO')}</span>` : ''}
+                            $${item.precio.toLocaleString('es-CO')} × ${item.cantidad} = $${(item.precio * item.cantidad).toLocaleString('es-CO')}
+                            ${tieneDescuento ? `<span class="motivo-descuento">⏳ ${item.motivo}</span>` : ''}
+                        </small>
+                        <!-- INDICADOR DE MARGEN -->
+                        <span class="margen-indicator" title="Margen de utilidad sugerido" 
+                              style="font-size:0.65rem; font-weight:700; color:${colorMargen}; background:${colorMargen}20; padding:1px 5px; border-radius:4px; border:1px solid ${colorMargen}50;">
+                            ${margenPct}% margen
+                        </span>
+                    </div>
                 </div>
                 <div class="carrito-item-acciones">
                     <button class="btn-editar-precio" onclick="abrirEditarPrecio(${idx})">✏️​</button>
@@ -1762,17 +1821,100 @@ function toggleMetodo(el) {
         infoEl.classList.remove('visible');
     }
 
-    // NUEVO: Mostrar/Ocultar sección de voucher
+    // --- Lógica de Montos Divididos (Multimétodo) ---
+    const contenedorMontos = document.getElementById('contenedorMontosMultimetodo');
+    const totalVenta = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+
+    if (contenedorMontos) {
+        if (metodosSeleccionados.size > 1) {
+            contenedorMontos.innerHTML = `
+                <div style="background: #f8fafc; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid #e2e8f0;">
+                    <p style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: #475569;">Desglose de Pagos (Total: $${totalVenta.toLocaleString('es-CO')})</p>
+                    <div id="listaInputsMontos" style="display: flex; flex-direction: column; gap: 8px;">
+                        ${[...metodosSeleccionados].map(m => `
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label style="font-size: 0.8rem; flex: 1;">${m}:</label>
+                                <input type="number" class="input-monto-metodo" data-metodo="${m}" placeholder="$0" 
+                                       style="width: 120px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p id="errorSumaMontos" style="color: #ef4444; font-size: 0.75rem; margin-top: 5px; display: none;">⚠️ La suma debe ser igual al total</p>
+                </div>
+            `;
+            contenedorMontos.classList.add('visible');
+        } else {
+            contenedorMontos.innerHTML = '';
+            contenedorMontos.classList.remove('visible');
+        }
+    }
+
+    // NUEVO: Mostrar/Ocultar sección de voucher y cuenta bancaria
     const seccionVoucher = document.getElementById('seccionVoucher');
+    const divCuentas = document.getElementById('seccionCuentaBancaria');
+
     if (seccionVoucher) {
-        // Mostrar referencia para todo MENOS Efectivo y Credito Motero
-        const mostrarVoucher = [...metodosSeleccionados].some(m => !['Efectivo', 'Credito Motero'].includes(m));
+        // Filtrar métodos que requieren voucher (Digitales)
+        const metodosDigitales = [...metodosSeleccionados].filter(m => !['Efectivo', 'Credito Motero', 'Pago Proveedor'].includes(m));
+        const mostrarVoucher = metodosDigitales.length > 0;
 
         seccionVoucher.classList.toggle('visible', mostrarVoucher);
 
-        if (!mostrarVoucher) {
-            const vInput = document.getElementById('voucherCode');
-            if (vInput) vInput.value = '';
+        if (mostrarVoucher) {
+            // Generar inputs independientes para cada voucher
+            let htmlVouchers = `
+                <div class="seccion-voucher-titulo" style="margin-bottom: 10px; font-weight: 700; color: #d97706; display: flex; align-items: center; gap: 5px;">
+                    🎫 Códigos de Comprobante / Voucher
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    ${metodosDigitales.map(m => `
+                        <div class="voucher-input-group" style="background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #fed7aa;">
+                            <label style="font-size: 0.75rem; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">Referencia para ${m}:</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text" class="input-voucher-metodo" data-metodo="${m}" 
+                                       placeholder="Nro. de comprobante" 
+                                       style="flex: 1; padding: 8px; border: 1px solid #fed7aa; border-radius: 6px; background: #fffcf0;">
+                                
+                                <label class="btn-foto-voucher" style="cursor: pointer; background: #fef3c7; border: 1px solid #fcd34d; padding: 8px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" title="Subir foto del comprobante">
+                                    <input type="file" class="input-foto-voucher" data-metodo="${m}" accept="image/*" capture="environment" style="display: none;" onchange="this.parentElement.style.background = '#dcfce7'; this.parentElement.style.borderColor = '#86efac';">
+                                    📷
+                                </label>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            seccionVoucher.innerHTML = htmlVouchers;
+        } else {
+            seccionVoucher.innerHTML = '';
+        }
+
+        // Si se seleccionó Transferencia, mostrar selector de cuenta bancaria
+        if (metodosSeleccionados.has('Transferencia') && typeof cuentasBancarias !== 'undefined') {
+            if (divCuentas) {
+                if (!divCuentas.innerHTML.trim() || divCuentas.style.display === 'none') {
+                    let htmlCuentas = `
+                        <div style="background: #eff6ff; padding: 12px; border-radius: 8px; margin-top: 10px; border: 1px solid #3b82f6;">
+                            <p style="font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: #1e40af; display: flex; align-items: center; gap: 5px;">
+                                🏦 Cuenta de Destino:
+                            </p>
+                            <select id="selectCuentaBancaria" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #3b82f6; font-weight: 600;">
+                                <option value="">-- Seleccionar Cuenta --</option>
+                                ${cuentasBancarias.map(c => `<option value="${c.id}">${c.banco} - ${c.nombre_titular} (${c.tipo_cuenta})</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                    divCuentas.innerHTML = htmlCuentas;
+                    divCuentas.style.display = 'block';
+                    divCuentas.classList.add('visible');
+                }
+            }
+        } else {
+            if (divCuentas) {
+                divCuentas.innerHTML = '';
+                divCuentas.style.display = 'none';
+                divCuentas.classList.remove('visible');
+            }
         }
     }
 
@@ -1784,7 +1926,7 @@ function toggleMetodo(el) {
     if (seccionProv) {
         const mostrarProv = metodosSeleccionados.has('Pago Proveedor');
         seccionProv.style.display = mostrarProv ? 'block' : 'none';
-        if (mostrarProv) cargarProveedoresInline();
+        if (mostrarProv && typeof cargarProveedoresInline === 'function') cargarProveedoresInline();
     }
 }
 
@@ -1904,43 +2046,101 @@ async function procesarVenta() {
     btnVender.disabled = true;
     btnVender.innerHTML = 'Procesando...';
 
-    const localRegistro = destino === 'digital' ? `Digital (${TIENDA.nombre})` : TIENDA.nombre;
+    // --- Recolección de Pagos Detallados ---
+    let desglosePagos = {};
+    let sumaPagos = 0;
+    const inputsMontos = document.querySelectorAll('.input-monto-metodo');
+    const totalVentaGeneral = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+
+    if (metodosSeleccionados.size > 1) {
+        inputsMontos.forEach(input => {
+            const m = input.dataset.metodo;
+            const v = parseFloat(input.value) || 0;
+            desglosePagos[m] = v;
+            sumaPagos += v;
+        });
+
+        if (sumaPagos !== totalVentaGeneral) {
+            document.getElementById('errorSumaMontos').style.display = 'block';
+            btnVender.disabled = false;
+            btnVender.innerHTML = 'Vender/Cerrar';
+            return mostrarAlerta('⚠️ La suma de los pagos no coincide con el total de la venta', 'error');
+        }
+    } else {
+        const unicoMetodo = [...metodosSeleccionados][0];
+        desglosePagos[unicoMetodo] = totalVentaGeneral;
+    }
+
+    const cuenta_id = document.getElementById('selectCuentaBancaria')?.value || null;
+    if (metodosSeleccionados.has('Transferencia') && !cuenta_id) {
+        btnVender.disabled = false;
+        btnVender.innerHTML = 'Vender/Cerrar';
+        return mostrarAlerta('⚠️ Selecciona la cuenta bancaria de destino', 'warning');
+    }
+
     const metodoPagoStr = [...metodosSeleccionados].join(' + ');
+    const imprimeTirilla = document.getElementById('checkImprimirTirilla')?.checked || false;
+
+    let id_venta = '';
+    let clienteId = 1;
+    let clienteDigital = null;
 
     try {
+        const timestampId = Date.now();
+        id_venta = 'V' + timestampId + Math.random().toString(36).substr(2, 5).toUpperCase();
+        // Ejecutar registro de cliente digital una sola vez si aplica
+        if (TIENDA.esDigital) {
+            clienteDigital = await registrarClienteDigital();
+            clienteId = clienteDigital?.id || 1;
+        } else {
+            clienteId = clienteSeleccionado?.id || 1;
+        }
+
         for (const item of carrito) {
             const fechaPersonalizadaInput = document.getElementById('fechaPersonalizada');
             const fechaVenta = (fechaPersonalizadaInput && fechaPersonalizadaInput.value)
                 ? new Date(fechaPersonalizadaInput.value).toISOString()
                 : new Date().toISOString();
 
-            // Si hay una fecha personalizada, ajustar también el ID para que sea más único/rastreable
-            const timestampId = (fechaPersonalizadaInput && fechaPersonalizadaInput.value)
-                ? new Date(fechaPersonalizadaInput.value).getTime()
-                : Date.now();
-
-            // Determinar local real:
-            // 1. Si el item ya trae tiendaOrigen (porque se eligió con botón específico), usar esa.
-            // 2. Si no, usar el selector global del Admin POS.
-            // 3. Fallback al localRegistro standard.
             const origenReal = item.tiendaOrigen || document.getElementById('origenVentaReal')?.value || localRegistro;
 
-            const id_venta = 'V' + timestampId + Math.random().toString(36).substr(2, 5).toUpperCase();
+            // Recolectar Vouchers Detallados y Evidencias
+            let vouchers = [];
+            let fotosComprobantes = {};
 
-            const voucherCode = document.getElementById('voucherCode')?.value.trim() || null;
+            const voucherInputs = document.querySelectorAll('.input-voucher-metodo');
+            for (const vInput of voucherInputs) {
+                const met = vInput.dataset.metodo;
+                const val = vInput.value.trim();
+                if (val) vouchers.push(`${met}: ${val}`);
 
-            // Registrar cliente automáticamente si es tienda digital
-            let clienteDigital = null;
-            if (TIENDA.esDigital) {
-                clienteDigital = await registrarClienteDigital();
+                // Buscar foto asociada a este método
+                const fInput = document.querySelector(`.input-foto-voucher[data-metodo="${met}"]`);
+                if (fInput && fInput.files.length > 0) {
+                    const file = fInput.files[0];
+                    const timestamp = Date.now();
+                    const ext = file.name.split('.').pop();
+                    const nombreArchivo = `venta_${id_venta}_${met.replace(/\s+/g, '_')}_${timestamp}.${ext}`;
+                    const rutaArchivo = `ventas-comprobantes/${nombreArchivo}`;
+
+                    try {
+                        const { data: uploadData, error: uploadError } = await db.storage
+                            .from('productos-imagenes')
+                            .upload(rutaArchivo, file, { cacheControl: '3600', upsert: false });
+
+                        if (uploadError) throw uploadError;
+
+                        const { data: urlData } = db.storage.from('productos-imagenes').getPublicUrl(rutaArchivo);
+                        fotosComprobantes[met] = urlData?.publicUrl || null;
+                    } catch (err) {
+                        console.error(`Error subiendo foto de ${met}:`, err);
+                    }
+                }
             }
-
-            // Obtener datos del cliente seleccionado o del cliente digital registrado
-            const clienteId = clienteDigital?.id || clienteSeleccionado?.id || 1; // 1 = Consumidor Final
-            // Calcular descuento de cliente
+            const voucherCode = vouchers.length > 0 ? vouchers.join(' | ') : null;
             let descuentoValor = 0;
             let descuentoMotivo = null;
-            let totalItem = item.precio * item.cantidad; // Precio base (ya puede tener promo de producto)
+            let totalItem = item.precio * item.cantidad;
 
             if (clienteSeleccionado?.promocion?.descuento_porcentaje) {
                 const pct = clienteSeleccionado.promocion.descuento_porcentaje;
@@ -1950,18 +2150,24 @@ async function procesarVenta() {
                 totalItem = totalItem - descuentoValor;
             }
 
+            // El desglose se guarda proporcionalmente por item para reportes, 
+            // aunque el JSON general reside en cada fila por simplicidad técnica actual
             const { error: errorVenta } = await db.from('ventas').insert({
                 id_venta: id_venta,
                 local: origenReal,
                 id_producto: item.id_producto,
                 nombre_producto: item.nombre,
                 cantidad: item.cantidad,
-                precio_unitario: item.precio, // Precio unitario base de la línea
-                total: totalItem, // Total con descuento aplicado
+                precio_unitario: item.precio,
+                costo_unitario: item.costo_unitario || 0, // GUARDANDO COSTO REAL
+                total: totalItem,
                 descuento_valor: descuentoValor,
                 descuento_motivo: descuentoMotivo,
                 metodo_pago: metodoPagoStr,
+                pago_desglose: desglosePagos, // GUARDANDO NUEVO CAMPO JSON
+                cuenta_id: cuenta_id,       // GUARDANDO NUEVO CAMPO FK
                 voucher_code: voucherCode,
+                comprobantes_fotos: fotosComprobantes, // NUEVO: Evidencia fotográfica
                 usuario: `POS ${TIENDA.nombre}`,
                 id_evento: TIENDA.id_evento || null,
                 created_at: fechaVenta,
@@ -2009,12 +2215,16 @@ async function procesarVenta() {
                     .from(TIENDA.tablaInventario)
                     .select('cantidad')
                     .eq('id_producto', item.id_producto)
-                    .single();
+                    .eq('talla', item.variante || 'Única')
+                    .eq('color', item.color || '')
+                    .maybeSingle();
 
                 if (stockActual) {
                     await db.from(TIENDA.tablaInventario)
                         .update({ cantidad: Math.max(0, stockActual.cantidad - item.cantidad) })
-                        .eq('id_producto', item.id_producto);
+                        .eq('id_producto', item.id_producto)
+                        .eq('talla', item.variante || 'Única')
+                        .eq('color', item.color || '');
                 }
             }
 
@@ -2024,15 +2234,25 @@ async function procesarVenta() {
                     .from('inventario_digital')
                     .select('cantidad')
                     .eq('id_producto', item.id_producto)
-                    .single();
+                    .eq('talla', item.variante || 'Única')
+                    .eq('color', item.color || '')
+                    .maybeSingle();
 
                 if (stockDig) {
                     await db.from('inventario_digital')
                         .update({ cantidad: stockDig.cantidad + item.cantidad })
-                        .eq('id_producto', item.id_producto);
+                        .eq('id_producto', item.id_producto)
+                        .eq('talla', item.variante || 'Única')
+                        .eq('color', item.color || '');
                 } else {
                     await db.from('inventario_digital')
-                        .insert({ id_producto: item.id_producto, cantidad: item.cantidad, stock_minimo: 0 });
+                        .insert({
+                            id_producto: item.id_producto,
+                            cantidad: item.cantidad,
+                            talla: item.variante || 'Única',
+                            color: item.color || '',
+                            stock_minimo: 0
+                        });
                 }
             }
         }
@@ -2233,18 +2453,87 @@ async function procesarVentaDigital() {
     btnVender.disabled = true;
     btnVender.innerHTML = '⏳​ Procesando...';
 
+    // --- Recolección de Pagos Detallados ---
+    let desglosePagos = {};
+    let sumaPagos = 0;
+    const inputsMontos = document.querySelectorAll('.input-monto-metodo');
+    const totalVentaGeneral = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+
+    if (metodosSeleccionados.size > 1) {
+        inputsMontos.forEach(input => {
+            const m = input.dataset.metodo;
+            const v = parseFloat(input.value) || 0;
+            desglosePagos[m] = v;
+            sumaPagos += v;
+        });
+
+        if (sumaPagos !== totalVentaGeneral) {
+            document.getElementById('errorSumaMontos').style.display = 'block';
+            btnVender.disabled = false;
+            btnVender.innerHTML = 'Registrar Pedido';
+            return mostrarAlerta('⚠️ La suma de los pagos no coincide con el total de la venta', 'error');
+        }
+    } else {
+        const unicoMetodo = [...metodosSeleccionados][0];
+        desglosePagos[unicoMetodo] = totalVentaGeneral;
+    }
+
+    const cuenta_id = document.getElementById('selectCuentaBancaria')?.value || null;
+    if (metodosSeleccionados.has('Transferencia') && !cuenta_id) {
+        btnVender.disabled = false;
+        btnVender.innerHTML = 'Registrar Pedido';
+        return mostrarAlerta('⚠️ Selecciona la cuenta bancaria de destino', 'warning');
+    }
+
     const metodoPagoStr = [...metodosSeleccionados].join(' + ');
     const pedidoTimestamp = Date.now();
     let primerIdVenta = null;
+    let clientData = null;
 
     try {
+        clientData = await registrarClienteDigital();
+
         for (const item of carrito) {
             const id_venta = 'VD' + pedidoTimestamp + Math.random().toString(36).substr(2, 5).toUpperCase();
             if (!primerIdVenta) primerIdVenta = id_venta;
 
             const tieneDescuento = item.precio < item.precioOriginal;
+            const fechaVenta = new Date().toISOString();
 
-            const voucherCode = document.getElementById('voucherCode')?.value.trim() || null;
+            // Recolectar Vouchers Detallados y Evidencias
+            let vouchers = [];
+            let fotosComprobantes = {};
+
+            const voucherInputs = document.querySelectorAll('.input-voucher-metodo');
+            for (const vInput of voucherInputs) {
+                const met = vInput.dataset.metodo;
+                const val = vInput.value.trim();
+                if (val) vouchers.push(`${met}: ${val}`);
+
+                // Buscar foto asociada a este método
+                const fInput = document.querySelector(`.input-foto-voucher[data-metodo="${met}"]`);
+                if (fInput && fInput.files.length > 0) {
+                    const file = fInput.files[0];
+                    const timestamp = Date.now();
+                    const ext = file.name.split('.').pop();
+                    const nombreArchivo = `venta_${id_venta}_${met.replace(/\s+/g, '_')}_${timestamp}.${ext}`;
+                    const rutaArchivo = `ventas-comprobantes/${nombreArchivo}`;
+
+                    try {
+                        const { data: uploadData, error: uploadError } = await db.storage
+                            .from('productos-imagenes')
+                            .upload(rutaArchivo, file, { cacheControl: '3600', upsert: false });
+
+                        if (uploadError) throw uploadError;
+
+                        const { data: urlData } = db.storage.from('productos-imagenes').getPublicUrl(rutaArchivo);
+                        fotosComprobantes[met] = urlData?.publicUrl || null;
+                    } catch (err) {
+                        console.error(`Error subiendo foto de ${met}:`, err);
+                    }
+                }
+            }
+            const voucherCode = vouchers.length > 0 ? vouchers.join(' | ') : null;
 
             const ventaData = {
                 id_venta: id_venta,
@@ -2253,13 +2542,19 @@ async function procesarVentaDigital() {
                 nombre_producto: item.nombre,
                 cantidad: item.cantidad,
                 precio_unitario: item.precio,
+                costo_unitario: item.costo_unitario || 0, // GUARDANDO COSTO REAL
                 total: item.precio * item.cantidad,
                 metodo_pago: metodoPagoStr,
                 voucher_code: voucherCode,
+                pago_desglose: desglosePagos,
+                comprobantes_fotos: fotosComprobantes, // NUEVO: Evidencia fotográfica
+                cuenta_id: cuenta_id,
                 usuario: 'POS Digital',
-                cliente_nombre: clienteNombre,
-                cliente_telefono: clienteTelefono,
-                cliente_cedula: clienteCedula,
+                cliente_id: clientData?.id || null,
+                created_at: fechaVenta,
+                cliente_nombre: clientData?.nombre || clienteNombre,
+                cliente_telefono: clientData?.telefono || clienteTelefono,
+                cliente_cedula: clientData?.cedula || clienteCedula,
                 direccion_envio: direccionEnvio,
                 ciudad_envio: ciudadEnvio,
                 departamento_envio: departamentoEnvio,
@@ -2292,12 +2587,16 @@ async function procesarVentaDigital() {
                     .from(tablaDestino)
                     .select('cantidad')
                     .eq('id_producto', item.id_producto)
-                    .single();
+                    .eq('talla', item.variante || 'Única')
+                    .eq('color', item.color || '')
+                    .maybeSingle();
 
                 if (stockActual) {
                     await db.from(tablaDestino)
                         .update({ cantidad: Math.max(0, stockActual.cantidad - item.cantidad) })
-                        .eq('id_producto', item.id_producto);
+                        .eq('id_producto', item.id_producto)
+                        .eq('talla', item.variante || 'Única')
+                        .eq('color', item.color || '');
                 }
             } else {
                 // Fallback por si acaso (no debería ocurrir en nueva logica)
@@ -2540,7 +2839,7 @@ function mostrarBotonSugerencia(sugerencias, clienteId) {
     }
 
     container.innerHTML = `
-        <button onclick='window.abrirModalSugerencia(${JSON.stringify(sugerencias)}, ${clienteId})' 
+        <button onclick='window.abrirModalSugerencia(${JSON.stringify(sugerencias)}, "${clienteId}")' 
                 class="btn btn-warning" style="width:100%; animation: pulse 2s infinite;">
             🎉 ¡Tienes ${sugerencias.length} Oferta(s) Disponible(s)!
         </button>
@@ -3981,44 +4280,67 @@ async function confirmarPagoProveedorInline() {
         if (prov.banco?.toLowerCase().includes('nequi')) metodoPago = 'Nequi';
         else if (prov.banco?.toLowerCase().includes('daviplata')) metodoPago = 'Daviplata';
 
-        // 3. Registrar el pago en pagos_proveedor
-        const pagoData = {
-            proveedor_id: id,
-            monto: monto,
-            metodo_pago: metodoPago,
-            referencia: referencia || null,
-            local: TIENDA.nombre,
-            notas: comprobanteUrl ? `Comprobante: ${comprobanteUrl}` : null
-        };
-
-        const { error: errorPago } = await db.from('pagos_proveedor').insert(pagoData);
-        if (errorPago) throw errorPago;
-
-        // 4. Descontar del saldo_pendiente de las compras (FIFO)
+        // 3. Descontar del saldo_pendiente de las compras (FIFO) e insertar registros detallados
         let montoRestante = monto;
         const { data: comprasPendientes } = await db
             .from('compras_proveedor')
-            .select('id, saldo_pendiente')
+            .select('*') // Traemos todo para saber qué mes actualizar
             .eq('proveedor_id', id)
             .gt('saldo_pendiente', 0)
             .order('fecha_compra', { ascending: true });
 
-        if (comprasPendientes) {
+        const hoy = new Date();
+        const mesesKeys = ['pago_ene', 'pago_feb', 'pago_mar', 'pago_abr', 'pago_may', 'pago_jun', 'pago_jul', 'pago_ago', 'pago_sep', 'pago_oct', 'pago_nov', 'pago_dic'];
+        const mesKeyActual = mesesKeys[hoy.getMonth()];
+
+        if (comprasPendientes && comprasPendientes.length > 0) {
             for (const compra of comprasPendientes) {
                 if (montoRestante <= 0) break;
+
                 const saldoActual = parseFloat(compra.saldo_pendiente || 0);
                 let rebaja = Math.min(montoRestante, saldoActual);
                 let nuevoSaldo = saldoActual - rebaja;
 
+                // A. Registrar el abono detallado en pagos_proveedor vinculado a esta compra
+                await db.from('pagos_proveedor').insert({
+                    compra_id: compra.id,
+                    proveedor_id: id,
+                    monto: rebaja,
+                    metodo_pago: metodoPago,
+                    referencia: `Abono POS - FAC ${compra.numero_factura || 'S/N'}`,
+                    comprobante_url: comprobanteUrl,
+                    local: TIENDA.nombre,
+                    fecha_pago: hoy.toISOString(),
+                    notas: referencia ? `Ref: ${referencia}` : 'Abono automático desde POS'
+                });
+
+                // B. Actualizar la compra (Saldo, Estado y Columna Mensual para reportes)
+                const montoMesActual = parseFloat(compra[mesKeyActual]) || 0;
                 await db.from('compras_proveedor')
                     .update({
                         saldo_pendiente: nuevoSaldo,
-                        estado: nuevoSaldo <= 0 ? 'PAGADO' : 'PENDIENTE'
+                        estado: nuevoSaldo <= 0 ? 'CERRADO' : 'ABIERTO',
+                        [mesKeyActual]: montoMesActual + rebaja,
+                        updated_at: hoy.toISOString()
                     })
                     .eq('id', compra.id);
 
                 montoRestante -= rebaja;
             }
+        }
+
+        // 4. Si sobra dinero (pago > deuda total), registrar el excedente como un pago "loose" vinculado solo al proveedor
+        if (montoRestante > 0) {
+            await db.from('pagos_proveedor').insert({
+                proveedor_id: id,
+                monto: montoRestante,
+                metodo_pago: metodoPago,
+                referencia: 'Excedente / Abono Global POS',
+                comprobante_url: comprobanteUrl,
+                local: TIENDA.nombre,
+                fecha_pago: hoy.toISOString(),
+                notas: 'Este monto superaba la deuda total de las facturas abiertas.'
+            });
         }
 
         // 5. Actualizar saldo global del proveedor (intentar, pero no bloquear si falla)

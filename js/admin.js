@@ -278,6 +278,8 @@ async function cargarSeccion(section) {
         case 'envios': await cargarEnvios(); break;
         case 'envios-estadisticas': await cargarEstadisticasEnvios(); break;
         case 'alertas': await cargarAlertasStock(); break;
+        case 'reportes-ejecutivos': await cargarReporteEjecutivo(); break;
+        case 'rentabilidad': await cargarRentabilidadDiaria(); break;
         case 'cierres': await cargarCierresCaja(); break;
         case 'gastos': await cargarGastos(); break;
         case 'deudores': await cargarDeudores(); break;
@@ -2608,12 +2610,14 @@ window.toggleDestacado = toggleDestacado;
 // ---------------------------------------------------------------
 let ventasActuales = []; // Variable global para almacenar ventas cargadas
 let rangoActual = 'dia';
+let fechaBaseVentas = new Date(); // NUEVO: Ancla temporal para navegación
 
 async function cargarVentasDia() {
     await cargarVentasRango('dia');
 }
 
-async function cargarVentasRango(rango) {
+async function cargarVentasRango(rango, resetDate = false) {
+    if (resetDate) fechaBaseVentas = new Date();
     rangoActual = rango;
     const statsContainer = document.getElementById('ventasDiaStats');
     const tbody = document.getElementById('tbodyVentasDia');
@@ -2631,35 +2635,30 @@ async function cargarVentasRango(rango) {
     }
 
     try {
-        const hoy = new Date();
-        let fechaInicio = new Date();
-        let fechaFin = new Date();
+        const hoy = new Date(fechaBaseVentas); // Usar la fecha base como ancla
+        let fechaInicio = new Date(hoy);
+        let fechaFin = new Date(hoy);
         let textoFecha = '';
 
         if (rango === 'dia') {
             textoFecha = hoy.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             if (titulo) titulo.textContent = '📊 Ventas del Día';
-            // Inicio y fin del día actual
             fechaInicio.setHours(0, 0, 0, 0);
             fechaFin.setHours(23, 59, 59, 999);
         } else if (rango === 'semana') {
-            // Inicio de semana (lunes)
-            const diaSemana = hoy.getDay(); // 0 domingo, 1 lunes...
+            const diaSemana = hoy.getDay();
             const diff = hoy.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
             fechaInicio.setDate(diff);
             fechaInicio.setHours(0, 0, 0, 0);
 
-            // Fin de semana (domingo)
             fechaFin.setDate(fechaInicio.getDate() + 6);
             fechaFin.setHours(23, 59, 59, 999);
 
             textoFecha = `${fechaInicio.toLocaleDateString('es-CO')} - ${fechaFin.toLocaleDateString('es-CO')}`;
             if (titulo) titulo.textContent = '📊 Ventas de la Semana';
         } else if (rango === 'mes') {
-            // Inicio del mes
             fechaInicio.setDate(1);
             fechaInicio.setHours(0, 0, 0, 0);
-            // Fin del mes
             fechaFin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
             fechaFin.setHours(23, 59, 59, 999);
 
@@ -2670,13 +2669,7 @@ async function cargarVentasRango(rango) {
         const fechaEl = document.getElementById('fechaHoy');
         if (fechaEl) fechaEl.textContent = textoFecha;
 
-        // Mostrar loading
-        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center">Cargando...</td></tr>';
-
-        // Consulta Supabase con rangos correctos
-        // Ajustamos fechas a ISO string formato local si es posible, o UTC
-        // Supabase usa UTC. created_at es timestamptz?
-        // En migraciones vi TIMESTAMP DEFAULT NOW(). Asumo que guíarda UTC.
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center">Cargando...</td></tr>';
 
         const { data, error } = await supabaseClient
             .from('ventas')
@@ -2699,6 +2692,23 @@ async function cargarVentasRango(rango) {
         }
     }
 }
+
+/**
+ * Navega adelante o atrás en el tiempo según el rango activo
+ * @param {number} delta - Dirección (1 o -1)
+ */
+function navegarPeriodoVentas(delta) {
+    if (rangoActual === 'dia') {
+        fechaBaseVentas.setDate(fechaBaseVentas.getDate() + delta);
+    } else if (rangoActual === 'semana') {
+        fechaBaseVentas.setDate(fechaBaseVentas.getDate() + (delta * 7));
+    } else if (rangoActual === 'mes') {
+        fechaBaseVentas.setMonth(fechaBaseVentas.getMonth() + delta);
+    }
+
+    cargarVentasRango(rangoActual);
+}
+window.navegarPeriodoVentas = navegarPeriodoVentas;
 
 function renderizarTablaVentas(ventas, statsContainer, tbody) {
     const totalVentas = ventas.reduce((sum, v) => sum + (v.total || 0), 0);
@@ -2736,7 +2746,31 @@ function renderizarTablaVentas(ventas, statsContainer, tbody) {
         } else {
             // Actualizar encabezado si es necesario (asumiendo que está en el HTML)
             // En admin.html ya lo tiene
-            tbody.innerHTML = ventas.map(v => `
+            tbody.innerHTML = ventas.map(v => {
+                let metodoDisplay = `<span class="badge badge-success">${v.metodo_pago || 'N/A'}</span>`;
+                if (v.pago_desglose && Object.keys(v.pago_desglose).length > 1) {
+                    const desglose = Object.entries(v.pago_desglose)
+                        .map(([m, val]) => `<div style="font-size:0.7rem; color:#64748b; margin-top:2px;">• ${m}: $${formatearPrecio(val)}</div>`)
+                        .join('');
+                    metodoDisplay += desglose;
+                }
+
+                // Formatear vouchers multiples y fotos
+                let voucherDisplay = '-';
+                if (v.voucher_code) {
+                    const fotos = v.comprobantes_fotos || {};
+                    voucherDisplay = v.voucher_code.split(' | ').map(part => {
+                        const [metodo] = part.split(':');
+                        const urlFoto = fotos[metodo.trim()];
+                        return `
+                        <div style="white-space:nowrap; margin-bottom:2px; display:flex; align-items:center; gap:5px;">
+                            ${part}
+                            ${urlFoto ? `<a href="${urlFoto}" target="_blank" title="Ver comprobante" style="text-decoration:none; filter: grayscale(1); opacity: 0.7; transition: 0.2s;" onmouseover="this.style.opacity=1;this.style.filter='none'" onmouseout="this.style.opacity=0.7;this.style.filter='grayscale(1)'">🖼️</a>` : ''}
+                        </div>`;
+                    }).join('');
+                }
+
+                return `
                 <tr>
                     <td>
                         <div>${new Date(v.created_at).toLocaleDateString('es-CO')}</div>
@@ -2746,10 +2780,11 @@ function renderizarTablaVentas(ventas, statsContainer, tbody) {
                     <td>${v.nombre_producto || 'N/A'}</td>
                     <td>${v.cantidad || 0}</td>
                     <td><strong>$${formatearPrecio(v.total)}</strong></td>
-                    <td><span class="badge badge-success">${v.metodo_pago || 'N/A'}</span></td>
-                    <td><small style="font-weight:600; color:var(--primary)">${v.voucher_code || '-'}</small></td>
+                    <td>${metodoDisplay}</td>
+                    <td><small style="font-weight:600; color:var(--primary)">${voucherDisplay}</small></td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
         }
     }
 }
@@ -5269,6 +5304,11 @@ async function verDetalleCierre(id) {
         const { data, error } = await supabaseClient.from('cierres_caja').select('*').eq('id', id).single();
         if (error) throw error;
 
+        // Cargar nombres de cuentas bancarias para el mapeo
+        const { data: cuentas } = await supabaseClient.from('cuentas_bancarias').select('id, nombre_cuenta');
+        const mapaCuentas = {};
+        if (cuentas) cuentas.forEach(c => mapaCuentas[c.id] = c.nombre_cuenta);
+
         const fecha = data.fecha ? new Date(data.fecha + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
         const difTotal = data.diferencia_total || 0;
         const colorEstado = difTotal === 0 ? '#10b981' : (Math.abs(difTotal) < 10000 ? '#f59e0b' : '#ef4444');
@@ -5281,205 +5321,202 @@ async function verDetalleCierre(id) {
         modal.onclick = function (e) { if (e.target === this) this.remove(); };
 
         modal.innerHTML = `
-            <div class="modal-detalles-content" style="background:#fff; border-radius:2rem; max-width:1300px; width:98%; max-height:95vh; overflow-y:auto; box-shadow:0 30px 70px -12px rgba(0,0,0,0.6); border:1px solid #e2e8f0; animation: modalAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div class="modal-detalles-content" style="background:#fff; border-radius:1.5rem; max-width:1900px; width:98%; max-height:95vh; overflow-y:auto; box-shadow:0 30px 70px -12px rgba(0,0,0,0.6); border:1px solid #e2e8f0; animation: modalAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
                 <!-- Header Premium -->
-                <div style="background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding:1.5rem 2rem; color:white; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10;">
+                <div style="background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding:1.25rem 2rem; color:white; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10;">
                     <div>
-                        <h2 style="margin:0; font-size:1.4rem; letter-spacing:-0.025em; display:flex; align-items:center; gap:0.75rem;">
+                        <h2 style="margin:0; font-size:1.6rem; letter-spacing:-0.025em; display:flex; align-items:center; gap:0.75rem;">
                             <span style="background:rgba(255,255,255,0.1); padding:0.5rem; border-radius:0.75rem;">📊</span>
                             Auditoría de Cierre ${data.numero_cierre || ''}
                         </h2>
-                        <p style="margin:0.25rem 0 0 0; opacity:0.7; font-size:0.85rem; font-weight:500;">${fecha} • ${data.local}</p>
+                        <p style="margin:0.25rem 0 0 0; opacity:0.7; font-size:0.9rem; font-weight:500;">${fecha} • ${data.local}</p>
                     </div>
-                    <div style="display:flex; gap:0.5rem;">
-                        <button onclick="editarCierre('${data.id}')" style="background:rgba(245, 158, 11, 0.2); border:1px solid rgba(245, 158, 11, 0.3); color:#fbbf24; padding:0.5rem 1rem; border-radius:0.75rem; cursor:pointer; font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem; transition:all 0.2s;">
-                            ✏️ Editar
+                    <div style="display:flex; gap:0.75rem; align-items:center;">
+                        <button onclick="editarCierre('${data.id}')" style="background:#f59e0b; border:none; color:white; padding:0.6rem 1.2rem; border-radius:0.75rem; cursor:pointer; font-weight:700; font-size:0.9rem; display:flex; align-items:center; gap:0.5rem; transition:all 0.2s; box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);">
+                            ✏️ Editar Cierre
                         </button>
-                        <button onclick="document.getElementById('modalDetalleCierre').remove()" style="background:rgba(255,255,255,0.1); border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; transition:0.2s;">&times;</button>
+                        <button onclick="document.getElementById('modalDetalleCierre').remove()" style="background:rgba(255,255,255,0.1); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.5rem; display:flex; align-items:center; justify-content:center; transition:0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">&times;</button>
                     </div>
                 </div>
 
-                <div style="padding:2rem;">
+                <div style="padding:2.5rem;">
                     <!-- Tarjetas de Diferencia (KPIs) -->
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
-                        <div style="background:#f8fafc; padding:1.5rem; border-radius:1.25rem; border:1px solid #e2e8f0; text-align:center; position:relative; overflow:hidden;">
-                            <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${(data.diferencia_efectivo || 0) < 0 ? '#ef4444' : '#10b981'};"></div>
-                            <small style="color:#64748b; font-weight:700; text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em; display:block; margin-bottom:0.5rem;">Diferencia Efectivo</small>
-                            <p style="margin:0; font-size:2rem; font-weight:800; letter-spacing:-0.05em; color:${(data.diferencia_efectivo || 0) < 0 ? '#ef4444' : (data.diferencia_efectivo > 0 ? '#10b981' : '#1e293b')};">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; margin-bottom:2.5rem;">
+                        <div style="background:#f8fafc; padding:1.75rem; border-radius:1.5rem; border:1px solid #e2e8f0; text-align:center; position:relative; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                            <div style="position:absolute; top:0; left:0; width:6px; height:100%; background:${(data.diferencia_efectivo || 0) < 0 ? '#ef4444' : '#10b981'};"></div>
+                            <small style="color:#64748b; font-weight:700; text-transform:uppercase; font-size:0.75rem; letter-spacing:0.05em; display:block; margin-bottom:0.75rem;">Diferencia Efectivo</small>
+                            <p style="margin:0; font-size:2.5rem; font-weight:900; letter-spacing:-0.05em; color:${(data.diferencia_efectivo || 0) < 0 ? '#ef4444' : (data.diferencia_efectivo > 0 ? '#10b981' : '#1e293b')};">
                                 $${formatearPrecio(data.diferencia_efectivo || 0)}
                             </p>
                         </div>
-                        <div style="background:#f8fafc; padding:1.5rem; border-radius:1.25rem; border:1px solid #e2e8f0; text-align:center; position:relative; overflow:hidden;">
-                            <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${(data.diferencia_total || 0) < 0 ? '#ef4444' : '#10b981'};"></div>
-                            <small style="color:#64748b; font-weight:700; text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em; display:block; margin-bottom:0.5rem;">Diferencia Total</small>
-                            <p style="margin:0; font-size:2rem; font-weight:800; letter-spacing:-0.05em; color:${(data.diferencia_total || 0) < 0 ? '#ef4444' : (data.diferencia_total > 0 ? '#10b981' : '#1e293b')};">
+                        <div style="background:#f8fafc; padding:1.75rem; border-radius:1.5rem; border:1px solid #e2e8f0; text-align:center; position:relative; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                            <div style="position:absolute; top:0; left:0; width:6px; height:100%; background:${(data.diferencia_total || 0) < 0 ? '#ef4444' : '#10b981'};"></div>
+                            <small style="color:#64748b; font-weight:700; text-transform:uppercase; font-size:0.75rem; letter-spacing:0.05em; display:block; margin-bottom:0.75rem;">Diferencia Total (General)</small>
+                            <p style="margin:0; font-size:2.5rem; font-weight:900; letter-spacing:-0.05em; color:${(data.diferencia_total || 0) < 0 ? '#ef4444' : (data.diferencia_total > 0 ? '#10b981' : '#1e293b')};">
                                 $${formatearPrecio(data.diferencia_total || 0)}
                             </p>
                         </div>
                     </div>
 
-                    <!-- Resumen 3 Columnas (Mirror del POS) -->
-                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1.5rem; margin-bottom:2rem;">
-                        <!-- Bloque Ventas -->
-                        <div style="background:#fff7ed; padding:1.5rem; border-radius:1.25rem; border:1px solid #fed7aa; border-left:6px solid #f97316;">
-                            <h4 style="margin:0 0 1rem 0; font-size:0.85rem; color:#9a3412; display:flex; align-items:center; gap:0.5rem;">📦 PRODUCTOS</h4>
-                            <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.9rem;">
-                                <span style="color:#64748b;">Subtotal Ventas:</span>
-                                <span style="font-weight:700; color:#1e293b;">$${formatearPrecio(data.total_ventas_sistema || 0)}</span>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2rem; margin-bottom:2.5rem;">
+                        <!-- Columna: Resumen Financiero -->
+                        <div style="background:white; border:1px solid #e2e8f0; border-radius:1.5rem; overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+                            <div style="padding:1.25rem 1.5rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; gap:0.75rem;">
+                                <span style="font-size:1.2rem;">💰</span>
+                                <h4 style="margin:0; font-size:1rem; color:#1e293b; font-weight:800; text-transform:uppercase;">Resumen por Métodos</h4>
                             </div>
+                            <table style="width:100%; border-collapse:collapse; font-size:0.95rem;">
+                                <thead style="background:#f1f5f9;">
+                                    <tr>
+                                        <th style="padding:1rem 1.5rem; text-align:left; color:#475569; font-weight:700;">Método</th>
+                                        <th style="padding:1rem 1.5rem; text-align:right; color:#475569; font-weight:700;">Sistema</th>
+                                        <th style="padding:1rem 1.5rem; text-align:right; color:#475569; font-weight:700;">Reportado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td style="padding:1rem 1.5rem; font-weight:600; color:#1e293b;">💵 Efectivo</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right;">$${formatearPrecio(data.ventas_efectivo_sistema || 0)}</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right; font-weight:800; color:#1e293b;">$${formatearPrecio(data.efectivo_contado || 0)}</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td style="padding:1rem 1.5rem; font-weight:600; color:#1e293b;">📲 Nequi</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right;">$${formatearPrecio(data.ventas_nequi_sistema || 0)}</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right; font-weight:800;">$${formatearPrecio(data.nequi_contado || 0)}</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td style="padding:1rem 1.5rem; font-weight:600; color:#1e293b;">📲 Daviplata</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right;">$${formatearPrecio(data.ventas_daviplata_sistema || 0)}</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right; font-weight:800;">$${formatearPrecio(data.daviplata_contado || 0)}</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td style="padding:1rem 1.5rem; font-weight:600; color:#1e293b;">🏦 Transferencia</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right;">$${formatearPrecio(data.ventas_transferencia_sistema || 0)}</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right; font-weight:800;">$${formatearPrecio(data.transferencias_contadas || 0)}</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td style="padding:1rem 1.5rem; font-weight:600; color:#1e293b;">💳 Tarjeta / Dataf.</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right;">$${formatearPrecio((data.ventas_tarjeta_sistema || 0) + (data.ventas_datafono_sistema || 0))}</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right; font-weight:800;">$${formatearPrecio((data.tarjetas_contadas || 0) + (data.datafono_contado || 0))}</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td style="padding:1rem 1.5rem; font-weight:600; color:#1e293b;">💎 Addi / Sistecrédito</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right;">$${formatearPrecio((data.ventas_addi_sistema || 0) + (data.ventas_sistecredito_sistema || 0))}</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right; font-weight:800;">$${formatearPrecio((data.addi_contado || 0) + (data.sistecredito_contado || 0))}</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td style="padding:1rem 1.5rem; font-weight:600; color:#1e293b;">🏍️ Cred. Motero (Ventas)</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right;">$${formatearPrecio(data.ventas_credito_motero_sistema || 0)}</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right; color:#94a3b8;">-</td>
+                                    </tr>
+                                    <tr style="background:#f0f9ff; font-weight:800;">
+                                        <td style="padding:1rem 1.5rem; color:#0369a1;">📥 Abonos e Ingresos</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right; color:#0369a1;">$${formatearPrecio((data.abonos_credito_sistema || 0) + (data.ingresos_servicios_sistema || 0))}</td>
+                                        <td style="padding:1rem 1.5rem; text-align:right; color:#0369a1;">$${formatearPrecio((data.nequi_contado || 0) + (data.daviplata_contado || 0) + (data.transferencias_contadas || 0) + (data.efectivo_contado || 0) - (data.ventas_efectivo_sistema || 0) - (data.ventas_nequi_sistema || 0) - (data.ventas_daviplata_sistema || 0) - (data.ventas_transferencia_sistema || 0))}*</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
 
-                        <!-- Bloque Otros Ingresos -->
-                        <div style="background:#eff6ff; padding:1.5rem; border-radius:1.25rem; border:1px solid #dbeafe; border-left:6px solid #3b82f6;">
-                            <h4 style="margin:0 0 1rem 0; font-size:0.85rem; color:#1e40af; display:flex; align-items:center; gap:0.5rem;">💰 OTROS INGRESOS</h4>
-                            <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.9rem;">
-                                <span style="color:#64748b;">Abonos / Servicios:</span>
-                                <span style="font-weight:700; color:#1e293b;">$${formatearPrecio((data.abonos_credito_sistema || 0) + (data.ingresos_servicios_sistema || 0))}</span>
+                        <!-- Columna: Auditoría de Efectivo y Observaciones -->
+                        <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                            <div style="background:#f1f5f9; padding:1.75rem; border-radius:1.5rem; border:1px solid #e2e8f0; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+                                <h4 style="margin:0 0 1.25rem 0; font-size:0.9rem; color:#475569; font-weight:800; text-transform:uppercase; letter-spacing:0.025em; display:flex; align-items:center; gap:0.5rem;">
+                                    🔍 Auditoría de Efectivo
+                                </h4>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.75rem; font-size:1.1rem; border-bottom:1px dashed #cbd5e1; padding-bottom:0.75rem;">
+                                    <span style="color:#64748b;">Efectivo Contado:</span>
+                                    <span style="font-weight:800; color:#1e293b;">$${formatearPrecio(data.efectivo_contado || 0)}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.75rem; font-size:1.1rem; border-bottom:1px dashed #cbd5e1; padding-bottom:0.75rem;">
+                                    <span style="color:#64748b;">Base Inicial:</span>
+                                    <span style="font-weight:700; color:#1e293b;">$${formatearPrecio(data.monto_inicial || 100000)}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; padding-top:1rem; font-weight:900; font-size:1.3rem; color:#1e293b;">
+                                    <span>Balance Efectivo:</span>
+                                    <span style="color:${(data.diferencia_efectivo || 0) < 0 ? '#ef4444' : (data.diferencia_efectivo > 0 ? '#10b981' : '#1e293b')}">
+                                        $${formatearPrecio(data.diferencia_efectivo || 0)}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Bloque Egresos -->
-                        <div style="background:#fef2f2; padding:1.5rem; border-radius:1.25rem; border:1px solid #fecaca; border-left:6px solid #ef4444;">
-                            <h4 style="margin:0 0 1rem 0; font-size:0.85rem; color:#991b1b; display:flex; align-items:center; gap:0.5rem;">💸 EGRESOS</h4>
-                            <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.9rem;">
-                                <span style="color:#64748b;">Total Salidas:</span>
-                                <span style="font-weight:700; color:#991b1b;">-$${formatearPrecio(data.total_gastos_dia || 0)}</span>
+                            <div style="background:#f8fafc; padding:1.75rem; border-radius:1.5rem; border:1px solid #e2e8f0; flex-grow:1;">
+                                <h4 style="margin:0 0 1.25rem 0; font-size:0.9rem; color:#475569; display:flex; align-items:center; gap:0.5rem; font-weight:800; text-transform:uppercase;">
+                                    📝 Notas del Vendedor
+                                </h4>
+                                <div style="font-size:1rem; color:#1e293b; line-height:1.7;">
+                                    ${data.observaciones ? data.observaciones.split(' || ').map(part => `<div style="margin-bottom:0.75rem; padding:0.75rem; background:white; border-radius:0.75rem; border:1px solid #f1f5f9; box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);">${part}</div>`).join('') : '<i style="color:#94a3b8; display:block; text-align:center; padding:1rem;">Sin observaciones registradas por el personal.</i>'}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tabla de Detalles (Comparativa) -->
-                    <div style="background:white; border:1px solid #e2e8f0; border-radius:1rem; overflow:hidden; margin-bottom:1.5rem; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
-                        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
-                            <thead>
-                                <tr style="background:#f1f5f9;">
-                                    <th style="padding:1rem; text-align:left; color:#475569; font-weight:700; font-size:0.75rem; text-transform:uppercase;">Medio de Pago</th>
-                                    <th style="padding:1rem; text-align:right; color:#475569; font-weight:700; font-size:0.75rem; text-transform:uppercase;">Sistema</th>
-                                    <th style="padding:1rem; text-align:right; color:#475569; font-weight:700; font-size:0.75rem; text-transform:uppercase;">Contado/Reportado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr style="border-bottom:1px solid #f1f5f9;">
-                                    <td style="padding:1rem; font-weight:600; color:#1e293b;">💵 Efectivo</td>
-                                    <td style="padding:1rem; text-align:right;">$${formatearPrecio(data.ventas_efectivo_sistema || 0)}</td>
-                                    <td style="padding:1rem; text-align:right; font-weight:700; color:#1e293b;">$${formatearPrecio(data.efectivo_contado || 0)}</td>
-                                </tr>
-                                <tr style="border-bottom:1px solid #f1f5f9;">
-                                    <td style="padding:1rem; font-weight:600; color:#1e293b;">🏦 Transferencia / Nequi / Dav</td>
-                                    <td style="padding:1rem; text-align:right;">$${formatearPrecio((data.ventas_transferencia_sistema || 0) + (data.ventas_nequi_sistema || 0) + (data.ventas_daviplata_sistema || 0))}</td>
-                                    <td style="padding:1rem; text-align:right; font-weight:700;">$${formatearPrecio(data.transferencias_contadas || 0)}</td>
-                                </tr>
-                                <tr style="border-bottom:1px solid #f1f5f9;">
-                                    <td style="padding:1rem; font-weight:600; color:#1e293b;">💳 Tarjeta / Dataf.</td>
-                                    <td style="padding:1rem; text-align:right;">$${formatearPrecio((data.ventas_tarjeta_sistema || 0) + (data.ventas_datafono_sistema || 0))}</td>
-                                    <td style="padding:1rem; text-align:right; font-weight:700;">$${formatearPrecio(data.tarjetas_contadas || 0)}</td>
-                                </tr>
-                                <tr style="border-bottom:1px solid #f1f5f9;">
-                                    <td style="padding:1rem; font-weight:600; color:#1e293b;">💎 Addi / Sistecrédito</td>
-                                    <td style="padding:1rem; text-align:right;">$${formatearPrecio((data.ventas_addi_sistema || 0) + (data.ventas_sistecredito_sistema || 0))}</td>
-                                    <td style="padding:1rem; text-align:right; font-weight:700;">$${formatearPrecio((data.addi_contado || 0) + (data.sistecredito_contado || 0))}</td>
-                                </tr>
-                                <tr style="border-bottom:1px solid #f1f5f9;">
-                                    <td style="padding:1rem; font-weight:600; color:#1e293b;">🏍️ Cred. Motero (Ventas)</td>
-                                    <td style="padding:1rem; text-align:right;">$${formatearPrecio(data.ventas_credito_motero_sistema || 0)}</td>
-                                    <td style="padding:1rem; text-align:right; color:#94a3b8;">-</td>
-                                </tr>
-                                <tr style="border-bottom:1px solid #f1f5f9;">
-                                    <td style="padding:1rem; font-weight:600; color:#3b82f6;">📥 Abonos e Ingresos</td>
-                                    <td style="padding:1rem; text-align:right;">$${formatearPrecio((data.abonos_credito_sistema || 0) + (data.ingresos_servicios_sistema || 0))}</td>
-                                    <td style="padding:1rem; text-align:right; font-weight:700; color:#3b82f6;">$${formatearPrecio((data.nequi_contado || 0) + (data.daviplata_contado || 0) + (data.transferencias_contadas || 0) + (data.efectivo_contado || 0) - (data.ventas_efectivo_sistema || 0) - (data.ventas_nequi_sistema || 0) - (data.ventas_daviplata_sistema || 0) - (data.ventas_transferencia_sistema || 0))}*</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    </div>
-
-                    <!-- ════════════ DETALLE DE PRODUCTOS (NUEVO) ════════════ -->
-                    <div style="background:white; border:1px solid #e2e8f0; border-radius:1rem; overflow:hidden; margin-bottom:1.5rem; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
-                         <div style="padding:1rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
-                            <h4 style="margin:0; font-size:0.9rem; color:#475569; font-weight:700; text-transform:uppercase;">📦 Desglose de Productos Vendidos</h4>
-                            <span style="font-size:0.8rem; color:#64748b;">${(data.detalles_cierre || []).length} ítems</span>
+                    <!-- ════════════ DETALLE DE PRODUCTOS (MUY AMPLIO) ════════════ -->
+                    <div style="background:white; border:1px solid #e2e8f0; border-radius:1.5rem; overflow:hidden; margin-bottom:2.5rem; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
+                        <div style="padding:1.25rem 1.5rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                            <h4 style="margin:0; font-size:1rem; color:#1e293b; font-weight:800; text-transform:uppercase; display:flex; align-items:center; gap:0.75rem;">
+                                📦 Desglose Detallado de Productos
+                            </h4>
+                            <span style="background:var(--primary); color:white; padding:0.4rem 1rem; border-radius:2rem; font-size:0.85rem; font-weight:800;">${(data.detalles_cierre || []).length} ÍTEMS VENDIDOS</span>
                         </div>
-                        <div style="max-height:300px; overflow-y:auto;">
-                            <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
-                                <thead style="position:sticky; top:0; background:#fff; z-index:1;">
-                                    <tr style="border-bottom:1px solid #e2e8f0; color:#64748b;">
-                                        <th style="padding:0.75rem 1rem; text-align:left;">Producto</th>
-                                        <th style="padding:0.75rem 1rem; text-align:center;">Cant.</th>
-                                        <th style="padding:0.75rem 1rem; text-align:right;">Precio</th>
-                                        <th style="padding:0.75rem 1rem; text-align:right;">Total</th>
-                                        <th style="padding:0.75rem 1rem; text-align:left;">Pago</th>
+                        <div style="max-height:800px; overflow-y:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:1rem;">
+                                <thead style="position:sticky; top:0; background:#f1f5f9; z-index:1; box-shadow:0 1px 0 #e2e8f0;">
+                                    <tr style="color:#475569;">
+                                        <th style="padding:1.25rem 1.5rem; text-align:left; font-weight:800;">Producto / Variante</th>
+                                        <th style="padding:1.25rem 1.5rem; text-align:center; font-weight:800;">Cantidad</th>
+                                        <th style="padding:1.25rem 1.5rem; text-align:right; font-weight:800;">Precio Unit.</th>
+                                        <th style="padding:1.25rem 1.5rem; text-align:right; font-weight:800;">Total Item</th>
+                                        <th style="padding:1.25rem 1.5rem; text-align:left; font-weight:800; min-width:250px;">Estatus de Pago / Comprobante</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${(data.detalles_cierre && data.detalles_cierre.length > 0) ?
                 data.detalles_cierre.map(p => `
-                                            <tr style="border-bottom:1px solid #f1f5f9; hover:background:#f8fafc;">
-                                                <td style="padding:0.75rem 1rem; color:#1e293b;">
-                                                    <div style="font-weight:600;">${p.producto || p.nombre || 'Item'}</div>
-                                                    ${p.variante ? `<div style="font-size:0.75rem; color:#64748b;">${p.variante.nombre || p.variante}</div>` : ''}
+                                            <tr style="border-bottom:1px solid #f1f5f9; transition:all 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                                <td style="padding:1.25rem 1.5rem; color:#1e293b;">
+                                                    <div style="font-weight:700; font-size:1.05rem; color:#0f172a;">${p.producto || p.nombre_producto || p.nombre || 'Item'}</div>
+                                                    ${p.variante ? `<div style="font-size:0.85rem; color:#64748b; margin-top:0.25rem;">🎨 ${p.variante}</div>` : ''}
                                                 </td>
-                                                <td style="padding:0.75rem 1rem; text-align:center;">${p.cantidad}</td>
-                                                <td style="padding:0.75rem 1rem; text-align:right;">$${formatearPrecio(p.precio_final || p.precio_venta || p.precio || 0)}</td>
-                                                <td style="padding:0.75rem 1rem; text-align:right; font-weight:700;">$${formatearPrecio(p.total || 0)}</td>
-                                                <td style="padding:0.75rem 1rem; color:#64748b;">${p.metodo_pago || '-'}</td>
+                                                <td style="padding:1.25rem 1.5rem; text-align:center;">
+                                                    <span style="background:#f1f5f9; padding:0.4rem 0.8rem; border-radius:0.5rem; font-weight:800;">${p.cantidad}</span>
+                                                </td>
+                                                <td style="padding:1.25rem 1.5rem; text-align:right; color:#475569;">$${formatearPrecio(p.precio_unitario || p.precio || 0)}</td>
+                                                <td style="padding:1.25rem 1.5rem; text-align:right; font-weight:800; color:#0f172a; font-size:1.1rem;">$${formatearPrecio(p.total || 0)}</td>
+                                                <td style="padding:1.25rem 1.5rem;">
+                                                    <div style="background:#fff; border:1px solid #e2e8f0; padding:0.75rem; border-radius:0.75rem; display:inline-flex; flex-direction:column; gap:0.4rem; min-width:200px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                                        <span style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; font-weight:800; color:#1e293b;">
+                                                            💳 ${p.metodo_pago || 'N/A'}
+                                                        </span>
+                                                        ${p.cuenta_id && mapaCuentas[p.cuenta_id] ? `<span style="display:flex; align-items:center; gap:0.5rem; font-size:0.75rem; color:#64748b; font-weight:600;">🏦 ${mapaCuentas[p.cuenta_id]}</span>` : ''}
+                                                        <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; margin-top:0.25rem; padding-top:0.4rem; border-top:1px solid #f1f5f9;">
+                                                            ${p.voucher_code ? `<span style="font-size:0.8rem; color:var(--primary); font-weight:700; background:rgba(255,107,0,0.05); padding:2px 6px; border-radius:4px;">🎫 ${p.voucher_code}</span>` : ''}
+                                                            ${(p.comprobantes_fotos && p.comprobantes_fotos[p.metodo_pago]) ? `
+                                                                <a href="${p.comprobantes_fotos[p.metodo_pago]}" target="_blank" 
+                                                                   style="text-decoration:none; background:#ecfdf5; color:#059669; border:1px solid #34d399; padding:0.4rem 0.75rem; border-radius:0.5rem; font-size:0.8rem; font-weight:700; display:flex; align-items:center; gap:0.4rem; transition:0.2s;"
+                                                                   onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)'"
+                                                                   onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                                                                    🖼️ Ver Comprobante
+                                                                </a>` : ''}
+                                                        </div>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         `).join('')
-                : '<tr><td colspan="5" style="padding:1.5rem; text-align:center; color:#94a3b8;">No hay desglose de productos disponible para este cierre.</td></tr>'
+                : '<tr><td colspan="5" style="padding:4rem; text-align:center;"> <div style="font-size:3rem; margin-bottom:1rem;">📦</div> <div style="color:#94a3b8; font-size:1.1rem; font-weight:600;">No hay registro detallado de productos para este cierre.</div></td></tr>'
             }
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- Observaciones y Detalles Avanzados -->
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
-                        <div style="background:#f8fafc; padding:1.5rem; border-radius:1.25rem; border:1px solid #e2e8f0;">
-                            <h4 style="margin:0 0 1rem 0; font-size:0.85rem; color:#475569; display:flex; align-items:center; gap:0.5rem;">
-                                📝 Observaciones y Desglose
-                            </h4>
-                            <div style="font-size:0.9rem; color:#1e293b; line-height:1.6;">
-                                ${data.observaciones ? data.observaciones.split(' || ').map(part => `<div style="margin-bottom:0.5rem; padding-bottom:0.5rem; border-bottom:1px dashed #e2e8f0; last-child:border-none">${part}</div>`).join('') : '<i style="color:#94a3b8">Sin observaciones registradas.</i>'}
-                            </div>
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:1rem;">
-                            ${data.dinero_sobrante > 0 ? `
-                            <div style="background:#fff7ed; padding:1.25rem; border-radius:1rem; border:1px solid #fed7aa;">
-                                <h4 style="margin:0 0 0.5rem 0; font-size:0.85rem; color:#9a3412; display:flex; align-items:center; gap:0.5rem;">
-                                    💰 Dinero Sobrante
-                                </h4>
-                                <p style="margin:0; font-size:1.1rem; font-weight:800; color:#c2410c;">$${formatearPrecio(data.dinero_sobrante || 0)}</p>
-                                <p style="margin:0.25rem 0 0 0; font-size:0.8rem; opacity:0.8; color:#9a3412;">Motivo: ${data.motivo_sobrante || 'No especificado'}</p>
-                            </div>
-                            ` : ''}
-                            
-                            <!-- Resumen de Auditoría Rápida -->
-                            <div style="background:#f1f5f9; padding:1.25rem; border-radius:1.25rem; border:1px solid #e2e8f0;">
-                                <h4 style="margin:0 0 0.75rem 0; font-size:0.8rem; color:#475569; font-weight:700; text-transform:uppercase;">Auditoría de Efectivo</h4>
-                                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem; font-size:0.85rem;">
-                                    <span>Efectivo Contado:</span>
-                                    <span style="font-weight:700;">$${formatearPrecio(data.efectivo_contado || 0)}</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem; font-size:0.85rem;">
-                                    <span>Base Inicial:</span>
-                                    <span style="font-weight:600;">$${formatearPrecio(data.monto_inicial || 100000)}</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; padding-top:0.4rem; border-top:1px solid #cbd5e1; font-weight:700; font-size:0.9rem; color:#1e293b;">
-                                    <span>Diferencia:</span>
-                                    <span style="color:${(data.diferencia_efectivo || 0) < 0 ? '#ef4444' : '#10b981'}">$${formatearPrecio(data.diferencia_efectivo || 0)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Footer Actions -->
-                    <div style="margin-top:2.5rem; display:flex; justify-content:flex-end; gap:1rem;">
-                        <button onclick="exportarCierreIndividual('${data.id}')" style="background:#10b981; color:white; border:none; padding:0.75rem 1.5rem; border-radius:1rem; cursor:pointer; font-weight:700; display:flex; align-items:center; gap:0.75rem; transition:0.2s;">
-                            📄 Descargar Reporte PDF
+                    <!-- Footer Actions Premium -->
+                    <div style="margin-top:2rem; display:flex; justify-content:flex-end; gap:1.25rem; border-top:1px solid #f1f5f9; padding-top:2.5rem;">
+                        <button onclick="document.getElementById('modalDetalleCierre').remove()" style="background:#fff; color:#475569; border:1px solid #cbd5e1; padding:1rem 2rem; border-radius:1rem; cursor:pointer; font-weight:700; transition:0.2s; font-size:1rem;" onmouseover="this.style.background='#f8fafc'">
+                            Cerrar Auditoría
                         </button>
-                        <button onclick="document.getElementById('modalDetalleCierre').remove()" style="background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:0.75rem 1.5rem; border-radius:1rem; cursor:pointer; font-weight:700; transition:0.2s;">
-                            Cerrar
+                        <button onclick="exportarCierreIndividual('${data.id}')" style="background:#10b981; color:white; border:none; padding:1rem 2.5rem; border-radius:1rem; cursor:pointer; font-weight:800; display:flex; align-items:center; gap:0.75rem; transition:0.2s; font-size:1rem; box-shadow:0 10px 15px -3px rgba(16, 185, 129, 0.3);">
+                            📄 Descargar Informe Completo (PDF)
                         </button>
                     </div>
                 </div>

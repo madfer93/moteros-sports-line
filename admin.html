@@ -27,6 +27,17 @@
     <link rel="stylesheet" href="css/ai-widget.css">
     <style>
         /* 🎨 THEME & UTILS */
+        .btn-sm.active {
+            background: #ff6b00 !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+        }
+
+        .actions-bar .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
         :root {
             --primary: #ff6b00;
             --secondary: #1e293b;
@@ -565,6 +576,7 @@
                     <button class="nav-dropdown-btn">💵 Finanzas <span class="arrow">▼</span></button>
                     <div class="nav-dropdown-content">
                         <a href="#" data-section="reportes-ejecutivos">📈 Reportes Ejecutivos</a>
+                        <a href="#" data-section="rentabilidad">📊 Rentabilidad Diaria</a>
                         <a href="#" data-section="cierres">💵 Cierres de Caja</a>
                         <a href="#" data-section="gastos">💸 Gastos</a>
                         <a href="#" data-section="deudores">👥 Deudores</a>
@@ -676,6 +688,8 @@
                     <div class="mobile-nav-title">💵 Finanzas</div>
                     <a href="#" data-section="reportes-ejecutivos" onclick="toggleMobileMenu()">📈 Reportes
                         Ejecutivos</a>
+                    <a href="#" data-section="reportes-rentabilidad" onclick="toggleMobileMenu()">📈 Reportes
+                        Rentabilidad</a>
                     <a href="#" data-section="cierres" onclick="toggleMobileMenu()">💵 Cierres de Caja</a>
                     <a href="#" data-section="gastos" onclick="toggleMobileMenu()">💸 Gastos</a>
                     <a href="#" data-section="deudores" onclick="toggleMobileMenu()">👥 Deudores</a>
@@ -1019,6 +1033,184 @@
                         </div>
                     </div>
                 </div>
+            </section>
+
+            <!-- ═══════════════════ RENTABILIDAD DIARIA ═══════════════════ -->
+            <section id="rentabilidadSection" class="section">
+                <div class="page-header">
+                    <h1>📊 Rentabilidad Diaria</h1>
+                    <p>Análisis de utilidad real (Ventas - Costos - Gastos)</p>
+                </div>
+
+                <div class="actions-bar"
+                    style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; gap: 0.5rem; background: #f1f5f9; padding: 0.25rem; border-radius: 8px;">
+                        <button onclick="switchRentabilidadTab('diaria')" id="btnTabDiaria" class="btn btn-sm active"
+                            style="padding: 0.5rem 1rem; border-radius: 6px;">📅 Diaria</button>
+                        <button onclick="switchRentabilidadTab('anual')" id="btnTabAnual" class="btn btn-sm"
+                            style="padding: 0.5rem 1rem; border-radius: 6px;">📈 Comparativa Anual</button>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <div id="controlesDiarios" style="display: flex; gap: 1rem; align-items: center;">
+                            <input type="month" id="rentabilidadMes" class="form-control" style="width: auto;">
+                            <button onclick="cargarRentabilidadDiaria()" class="btn btn-primary">🔍 Ver Mes</button>
+                        </div>
+                        <div id="controlesAnuales" style="display: none; gap: 1rem; align-items: center;">
+                            <select id="rentabilidadAnioInicio" class="form-control" style="width: auto;">
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                            <button onclick="cargarComparativaAnual()" class="btn btn-primary">📊 Comparar</button>
+                        </div>
+                        <div style="height: 30px; width: 1px; background: #e2e8f0; margin: 0 0.5rem;"></div>
+                        <button onclick="exportarPDFAdministrativo()" class="btn btn-danger"
+                            style="background: #dc2626; display: flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-file-pdf"></i> PDF Admin
+                        </button>
+                        <button onclick="exportarPDFColaboradores()" class="btn btn-success"
+                            style="background: #16a34a; display: flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-file-pdf"></i> PDF Colaboradores
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid"
+                    style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
+                    <div class="stat-card" style="background: white; border: 1px solid #e2e8f0;">
+                        <div style="color: #64748b; font-size: 0.85rem; font-weight: 600;">Ventas Totales</div>
+                        <div id="rentVentas" style="font-size: 1.5rem; font-weight: 700; color: #1e293b;">$0</div>
+                    </div>
+                    <div class="stat-card" style="background: white; border: 1px solid #e2e8f0;">
+                        <div style="color: #64748b; font-size: 0.85rem; font-weight: 600;">Costo Prod. (COGS)</div>
+                        <div id="rentCostos" style="font-size: 1.5rem; font-weight: 700; color: #ef4444;">$0</div>
+                    </div>
+                    <div class="stat-card" style="background: white; border: 1px solid #e2e8f0;">
+                        <div style="color: #64748b; font-size: 0.85rem; font-weight: 600;">Utilidad Bruta</div>
+                        <div id="rentUtilidadBruta" style="font-size: 1.5rem; font-weight: 700; color: #22c55e;">$0
+                        </div>
+                    </div>
+                    <div class="stat-card" style="background: white; border: 1px solid #e2e8f0;">
+                        <div style="color: #64748b; font-size: 0.85rem; font-weight: 600;">Gastos Operat.</div>
+                        <div id="rentGastos" style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;">$0</div>
+                    </div>
+                    <div class="stat-card" style="background: #f8fafc; border: 2px solid #3b82f6;">
+                        <div style="color: #3b82f6; font-size: 0.85rem; font-weight: 900; text-transform: uppercase;">
+                            Utilidad Neta</div>
+                        <div id="rentUtilidadNeta" style="font-size: 1.5rem; font-weight: 800; color: #1d4ed8;">$0</div>
+                    </div>
+                    <div class="stat-card" style="background: #f0fdf4; border: 1px solid #86efac;">
+                        <div style="color: #166534; font-size: 0.85rem; font-weight: 600;">% Margen Real</div>
+                        <div id="rentMargen" style="font-size: 1.5rem; font-weight: 700; color: #15803d;">0%</div>
+                    </div>
+                </div>
+
+                <!-- VISTA DIARIA (TABLA Y GRÁFICO) -->
+                <div id="vistaRentabilidadDiaria">
+                    <div class="card" style="margin-bottom: 1.5rem;">
+                        <div class="card-header"
+                            style="background: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin:0;">📈 Análisis Visual del Mes</h3>
+                            <select id="selectMetricDiaria" class="form-control"
+                                style="width: auto; padding: 0.25rem 0.5rem;" onchange="renderizarGraficoDiario()">
+                                <option value="utilidadNeta">Utilidad Neta</option>
+                                <option value="ventas">Ventas Totales</option>
+                                <option value="margen">Margen %</option>
+                            </select>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 250px; width: 100%; position: relative;">
+                                <canvas id="chartRentabilidadDiaria"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"
+                            style="background: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin:0;">📅 Desglose por Día</h3>
+                            <span style="font-size: 0.8rem; color: #64748b;">* Filtra por el mes seleccionado
+                                arriba</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Ventas</th>
+                                            <th>Costo (COGS)</th>
+                                            <th>Utilidad Bruta</th>
+                                            <th>Gastos</th>
+                                            <th>Utilidad Neta</th>
+                                            <th>% Margen</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyRentabilidad">
+                                        <tr>
+                                            <td colspan="7" class="text-center">Selecciona un mes y presiona "Ver Mes"
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VISTA ANUAL (GRÁFICOS) -->
+                    <div id="vistaRentabilidadAnual" style="display: none;">
+                        <div class="stats-grid"
+                            style="grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem;">
+                            <!-- Gráfica 1: Tendencia Lineal -->
+                            <div class="card">
+                                <div class="card-header" style="background: #f8fafc;">
+                                    <h3 style="margin:0;">📈 Tendencia de Utilidad Neta</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div style="height: 300px; width: 100%; position: relative;">
+                                        <canvas id="chartRentabilidadAnual"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gráfica 2: Distribución Doughnut -->
+                            <div class="card">
+                                <div class="card-header" style="background: #f8fafc;">
+                                    <h3 style="margin:0;">🍩 Composición de Ingresos</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div style="height: 300px; width: 100%; position: relative;">
+                                        <canvas id="chartDistribucionIngresos"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gráfica 3: Margen % -->
+                            <div class="card">
+                                <div class="card-header" style="background: #f8fafc;">
+                                    <h3 style="margin:0;">📊 Eficiencia de Margen Real (%)</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div style="height: 300px; width: 100%; position: relative;">
+                                        <canvas id="chartTendenciaMargen"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gráfica 4: Rentabilidad por Día -->
+                            <div class="card">
+                                <div class="card-header" style="background: #f8fafc;">
+                                    <h3 style="margin:0;">📅 Rentabilidad por Día de la Semana</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div style="height: 300px; width: 100%; position: relative;">
+                                        <canvas id="chartUtilidadPorDia"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
             </section>
 
             <!-- ═══════════════════ REPORTES EJECUTIVOS ═══════════════════ -->
@@ -1858,13 +2050,20 @@
                         <h3>📊 Ventas del Día</h3>
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-outline btn-sm active"
-                                onclick="cargarVentasRango('dia')" id="btnVentasDia">Hoy</button>
-                            <button type="button" class="btn btn-outline btn-sm" onclick="cargarVentasRango('semana')"
-                                id="btnVentasSemana">Semana</button>
-                            <button type="button" class="btn btn-outline btn-sm" onclick="cargarVentasRango('mes')"
-                                id="btnVentasMes">Mes</button>
+                                onclick="cargarVentasRango('dia', true)" id="btnVentasDia">Hoy</button>
+                            <button type="button" class="btn btn-outline btn-sm"
+                                onclick="cargarVentasRango('semana', true)" id="btnVentasSemana">Semana</button>
+                            <button type="button" class="btn btn-outline btn-sm"
+                                onclick="cargarVentasRango('mes', true)" id="btnVentasMes">Mes</button>
                         </div>
-                        <span id="fechaHoy" style="color:var(--gray-500); font-size:0.9rem;"></span>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <button onclick="navegarPeriodoVentas(-1)" class="btn btn-outline btn-sm"
+                                title="Periodo Anterior">◀</button>
+                            <span id="fechaHoy"
+                                style="color:var(--secondary); font-size:1rem; font-weight:700; min-width:140px; text-align:center;"></span>
+                            <button onclick="navegarPeriodoVentas(1)" class="btn btn-outline btn-sm"
+                                title="Periodo Siguiente">▶</button>
+                        </div>
                         <div style="margin-left:auto; display:flex; gap:0.5rem;">
                             <button onclick="exportarVentasExcel()" class="btn btn-success btn-sm"
                                 title="Descargar Excel">📊</button>
@@ -3120,8 +3319,9 @@
                                     <tr style="background:#f1f5f9;">
                                         <th style="width:30%;">Producto</th>
                                         <th style="width:10%;">Cant. Total</th>
-                                        <th style="width:15%;">Costo Unit.</th>
-                                        <th style="width:15%;">P. Venta Sug.</th>
+                                        <th style="width:12%;">Costo Unit.</th>
+                                        <th style="width:12%;">P. Venta Sug.</th>
+                                        <th style="width:10%;">Margen %</th>
                                         <th style="width:15%;">Subtotal</th>
                                         <th style="width:10%;">Distribución</th>
                                         <th style="width:5%;"></th>
@@ -3159,49 +3359,53 @@
                 <div id="modalDistribucion" class="form-modal"
                     style="display:none; z-index: 10002; background:rgba(0,0,0,0.6);">
                     <div
-                        style="background:white; width:600px; max-width:95%; margin:auto; padding:2rem; border-radius:1rem; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+                        style="background:white; width:1200px; max-width:98%; margin:auto; padding:2rem; border-radius:1rem; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
                         <h3 style="margin-top:0;">📍 Distribución de Producto</h3>
                         <p id="distProductoTitulo" style="color:#64748b; font-size:0.9rem; margin-bottom:1.5rem;"></p>
                         <input type="hidden" id="distFilaIndex">
 
-                        <div class="form-group">
-                            <label>Variantes / Colores</label>
-                            <input type="text" id="distColores" class="form-control"
-                                placeholder="Ej: Rojo, Azul, Negro Mate...">
-                            <small class="text-muted">Separar por comas</small>
+                        <div id="containerDistribucionVariantes"
+                            style="background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-bottom: 2rem;">
+                            <h4
+                                style="margin-bottom: 1rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
+                                <span>📏</span> Distribución por Variantes
+                            </h4>
+                            <div class="table-responsive"
+                                style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+                                <table class="table table-bordered table-sm" id="tablaDistribucionCompra"
+                                    style="background: white; margin-bottom: 0;">
+                                    <thead class="thead-light" style="position: sticky; top: 0; z-index: 10;">
+                                        <tr>
+                                            <th style="width: 6%; background: #f8f9fa;">Foto</th>
+                                            <th style="width: 34%; background: #f8f9fa;">Color</th>
+                                            <th style="width: 10%; background: #f8f9fa;">Talla</th>
+                                            <th style="width: 10%; background: #f8f9fa;">Alcalá</th>
+                                            <th style="width: 10%; background: #f8f9fa;">Local 01</th>
+                                            <th style="width: 10%; background: #f8f9fa;">Jordán</th>
+                                            <th style="width: 10%; background: #f8f9fa;">Digital</th>
+                                            <th style="width: 10%; background: #f8f9fa;">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyDistribucionCompra">
+                                        <!-- Filas dinámicas -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                    onclick="agregarFilaDistribucionCompra()">
+                                    + Agregar Variante
+                                </button>
+                                <div style="font-weight:bold; color:#1e293b;">
+                                    Total Distribuido: <span id="distTotalSuma" style="color:#0284c7;">0</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <h4 style="margin-top:1.5rem; margin-bottom:1rem; font-size:1rem;">Cantidades por Sede</h4>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;">
-                            <div class="form-group">
-                                <label>🏢 Alcalá</label>
-                                <input type="number" id="distCantAlcala" class="form-control dist-input" min="0"
-                                    value="0">
-                            </div>
-                            <div class="form-group">
-                                <label>🏢 Local 01</label>
-                                <input type="number" id="distCantLocal01" class="form-control dist-input" min="0"
-                                    value="0">
-                            </div>
-                            <div class="form-group">
-                                <label>🏢 Jordan</label>
-                                <input type="number" id="distCantJordan" class="form-control dist-input" min="0"
-                                    value="0">
-                            </div>
-                            <div class="form-group">
-                                <label>🌐 Digital / Bodega</label>
-                                <input type="number" id="distCantDigital" class="form-control dist-input" min="0"
-                                    value="0">
-                            </div>
-                        </div>
-
-                        <div
-                            style="margin-top:1.5rem; padding:1rem; background:#f0f9ff; border-radius:0.5rem; display:flex; justify-content:space-between; font-weight:bold;">
-                            <span>Total Distribuido:</span>
-                            <span id="distTotalSuma" style="color:#0284c7;">0</span>
-                        </div>
-                        <div id="distError" style="color:#ef4444; font-size:0.9rem; margin-top:0.5rem; display:none;">
-                            ⚠️ La suma no coincide con la cantidad total del item.
+                        <div id="distError"
+                            style="color:#ef4444; font-size:0.9rem; margin-top:0.5rem; display:none; padding: 0.5rem; background: #fef2f2; border-radius: 0.5rem; border: 1px solid #fee2e2;">
+                            ⚠️ La suma distribuida no coincide con la cantidad total del producto.
                         </div>
 
                         <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:2rem;">
@@ -3254,7 +3458,9 @@
                                     <thead>
                                         <tr>
                                             <th>Mes Referencia</th>
+                                            <th>Método</th>
                                             <th style="text-align:right;">Monto Pagado</th>
+                                            <th style="text-align:center;">Comprobante</th>
                                             <th>Notas</th>
                                         </tr>
                                     </thead>
@@ -3287,50 +3493,83 @@
 
                 <!-- MODAL REGISTRAR PAGO -->
                 <div id="modalPagoCompra" class="modal-overlay" style="display:none;">
-                    <div class="modal-content" style="max-width:500px;">
+                    <div class="modal-content" style="max-width:650px;">
                         <div class="modal-header">
                             <h3>💵 Registrar Pago</h3>
                             <button onclick="cerrarModalPago()" class="btn-cerrar">❌</button>
                         </div>
                         <div class="modal-body">
                             <input type="hidden" id="pagoCompraId">
-                            <div class="alert alert-info" style="margin-bottom:1rem;">
-                                <strong>Proveedor:</strong> <span id="pagoProveedorNombre">-</span><br>
-                                <strong>Factura:</strong> <span id="pagoFacturaNum">-</span><br>
-                                <strong>Saldo Pendiente:</strong> <span id="pagoSaldoPendiente">$0</span>
+                            <div class="alert alert-info"
+                                style="margin-bottom:1rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                                <div><strong>Proveedor:</strong> <span id="pagoProveedorNombre">-</span></div>
+                                <div><strong>Factura:</strong> <span id="pagoFacturaNum">-</span></div>
+                                <div style="grid-column: span 2;"><strong>Saldo Pendiente:</strong> <span
+                                        id="pagoSaldoPendiente" style="color:var(--danger); font-weight:bold;">$0</span>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Mes del Pago <span class="required">*</span></label>
-                                <select id="pagoMes" class="form-control" required>
-                                    <option value="">Seleccionar mes...</option>
-                                    <option value="pago_ene">Enero</option>
-                                    <option value="pago_feb">Febrero</option>
-                                    <option value="pago_mar">Marzo</option>
-                                    <option value="pago_abr">Abril</option>
-                                    <option value="pago_may">Mayo</option>
-                                    <option value="pago_jun">Junio</option>
-                                    <option value="pago_jul">Julio</option>
-                                    <option value="pago_ago">Agosto</option>
-                                    <option value="pago_sep">Septiembre</option>
-                                    <option value="pago_oct">Octubre</option>
-                                    <option value="pago_nov">Noviembre</option>
-                                    <option value="pago_dic">Diciembre</option>
-                                </select>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Mes del Pago <span class="required">*</span></label>
+                                    <select id="pagoMes" class="form-control" required>
+                                        <option value="">Seleccionar mes...</option>
+                                        <option value="pago_ene">Enero</option>
+                                        <option value="pago_feb">Febrero</option>
+                                        <option value="pago_mar">Marzo</option>
+                                        <option value="pago_abr">Abril</option>
+                                        <option value="pago_may">Mayo</option>
+                                        <option value="pago_jun">Junio</option>
+                                        <option value="pago_jul">Julio</option>
+                                        <option value="pago_ago">Agosto</option>
+                                        <option value="pago_sep">Septiembre</option>
+                                        <option value="pago_oct">Octubre</option>
+                                        <option value="pago_nov">Noviembre</option>
+                                        <option value="pago_dic">Diciembre</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Método de Pago <span class="required">*</span></label>
+                                    <select id="pagoMetodo" class="form-control" required>
+                                        <option value="">Seleccionar...</option>
+                                        <option value="EFECTIVO">EFECTIVO</option>
+                                        <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                                        <option value="NEQUI">NEQUI</option>
+                                        <option value="DAVIPLATA">DAVIPLATA</option>
+                                        <option value="BANCOLOMBIA">BANCOLOMBIA</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Monto del Pago <span class="required">*</span></label>
-                                <input type="text" id="pagoMonto" class="form-control" placeholder="$0"
-                                    oninput="formatearMonedaInput(this)" required>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Monto del Pago <span class="required">*</span></label>
+                                    <input type="text" id="pagoMonto" class="form-control" placeholder="$0"
+                                        oninput="formatearMonedaInput(this)" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Comprobante (Imagen)</label>
+                                    <div style="display:flex; gap:10px; align-items:center;">
+                                        <input type="file" id="pagoComprobanteFile" class="form-control"
+                                            accept="image/*" style="display:none;"
+                                            onchange="previsualizarComprobante(this)">
+                                        <button type="button" class="btn btn-outline-info"
+                                            onclick="document.getElementById('pagoComprobanteFile').click()">📷
+                                            Subir</button>
+                                        <div id="pagoComprobantePreview"
+                                            style="width:40px; height:40px; border:1px solid #ddd; border-radius:4px; overflow:hidden; background:#f8f9fa; display:flex; align-items:center; justify-content:center;">
+                                            <span style="font-size:10px; color:#999">N/A</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Notas</label>
+                                    <input type="text" id="pagoNotas" class="form-control"
+                                        placeholder="Referencia o nota del pago">
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Notas</label>
-                                <input type="text" id="pagoNotas" class="form-control"
-                                    placeholder="Referencia o nota del pago">
+                            <div class="modal-footer">
+                                <button onclick="guardarPagoCompra()" class="btn btn-success">💾 Registrar Pago</button>
+                                <button onclick="cerrarModalPago()" class="btn btn-secondary">Cancelar</button>
                             </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button onclick="guardarPagoCompra()" class="btn btn-success">💾 Registrar Pago</button>
-                            <button onclick="cerrarModalPago()" class="btn btn-secondary">Cancelar</button>
                         </div>
                     </div>
                 </div>
@@ -4174,7 +4413,9 @@
                     <h1>Configuración</h1>
                     <p>Ajustes generales del sistema</p>
                 </div>
-                <div class="config-grid">
+
+                <div class="config-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
                     <div class="config-card">
                         <h4>🖼️ Branding</h4>
                         <div class="form-group"><label>Logo (URL)</label><input type="url" id="configLogo"
@@ -4219,146 +4460,185 @@
                     </div>
                     <div class="config-card">
                         <h4>🕒 Horarios y Teléfonos</h4>
-                        <div class="form-group">
-                            <label>Alcalá (Horario)</label>
-                            <input type="text" id="configHorarioAlcala" class="form-control"
-                                placeholder="Lun-Sáb 9AM-7PM">
+                        <div class="form-group"><label>Alcalá (H/T)</label>
+                            <div style="display:flex; gap:0.5rem;"><input type="text" id="configHorarioAlcala"
+                                    class="form-control" placeholder="Horario" style="flex:2;"><input type="text"
+                                    id="configTelefonoAlcala" class="form-control" placeholder="Tel" style="flex:1;">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>Alcalá (Teléfono)</label>
-                            <input type="text" id="configTelefonoAlcala" class="form-control" placeholder="311...">
+                        <div class="form-group"><label>Local 01 (H/T)</label>
+                            <div style="display:flex; gap:0.5rem;"><input type="text" id="configHorarioLocal01"
+                                    class="form-control" placeholder="Horario" style="flex:2;"><input type="text"
+                                    id="configTelefonoLocal01" class="form-control" placeholder="Tel" style="flex:1;">
+                            </div>
                         </div>
-
-                        <div class="form-group">
-                            <label>Local 01 (Horario)</label>
-                            <input type="text" id="configHorarioLocal01" class="form-control"
-                                placeholder="Lun-Sáb 8AM-6PM">
-                        </div>
-                        <div class="form-group">
-                            <label>Local 01 (Teléfono)</label>
-                            <input type="text" id="configTelefonoLocal01" class="form-control" placeholder="311...">
-                        </div>
-
-                        <div class="form-group">
-                            <label>Jordán (Horario)</label>
-                            <input type="text" id="configHorarioJordan" class="form-control"
-                                placeholder="Lun-Dom 10AM-8PM">
-                        </div>
-                        <div class="form-group">
-                            <label>Jordán (Teléfono)</label>
-                            <input type="text" id="configTelefonoJordan" class="form-control" placeholder="311...">
+                        <div class="form-group"><label>Jordán (H/T)</label>
+                            <div style="display:flex; gap:0.5rem;"><input type="text" id="configHorarioJordan"
+                                    class="form-control" placeholder="Horario" style="flex:2;"><input type="text"
+                                    id="configTelefonoJordan" class="form-control" placeholder="Tel" style="flex:1;">
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div style="margin-top:2rem;"><button onclick="guardarConfiguracion()" class="btn btn-success btn-lg">💾
-                        Guardar Configuración</button></div>
 
-                <!-- Monitoreo de Recursos (Supabase & IA) -->
-                <div class="card" style="margin-top:2rem;">
+                <div style="margin: 2rem 0;"><button onclick="guardarConfiguracion()" class="btn btn-success btn-lg">💾
+                        Guardar Configuración General</button></div>
+
+                <!-- Monitoreo de Recursos (Full Width) -->
+                <div class="card" style="margin-bottom: 2rem;">
                     <div class="card-header">
                         <h3>📊 Monitoreo de Sistema y Consumo IA</h3>
                     </div>
                     <div class="card-body">
-                        <!-- Stats Principales más grandes -->
                         <div
-                            style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.5rem; margin-bottom: 2rem;">
+                            style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:1rem; margin-bottom: 1.5rem;">
                             <div class="stat-card"
-                                style="margin:0; padding:2rem; text-align:center; border-bottom: 4px solid #6366f1;">
-                                <div style="font-size:2.5rem; margin-bottom:15px;">💾</div>
+                                style="padding:1.5rem; text-align:center; border-bottom: 3px solid #6366f1;">
+                                <div style="font-size:2rem; margin-bottom:10px;">💾</div>
                                 <div
-                                    style="font-size:1rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:1px;">
+                                    style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">
                                     Base de Datos</div>
-                                <div id="supabaseStatDBSize"
-                                    style="font-size:2.2rem; font-weight:900; color:#1e293b; margin:10px 0;">-- MB</div>
-                                <div
-                                    style="font-size:0.85rem; color:#94a3b8; background:#f1f5f9; padding:4px 12px; border-radius:10px; display:inline-block;">
-                                    Capacidad: 500 MB</div>
+                                <div id="supabaseStatDBSize" style="font-size:1.5rem; font-weight:900; color:#1e293b;">
+                                    -- MB</div>
                             </div>
                             <div class="stat-card"
-                                style="margin:0; padding:2rem; text-align:center; border-bottom: 4px solid #10b981;">
-                                <div style="font-size:2.5rem; margin-bottom:15px;">🖼️</div>
+                                style="padding:1.5rem; text-align:center; border-bottom: 3px solid #10b981;">
+                                <div style="font-size:2rem; margin-bottom:10px;">🖼️</div>
                                 <div
-                                    style="font-size:1rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:1px;">
-                                    Almacenamiento (IMG)</div>
+                                    style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">
+                                    Storage IMG</div>
                                 <div id="supabaseStatStorageSize"
-                                    style="font-size:2.2rem; font-weight:900; color:#1e293b; margin:10px 0;">-- MB</div>
-                                <div
-                                    style="font-size:0.85rem; color:#94a3b8; background:#f1f5f9; padding:4px 12px; border-radius:10px; display:inline-block;">
-                                    Capacidad: 1024 MB</div>
+                                    style="font-size:1.5rem; font-weight:900; color:#1e293b;">-- MB</div>
                             </div>
                             <div class="stat-card"
-                                style="margin:0; padding:2rem; text-align:center; border-bottom: 4px solid #f59e0b;">
-                                <div style="font-size:2.5rem; margin-bottom:15px;">🤖</div>
+                                style="padding:1.5rem; text-align:center; border-bottom: 3px solid #f59e0b;">
+                                <div style="font-size:2rem; margin-bottom:10px;">🤖</div>
                                 <div
-                                    style="font-size:1rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:1px;">
-                                    Peticiones IA (Histórico)</div>
+                                    style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">
+                                    Peticiones IA</div>
                                 <div id="supabaseStatPeticiones"
-                                    style="font-size:2.2rem; font-weight:900; color:#1e293b; margin:10px 0;">-- logs
-                                </div>
-                                <div
-                                    style="font-size:0.85rem; color:#94a3b8; background:#f1f5f9; padding:4px 12px; border-radius:10px; display:inline-block;">
-                                    Telemetría Activa</div>
+                                    style="font-size:1.5rem; font-weight:900; color:#1e293b;">-- logs</div>
                             </div>
                         </div>
-
-                        <!-- Gráficas más grandes -->
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem;">
-                            <div
-                                style="background:#ffffff; padding:1.5rem; border-radius:16px; border:1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                                <h5
-                                    style="margin-bottom:20px; font-size:1rem; color:#1e293b; font-weight:700; display:flex; align-items:center; gap:8px;">
-                                    <span
-                                        style="display:block; width:12px; height:12px; background:#6366f1; border-radius:3px;"></span>
-                                    Peticiones (Últimas 24h)
-                                </h5>
-                                <div style="height:250px;"><canvas id="chartAiRequests"></canvas></div>
+                            <div style="height:200px;"><canvas id="chartAiRequests"></canvas></div>
+                            <div style="height:200px;"><canvas id="chartAiTokens"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métodos de Pago y Cuentas Bancarias -->
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+                    <!-- Columna Izquierda: Métodos Web -->
+                    <div class="card" style="height: fit-content;">
+                        <div class="card-header">
+                            <h3>💳 Métodos Web</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <div style="display:flex; flex-direction: column; gap:0.5rem;">
+                                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;"><input
+                                            type="checkbox" id="metodoPagoNequi" checked> Nequi</label>
+                                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;"><input
+                                            type="checkbox" id="metodoPagoDaviplata" checked> Daviplata</label>
+                                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;"><input
+                                            type="checkbox" id="metodoPagoAddi" checked> Addi</label>
+                                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;"><input
+                                            type="checkbox" id="metodoPagoSistecredito" checked> Sistecredito</label>
+                                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;"><input
+                                            type="checkbox" id="metodoPagoFodegas" checked> Fodegas</label>
+                                </div>
                             </div>
-                            <div
-                                style="background:#ffffff; padding:1.5rem; border-radius:16px; border:1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                                <h5
-                                    style="margin-bottom:20px; font-size:1rem; color:#1e293b; font-weight:700; display:flex; align-items:center; gap:8px;">
-                                    <span
-                                        style="display:block; width:12px; height:12px; background:#f59e0b; border-radius:3px;"></span>
-                                    Consumo de Tokens (Tokens/Hora)
-                                </h5>
-                                <div style="height:250px;"><canvas id="chartAiTokens"></canvas></div>
+                            <button onclick="guardarMetodosPago()" class="btn btn-primary"
+                                style="margin-top:1rem; width: 100%;">💾 Guardar Métodos</button>
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha: Cuentas Bancarias -->
+                    <div class="card">
+                        <div class="card-header"
+                            style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3>🏦 Cuentas de la Empresa</h3>
+                            <button class="btn btn-success btn-sm" onclick="abrirModalNuevaCuenta()">➕ Nueva
+                                Cuenta</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th>Entidad</th>
+                                            <th>Número</th>
+                                            <th>Titular</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyCuentasBancarias">
+                                        <tr>
+                                            <td colspan="5" class="text-center">Cargando cuentas...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
                 </div>
 
-
-
-                <!-- Métodos de Pago -->
-                <div class="card" style="margin-top:2rem;">
-                    <div class="card-header">
-                        <h3>💳 Métodos de Pago (Página Web)</h3>
-                    </div>
-                    <div class="card-body">
-                        <p style="color:#64748b;margin-bottom:1rem;">Configura los métodos de pago que se muestran en la
-                            página principal.</p>
-                        <div class="form-group">
-                            <label>Métodos de Pago Activos</label>
-                            <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:0.5rem;">
-                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-                                    <input type="checkbox" id="metodoPagoNequi" checked> Nequi
-                                </label>
-                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-                                    <input type="checkbox" id="metodoPagoDaviplata" checked> Daviplata
-                                </label>
-                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-                                    <input type="checkbox" id="metodoPagoAddi" checked> Addi
-                                </label>
-                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-                                    <input type="checkbox" id="metodoPagoSistecredito" checked> Sistecredito
-                                </label>
-                                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-                                    <input type="checkbox" id="metodoPagoFodegas" checked> Fodegas
-                                </label>
+                <!-- Modal de Cuentas (Rediseñado para ser ancho y elegante) -->
+                <div id="modalCuentaBancaria" class="modal-overlay"
+                    style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); z-index:9999; align-items:center; justify-content:center;">
+                    <div class="modal-content"
+                        style="background:white; padding:3rem; border-radius:32px; width:850px; max-width:95%; box-shadow: 0 40px 80px -15px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="modal-header"
+                            style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:2rem; margin-bottom:2rem;">
+                            <h2 id="tituloModalCuenta"
+                                style="margin:0; font-size:2.2rem; display:flex; align-items:center; gap:15px; color:#1e293b; font-weight:800;">
+                                🏦 <span>Gestión de Cuenta Bancaria</span></h2>
+                            <button onclick="cerrarModalCuenta()"
+                                style="background:#f1f5f9; border:none; width:45px; height:45px; border-radius:50%; font-size:1.2rem; cursor:pointer; color:#64748b; display:flex; align-items:center; justify-content:center; transition: all 0.2s;">✕</button>
+                        </div>
+                        <div class="modal-body" style="margin-top:1rem;">
+                            <input type="hidden" id="cuentaEditId">
+                            <div class="form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:2.5rem;">
+                                <div class="form-group"><label
+                                        style="display:block; font-weight:700; color:#1e293b; margin-bottom:0.75rem; font-size:1.1rem;">Banco
+                                        / Entidad *</label><input type="text" id="cuentaBanco" class="form-control"
+                                        style="width:100%; padding:1.2rem; border-radius:14px; border:2px solid #e2e8f0; font-size:1.1rem; background:#f8fafc;"
+                                        placeholder="Ej: Bancolombia"></div>
+                                <div class="form-group"><label
+                                        style="display:block; font-weight:700; color:#1e293b; margin-bottom:0.75rem; font-size:1.1rem;">Número
+                                        de Cuenta *</label><input type="text" id="cuentaNumero" class="form-control"
+                                        style="width:100%; padding:1.2rem; border-radius:14px; border:2px solid #e2e8f0; font-size:1.1rem; background:#f8fafc;"
+                                        placeholder="000-000000-00"></div>
+                            </div>
+                            <div class="form-grid"
+                                style="display:grid; grid-template-columns: 1fr 1fr; gap:2.5rem; margin-top:1.5rem;">
+                                <div class="form-group"><label
+                                        style="display:block; font-weight:700; color:#1e293b; margin-bottom:0.75rem; font-size:1.1rem;">Nombre
+                                        del Titular *</label><input type="text" id="cuentaTitular" class="form-control"
+                                        style="width:100%; padding:1.2rem; border-radius:14px; border:2px solid #e2e8f0; font-size:1.1rem; background:#f8fafc;"
+                                        placeholder="Nombre completo"></div>
+                                <div class="form-group"><label
+                                        style="display:block; font-weight:700; color:#1e293b; margin-bottom:0.75rem; font-size:1.1rem;">Tipo
+                                        de Cuenta</label>
+                                    <select id="cuentaTipo" class="form-control"
+                                        style="width:100%; padding:1.2rem; border-radius:14px; border:2px solid #e2e8f0; font-size:1.1rem; background:#f8fafc; cursor:pointer;">
+                                        <option value="Ahorros">Ahorros</option>
+                                        <option value="Corriente">Corriente</option>
+                                        <option value="Billetera Digital">Billetera Digital (Nequi / Daviplata)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                        <button onclick="guardarMetodosPago()" class="btn btn-success" style="margin-top:1rem;">💾
-                            Guardar Métodos de Pago</button>
+                        <div class="modal-footer"
+                            style="display:flex; gap:1.5rem; margin-top:3rem; padding-top:2rem; border-top:1px solid #f1f5f9;">
+                            <button onclick="guardarCuentaBancaria()" class="btn btn-success"
+                                style="flex:2; padding:1.4rem; font-weight:800; border-radius:18px; font-size:1.2rem; display:flex; align-items:center; justify-content:center; gap:12px; box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4); transition: transform 0.2s;">💾
+                                Guardar Cambios</button>
+                            <button onclick="cerrarModalCuenta()" class="btn btn-secondary"
+                                style="flex:1; padding:1.4rem; border-radius:18px; font-weight:700; font-size:1.1rem; color:#64748b; background:#f1f5f9; border:none;">Cancelar</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -6668,6 +6948,55 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
+    <!-- Modal Gestión de Cuenta Bancaria -->
+    <div id="modalCuentaBancaria" class="modal-overlay" style="display:none; z-index: 10001;">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h3 id="tituloModalCuenta">🏦 Nueva Cuenta Bancaria</h3>
+                <button onclick="cerrarModalCuenta()" class="btn-cerrar">❌</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="cuentaEditId">
+
+                <div class="form-group">
+                    <label>Banco / Entidad <span class="required">*</span></label>
+                    <input type="text" id="cuentaBanco" class="form-control" placeholder="Ej: Bancolombia, Nequi, etc.">
+                </div>
+
+                <div class="form-group">
+                    <label>Número de Cuenta <span class="required">*</span></label>
+                    <input type="text" id="cuentaNumero" class="form-control" placeholder="Número de cuenta o celular">
+                </div>
+
+                <div class="form-group">
+                    <label>Nombre del Titular <span class="required">*</span></label>
+                    <input type="text" id="cuentaTitular" class="form-control"
+                        placeholder="Nombre completo del titular">
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Cuenta</label>
+                    <select id="cuentaTipo" class="form-control">
+                        <option value="Ahorros">Ahorros</option>
+                        <option value="Corriente">Corriente</option>
+                        <option value="Billetera Digital">Billetera Digital (Nequi/Daviplata)</option>
+                    </select>
+                </div>
+
+                <div class="alert alert-info" style="margin-top:1rem; font-size:0.85rem;">
+                    💡 Estas cuentas aparecerán en el POS para que los cajeros seleccionen el destino de las
+                    transferencias.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="guardarCuentaBancaria()" class="btn btn-success">💾 Guardar Cuenta</button>
+                <button onclick="cerrarModalCuenta()" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin-cuentas.js"></script>
+    <script src="js/reportes-rentabilidad.js"></script>
     <script src="js/reportes-ejecutivos.js"></script>
 </body>
 
