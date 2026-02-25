@@ -1,0 +1,848 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrativa | Moteros Sports Line</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+    <link rel="manifest" href="img/site.webmanifest">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2pdf y jsPDF (para exportación de reportes) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Fuentes e Iconos -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- CSS: Usa admin.css como base (tiene TODO el sistema de diseño) -->
+    <link rel="stylesheet" href="css/admin.css">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MGGG89S8XM"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-MGGG89S8XM');
+    </script>
+    <style>
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, .5);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- CAJA DE TOASTS -->
+    <div id="toastContainer" class="toast-container"></div>
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="login-wrapper">
+        <div id="pantallaAbrirCaja">
+            <img id="mainLogo"
+                src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
+                alt="Moteros Sports Line" class="locked-logo logo-img">
+            <h1>Panel Administrativa</h1>
+            <p class="subtitle">Moteros Sports Line</p>
+            <p style="font-size:0.8rem; color:#64748b; margin-bottom:1rem;">Acceso restringido Administradora Operativa
+            </p>
+            <input type="email" id="adminEmail" class="login-input" placeholder="Correo electrónico"
+                onkeypress="if(event.key==='Enter')document.getElementById('adminPassword').focus()">
+            <input type="password" id="adminPassword" class="login-input" placeholder="Contraseña"
+                onkeypress="if(event.key==='Enter')loginOperativo()">
+            <button onclick="loginOperativo()" class="login-btn">Iniciar Sesión</button>
+            <p id="loginError" class="login-error"></p>
+        </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="adminPanel" style="display:none;">
+
+        <!-- HEADER CON MENÚ HORIZONTAL (Idéntico a admin.html) -->
+        <header class="top-header">
+            <div class="header-brand">
+                <img id="headerLogo"
+                    src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
+                    alt="Logo" style="height:40px;width:40px;border-radius:50%;object-fit:cover;margin-right:0.75rem;">
+                <span class="brand-name">Moteros Operativa</span>
+            </div>
+
+            <nav class="header-nav">
+                <!-- OPERACIONES -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">📊 Operaciones <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" data-section="resumen_operativo">📈 Resumen Ventas</a>
+                        <a href="#" data-section="carteras_operativas">💳 Carteras Multi-tienda</a>
+                        <a href="#" data-section="gastos_operativos">💸 Control Gastos (Temu)</a>
+                    </div>
+                </div>
+
+                <!-- LOGISTICA -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">📦 Logística <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" data-section="prestamos_inventario">📦 Préstamos de Bodega</a>
+                        <a href="#" data-section="documentos_legales">⚠️ Alertas Documentales</a>
+                    </div>
+                </div>
+
+                <!-- HERRAMIENTAS IA -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">✨ Herramientas IA <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" data-section="predictor_stock">🤖 Predictor Stock</a>
+                        <a href="#" data-section="simulador_rentabilidad">📈 Simulador Rentabilidad</a>
+                        <a href="#" data-section="metas_ia">🎯 Metas Inteligentes</a>
+                    </div>
+                </div>
+
+                <!-- SISTEMA -->
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn">⚙️ Sistema <span class="arrow">▼</span></button>
+                    <div class="nav-dropdown-content">
+                        <a href="#" onclick="logoutOperativo()" class="logout-link">🚪 Cerrar Sesión</a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="header-user">
+                <span class="user-greeting">👤 Administradora</span>
+                <button onclick="logoutOperativo()" class="btn-header-logout" title="Cerrar sesión">🚪</button>
+            </div>
+
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+        </header>
+
+        <!-- Mobile Navigation -->
+        <div class="mobile-nav" id="mobileNav">
+            <div class="mobile-nav-header">
+                <span>🏍️ Menú</span>
+                <button onclick="toggleMobileMenu()">✕</button>
+            </div>
+            <div class="mobile-nav-content">
+                <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">📊 Operaciones</div>
+                    <a href="#" data-section="resumen_operativo" onclick="toggleMobileMenu()">📈 Resumen Ventas</a>
+                    <a href="#" data-section="carteras_operativas" onclick="toggleMobileMenu()">💳 Carteras</a>
+                    <a href="#" data-section="gastos_operativos" onclick="toggleMobileMenu()">💸 Gastos (Temu)</a>
+                </div>
+                <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">📦 Logística</div>
+                    <a href="#" data-section="prestamos_inventario" onclick="toggleMobileMenu()">📦 Préstamos</a>
+                    <a href="#" data-section="documentos_legales" onclick="toggleMobileMenu()">⚠️ Alertas</a>
+                </div>
+                <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">✨ Herramientas IA</div>
+                    <a href="#" data-section="predictor_stock" onclick="toggleMobileMenu()">🤖 Predictor</a>
+                    <a href="#" data-section="simulador_rentabilidad" onclick="toggleMobileMenu()">📈 Simulador</a>
+                    <a href="#" data-section="metas_ia" onclick="toggleMobileMenu()">🎯 Metas</a>
+                </div>
+                <div class="mobile-nav-group">
+                    <a href="#" onclick="logoutOperativo()" class="logout-link">🚪 Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="main-content-horizontal">
+
+            <!-- RESUMEN OPERATIVO -->
+            <div id="section-resumen_operativo" class="section active">
+                <div class="page-header">
+                    <h1>📊 Resumen Operativo de Ventas</h1>
+                    <p>Desglose de ingresos consolidados en tiempo real.</p>
+                </div>
+                <div class="stats-grid" id="dashboardOperativoCards">
+                    <div class="stat-card">
+                        <div class="stat-icon orange">💰</div>
+                        <div class="stat-info">
+                            <h3>$0</h3>
+                            <p>Ventas del día</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">📦</div>
+                        <div class="stat-info">
+                            <h3>0</h3>
+                            <p>Unidades vendidas</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🏪</div>
+                        <div class="stat-info">
+                            <h3>0</h3>
+                            <p>Tiendas activas</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">📈</div>
+                        <div class="stat-info">
+                            <h3>$0</h3>
+                            <p>Ventas del mes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARTERAS -->
+            <div id="section-carteras_operativas" class="section">
+                <div class="page-header">
+                    <h1>💳 Gestión Integral de Carteras</h1>
+                    <p>Central de cobros y estados de cuenta multipasarela — Datos en tiempo real.</p>
+                </div>
+
+                <!-- KPIs CARTERA -->
+                <div class="stats-grid" id="carteraKpis">
+                    <div class="stat-card">
+                        <div class="stat-icon orange">💰</div>
+                        <div class="stat-info">
+                            <h3 id="kpiCarteraActiva">$0</h3>
+                            <p>Cartera Activa</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">🔴</div>
+                        <div class="stat-info">
+                            <h3 id="kpiCarteraMoraTotal">$0</h3>
+                            <p>En Mora</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3 id="kpiCarteraRecuperada">$0</h3>
+                            <p>Recuperada</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📊</div>
+                        <div class="stat-info">
+                            <h3 id="kpiTasaRecuperacion">0%</h3>
+                            <p>Tasa Recuperación</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">📦</div>
+                        <div class="stat-info">
+                            <h3 id="kpiPrestamosActivos">$0</h3>
+                            <p>Mercancía Prestada</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRÁFICAS DE CARTERA -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-top:1.5rem;">
+                    <!-- Donut: Semaforización Créditos -->
+                    <div class="card" style="padding:1.5rem;">
+                        <h4 style="margin:0 0 1rem; font-size:0.95rem; color:#334155;">📊 Distribución de Cartera
+                            Moteros</h4>
+                        <div style="max-height:280px; display:flex; justify-content:center;">
+                            <canvas id="chartSemaforo"></canvas>
+                        </div>
+                    </div>
+                    <!-- Barras: Ventas por Pasarela -->
+                    <div class="card" style="padding:1.5rem;">
+                        <h4 style="margin:0 0 1rem; font-size:0.95rem; color:#334155;">💳 Ventas por Pasarela (Mensual)
+                        </h4>
+                        <div style="max-height:280px;">
+                            <canvas id="chartPasarelas"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!-- Línea: Tendencia de Recuperación -->
+                <div class="card" style="padding:1.5rem; margin-top:1.5rem;">
+                    <h4 style="margin:0 0 1rem; font-size:0.95rem; color:#334155;">📈 Tendencia de Recuperación de
+                        Cartera (Últimos 6 meses)</h4>
+                    <div style="max-height:300px;">
+                        <canvas id="chartRecuperacion"></canvas>
+                    </div>
+                </div>
+
+                <!-- TABS DE CARTERA -->
+                <div class="card" style="margin-top:1.5rem;">
+                    <div class="card-body" style="padding-top:1rem;">
+                        <div
+                            style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem; border-bottom:2px solid #e2e8f0; padding-bottom:1rem;">
+                            <button class="btn btn-primary btn-sm tab-btn active"
+                                onclick="cambiarPestanaCartera(event, 'tab-cartera-moteros')">🏍️ Cartera
+                                Moteros</button>
+                            <button class="btn btn-secondary btn-sm tab-btn"
+                                onclick="cambiarPestanaCartera(event, 'tab-cartera-bodegas')">📦 Bodegas</button>
+                            <button class="btn btn-secondary btn-sm tab-btn"
+                                onclick="cambiarPestanaCartera(event, 'tab-cartera-addi')">💳 Addi</button>
+                            <button class="btn btn-secondary btn-sm tab-btn"
+                                onclick="cambiarPestanaCartera(event, 'tab-cartera-siste')">💳 Sistecrédito</button>
+                            <button class="btn btn-secondary btn-sm tab-btn"
+                                onclick="cambiarPestanaCartera(event, 'tab-cartera-fodegas')">💳 Fodegas</button>
+                            <button class="btn btn-secondary btn-sm tab-btn"
+                                onclick="cambiarPestanaCartera(event, 'tab-cartera-config')"
+                                style="margin-left:auto;">⚙️ Comisiones</button>
+                        </div>
+
+                        <!-- TAB: CARTERA MOTEROS -->
+                        <div id="tab-cartera-moteros" class="tab-content active">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+                                <h3 style="margin:0;">🏍️ Créditos Moteros</h3>
+                                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+                                    <select id="filtroCarteraLocal" class="form-control"
+                                        style="width:auto;min-width:120px;" onchange="cargarCarteraMoteros()">
+                                        <option value="">Todos los locales</option>
+                                        <option value="Jordán">Jordán</option>
+                                        <option value="Alcalá">Alcalá</option>
+                                        <option value="Local 01">Local 01</option>
+                                    </select>
+                                    <select id="filtroCarteraEstado" class="form-control"
+                                        style="width:auto;min-width:120px;" onchange="cargarCarteraMoteros()">
+                                        <option value="">Todos</option>
+                                        <option value="activo">Activos</option>
+                                        <option value="mora">En Mora</option>
+                                        <option value="pagado">Pagados</option>
+                                        <option value="CERRADO">Cerrados</option>
+                                    </select>
+                                    <span style="border-left:1px solid #e2e8f0;height:24px;"></span>
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="exportarCarteraPDF('tablaCarteraMoteros','Cartera_Moteros','🏍️ Cartera Moteros')"
+                                        title="Descargar PDF">📄 PDF</button>
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="exportarCarteraExcel('tablaCarteraMoteros','Cartera_Moteros')"
+                                        title="Descargar Excel">📊 Excel</button>
+                                </div>
+                            </div>
+                            <!-- Leyenda semáforo -->
+                            <div style="display:flex; gap:1.5rem; margin-bottom:1rem; font-size:0.8rem; color:#64748b;">
+                                <span>🟢 Óptimo (≤60 días)</span>
+                                <span>🟡 Pendiente (61-85 días)</span>
+                                <span>🔴 Castigado (>85 días)</span>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table" id="tablaCarteraMoteros">
+                                    <thead>
+                                        <tr>
+                                            <th>Estado</th>
+                                            <th># Crédito</th>
+                                            <th>Cliente / Notas</th>
+                                            <th>Local</th>
+                                            <th>Monto Total</th>
+                                            <th>Saldo</th>
+                                            <th>Cuotas</th>
+                                            <th>Días</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyCarteraMoteros">
+                                        <tr>
+                                            <td colspan="9" style="text-align:center;">Cargando créditos...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB: CARTERA BODEGAS -->
+                        <div id="tab-cartera-bodegas" class="tab-content">
+                            <div
+                                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                                <h3 style="margin:0;">📦 Mercancía Prestada (Bodega)</h3>
+                                <div style="display:flex;gap:0.5rem;">
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="exportarCarteraPDF('tablaCarteraBodegas','Cartera_Bodegas','📦 Cartera Bodegas')">📄
+                                        PDF</button>
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="exportarCarteraExcel('tablaCarteraBodegas','Cartera_Bodegas')">📊
+                                        Excel</button>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table" id="tablaCarteraBodegas">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Prestatario</th>
+                                            <th>Producto</th>
+                                            <th>Cant.</th>
+                                            <th>Valor Total</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyCarteraBodegas">
+                                        <tr>
+                                            <td colspan="6" style="text-align:center;">Cargando préstamos...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB: CARTERA ADDI -->
+                        <div id="tab-cartera-addi" class="tab-content">
+                            <div
+                                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                                <h3 style="margin:0;">💳 Ventas por Addi</h3>
+                                <div style="display:flex;gap:0.5rem;">
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="exportarCarteraPDF('tablaCarteraAddi','Cartera_Addi','💳 Cartera Addi')">📄
+                                        PDF</button>
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="exportarCarteraExcel('tablaCarteraAddi','Cartera_Addi')">📊
+                                        Excel</button>
+                                </div>
+                            </div>
+                            <div class="stats-grid" style="margin-bottom:1rem;">
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiAddiTotal">$0</h3>
+                                        <p>Total Vendido</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiAddiComision">$0</h3>
+                                        <p>Comisión Estimada</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiAddiNeto">$0</h3>
+                                        <p>Neto Esperado</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiAddiVentas">0</h3>
+                                        <p>Ventas</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table" id="tablaCarteraAddi">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Producto</th>
+                                            <th>Local</th>
+                                            <th>Total</th>
+                                            <th>Comisión Est.</th>
+                                            <th>Neto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyCarteraAddi">
+                                        <tr>
+                                            <td colspan="6" style="text-align:center;">Cargando...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB: CARTERA SISTECRÉDITO -->
+                        <div id="tab-cartera-siste" class="tab-content">
+                            <div
+                                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                                <h3 style="margin:0;">💳 Ventas por Sistecrédito</h3>
+                                <div style="display:flex;gap:0.5rem;">
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="exportarCarteraPDF('tablaCarteraSiste','Cartera_Sistecredito','💳 Cartera Sistecrédito')">📄
+                                        PDF</button>
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="exportarCarteraExcel('tablaCarteraSiste','Cartera_Sistecredito')">📊
+                                        Excel</button>
+                                </div>
+                            </div>
+                            <div class="stats-grid" style="margin-bottom:1rem;">
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiSisteTotal">$0</h3>
+                                        <p>Total Vendido</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiSisteComision">$0</h3>
+                                        <p>Comisión Estimada</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiSisteNeto">$0</h3>
+                                        <p>Neto Esperado</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiSisteVentas">0</h3>
+                                        <p>Ventas</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table" id="tablaCarteraSiste">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Producto</th>
+                                            <th>Local</th>
+                                            <th>Total</th>
+                                            <th>Comisión Est.</th>
+                                            <th>Neto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyCarteraSiste">
+                                        <tr>
+                                            <td colspan="6" style="text-align:center;">Cargando...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB: CARTERA FODEGAS -->
+                        <div id="tab-cartera-fodegas" class="tab-content">
+                            <div
+                                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                                <h3 style="margin:0;">💳 Ventas por Fodegas</h3>
+                                <div style="display:flex;gap:0.5rem;">
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="exportarCarteraPDF('tablaCarteraFodegas','Cartera_Fodegas','💳 Cartera Fodegas')">📄
+                                        PDF</button>
+                                    <button class="btn btn-secondary btn-sm"
+                                        onclick="exportarCarteraExcel('tablaCarteraFodegas','Cartera_Fodegas')">📊
+                                        Excel</button>
+                                </div>
+                            </div>
+                            <div class="stats-grid" style="margin-bottom:1rem;">
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiFodegasTotal">$0</h3>
+                                        <p>Total Vendido</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiFodegasComision">$0</h3>
+                                        <p>Comisión Estimada</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiFodegasNeto">$0</h3>
+                                        <p>Neto Esperado</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <h3 id="kpiFodegasVentas">0</h3>
+                                        <p>Ventas</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table" id="tablaCarteraFodegas">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Producto</th>
+                                            <th>Local</th>
+                                            <th>Total</th>
+                                            <th>Comisión Est.</th>
+                                            <th>Neto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyCarteraFodegas">
+                                        <tr>
+                                            <td colspan="6" style="text-align:center;">Cargando...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB: CONFIG COMISIONES -->
+                        <div id="tab-cartera-config" class="tab-content">
+                            <h3 style="margin-bottom:1rem;">⚙️ Comisiones de Pasarelas</h3>
+                            <p style="color:#64748b; font-size:0.85rem; margin-bottom:1.5rem;">Ajusta los porcentajes
+                                que cobra cada pasarela para calcular el neto esperado. Los cambios se guardan
+                                localmente.</p>
+                            <div
+                                style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:1rem;">
+                                <div class="form-group">
+                                    <label>Addi (%)</label>
+                                    <input type="number" id="comisionAddi" class="form-control" value="7.5" step="0.1"
+                                        min="0" max="100" onchange="guardarComisiones()">
+                                </div>
+                                <div class="form-group">
+                                    <label>Sistecrédito (%)</label>
+                                    <input type="number" id="comisionSiste" class="form-control" value="5.5" step="0.1"
+                                        min="0" max="100" onchange="guardarComisiones()">
+                                </div>
+                                <div class="form-group">
+                                    <label>Fodegas (%)</label>
+                                    <input type="number" id="comisionFodegas" class="form-control" value="4.5"
+                                        step="0.1" min="0" max="100" onchange="guardarComisiones()">
+                                </div>
+                                <div class="form-group">
+                                    <label>Bold / Datafono (%)</label>
+                                    <input type="number" id="comisionBold" class="form-control" value="2.5" step="0.1"
+                                        min="0" max="100" onchange="guardarComisiones()">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="recalcularTodasCarteras()"
+                                style="margin-top:1rem;">🔄
+                                Recalcular Todo</button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL: Detalle Pagos Crédito -->
+            <div id="modalPagosCredito" class="modal-overlay" style="display:none;">
+                <div class="modal"
+                    style="background:white;padding:2rem;border-radius:1rem;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+                        <h3 style="margin:0;" id="modalPagosTitulo">Historial de Pagos</h3>
+                        <button onclick="cerrarModalPagos()"
+                            style="background:none;border:none;font-size:1.5rem;cursor:pointer;">✕</button>
+                    </div>
+                    <div id="modalPagosResumen"
+                        style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;"></div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Fecha</th>
+                                    <th>Monto</th>
+                                    <th>Método</th>
+                                    <th>Local</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyModalPagos">
+                                <tr>
+                                    <td colspan="5">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INVENTARIO/PRESTAMOS -->
+            <div id="section-prestamos_inventario" class="section">
+                <div class="page-header">
+                    <h1>📦 Control de Préstamos y Mercancía Externa</h1>
+                    <p>Vista de mercancía que ha salido de bodega sin facturar. Para registrar nuevos préstamos, usar el
+                        panel de admin principal.</p>
+                </div>
+                <div class="actions-bar">
+                    <button class="btn btn-secondary btn-sm" onclick="exportarPDFPrestamos()">📄 PDF</button>
+                </div>
+                <div class="card">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Prestatario</th>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Valor Total</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyPrestamos">
+                                <tr>
+                                    <td colspan="7" style="text-align:center;">Cargando préstamos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GASTOS TEMU (Solo métricas — registro desde admin.html) -->
+            <div id="section-gastos_operativos" class="section">
+                <div class="page-header">
+                    <h1>💸 Control de Gastos y Plataformas (Temu)</h1>
+                    <p>Vista de gastos registrados. Para registrar nuevos egresos, usar el panel de admin principal.</p>
+                </div>
+                <div class="actions-bar">
+                    <button class="btn btn-secondary btn-sm" onclick="exportarPDFGastos()">📄 PDF</button>
+                </div>
+                <div class="card">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Categoría</th>
+                                    <th>Monto</th>
+                                    <th>Cuenta Origen</th>
+                                    <th>Concepto / Proveedor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyGastosOperativos">
+                                <tr>
+                                    <td colspan="5" style="text-align:center;">Cargando gastos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PLACEHOLDERS FUTURAS -->
+            <div id="section-documentos_legales" class="section">
+                <div class="page-header">
+                    <h1>⚠️ Alerta Documentos Legales</h1>
+                    <p>Próximamente: control de vencimientos de documentos y alertas automáticas.</p>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <p>🚧 Módulo en desarrollo (Fase 2)</p>
+                    </div>
+                </div>
+            </div>
+            <div id="section-predictor_stock" class="section">
+                <div class="page-header">
+                    <h1>🤖 Predictor de Stock</h1>
+                    <p>Próximamente: alertas de quiebre de stock basadas en velocidad de venta.</p>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <p>🚧 Módulo en desarrollo (Fase 2)</p>
+                    </div>
+                </div>
+            </div>
+            <div id="section-simulador_rentabilidad" class="section">
+                <div class="page-header">
+                    <h1>📈 Simulador Rentabilidad</h1>
+                    <p>Próximamente: calculadora "What if?" para simular descuentos y promociones.</p>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <p>🚧 Módulo en desarrollo (Fase 2)</p>
+                    </div>
+                </div>
+            </div>
+            <div id="section-metas_ia" class="section">
+                <div class="page-header">
+                    <h1>🎯 Metas Sugeridas IA</h1>
+                    <p>Próximamente: sugerencias automáticas de metas basadas en historial.</p>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <p>🚧 Módulo en desarrollo (Fase 2)</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal Nuevo Prestamo -->
+    <div id="modalNuevoPrestamo" class="modal-overlay" style="display:none;">
+        <div class="modal"
+            style="background:white;padding:2rem;border-radius:1rem;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;">
+            <h3>📦 Registrar Préstamo de Bodega</h3>
+            <div class="form-group">
+                <label>Producto (Buscar)</label>
+                <input type="text" id="prestamoBuscarProducto" class="form-control"
+                    placeholder="Buscar por código o nombre..." oninput="buscarProductoPrestamo()">
+                <div id="resultadosPrestamo" class="search-results-floating" style="display:none;"></div>
+                <input type="hidden" id="prestamoProductoId">
+            </div>
+
+            <div id="prestamoVariantesContainer" style="display:none; margin-bottom:1rem;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div>
+                        <label>Talla</label>
+                        <select id="prestamoTalla" class="form-control"></select>
+                    </div>
+                    <div>
+                        <label>Color</label>
+                        <select id="prestamoColor" class="form-control"></select>
+                    </div>
+                </div>
+                <p id="prestamoStockInfo" style="font-size:0.8rem; color:var(--primary); margin-top:5px;"></p>
+                <input type="hidden" id="prestamoPrecioCosto">
+            </div>
+
+            <div class="form-group">
+                <label>Prestatario (A quién se le entrega)</label>
+                <input type="text" id="prestamoPrestatario" class="form-control"
+                    placeholder="Ej: Dueño X, Evento Y, Empleado Z">
+            </div>
+            <div class="form-group">
+                <label>Cantidad</label>
+                <input type="number" id="prestamoCantidad" class="form-control" placeholder="0" min="1"
+                    oninput="calcularTotalPrestamo()">
+            </div>
+            <div class="form-group">
+                <label>Valor Total (Basado en costo)</label>
+                <input type="number" id="prestamoValorTotal" class="form-control" placeholder="" readonly
+                    style="background:#f1f5f9;">
+            </div>
+            <div class="form-group">
+                <label>Motivo y Notas</label>
+                <textarea id="prestamoNotas" class="form-control" rows="2"
+                    placeholder="Razón de la salida..."></textarea>
+            </div>
+            <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1.5rem;">
+                <button class="btn btn-secondary" onclick="cerrarModalPrestamo()">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarPrestamo()">Guardar Préstamo</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/security.js"></script>
+    <!-- jsPDF AutoTable para exportación de tablas a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <!-- SheetJS para exportación a Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="js/report-exporter.js"></script>
+    <script src="js/admin-administrativa.js"></script>
+</body>
+
+</html>

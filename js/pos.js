@@ -282,7 +282,16 @@ async function abrirModalCajaConEmpleado() {
     document.getElementById('vendedorNombre').value = empleadoLogueado.nombre;
 
     // Configurar base de caja
-    document.getElementById('montoInicial').value = TIENDA.esDigital ? '0' : '100000';
+    let basePredeterminada = TIENDA.esDigital ? 0 : 100000;
+    try {
+        const { data: localData } = await db.from('locales').select('base_caja').eq('nombre', TIENDA.nombre).single();
+        if (localData && localData.base_caja !== undefined && localData.base_caja !== null) {
+            basePredeterminada = localData.base_caja;
+        }
+    } catch (e) {
+        // Ignorar error y usar predeterminado
+    }
+    document.getElementById('montoInicial').value = basePredeterminada;
 
     // Si estamos en la página de eventos, cargar eventos activos
     const selectEvento = document.getElementById('selectEventoActivo');
@@ -305,7 +314,7 @@ async function abrirModalCajaConEmpleado() {
     document.getElementById('modalAbrirCaja').classList.add('visible');
 }
 
-function abrirModalCajaLegacy() {
+async function abrirModalCajaLegacy() {
     // Modo legacy - sin verificación de empleados (para compatibilidad)
     const nombre = prompt('✅​ Ingresa tu nombre completo:');
     if (!nombre || !nombre.trim()) {
@@ -317,7 +326,18 @@ function abrirModalCajaLegacy() {
     document.getElementById('nombreEmpleadoLogueado').textContent = nombre.trim();
     document.getElementById('cargoEmpleadoLogueado').textContent = 'Vendedor';
     document.getElementById('vendedorNombre').value = nombre.trim();
-    document.getElementById('montoInicial').value = TIENDA.esDigital ? '0' : '100000';
+
+    // Configurar base de caja
+    let basePredeterminada = TIENDA.esDigital ? 0 : 100000;
+    try {
+        const { data: localData } = await db.from('locales').select('base_caja').eq('nombre', TIENDA.nombre).single();
+        if (localData && localData.base_caja !== undefined && localData.base_caja !== null) {
+            basePredeterminada = localData.base_caja;
+        }
+    } catch (e) {
+        // Ignorar error y usar predeterminado
+    }
+    document.getElementById('montoInicial').value = basePredeterminada;
 
     document.getElementById('modalAbrirCaja').classList.add('visible');
 }
@@ -1429,12 +1449,12 @@ function actualizarTallasVisual() {
             const chip = document.createElement('div');
             chip.className = `chip ${qty <= 0 ? 'agotado' : ''}`;
             chip.innerHTML = `${talla} <small>(${qty})</small>`;
-            if (qty > 0) chip.onclick = () => seleccionarTallaVisual(talla, qty, chip);
+            if (qty > 0 || TIENDA.nombre === 'Admin') chip.onclick = () => seleccionarTallaVisual(talla, qty, chip);
             tallaGrid.appendChild(chip);
         });
-    } else if (!visualColorSeleccionado && visualProductoActual.stock > 0) {
+    } else if (!visualColorSeleccionado && (visualProductoActual.stock > 0 || TIENDA.nombre === 'Admin')) {
         const chip = document.createElement('div');
-        chip.className = 'chip';
+        chip.className = `chip ${visualProductoActual.stock <= 0 ? 'agotado' : ''}`;
         chip.textContent = 'Única';
         chip.onclick = () => seleccionarTallaVisual('Única', visualProductoActual.stock, chip);
         tallaGrid.appendChild(chip);
@@ -1450,9 +1470,11 @@ function seleccionarTallaVisual(talla, qty, element) {
 
     const stockInfo = document.getElementById('visualStockInfo');
     if (stockInfo) {
-        stockInfo.innerHTML = `
-            <span style="color:#059669; font-weight:700;">✅ Stock Disponible: ${qty} unidades</span>
-        `;
+        if (qty > 0) {
+            stockInfo.innerHTML = `<span style="color:#059669; font-weight:700;">✅ Stock Disponible: ${qty} unidades</span>`;
+        } else {
+            stockInfo.innerHTML = `<span style="color:#dc2626; font-weight:700;">⚠️ Sin Stock (Solo Referencia)</span>`;
+        }
     }
 
     const btnConfirmar = document.getElementById('btnConfirmarVisual') || document.getElementById('btnConfirmarSeleccion');
@@ -1573,7 +1595,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
             stockDisponible = prod.stock;
         }
 
-        if (stockDisponible <= 0) {
+        if (stockDisponible <= 0 && TIENDA.nombre !== 'Admin') {
             mostrarAlerta(`⚠️ Sin stock para ${colorSeleccionado || ''} [${tallaSeleccionada || 'Única'}]`, 'error');
             return;
         }
@@ -1585,7 +1607,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
         );
 
         if (existe) {
-            if (existe.cantidad >= stockDisponible) {
+            if (existe.cantidad >= stockDisponible && TIENDA.nombre !== 'Admin') {
                 mostrarAlerta(`Stock máximo alcanzado`, 'warning');
                 return;
             }
@@ -4377,7 +4399,7 @@ async function confirmarPagoProveedorInline() {
             }
         }
 
-        mostrarAlerta(`? Pago de $${monto.toLocaleString('es-CO')} a ${prov.razon_social} registrado`, 'success');
+        mostrarAlerta(`✅ Pago de $${monto.toLocaleString('es-CO')} a ${prov.razon_social} registrado`, 'success');
         cargarProveedoresInline(); // Recargar lista para actualizar saldos
 
     } catch (e) {

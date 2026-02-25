@@ -252,6 +252,112 @@ function setupNavigation() {
     });
 }
 
+// ---------------------------------------------------------------
+// LOCALES Y BASE DE CAJA
+// ---------------------------------------------------------------
+async function cargarLocalesCaja() {
+    const tbody = document.getElementById('listaTablaLocales');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Cargando locales...</td></tr>';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('locales')
+            .select('*')
+            .order('id_local', { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay locales configurados.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(local => `
+            <tr>
+                <td><strong>${local.id_local}</strong></td>
+                <td>${local.nombre || '-'}</td>
+                <td>${local.direccion || '-'}</td>
+                <td>${local.telefono || '-'}</td>
+                <td style="font-weight:700; color:#16a34a;">$${(local.base_caja || 0).toLocaleString('es-CO')}</td>
+                <td><span class="badge ${local.estado === 'Activo' ? 'badge-success' : 'badge-danger'}">${local.estado || 'Activo'}</span></td>
+                <td>
+                    <button class="btn btn-outline btn-sm" onclick='abrirEdicionLocal(${JSON.stringify(local).replace(/'/g, "&#39;")})'>
+                        ✏️ Editar
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (e) {
+        console.error('Error cargando locales:', e);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:red;">Error: ${e.message}</td></tr>`;
+    }
+}
+
+function cerrarEdicionLocal() {
+    const modal = document.getElementById('modalEditarLocal');
+    if (modal) modal.style.display = 'none';
+}
+
+function abrirEdicionLocal(local) {
+    document.getElementById('editLocalId').value = local.id_local || '';
+    document.getElementById('editLocalNombre').value = local.nombre || '';
+    document.getElementById('editLocalBase').value = local.base_caja || 0;
+    document.getElementById('editLocalDireccion').value = local.direccion || '';
+    document.getElementById('editLocalTelefono').value = local.telefono || '';
+    document.getElementById('editLocalHorario').value = local.horario || '';
+    document.getElementById('editLocalEstado').value = local.estado || 'Activo';
+
+    const modal = document.getElementById('modalEditarLocal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+async function guardarEdicionLocal() {
+    const idLocal = document.getElementById('editLocalId').value;
+    const nombre = document.getElementById('editLocalNombre').value.trim();
+    const baseCaja = parseFloat(document.getElementById('editLocalBase').value) || 0;
+
+    if (!idLocal || !nombre) {
+        showToast('El nombre del local es obligatorio', 'warning');
+        return;
+    }
+
+    const modalBtn = document.querySelector('#modalEditarLocal .btn-success');
+    if (modalBtn) modalBtn.textContent = 'Guardando...';
+
+    try {
+        const updateData = {
+            nombre: nombre,
+            base_caja: baseCaja,
+            direccion: document.getElementById('editLocalDireccion').value.trim(),
+            telefono: document.getElementById('editLocalTelefono').value.trim(),
+            horario: document.getElementById('editLocalHorario').value.trim(),
+            estado: document.getElementById('editLocalEstado').value
+        };
+
+        const { error } = await supabaseClient
+            .from('locales')
+            .update(updateData)
+            .eq('id_local', idLocal);
+
+        if (error) throw error;
+
+        showToast(`✅ Local ${nombre} actualizado correctamente`, 'success');
+        cerrarEdicionLocal();
+        cargarLocalesCaja();
+
+    } catch (e) {
+        console.error('Error guardando local:', e);
+        showToast('Error al guardar: ' + e.message, 'error');
+    } finally {
+        if (modalBtn) modalBtn.textContent = '✅ Guardar Cambios';
+    }
+}
+
 function navegarASeccion(section) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -274,7 +380,7 @@ async function cargarSeccion(section) {
         case 'productos': await cargarProductos(); break;
         case 'categorias': await cargarCategorias(); break;
         case 'destacados': await cargarDestacadosAdmin(); break;
-        case 'ventas': await cargarVentasDia(); break;
+        case 'ventas': await cargarVentasDia(); await cargarLocalesCaja(); break;
         case 'envios': await cargarEnvios(); break;
         case 'envios-estadisticas': await cargarEstadisticasEnvios(); break;
         case 'alertas': await cargarAlertasStock(); break;

@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POS Admin (Histórico) | Moteros Sports Line</title>
-    <link rel="icon" href="../img/logo-moteros.jpeg">
+    <link rel="apple-touch-icon" sizes="180x180" href="../img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../img/favicon-16x16.png">
+    <link rel="manifest" href="../img/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../css/pos.css">
     <style>
@@ -255,14 +258,45 @@
                     <div class="metodo-btn" data-metodo="Addi" onclick="toggleMetodo(this)">🅰️ Addi</div>
                     <div class="metodo-btn" data-metodo="Sistecredito" onclick="toggleMetodo(this)">📋 Sistecrédito
                     </div>
+                    <div class="metodo-btn" data-metodo="Credito Motero" onclick="toggleMetodo(this)">🏍️ Crédito Motero
+                    </div>
+                    <div class="metodo-btn" data-metodo="Fodegas" onclick="toggleMetodo(this)">⛽ Fodegas</div>
                 </div>
                 <div id="metodosSeleccionados" class="metodos-seleccionados"></div>
+
+                <!-- Contenedor para montos divididos -->
+                <div id="contenedorMontosMultimetodo" class="montos-multimetodo"></div>
             </div>
 
             <!-- Voucher Code (Solo para Tarjeta/Dat�fono) -->
             <div id="seccionVoucher" class="seccion-voucher">
                 <div class="seccion-voucher-titulo">🎫 Código de Comprobante / Voucher</div>
                 <input type="text" id="voucherCode" placeholder="Ingresa el código del voucher terminal/tarjeta">
+            </div>
+
+            <!-- Datos de Crédito Motero -->
+            <div id="datosCredito" class="datos-credito">
+                <h4>📝 Datos del Cliente (requerido para crédito)</h4>
+                <input type="text" id="creditoNombre" placeholder="Nombre completo *">
+                <div class="row">
+                    <input type="tel" id="creditoTelefono" placeholder="Teléfono *">
+                    <input type="text" id="creditoCedula" placeholder="Cédula *">
+                </div>
+                <input type="text" id="creditoDireccion" placeholder="Dirección *">
+                <select id="creditoAutoriza">
+                    <option value="">-- ¿Quién autoriza el crédito? --</option>
+                    <option value="Gerencia">Gerencia</option>
+                    <option value="Administrador">Administrador</option>
+                    <option value="Jefe de Tienda">Jefe de Tienda</option>
+                </select>
+                <select id="creditoCuotas">
+                    <option value="1">1 Cuota (pago único)</option>
+                    <option value="2">2 Cuotas</option>
+                    <option value="3">3 Cuotas</option>
+                    <option value="4">4 Cuotas</option>
+                    <option value="5">5 Cuotas</option>
+                    <option value="6">6 Cuotas</option>
+                </select>
             </div>
 
             <!-- Total -->
