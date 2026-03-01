@@ -1052,7 +1052,7 @@ body {
     position: fixed;
     top: 80px;
     right: 1rem;
-    z-index: 9999;
+    z-index: 999999;
     max-width: 350px;
 }
 

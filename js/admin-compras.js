@@ -23,7 +23,8 @@ async function cargarCompras() {
             .from('compras_proveedor')
             .select(`
                 *,
-                proveedores ( razon_social )
+                proveedores ( razon_social ),
+                compras_responsables ( nombre )
             `)
             .order('created_at', { ascending: false });
 
@@ -72,6 +73,12 @@ function renderTablaCompras(data = null) {
                         $${formatearPrecio(saldo > 0 ? saldo : 0)}
                     </div>
                 </td>
+                <td style="font-size:0.85rem; color:#475569;">
+                    ${c.compras_responsables?.nombre || '<span style="color:#94a3b8">N/A</span>'}
+                </td>
+                <td style="font-size:0.85rem; color:#64748b;">
+                    ${c.nombre_registro || '<span style="color:#cbd5e1">-</span>'}
+                </td>
                 <td><span class="badge ${c.estado === 'CERRADO' ? 'badge-success' : 'badge-warning'}">${c.estado || 'PENDIENTE'}</span></td>
                 <td>
                     <div style="display:flex; gap:0.5rem; justify-content:center;">
@@ -114,24 +121,26 @@ async function cargarProveedoresDatalistCompra() {
 // ------------------------------------------------------------------
 
 async function mostrarFormCompra() {
-    document.getElementById('formCompra').style.display = 'block';
+    document.getElementById('formCompra').style.display = 'flex';
 
     // Reset inputs
     if (document.getElementById('compraId')) document.getElementById('compraId').value = '';
     if (document.getElementById('compraProveedor')) document.getElementById('compraProveedor').value = '';
     const fact = document.getElementById('compraFactura'); if (fact) fact.value = '';
-    const venc = document.getElementById('compraVencimiento'); if (venc) venc.value = '';
     const notas = document.getElementById('compraNotas'); if (notas) notas.value = '';
+    const resp = document.getElementById('compraResponsable'); if (resp) resp.value = '';
+    const topeInfo = document.getElementById('topeResponsableInfo'); if (topeInfo) topeInfo.textContent = '';
 
     if (document.getElementById('tbodyCompraItems')) document.getElementById('tbodyCompraItems').innerHTML = '';
     if (document.getElementById('compraTotalGeneral')) document.getElementById('compraTotalGeneral').textContent = '$0';
 
     compraItemsProvisionales = [];
 
-    // Cargar productos y esperar a que termine antes de llenar la lista
+    // Cargar productos y responsables
     await Promise.all([
         cargarProductosAutocomplete(),
-        cargarProveedoresDatalistCompra()
+        cargarProveedoresDatalistCompra(),
+        cargarResponsables()
     ]);
 
     // Llenar datalist de productos
@@ -357,6 +366,7 @@ function renderizarTablaDistribucion() {
     variantesDistribucionActual.forEach((v, idx) => {
         const tr = document.createElement('tr');
         const st = v.stock_actual || { alcala: 0, local01: 0, jordan: 0, digital: 0 };
+        const displayInducasco = (document.querySelector('.col-inducasco')?.style.display === 'none') ? 'none' : 'table-cell';
 
         tr.innerHTML = `
             <td class="text-center" style="vertical-align: middle;">
@@ -375,6 +385,15 @@ function renderizarTablaDistribucion() {
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm dist-talla" value="${v.talla || ''}" placeholder="Talla" oninput="actualizarVarianteTemporal(${idx}, 'talla', this.value)">
+            </td>
+            <td class="col-inducasco" style="display:${displayInducasco}; background:#fffbeb;">
+                <input type="text" class="form-control form-control-sm" value="${v.grafico || ''}" placeholder="Gráfico" oninput="actualizarVarianteTemporal(${idx}, 'grafico', this.value)">
+            </td>
+            <td class="col-inducasco" style="display:${displayInducasco}; background:#fffbeb;">
+                <input type="text" class="form-control form-control-sm" value="${v.visor || ''}" placeholder="Visor" oninput="actualizarVarianteTemporal(${idx}, 'visor', this.value)">
+            </td>
+            <td class="col-inducasco" style="display:${displayInducasco}; background:#fffbeb;">
+                <input type="text" class="form-control form-control-sm" value="${v.ean || ''}" placeholder="EAN" oninput="actualizarVarianteTemporal(${idx}, 'ean', this.value)">
             </td>
             <td>
                 <input type="number" class="form-control form-control-sm dist-sede" value="${v.alcala || 0}" min="0" oninput="actualizarVarianteTemporal(${idx}, 'alcala', this.value)">
@@ -403,6 +422,7 @@ function renderizarTablaDistribucion() {
 function agregarFilaDistribucionCompra() {
     variantesDistribucionActual.push({
         color: '', talla: 'Única',
+        grafico: '', visor: '', ean: '',
         alcala: 0, local01: 0, jordan: 0, digital: 0,
         url_imagen: '',
         stock_actual: { alcala: 0, local01: 0, jordan: 0, digital: 0 }
@@ -521,23 +541,21 @@ async function guardarCompra() {
     const anio = parseInt(document.getElementById('compraAnio').value);
     const mes = document.getElementById('compraMes')?.value || 'N/A';
     const estadoPago = document.getElementById('compraEstado').value;
+    const responsableId = document.getElementById('compraResponsable').value;
 
     // Calcular valor total
     const valorCalculado = compraItemsProvisionales.reduce((s, i) => s + i.subtotal, 0);
 
     if (!proveedorNombre) return showToast('Selecciona un proveedor', 'warning');
+    if (!responsableId) return showToast('Selecciona un responsable', 'warning');
     if (compraItemsProvisionales.length === 0) return showToast('Agrega productos', 'warning');
 
     let proveedorId = null;
     const provMatch = window.proveedoresData ? proveedoresData.find(p => p.razon_social === proveedorNombre) : null;
-    // Si no hay proveedoresData global, intentar buscarlo o alertar. (Asumimos que admin.js cargó proveedoresData)
-    // Pero si estamos en admin-compras.js, necesitamos acceso a proveedoresData.
-    // Lo más seguro es buscar en Supabase si no está en memoria.
 
     if (provMatch) {
         proveedorId = provMatch.id;
     } else {
-        // Fallback: buscar en DB
         const { data: p } = await supabaseClient.from('proveedores').select('id').eq('razon_social', proveedorNombre).maybeSingle();
         if (p) proveedorId = p.id;
         else return showToast('Proveedor no válido', 'error');
@@ -546,11 +564,14 @@ async function guardarCompra() {
     try {
         const headerData = {
             proveedor_id: proveedorId,
+            responsable_id: responsableId,
             anio: anio,
             mes_compra: mes,
             numero_factura: factura,
             valor_compra: valorCalculado,
-            estado: estadoPago === 'pagado' ? 'CERRADO' : 'ABIERTO'
+            estado: estadoPago === 'pagado' ? 'CERRADO' : 'ABIERTO',
+            nombre_registro: window.adminNombre || 'Administrador',
+            fecha_compra: new Date().toISOString()
         };
 
         const { data: compraHeader, error: errHeader } = await supabaseClient
@@ -565,7 +586,6 @@ async function guardarCompra() {
         // 3. Preparar detalles de productos (DESDOBLANDO POR VARIANTE)
         const detallesData = [];
         compraItemsProvisionales.forEach(item => {
-            // Si tiene distribución detallada (nuevo sistema), crear una fila por cada variante real
             if (Array.isArray(item.distribucion_detallada) && item.distribucion_detallada.length > 0) {
                 item.distribucion_detallada.forEach(v => {
                     const cantVar = (v.alcala + v.local01 + v.jordan + v.digital);
@@ -584,12 +604,15 @@ async function guardarCompra() {
                             cantidad_digital: v.digital,
                             colores: v.color,
                             talla: v.talla,
-                            url_imagen: v.url_imagen || ''
+                            url_imagen: v.url_imagen || '',
+                            // NUEVOS CAMPOS INDUCASCO
+                            grafico: v.grafico || '',
+                            visor: v.visor || '',
+                            ean: v.ean || ''
                         });
                     }
                 });
             } else {
-                // Fallback para items sin distribución detallada (si no se abrió el modal)
                 detallesData.push({
                     compra_id: compraId,
                     nombre_producto: item.nombre_producto,
@@ -614,6 +637,11 @@ async function guardarCompra() {
             .insert(detallesData);
 
         if (errDetalles) throw errDetalles;
+
+        // 4. Actualizar acumulado del responsable
+        const { data: respData } = await supabaseClient.from('compras_responsables').select('acumulado_anual').eq('id', responsableId).single();
+        const nuevoAcumulado = (respData?.acumulado_anual || 0) + valorCalculado;
+        await supabaseClient.from('compras_responsables').update({ acumulado_anual: nuevoAcumulado }).eq('id', responsableId);
 
         showToast('Compra guardada correctamente', 'success');
         cancelarFormCompra();
@@ -1188,3 +1216,213 @@ function actualizarResumenCompras() {
     if (elM) elM.innerText = pagadasMes;
 }
 window.actualizarResumenCompras = actualizarResumenCompras;
+
+// Event Listeners adicionales
+document.addEventListener('DOMContentLoaded', () => {
+    const selectResp = document.getElementById('compraResponsable');
+    if (selectResp) {
+        selectResp.addEventListener('change', async () => {
+            const id = selectResp.value;
+            const info = document.getElementById('topeResponsableInfo');
+            if (!id) {
+                if (info) info.textContent = '';
+                return;
+            }
+            try {
+                const { data } = await supabaseClient.from('compras_responsables').select('tope_anual, acumulado_anual').eq('id', id).single();
+                if (data && info) {
+                    const restante = data.tope_anual - data.acumulado_anual;
+                    const pct = (data.acumulado_anual / data.tope_anual * 100).toFixed(1);
+                    info.innerHTML = `Acumulado: <strong>$${formatearPrecio(data.acumulado_anual)}</strong> (${pct}%) | Disponible: <strong>$${formatearPrecio(restante > 0 ? restante : 0)}</strong>`;
+                    if (restante < 0) info.style.color = '#ef4444';
+                    else if (restante < data.tope_anual * 0.15) info.style.color = '#f59e0b';
+                    else info.style.color = '#64748b';
+                }
+            } catch (e) { }
+        });
+    }
+});
+// ------------------------------------------------------------------
+// GESTIÓN DE RESPONSABLES DE COMPRA
+// ------------------------------------------------------------------
+
+async function abrirModalResponsables() {
+    document.getElementById('modalResponsables').style.display = 'flex';
+    cargarResponsables();
+}
+window.abrirModalResponsables = abrirModalResponsables;
+
+function cerrarModalResponsables() {
+    document.getElementById('modalResponsables').style.display = 'none';
+}
+window.cerrarModalResponsables = cerrarModalResponsables;
+
+async function cargarResponsables() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('compras_responsables')
+            .select('*')
+            .order('nombre', { ascending: true });
+
+        if (error) throw error;
+
+        // 1. Llenar el select en el formulario de compra
+        const select = document.getElementById('compraResponsable');
+        if (select) {
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">Seleccionar responsable...</option>';
+            data.filter(r => r.activo).forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id;
+                opt.textContent = `${r.nombre} (ID: ${r.cedula})`;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        }
+
+        // 2. Llenar la tabla en el modal de gestión
+        const tbody = document.getElementById('tbodyResponsables');
+        if (tbody) {
+            tbody.innerHTML = data.map(r => {
+                const pct = r.tope_anual > 0 ? (r.acumulado_anual / r.tope_anual * 100).toFixed(1) : 0;
+                let badgeClass = 'badge-success';
+                if (pct > 90) badgeClass = 'badge-danger';
+                else if (pct > 70) badgeClass = 'badge-warning';
+
+                return `
+                    <tr>
+                        <td style="font-weight:600;">${r.nombre}</td>
+                        <td style="font-size:0.85rem;">${r.cedula}</td>
+                        <td style="font-size:0.85rem;">$${formatearPrecio(r.tope_anual)}</td>
+                        <td style="font-weight:700;">$${formatearPrecio(r.acumulado_anual)}</td>
+                        <td><span class="badge ${badgeClass}">${pct}%</span></td>
+                        <td>
+                            <button onclick="editarResponsable('${r.id}')" class="btn btn-xs btn-outline-primary">✏️</button>
+                            <button onclick="eliminarResponsable('${r.id}', ${r.activo})" class="btn btn-xs btn-outline-${r.activo ? 'danger' : 'success'}">
+                                ${r.activo ? '🚫' : '✅'}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="6" class="text-center">No hay responsables registrados</td></tr>';
+        }
+    } catch (err) {
+        console.error('Error cargando responsables:', err);
+    }
+}
+window.cargarResponsables = cargarResponsables;
+
+async function guardarResponsable() {
+    const id = document.getElementById('responsableId').value;
+    const nombre = document.getElementById('responsableNombre').value.trim();
+    const cedula = document.getElementById('responsableCedula').value.trim();
+    const tope = limpiarMoneda(document.getElementById('responsableTope').value);
+
+    if (!nombre || !cedula) return showToast('Nombre y Cédula son obligatorios', 'warning');
+
+    try {
+        const payload = { nombre, cedula, tope_anual: tope };
+
+        if (id) {
+            const { error } = await supabaseClient.from('compras_responsables').update(payload).eq('id', id);
+            if (error) throw error;
+            showToast('Responsable actualizado');
+        } else {
+            const { error } = await supabaseClient.from('compras_responsables').insert([payload]);
+            if (error) throw error;
+            showToast('Responsable registrado con éxito');
+        }
+
+        limpiarFormResponsable();
+        cargarResponsables();
+    } catch (err) {
+        console.error('Error guardando responsable:', err);
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+window.guardarResponsable = guardarResponsable;
+
+function limpiarFormResponsable() {
+    document.getElementById('responsableId').value = '';
+    document.getElementById('responsableNombre').value = '';
+    document.getElementById('responsableCedula').value = '';
+    document.getElementById('responsableTope').value = '';
+}
+window.limpiarFormResponsable = limpiarFormResponsable;
+
+async function editarResponsable(id) {
+    try {
+        const { data, error } = await supabaseClient.from('compras_responsables').select('*').eq('id', id).single();
+        if (error) throw error;
+
+        document.getElementById('responsableId').value = data.id;
+        document.getElementById('responsableNombre').value = data.nombre;
+        document.getElementById('responsableCedula').value = data.cedula;
+        document.getElementById('responsableTope').value = '$' + formatearPrecio(data.tope_anual);
+    } catch (err) {
+        showToast('Error cargando datos del responsable', 'error');
+    }
+}
+window.editarResponsable = editarResponsable;
+
+async function eliminarResponsable(id, activoActual) {
+    const label = activoActual ? 'desactivar' : 'reactivar';
+    if (!confirm(`¿Deseas ${label} a este responsable?`)) return;
+
+    try {
+        const { error } = await supabaseClient.from('compras_responsables').update({ activo: !activoActual }).eq('id', id);
+        if (error) throw error;
+        showToast(`Responsable ${activoActual ? 'desactivado' : 'activado'}`);
+        cargarResponsables();
+    } catch (err) {
+        showToast('Error al cambiar estado', 'error');
+    }
+}
+window.eliminarResponsable = eliminarResponsable;
+
+// ------------------------------------------------------------------
+// MODO INDUCASCO / DETALLE UNIVERSAL
+// ------------------------------------------------------------------
+
+function toggleColumnasInducasco() {
+    const cols = document.querySelectorAll('.col-inducasco');
+    if (cols.length === 0) return;
+
+    const isHidden = cols[0].style.display === 'none';
+    cols.forEach(el => {
+        el.style.display = isHidden ? 'table-cell' : 'none';
+    });
+}
+window.toggleColumnasInducasco = toggleColumnasInducasco;
+// ------------------------------------------------------------------
+// EXPORTACIÓN DE COMPRAS
+// ------------------------------------------------------------------
+
+function exportarComprasExcel() {
+    if (!window.ReportExporter) return showToast('Módulo de exportación no cargado', 'error');
+    if (comprasData.length === 0) return showToast('No hay datos para exportar', 'warning');
+
+    const dataExcel = comprasData.map(c => ({
+        'Fecha': formatearFecha(c.fecha_compra),
+        'Proveedor': c.proveedores?.razon_social || 'Desconocido',
+        'Factura': c.numero_factura || 'N/A',
+        'Valor': c.valor_compra,
+        'Saldo': c.saldo_pendiente,
+        'Responsable': c.compras_responsables?.nombre || 'N/A',
+        'Registrado Por': c.nombre_registro || 'N/A',
+        'Estado': c.estado
+    }));
+
+    ReportExporter.toExcel(dataExcel, 'Reporte_Compras', 'Compras');
+}
+
+function exportarComprasPDF() {
+    if (!window.ReportExporter) return showToast('Módulo de exportación no cargado', 'error');
+    const tabla = document.querySelector('#comprasSection table');
+    if (!tabla) return showToast('No se encontró la tabla de compras', 'error');
+
+    ReportExporter.toPDF(tabla, 'Reporte_Compras', 'Listado de Compras a Proveedores');
+}
+
+window.exportarComprasExcel = exportarComprasExcel;
+window.exportarComprasPDF = exportarComprasPDF;

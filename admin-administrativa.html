@@ -138,6 +138,7 @@
                 <div class="nav-dropdown">
                     <button class="nav-dropdown-btn">⚙️ Sistema <span class="arrow">▼</span></button>
                     <div class="nav-dropdown-content">
+                        <a href="#" data-section="admin_roles">👥 Gestor de Roles</a>
                         <a href="#" onclick="logoutOperativo()" class="logout-link">🚪 Cerrar Sesión</a>
                     </div>
                 </div>
@@ -177,6 +178,8 @@
                     <a href="#" data-section="metas_ia" onclick="toggleMobileMenu()">🎯 Metas</a>
                 </div>
                 <div class="mobile-nav-group">
+                    <div class="mobile-nav-title">⚙️ Sistema</div>
+                    <a href="#" data-section="admin_roles" onclick="toggleMobileMenu()">👥 Gestor de Roles</a>
                     <a href="#" onclick="logoutOperativo()" class="logout-link">🚪 Cerrar Sesión</a>
                 </div>
             </div>
@@ -402,6 +405,8 @@
                                             <th>Cant.</th>
                                             <th>Valor Total</th>
                                             <th>Estado</th>
+                                            <th>Registrado Por</th>
+                                            <th>Responsable</th>
                                         </tr>
                                     </thead>
                                     <tbody id="tbodyCarteraBodegas">
@@ -463,6 +468,7 @@
                                             <th>Total</th>
                                             <th>Comisión Est.</th>
                                             <th>Neto</th>
+                                            <th>Registrado Por</th>
                                         </tr>
                                     </thead>
                                     <tbody id="tbodyCarteraAddi">
@@ -524,11 +530,12 @@
                                             <th>Total</th>
                                             <th>Comisión Est.</th>
                                             <th>Neto</th>
+                                            <th>Registrado Por</th>
                                         </tr>
                                     </thead>
                                     <tbody id="tbodyCarteraSiste">
                                         <tr>
-                                            <td colspan="6" style="text-align:center;">Cargando...</td>
+                                            <td colspan="7" style="text-align:center;">Cargando...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -585,11 +592,12 @@
                                             <th>Total</th>
                                             <th>Comisión Est.</th>
                                             <th>Neto</th>
+                                            <th>Registrado Por</th>
                                         </tr>
                                     </thead>
                                     <tbody id="tbodyCarteraFodegas">
                                         <tr>
-                                            <td colspan="6" style="text-align:center;">Cargando...</td>
+                                            <td colspan="7" style="text-align:center;">Cargando...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -687,7 +695,7 @@
                                     <th>Cantidad</th>
                                     <th>Valor Total</th>
                                     <th>Estado</th>
-                                    <th>Acciones</th>
+                                    <th>Responsable</th>
                                 </tr>
                             </thead>
                             <tbody id="tbodyPrestamos">
@@ -777,6 +785,44 @@
                 </div>
             </div>
 
+            <!-- GESTOR DE ROLES -->
+            <div id="section-admin_roles" class="section">
+                <div class="page-header">
+                    <h1>👥 Gestión de Administradores</h1>
+                    <p>Configura quién tiene acceso a los paneles y sus niveles de permiso.</p>
+                </div>
+
+                <div class="card" style="margin-top:1.5rem;">
+                    <div class="card-body">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h3 style="margin:0;">Administradores Registrados</h3>
+                            <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoAdmin()">+ Nuevo
+                                Administrador</button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table" id="tablaAdministradores">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Correo Electrónico</th>
+                                        <th>Rol</th>
+                                        <th>Panel Autorizado</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyAdministradores">
+                                    <tr>
+                                        <td colspan="6" style="text-align:center;">Cargando administradores...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -814,6 +860,13 @@
                     placeholder="Ej: Dueño X, Evento Y, Empleado Z">
             </div>
             <div class="form-group">
+                <label>Responsable Directo <span class="required">*</span></label>
+                <select id="prestamoResponsable" class="form-control">
+                    <option value="">Seleccione responsable...</option>
+                </select>
+                <small style="color:var(--gray); font-size:0.75rem;">Persona encargada de la custodia o pago.</small>
+            </div>
+            <div class="form-group">
                 <label>Cantidad</label>
                 <input type="number" id="prestamoCantidad" class="form-control" placeholder="0" min="1"
                     oninput="calcularTotalPrestamo()">
@@ -831,6 +884,52 @@
             <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1.5rem;">
                 <button class="btn btn-secondary" onclick="cerrarModalPrestamo()">Cancelar</button>
                 <button class="btn btn-success" onclick="guardarPrestamo()">Guardar Préstamo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Administrador -->
+    <div id="modalAdmin" class="modal-overlay" style="display:none;">
+        <div class="modal"
+            style="background:white;padding:2rem;border-radius:1rem;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;">
+            <h3 id="tituloModalAdmin">👥 Nuevo Administrador</h3>
+            <div class="form-group">
+                <label>Nombre <span class="required">*</span></label>
+                <input type="text" id="adminNombre" class="form-control" placeholder="Ej: Juan Perez">
+                <input type="hidden" id="adminId">
+            </div>
+            <div class="form-group">
+                <label>Correo Electrónico <span class="required">*</span></label>
+                <input type="email" id="adminEmailForm" class="form-control" placeholder="admin@moteros.com">
+                <small style="color:var(--gray);">Debe coincidir con la cuenta en Supabase Auth.</small>
+            </div>
+            <div class="form-group">
+                <label>Rol asignado <span class="required">*</span></label>
+                <select id="adminRol" class="form-control">
+                    <option value="Dueña">Dueña</option>
+                    <option value="Operativa">Operativa</option>
+                    <option value="Administrativa">Administrativa</option>
+                    <option value="Desarrollador">Desarrollador</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Panel Autorizado <span class="required">*</span></label>
+                <select id="adminPanelAcceso" class="form-control">
+                    <option value="admin">Panel Principal (tienda-admin)</option>
+                    <option value="admin-administrativa">Central Operativa (administrativa)</option>
+                    <option value="ambos">Acceso Total (Ambos paneles)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Estado</label>
+                <select id="adminEstado" class="form-control">
+                    <option value="true">🟢 Activo (Puede ingresar)</option>
+                    <option value="false">🔴 Inactivo (Acceso bloqueado)</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1.5rem;">
+                <button class="btn btn-secondary" onclick="cerrarModalAdmin()">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarAdmin()">Guardar Cambios</button>
             </div>
         </div>
     </div>

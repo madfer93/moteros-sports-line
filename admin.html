@@ -583,6 +583,7 @@
                         <a href="#" data-section="proveedores">🏭 Proveedores</a>
                         <a href="#" data-section="compras">🛒 Compras</a>
                         <a href="#" data-section="deudas">📋 Deudas Negocio</a>
+                        <a href="#" data-section="cartera-bodegas">📦 Cartera Bodegas</a>
                         <a href="#" data-section="creditos">🏍️ Crédito Motero</a>
                         <a href="#" data-section="servicios-vendidos">🛠️ Servicios Vendidos</a>
                     </div>
@@ -3038,7 +3039,6 @@
                 </div>
 
                 <div class="actions-bar">
-                    <button onclick="mostrarFormProveedor()" class="btn btn-primary">➕ Nuevo Proveedor</button>
                     <input type="text" id="proveedoresBuscar" class="form-control" placeholder="🔍 Buscar proveedor..."
                         style="max-width:250px;" oninput="buscarProveedores()">
                     <button onclick="cargarProveedores()" class="btn btn-secondary">🔄 Actualizar</button>
@@ -3259,6 +3259,15 @@
 
                 <div class="actions-bar">
                     <button onclick="mostrarFormCompra()" class="btn btn-primary">➕ Nueva Compra</button>
+                    <button onclick="mostrarFormProveedor()" class="btn btn-outline-primary">🏢 Nuevo Proveedor</button>
+                    <button onclick="abrirModalResponsables()" class="btn btn-outline-info">👤 Gestionar
+                        Responsables</button>
+
+                    <div style="flex:1;"></div>
+
+                    <button class="btn btn-secondary btn-sm" onclick="exportarComprasPDF()">📄 PDF</button>
+                    <button class="btn btn-secondary btn-sm" onclick="exportarComprasExcel()">📊 Excel</button>
+
                     <select id="comprasEstadoFiltro" class="form-control" style="max-width:180px;"
                         onchange="cargarCompras()">
                         <option value="">Todas</option>
@@ -3325,6 +3334,15 @@
                                     </div>
                                 </div>
                                 <div class="form-group">
+                                    <label>Responsable <span class="required">*</span></label>
+                                    <select id="compraResponsable" class="form-control" required
+                                        style="font-weight:bold;">
+                                        <option value="">Seleccionar responsable...</option>
+                                    </select>
+                                    <div id="topeResponsableInfo"
+                                        style="font-size:0.75rem; color:#64748b; margin-top:4px;"></div>
+                                </div>
+                                <div class="form-group">
                                     <label>Estado Pago</label>
                                     <select id="compraEstado" class="form-control">
                                         <option value="pendiente">🔴 Pendiente</option>
@@ -3386,35 +3404,44 @@
                     </div>
                 </div>
 
-                <!-- MODAL DISTRIBUCIÓN -->
                 <div id="modalDistribucion" class="form-modal"
                     style="display:none; z-index: 10002; background:rgba(0,0,0,0.6);">
                     <div
-                        style="background:white; width:1200px; max-width:98%; margin:auto; padding:2rem; border-radius:1rem; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+                        style="background:white; width:98% !important; max-width:1800px !important; margin:auto; padding:2rem; border-radius:1rem; box-shadow:0 20px 50px rgba(0,0,0,0.5); height:95vh; display:flex; flex-direction:column; position:relative;">
                         <h3 style="margin-top:0;">📍 Distribución de Producto</h3>
                         <p id="distProductoTitulo" style="color:#64748b; font-size:0.9rem; margin-bottom:1.5rem;"></p>
                         <input type="hidden" id="distFilaIndex">
 
                         <div id="containerDistribucionVariantes"
-                            style="background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-bottom: 2rem;">
+                            style="background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-bottom: 2rem; flex:1; display:flex; flex-direction:column; overflow:hidden;">
                             <h4
-                                style="margin-bottom: 1rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
-                                <span>📏</span> Distribución por Variantes
+                                style="margin-bottom: 1rem; color: #1e293b; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                                <div><span>📏</span> Distribución por Variantes</div>
+                                <button type="button" class="btn btn-xs btn-warning"
+                                    onclick="toggleColumnasInducasco()">
+                                    ✨ Mostrar/Ocultar Detalle (Gráfico/Visor/EAN)
+                                </button>
                             </h4>
                             <div class="table-responsive"
-                                style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+                                style="flex:1; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px;">
                                 <table class="table table-bordered table-sm" id="tablaDistribucionCompra"
                                     style="background: white; margin-bottom: 0;">
                                     <thead class="thead-light" style="position: sticky; top: 0; z-index: 10;">
                                         <tr>
-                                            <th style="width: 6%; background: #f8f9fa;">Foto</th>
-                                            <th style="width: 34%; background: #f8f9fa;">Color</th>
-                                            <th style="width: 10%; background: #f8f9fa;">Talla</th>
-                                            <th style="width: 10%; background: #f8f9fa;">Alcalá</th>
-                                            <th style="width: 10%; background: #f8f9fa;">Local 01</th>
-                                            <th style="width: 10%; background: #f8f9fa;">Jordán</th>
-                                            <th style="width: 10%; background: #f8f9fa;">Digital</th>
-                                            <th style="width: 10%; background: #f8f9fa;">Acción</th>
+                                            <th style="width: 5%; background: #f8f9fa;">Foto</th>
+                                            <th style="width: 15%; background: #f8f9fa;">Color</th>
+                                            <th style="width: 8%; background: #f8f9fa;">Talla</th>
+                                            <th class="col-inducasco"
+                                                style="width: 10%; background: #fef3c7; display:none;">Gráfico</th>
+                                            <th class="col-inducasco"
+                                                style="width: 10%; background: #fef3c7; display:none;">Visor</th>
+                                            <th class="col-inducasco"
+                                                style="width: 10%; background: #fef3c7; display:none;">EAN</th>
+                                            <th style="width: 8%; background: #f8f9fa;">Alcalá</th>
+                                            <th style="width: 8%; background: #f8f9fa;">Local 01</th>
+                                            <th style="width: 8%; background: #f8f9fa;">Jordán</th>
+                                            <th style="width: 8%; background: #f8f9fa;">Digital</th>
+                                            <th style="width: 8%; background: #f8f9fa;">Acción</th>
                                         </tr>
                                     </thead>
                                     <tbody id="tbodyDistribucionCompra">
@@ -3443,6 +3470,68 @@
                             <button onclick="cerrarModalDistribucion()" class="btn btn-secondary">Cancelar</button>
                             <button onclick="guardarDistribucion()" class="btn btn-primary">Confirmar
                                 Distribución</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL GESTIÓN DE RESPONSABLES -->
+                <div id="modalResponsables" class="form-modal"
+                    style="display:none; z-index: 10003; background:rgba(0,0,0,0.6);">
+                    <div
+                        style="background:white; width:850px; max-width:95%; margin:auto; padding:2rem; border-radius:1rem; box-shadow:0 25px 60px rgba(0,0,0,0.4); display:flex; flex-direction:column; position:relative;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:1rem; margin-bottom:1.5rem;">
+                            <h3 style="margin:0;">👤 Gestión de Responsables de Compra</h3>
+                            <button onclick="cerrarModalResponsables()" class="btn btn-sm btn-secondary">✖️</button>
+                        </div>
+
+                        <!-- Formulario para agregar/editar responsable -->
+                        <div id="formResponsable"
+                            style="background:#f1f5f9; padding:1.5rem; border-radius:0.75rem; margin-bottom:2rem;">
+                            <input type="hidden" id="responsableId">
+                            <div style="display:grid; grid-template-columns: 2fr 1.2fr 1fr; gap:1rem;">
+                                <div class="form-group">
+                                    <label>Nombre Completo</label>
+                                    <input type="text" id="responsableNombre" class="form-control"
+                                        placeholder="Ej. Juan Pérez">
+                                </div>
+                                <div class="form-group">
+                                    <label>Cédula / ID</label>
+                                    <input type="text" id="responsableCedula" class="form-control"
+                                        placeholder="12345678">
+                                </div>
+                                <div class="form-group">
+                                    <label>Tope Anual (Fiscal)</label>
+                                    <input type="text" id="responsableTope" class="form-control"
+                                        placeholder="$60,000,000" onblur="formatearMonedaInput(this)">
+                                </div>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+                                <button onclick="limpiarFormResponsable()" class="btn btn-light btn-sm">Limpiar</button>
+                                <button onclick="guardarResponsable()" class="btn btn-primary btn-sm">💾 Guardar
+                                    Responsable</button>
+                            </div>
+                        </div>
+
+                        <!-- Lista de responsables -->
+                        <div style="flex:1; overflow-y:auto; max-height:450px;">
+                            <table class="data-table">
+                                <thead style="background:white; position:sticky; top:0;">
+                                    <tr>
+                                        <th>Responsable</th>
+                                        <th>Cédula</th>
+                                        <th>Tope Anual</th>
+                                        <th>Acumulado</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyResponsables">
+                                    <tr>
+                                        <td colspan="6" class="text-center">Cargando responsables...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -3618,6 +3707,8 @@
                                         <th>Proveedor / Factura</th>
                                         <th>Valor Total</th>
                                         <th>Saldo Pendiente</th>
+                                        <th>Responsable</th>
+                                        <th>Registrado Por</th>
                                         <th>Estado</th>
                                         <th style="text-align:center;">Acciones</th>
                                     </tr>
@@ -3769,6 +3860,63 @@
                         </div>
                     </div>
                 </div>
+            </section>
+
+
+
+            <!-- ═══════════════════ CARTERA BODEGAS ═══════════════════ -->
+            <section id="cartera-bodegasSection" class="section">
+                <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <h1>📦 Cartera Bodegas (Bodegas Externas)</h1>
+                        <p>Gestión de Bodegas a las que se les presta mercancía</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="abrirModalBodegaExterna()"><i class="fas fa-plus"></i>
+                        Nueva Bodega</button>
+                </div>
+
+                <!-- KPIs Bodegas -->
+                <div class="stats-grid" style="margin-bottom:1.5rem;">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 id="kpiBodegasTotal">0</h3>
+                            <p>Bodegas Registradas</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3 id="kpiBodegasSaldoGlobal">$0</h3>
+                            <p>Saldo Global Pendiente</p>
+                        </div>
+                        <div class="stat-icon" style="background:#fefce8;color:#eab308;"><i
+                                class="fas fa-hand-holding-usd"></i></div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Bodegas -->
+                <div class="card">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre Bodega</th>
+                                    <th>Responsable</th>
+                                    <th>Teléfono</th>
+                                    <th>Estado</th>
+                                    <th>Saldo Pendiente</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaBodegasExternas">
+                                <tr>
+                                    <td colspan="6" style="text-align:center;">Cargando bodegas...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Modal removido y movido al bottom para evitar conflictos de padding/z-index -->
             </section>
 
 
@@ -6171,7 +6319,7 @@
     <script src="js/ai-widget.js"></script>
     <script src="js/ticket-printer.js"></script>
     <script src="js/report-exporter.js"></script>
-    <script src="js/admin.js"></script>
+    <script src="js/admin.js?v=20250225"></script>
     <script src="js/admin-feedback.js"></script>
     <script src="js/admin-nomina.js"></script>
     <script src="js/admin-compras.js"></script>
@@ -7148,6 +7296,94 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal para Crear/Editar Bodega Externa -->
+    <div id="modalBodegaExterna" class="modal-overlay" style="display:none; z-index: 10001;">
+        <div class="modal-content"
+            style="max-width:1200px; max-height:90vh; overflow-y:auto; width:95%; padding:2.5rem;">
+            <div class="modal-header">
+                <h3 id="tituloModalBodegaExterna">📦 Nueva Bodega Externa</h3>
+                <button onclick="cerrarModalBodegaExterna()" class="btn-cerrar">❌</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="bodegaExternaId">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Nombre de la Bodega *</label>
+                        <input type="text" id="bodegaExternaNombre" class="form-control"
+                            placeholder="Ej: Bodega Central Cali">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Responsable</label>
+                        <input type="text" id="bodegaExternaResponsable" class="form-control"
+                            placeholder="Nombre del encargado">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Teléfono (WhatsApp)</label>
+                        <input type="text" id="bodegaExternaTelefono" class="form-control" placeholder="10 dígitos">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Dirección (Opcional)</label>
+                        <input type="text" id="bodegaExternaDireccion" class="form-control"
+                            placeholder="Ubicación física">
+                    </div>
+
+                    <div class="form-group" style="display:none; margin-bottom:0;" id="estadoBodegaExternaContainer">
+                        <label>Estado</label>
+                        <select id="bodegaExternaEstado" class="form-control">
+                            <option value="Activa">🟢 Activa</option>
+                            <option value="Inactiva">🔴 Inactiva</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-botones" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button class="btn btn-secondary" onclick="cerrarModalBodegaExterna()" style="flex:1;">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarBodegaExterna()" style="flex:1;">✅ Registrar
+                    Bodega</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Ver Detalles Bodega Externa -->
+    <div id="modalDetallesBodegaExterna" class="modal-overlay" style="display:none; z-index: 10002;">
+        <div class="modal-content"
+            style="max-width:1200px; max-height:90vh; overflow-y:auto; width:95%; padding:2.5rem;">
+            <div class="modal-header" style="margin-bottom: 1.5rem;">
+                <h3 id="tituloDetallesBodega">📦 Inventario en Bodega</h3>
+                <button onclick="cerrarDetallesBodegaExterna()" class="btn-cerrar">❌</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha Despacho</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Valor Total</th>
+                                <th>Abonado</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaDetallesBodegaExterna">
+                            <tr>
+                                <td colspan="6" style="text-align:center;">⏳ Cargando inventario...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-botones" style="margin-top: 1.5rem; text-align:right;">
+                <button class="btn btn-secondary" onclick="cerrarDetallesBodegaExterna()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>

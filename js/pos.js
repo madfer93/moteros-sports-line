@@ -284,7 +284,7 @@ async function abrirModalCajaConEmpleado() {
     // Configurar base de caja
     let basePredeterminada = TIENDA.esDigital ? 0 : 100000;
     try {
-        const { data: localData } = await db.from('locales').select('base_caja').eq('nombre', TIENDA.nombre).single();
+        const { data: localData } = await db.from('locales').select('base_caja').eq('nombre', TIENDA.nombre).maybeSingle();
         if (localData && localData.base_caja !== undefined && localData.base_caja !== null) {
             basePredeterminada = localData.base_caja;
         }
@@ -330,7 +330,7 @@ async function abrirModalCajaLegacy() {
     // Configurar base de caja
     let basePredeterminada = TIENDA.esDigital ? 0 : 100000;
     try {
-        const { data: localData } = await db.from('locales').select('base_caja').eq('nombre', TIENDA.nombre).single();
+        const { data: localData } = await db.from('locales').select('base_caja').eq('nombre', TIENDA.nombre).maybeSingle();
         if (localData && localData.base_caja !== undefined && localData.base_caja !== null) {
             basePredeterminada = localData.base_caja;
         }
@@ -1164,7 +1164,8 @@ async function cargarProductos() {
 
             return {
                 ...p,
-                id_producto: p.id, // Unificar uso de ID
+                id_producto: p.id, // Unificar uso de ID (UUID para el sistema POS)
+                ref_bodega: p.id_producto, // Preservar código original para consultas de stock
                 stock: stockTotal,
                 stock_detallado: stockDetallado,
                 stocks_globales: stocksGlobales // Nuevo campo para Digital/Admin
@@ -4505,6 +4506,7 @@ function procesarProductosOffline(prodsCached, invCached) {
             stockDetallado[color][talla] = (stockDetallado[color][talla] || 0) + cant;
         });
 
+
         return {
             ...p,
             id_producto: p.id,
@@ -4515,3 +4517,629 @@ function procesarProductosOffline(prodsCached, invCached) {
     renderizarProductos();
 }
 
+// ---------------------------------------------------------------
+// GESTIÓN DE BODEGAS EXTERNAS (DESPACHOS Y ABONOS) - UI BÁSICA
+// ---------------------------------------------------------------
+function abrirModalGestionBodegas() {
+    document.getElementById('modalGestionBodegas').style.display = 'flex';
+    // Inicializar llamando la lista de bodegas
+    cargarBodegasSelectPOS();
+
+    // Auto-completar el responsable
+    const inputResp = document.getElementById('responsableBodegaPOS');
+    if (inputResp) {
+        inputResp.value = (empleadoLogueado && empleadoLogueado.nombre) ? empleadoLogueado.nombre : 'Admin';
+    }
+}
+window.abrirModalGestionBodegas = abrirModalGestionBodegas;
+
+function cerrarModalGestionBodegas() {
+    document.getElementById('modalGestionBodegas').style.display = 'none';
+    // Limpiar campos
+    const select = document.getElementById('bodegaSeleccionadaPOS');
+    if (select) select.value = '';
+    const input = document.getElementById('inputBuscarProductoBodega');
+    if (input) input.value = '';
+    const lista = document.getElementById('listaProductosBodega');
+    if (lista) lista.style.display = 'none';
+    const monto = document.getElementById('montoAbonoBodega');
+    if (monto) monto.value = '';
+    const deuda = document.getElementById('deudaTotalBodegaDisplay');
+    if (deuda) deuda.textContent = '$0';
+    const total = document.getElementById('totalDespachoBodegaDisplay');
+    if (total) total.textContent = '$0';
+    const items = document.getElementById('carritoBodegaItems');
+    if (items) items.innerHTML = '<div class="carrito-vacio">Aún no has agregado productos. Busca arriba para agregar.</div>';
+    const inputResp = document.getElementById('responsableBodegaPOS');
+    if (inputResp) inputResp.value = '';
+
+    // Limpiar variables de arreglos temporales
+    if (typeof carritoBodega !== 'undefined') carritoBodega = [];
+    if (typeof abonosBodegaMultiples !== 'undefined') {
+        abonosBodegaMultiples = [];
+        const listaAbonos = document.getElementById('listaAbonosBodegaMultiples');
+        if (listaAbonos) listaAbonos.innerHTML = '<div class="carrito-vacio" style="padding:1rem; font-size:0.9rem;">No has añadido pagos aún.</div>';
+        const totalAbonos = document.getElementById('totalAbonosBodegaDisplay');
+        if (totalAbonos) totalAbonos.textContent = '$0';
+    }
+}
+window.cerrarModalGestionBodegas = cerrarModalGestionBodegas;
+
+function cambiarTabBodegas(modo) {
+    document.getElementById('tabDespachoBodega').classList.remove('active');
+    document.getElementById('tabAbonoBodega').classList.remove('active');
+    document.getElementById('tabDespachoBodega').style.borderBottomColor = 'transparent';
+    document.getElementById('tabDespachoBodega').style.color = 'var(--gray)';
+    document.getElementById('tabAbonoBodega').style.borderBottomColor = 'transparent';
+    document.getElementById('tabAbonoBodega').style.color = 'var(--gray)';
+
+    document.getElementById('seccionDespachoBodega').style.display = 'none';
+    document.getElementById('seccionAbonoBodega').style.display = 'none';
+
+    if (modo === 'despacho') {
+        document.getElementById('tabDespachoBodega').classList.add('active');
+        document.getElementById('tabDespachoBodega').style.borderBottomColor = 'var(--primary)';
+        document.getElementById('tabDespachoBodega').style.color = 'var(--primary)';
+        document.getElementById('seccionDespachoBodega').style.display = 'block';
+    } else {
+        document.getElementById('tabAbonoBodega').classList.add('active');
+        document.getElementById('tabAbonoBodega').style.borderBottomColor = 'var(--primary)';
+        document.getElementById('tabAbonoBodega').style.color = 'var(--primary)';
+        document.getElementById('seccionAbonoBodega').style.display = 'block';
+    }
+}
+window.cambiarTabBodegas = cambiarTabBodegas;
+
+async function cargarBodegasSelectPOS() {
+    const select = document.getElementById('bodegaSeleccionadaPOS');
+    if (!select) return;
+    select.innerHTML = '<option value="">⏳ Cargando bodegas...</option>';
+    try {
+        const { data, error } = await db.from('bodegas_externas').select('id, nombre').eq('estado', 'Activa').order('nombre');
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            select.innerHTML = '<option value="">No hay bodegas activas</option>';
+            return;
+        }
+
+        select.innerHTML = '<option value="">-- Selecciona una bodega --</option>' +
+            data.map(b => `<option value="${b.id}">${b.nombre}</option>`).join('');
+    } catch (err) {
+        console.error('Error cargando bodegas POS:', err);
+        select.innerHTML = '<option value="">Error cargando bodegas</option>';
+    }
+}
+window.cargarBodegasSelectPOS = cargarBodegasSelectPOS;
+
+async function cargarDatosBodegaPOS() {
+    const bodegaId = document.getElementById('bodegaSeleccionadaPOS').value;
+    const deudaDisplay = document.getElementById('deudaTotalBodegaDisplay');
+
+    if (!bodegaId) {
+        deudaDisplay.textContent = '$0';
+        return;
+    }
+
+    try {
+        // Calcular deuda sumando valor_total de préstamos y restando monto_abonado (simplificado, o si existe una tabla general)
+        // Para exactitud consultamos prestamos_operativos no devueltos/pagados del todo
+        const { data, error } = await db.from('prestamos_operativos')
+            .select('valor_total, monto_abonado')
+            .eq('bodega_id', bodegaId);
+
+        if (error) throw error;
+
+        let deudaTotal = 0;
+        if (data) {
+            data.forEach(p => {
+                deudaTotal += (p.valor_total || 0) - (p.monto_abonado || 0);
+            });
+        }
+
+        // Formatear el valor en moneda
+        deudaDisplay.textContent = `$${Math.max(0, deudaTotal).toLocaleString('es-CO')}`;
+    } catch (err) {
+        console.error('Error calculando deuda bodega:', err);
+        deudaDisplay.textContent = 'Error';
+    }
+}
+window.cargarDatosBodegaPOS = cargarDatosBodegaPOS;
+
+function filtrarProductosBodegaPOS() {
+    const busqueda = document.getElementById('inputBuscarProductoBodega').value.toLowerCase().trim();
+    const lista = document.getElementById('listaProductosBodega');
+
+    if (busqueda.length < 2) {
+        lista.style.display = 'none';
+        return;
+    }
+
+    const filtrados = productos.filter(p =>
+        p.nombre?.toLowerCase().includes(busqueda) ||
+        p.id_producto?.toString().toLowerCase().includes(busqueda)
+    );
+
+    if (filtrados.length === 0) {
+        lista.innerHTML = '<div style="padding:1rem; text-align:center; color:var(--gray);">No hay productos con ese nombre.</div>';
+        lista.style.display = 'block';
+        return;
+    }
+
+    // Renderizar productos con sus variantes desglosadas
+    let html = '';
+    filtrados.forEach(p => {
+        // En el admin histórico, stock_detallado puede estar vacío y usar stocks_globales
+        let variantesCombinadas = {};
+
+        if (p.stock_detallado && Object.keys(p.stock_detallado).length > 0) {
+            variantesCombinadas = p.stock_detallado;
+        } else if (p.stocks_globales && Object.keys(p.stocks_globales).length > 0) {
+            // Unificar stock de todas las tiendas (solo para visualización rápida de añadir)
+            Object.values(p.stocks_globales).forEach(tiendaStock => {
+                Object.entries(tiendaStock).forEach(([color, tallas]) => {
+                    if (!variantesCombinadas[color]) variantesCombinadas[color] = {};
+                    Object.entries(tallas).forEach(([talla, cant]) => {
+                        variantesCombinadas[color][talla] = (variantesCombinadas[color][talla] || 0) + cant;
+                    });
+                });
+            });
+        }
+
+        if (Object.keys(variantesCombinadas).length === 0) {
+            // Si no hay detalle en absoluto, mostrar uno genérico
+            if (p.stock > 0) {
+                html += `
+                <div style="padding:0.8rem; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:bold; color:var(--dark);">${p.nombre}</div>
+                        <div style="font-size:0.8rem; color:var(--gray);">Ref: ${p.id_producto} | Precio Público: $${p.precio.toLocaleString('es-CO')}</div>
+                        <div style="font-size:0.8rem; color:var(--danger); margin-top:0.2rem;">Stock General: ${p.stock}</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="seleccionarProductoBodegaPOS('${p.id_producto}', '${p.nombre.replace(/'/g, "\\'")}', ${p.precio}, 'Única', '')" style="padding:0.4rem 0.8rem; font-size:0.8rem;">Añadir</button>
+                </div>`;
+            }
+        } else {
+            // Producto con stock detallado (combinado)
+            html += `
+            <div style="padding:0.8rem; border-bottom:1px solid #eee;">
+                <div style="font-weight:bold; color:var(--dark);">${p.nombre}</div>
+                <div style="font-size:0.8rem; color:var(--gray); margin-bottom:0.5rem;">Ref: ${p.id_producto} | Precio Público: $${p.precio.toLocaleString('es-CO')}</div>
+                <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">`;
+
+            Object.entries(variantesCombinadas).forEach(([color, tallas]) => {
+                Object.entries(tallas).forEach(([talla, cant]) => {
+                    if (cant > 0) {
+                        let colorDisplay = '';
+                        if (color && color !== 'undefined' && color !== 'null' && color.trim() !== '') {
+                            colorDisplay = color + ' - ';
+                        }
+
+                        // Pasar un rawColor vacío si no tiene color válido para la función de selección
+                        let rawColor = colorDisplay ? color : '';
+
+                        html += `
+                        <button class="btn btn-outline-primary" style="padding:0.3rem 0.6rem; font-size:0.8rem; border-radius:15px; display:flex; align-items:center; gap:0.3rem;" onclick="seleccionarProductoBodegaPOS('${p.id}', '${p.nombre.replace(/'/g, "\\'")}', ${p.precio}, '${talla}', '${rawColor}', '${p.ref_bodega}')">
+                            <span>${colorDisplay}${talla}</span>
+                            <span style="background:var(--primary); color:white; border-radius:10px; padding:0.1rem 0.4rem; font-size:0.75rem;">${cant}</span>
+                        </button>`;
+                    }
+                });
+            });
+            html += `</div></div>`;
+        }
+    });
+
+    if (html === '') {
+        lista.innerHTML = '<div style="padding:1rem; text-align:center; color:var(--gray);">Producto sin stock disponible para despachar.</div>';
+    } else {
+        lista.innerHTML = html;
+    }
+
+    lista.style.display = 'block';
+}
+window.filtrarProductosBodegaPOS = filtrarProductosBodegaPOS;
+
+// Variables Globales temporales para el carrito de bodegas
+let carritoBodega = [];
+
+function seleccionarProductoBodegaPOS(id_producto, nombre, precio, talla = 'Única', color = '', ref_bodega = '') {
+    const lista = document.getElementById('listaProductosBodega');
+    const input = document.getElementById('inputBuscarProductoBodega');
+
+    lista.style.display = 'none';
+    input.value = '';
+
+    const variantKey = `${id_producto}-${talla}-${color}`;
+
+    // Añadir al carrito temporal de bodegas
+    const existe = carritoBodega.find(i => i.variantKey === variantKey);
+    if (existe) {
+        existe.cantidad += 1;
+        existe.subtotal = existe.cantidad * existe.precio_mayorista;
+    } else {
+        carritoBodega.push({
+            id_producto,
+            variantKey,
+            nombre,
+            talla,
+            color,
+            precio_publico: precio,
+            precio_mayorista: precio * 0.7, // Sugerencia de precio mayorista
+            cantidad: 1,
+            subtotal: precio * 0.7,
+            ref_bodega: ref_bodega || id_producto // Fallback si no viene la referencia
+        });
+    }
+
+    renderizarCarritoBodega();
+}
+window.seleccionarProductoBodegaPOS = seleccionarProductoBodegaPOS;
+
+function actualizarCantidadBodega(variantKey, delta) {
+    const index = carritoBodega.findIndex(i => i.variantKey === variantKey);
+    if (index > -1) {
+        carritoBodega[index].cantidad += delta;
+        if (carritoBodega[index].cantidad <= 0) {
+            carritoBodega.splice(index, 1);
+        } else {
+            carritoBodega[index].subtotal = carritoBodega[index].cantidad * carritoBodega[index].precio_mayorista;
+        }
+        renderizarCarritoBodega();
+    }
+}
+window.actualizarCantidadBodega = actualizarCantidadBodega;
+
+function actualizarPrecioBodega(variantKey, value) {
+    const num = parseFloat(value);
+    const item = carritoBodega.find(i => i.variantKey === variantKey);
+    if (item && !isNaN(num)) {
+        item.precio_mayorista = num;
+        item.subtotal = item.cantidad * num;
+        renderizarCarritoBodega();
+    }
+}
+window.actualizarPrecioBodega = actualizarPrecioBodega;
+
+function renderizarCarritoBodega() {
+    const container = document.getElementById('carritoBodegaItems');
+    const displayTotal = document.getElementById('totalDespachoBodegaDisplay');
+
+    if (carritoBodega.length === 0) {
+        container.innerHTML = '<div class="carrito-vacio">Aún no has agregado productos. Busca arriba para agregar.</div>';
+        displayTotal.textContent = '$0';
+        return;
+    }
+
+    let total = 0;
+    container.innerHTML = carritoBodega.map(item => {
+        total += item.subtotal;
+
+        let colorBadge = '';
+        if (item.color && item.color !== 'undefined' && item.color !== 'null' && item.color.trim() !== '') {
+            colorBadge = `<span style="background:#e2e8f0; padding:0.1rem 0.4rem; border-radius:4px;">Color: <b>${item.color}</b></span>`;
+        }
+
+        return `
+        <div style="background:white; border:1px solid #cbd5e1; border-radius:8px; padding:1rem; margin-bottom:0.8rem; display:flex; justify-content:space-between; align-items:center;">
+            <div style="flex:1;">
+                <div style="font-weight:bold; color:var(--dark); margin-bottom:0.2rem;">${item.nombre} <span style="font-size:0.8rem; color:var(--gray);">(${item.id_producto})</span></div>
+                <div style="font-size:0.85rem; color:#475569; margin-bottom:0.5rem; display:flex; gap:0.5rem;">
+                    ${colorBadge}
+                    <span style="background:#e2e8f0; padding:0.1rem 0.4rem; border-radius:4px;">Talla: <b>${item.talla}</b></span>
+                </div>
+                <div style="display:flex; gap:1rem; align-items:center;">
+                    
+                    <div style="display:flex; align-items:center; background:#f1f5f9; border-radius:20px; overflow:hidden;">
+                        <button onclick="actualizarCantidadBodega('${item.variantKey}', -1)" style="border:none; background:none; padding:0.5rem 1rem; cursor:pointer; font-weight:bold; color:var(--danger);">-</button>
+                        <span style="padding:0 0.5rem; font-weight:bold; width:30px; text-align:center;">${item.cantidad}</span>
+                        <button onclick="actualizarCantidadBodega('${item.variantKey}', 1)" style="border:none; background:none; padding:0.5rem 1rem; cursor:pointer; font-weight:bold; color:var(--success);">+</button>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <span style="font-size:0.85rem; color:var(--gray); font-weight:bold;">$ Venta Bodega:</span>
+                        <input type="number" value="${item.precio_mayorista}" onchange="actualizarPrecioBodega('${item.variantKey}', this.value)" style="padding:0.4rem; border:1px solid #cbd5e1; border-radius:4px; width:100px; font-weight:bold; color:var(--primary);">
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align:right; min-width:120px;">
+                <div style="font-size:0.8rem; color:var(--gray);">Subtotal</div>
+                <div style="font-size:1.2rem; font-weight:900; color:var(--dark);">$${item.subtotal.toLocaleString('es-CO')}</div>
+            </div>
+        </div>`;
+    }).join('');
+
+    displayTotal.textContent = `$${total.toLocaleString('es-CO')}`;
+}
+
+function toggleCuentaBodegaPOS() {
+    const metodo = document.getElementById('metodoAbonoBodega').value;
+    const contenedor = document.getElementById('contenedorCuentaBodega');
+    const cuentaSelect = document.getElementById('cuentaDestinoBodega');
+
+    if (metodo === 'Transferencia') {
+        contenedor.style.display = 'block';
+        cuentaSelect.innerHTML = '<option value="">-- Seleccionar Cuenta --</option>' +
+            cuentasBancarias.map(c => `<option value="${c.id}">${c.banco} - ${c.numero_cuenta} (${c.titular})</option>`).join('');
+    } else {
+        contenedor.style.display = 'none';
+        cuentaSelect.value = '';
+    }
+}
+window.toggleCuentaBodegaPOS = toggleCuentaBodegaPOS;
+
+let abonosBodegaMultiples = [];
+
+function agregarLineaAbonoBodega() {
+    const metodoInput = document.getElementById('metodoAbonoBodega');
+    const cuentaInput = document.getElementById('cuentaDestinoBodega');
+    const montoInput = document.getElementById('montoAbonoBodega');
+
+    const metodo = metodoInput.value;
+    const monto = parseFloat(montoInput.value);
+    const cuenta_id = cuentaInput.value;
+
+    if (isNaN(monto) || monto <= 0) {
+        mostrarAlerta('Ingresa un monto válido mayor a 0', 'warning');
+        return;
+    }
+
+    if (metodo === 'Transferencia' && !cuenta_id) {
+        mostrarAlerta('Selecciona una cuenta de destino para la transferencia', 'warning');
+        return;
+    }
+
+    let bancoNombre = '';
+    if (metodo === 'Transferencia') {
+        const cta = cuentasBancarias.find(c => String(c.id) === String(cuenta_id));
+        if (cta) bancoNombre = `${cta.banco} - ${cta.numero_cuenta.slice(-4)}`;
+    }
+
+    abonosBodegaMultiples.push({
+        id_temp: Date.now(),
+        metodo: metodo,
+        monto: monto,
+        cuenta_id: cuenta_id || null,
+        bancoNombre: bancoNombre
+    });
+
+    montoInput.value = '';
+    renderizarAbonosBodegaMultiples();
+}
+window.agregarLineaAbonoBodega = agregarLineaAbonoBodega;
+
+function eliminarLineaAbonoBodega(idTemp) {
+    abonosBodegaMultiples = abonosBodegaMultiples.filter(a => a.id_temp !== idTemp);
+    renderizarAbonosBodegaMultiples();
+}
+window.eliminarLineaAbonoBodega = eliminarLineaAbonoBodega;
+
+function renderizarAbonosBodegaMultiples() {
+    const container = document.getElementById('listaAbonosBodegaMultiples');
+    const totalDisplay = document.getElementById('totalAbonosBodegaDisplay');
+
+    if (abonosBodegaMultiples.length === 0) {
+        container.innerHTML = '<div class="carrito-vacio" style="padding:1rem; font-size:0.9rem;">No has añadido pagos aún.</div>';
+        totalDisplay.textContent = '$0';
+        return;
+    }
+
+    let sumaTotal = 0;
+    container.innerHTML = abonosBodegaMultiples.map(a => {
+        sumaTotal += a.monto;
+        return `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.8rem 1rem; border-bottom:1px solid #eee;">
+            <div>
+                <span style="font-weight:bold; color:var(--dark); margin-right:1rem;">
+                    ${a.metodo === 'Efectivo' ? '💵 Efectivo' : '🏦 Transferencia'}
+                </span>
+                ${a.bancoNombre ? `<span style="font-size:0.85rem; color:var(--gray);">(${a.bancoNombre})</span>` : ''}
+            </div>
+            <div style="display:flex; align-items:center; gap:1.5rem;">
+                <span style="font-size:1.1rem; font-weight:bold; color:var(--success);">$${a.monto.toLocaleString('es-CO')}</span>
+                <button onclick="eliminarLineaAbonoBodega(${a.id_temp})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:1.1rem;" title="Eliminar este pago">🗑️</button>
+            </div>
+        </div>`;
+    }).join('');
+
+    totalDisplay.textContent = `$${sumaTotal.toLocaleString('es-CO')}`;
+}
+window.renderizarAbonosBodegaMultiples = renderizarAbonosBodegaMultiples;
+
+async function confirmarDespachoBodega() {
+    if (carritoBodega.length === 0) {
+        mostrarAlerta('No hay productos para despachar', 'warning');
+        return;
+    }
+    const selectBodega = document.getElementById('bodegaSeleccionadaPOS');
+    const bodegaId = selectBodega.value;
+    const bodegaNombre = selectBodega.options[selectBodega.selectedIndex].text;
+    const origenMercancia = document.getElementById('origenMercanciaBodega').value;
+    const responsable = document.getElementById('responsableBodegaPOS').value.trim();
+
+    if (!bodegaId) {
+        mostrarAlerta('Debes seleccionar una bodega de destino', 'warning');
+        return;
+    }
+
+    if (!responsable) {
+        mostrarAlerta('El campo Responsable del Registro es OBLIGATORIO para la trazabilidad', 'warning');
+        document.getElementById('responsableBodegaPOS').focus();
+        return;
+    }
+
+    try {
+        const cajero = (empleadoLogueado && empleadoLogueado.nombre) ? empleadoLogueado.nombre : 'Admin';
+        let stockInsuficiente = false;
+        let msjError = '';
+
+        // 1. Validar Stock
+        for (const item of carritoBodega) {
+            let query = db.from(origenMercancia)
+                .select('cantidad')
+                .eq('id_producto', item.ref_bodega) // USAR REFERENCIA REAL
+                .ilike('talla', item.talla);
+
+            if (item.color) {
+                query = query.ilike('color', item.color);
+            } else {
+                query = query.or('color.eq.,color.is.null');
+            }
+
+            const { data: inv, error: errInv } = await query.maybeSingle();
+
+            if (errInv || !inv || inv.cantidad < item.cantidad) {
+                stockInsuficiente = true;
+                msjError = `Stock insuficiente para ${item.nombre}\nEn Talla: ${item.talla} ${item.color ? ' - Color: ' + item.color : ''}\n(Disponible en ${origenMercancia}: ${inv ? inv.cantidad : 0})`;
+                break;
+            }
+        }
+
+        if (stockInsuficiente) {
+            mostrarAlerta(msjError, 'error');
+            return;
+        }
+
+        // 2. Procesar (restar stock e insertar en prestamos_operativos)
+        for (const item of carritoBodega) {
+            // Restar inventario origen
+            let query = db.from(origenMercancia)
+                .select('id, cantidad')
+                .eq('id_producto', item.ref_bodega) // USAR REFERENCIA REAL
+                .ilike('talla', item.talla);
+
+            if (item.color) {
+                query = query.ilike('color', item.color);
+            } else {
+                query = query.or('color.eq.,color.is.null');
+            }
+
+            const { data: inv } = await query.maybeSingle();
+
+            if (inv && inv.id) {
+                await db.from(origenMercancia).update({ cantidad: inv.cantidad - item.cantidad }).eq('id', inv.id);
+            }
+
+            // Insertar Préstamo Operativo (Deuda de la bodega)
+            const { error: insertError } = await db.from('prestamos_operativos').insert({
+                fecha_prestamo: new Date().toISOString(),
+                prestatario: bodegaNombre,
+                bodega_id: bodegaId || null,
+                id_producto: item.ref_bodega,
+                talla: item.talla,
+                color: item.color || '',
+                cantidad: item.cantidad,
+                valor_total: item.subtotal,
+                estado: 'Activo',
+                local_origen: origenMercancia.replace('inventario_', ''),
+                registrado_por: responsable
+            });
+
+            if (insertError) {
+                console.error("Error detallado Supabase:", insertError);
+                throw new Error(`No se pudo crear el registro de deuda: ${insertError.message}`);
+            }
+        }
+
+        cerrarModalGestionBodegas();
+        mostrarAlerta('Despacho a bodega registrado con éxito ✅', 'success');
+
+        // Actualizar datos si está en POS Administrativo
+        if (typeof cargarDatosGenerales === 'function') cargarDatosGenerales();
+
+    } catch (error) {
+        console.error("Error al registrar despacho:", error);
+        mostrarAlerta('Error FATAL registrando despacho: ' + error.message, 'error');
+    }
+}
+window.confirmarDespachoBodega = confirmarDespachoBodega;
+
+async function confirmarAbonoBodegaPOS() {
+    const selectBodega = document.getElementById('bodegaSeleccionadaPOS');
+    const bodegaId = selectBodega.value;
+    const bodegaNombre = selectBodega.options[selectBodega.selectedIndex].text;
+    const responsable = document.getElementById('responsableBodegaPOS').value.trim();
+
+    if (!bodegaId) {
+        mostrarAlerta('Debes seleccionar una bodega primero', 'warning');
+        return;
+    }
+
+    if (!responsable) {
+        mostrarAlerta('El campo Responsable del Registro es OBLIGATORIO para la trazabilidad', 'warning');
+        document.getElementById('responsableBodegaPOS').focus();
+        return;
+    }
+
+    if (abonosBodegaMultiples.length === 0) {
+        mostrarAlerta('Añade al menos un pago a la lista primero', 'warning');
+        return;
+    }
+
+    try {
+        // 1. Registrar cada abono en el historial
+        for (const abono of abonosBodegaMultiples) {
+            const { error: errAbono } = await db.from('historial_abonos_bodega').insert({
+                bodega_nombre: bodegaNombre,
+                monto_abonado: abono.monto,
+                metodo_pago: abono.metodo,
+                cuenta_destino: abono.cuenta_id || null,
+                usuario_registro: responsable,
+                fecha_abono: new Date().toISOString()
+            });
+            if (errAbono) throw errAbono;
+        }
+
+        cerrarModalGestionBodegas();
+        mostrarAlerta('Abonos registrados con éxito ✅', 'success');
+
+    } catch (error) {
+        console.error("Error al registrar abonos:", error);
+        mostrarAlerta('Error registrando abonos: ' + error.message, 'error');
+    }
+}
+window.confirmarAbonoBodegaPOS = confirmarAbonoBodegaPOS;
+
+// --- FUNCIÓN DE RECUPERACIÓN (RESCATE DE DATOS) ---
+async function repararPrestamosHuerfanos() {
+    try {
+        // 1. Buscar el ID real de la bodega "centro"
+        const { data: bodegas } = await db.from('bodegas_externas').select('id, nombre').ilike('nombre', 'centro');
+
+        if (!bodegas || bodegas.length === 0) {
+            console.log("No se encontró la bodega 'Centro' para el rescate.");
+            return;
+        }
+
+        const centroId = bodegas[0].id;
+
+        // 2. Buscar registros que tengan el nombre pero NO el ID
+        const { data: huerfanos, error: errH } = await db.from('prestamos_operativos')
+            .select('id, id_producto')
+            .ilike('prestatario', 'centro')
+            .is('bodega_id', null);
+
+        if (errH) throw errH;
+        if (!huerfanos || huerfanos.length === 0) return;
+
+        console.warn(`[RESCATE] Encontrados ${huerfanos.length} registros huérfanos para Centro. Reparando...`);
+
+        // 3. Vincularlos
+        for (const h of huerfanos) {
+            // Si el id_producto es un UUID (longitud 36), no podemos hacer mucho más que vincular la bodega
+            // Pero al menos aparecerán en el listado.
+            await db.from('prestamos_operativos')
+                .update({ bodega_id: centroId })
+                .eq('id', h.id);
+        }
+
+        console.log("¡Rescate de datos completado!");
+    } catch (e) {
+        console.error("Error en el rescate de datos:", e);
+    }
+}
+window.repararPrestamosHuerfanos = repararPrestamosHuerfanos;
+
+// Ejecutar rescate silencioso al cargar
+repararPrestamosHuerfanos();

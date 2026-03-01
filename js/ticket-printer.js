@@ -15,7 +15,7 @@ const TicketPrinter = {
     print: function (titulo, contenidoHTML, firma = null) {
 
         // Configuración
-        const LOGO_URL = "img/logo-moteros.jpeg";
+        const LOGO_URL = "https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg";
         const EMPRESA = "MOTEROS SPORT LINE";
         const UBICACION = "Villavicencio - Meta";
         const NIT = "NIT: 901.234.567-8"; // Validar si este es el real o usar config

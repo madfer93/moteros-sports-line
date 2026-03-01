@@ -78,13 +78,15 @@ const ReportExporter = {
             const pageWidth = doc.internal.pageSize.getWidth();
 
             // Encabezado
+            doc.setFont('helvetica', 'bold');
             doc.setFontSize(18);
             doc.setTextColor(30, 41, 59); // Slate 800
             doc.text(title, 14, 22);
 
+            doc.setFont('helvetica', 'normal');
             doc.setFontSize(10);
             doc.setTextColor(100, 116, 139); // Slate 500
-            doc.text(`Fecha de impresión: ${new Date().toLocaleString('es-CO')}`, 14, 28);
+            doc.text(`Fecha de impresion: ${new Date().toLocaleString('es-CO')}`, 14, 28);
 
             // Branding simple
             doc.setFontSize(8);
@@ -97,7 +99,7 @@ const ReportExporter = {
                     html: source,
                     startY: 35,
                     theme: 'grid',
-                    styles: { fontSize: 8, cellPadding: 3, valign: 'middle' },
+                    styles: { fontSize: 8, cellPadding: 3, valign: 'middle', font: 'helvetica' },
                     headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
                     alternateRowStyles: { fillColor: [248, 250, 252] }
                 });

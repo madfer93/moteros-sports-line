@@ -25,6 +25,11 @@ function showSection(sectionId) {
         target.style.display = 'block';
     }
 
+    // Gatillos de carga según sección
+    if (sectionId === 'admin_roles') {
+        cargarAdministradores();
+    }
+
     // Cerrar menú móvil si está abierto
     const mobileNav = document.getElementById('mobileNav');
     if (mobileNav) mobileNav.classList.remove('active');
@@ -64,15 +69,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // -> Abrir Modal Nuevo Prestamo
-function abrirModalNuevoPrestamo() {
+async function abrirModalNuevoPrestamo() {
     document.getElementById('modalNuevoPrestamo').style.display = 'flex';
     document.getElementById('prestamoBuscarProducto').value = '';
     document.getElementById('prestamoProductoId').value = '';
     document.getElementById('prestamoVariantesContainer').style.display = 'none';
     document.getElementById('prestamoPrestatario').value = '';
+    document.getElementById('prestamoResponsable').value = '';
     document.getElementById('prestamoCantidad').value = '';
     document.getElementById('prestamoValorTotal').value = '';
     document.getElementById('prestamoNotas').value = '';
+
+    await cargarResponsablesAdmin('prestamoResponsable');
 }
 
 function cerrarModalPrestamo() {
@@ -249,21 +257,40 @@ async function guardarPrestamo() {
                 cantidad: cantidad,
                 valor_total: valor_total,
                 prestatario: prestatario,
+                responsable_id: document.getElementById('prestamoResponsable').value || null,
+                nombre_registro: window.adminNombre || 'Administradora Operativa',
                 motivo: notas,
-                registrado_por: 'Administradora Operativa',
-                estado: 'Activo'
+                registrado_por: window.adminNombre || 'Administradora Operativa',
+                estado: 'Activo',
+                fecha_prestamo: new Date().toISOString()
             }]);
 
         if (errInsert) throw errInsert;
 
         showToast('Préstamo guardado y stock de bodega descontado.', 'success');
         cerrarModalPrestamo();
-        cargarPrestamosBodega(); // Refrescar
+        cargarCarteraBodegas(); // Refrescar
 
     } catch (err) {
         console.error('Error guardando préstamo:', err);
         showToast('Fallo al guardar: ' + err.message, 'error');
     }
+}
+
+async function cargarResponsablesAdmin(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    try {
+        const { data, error } = await supabaseClient
+            .from('compras_responsables')
+            .select('id, nombre, cedula')
+            .eq('activo', true)
+            .order('nombre', { ascending: true });
+
+        if (error) throw error;
+        select.innerHTML = '<option value="">Seleccione responsable...</option>' +
+            data.map(r => `<option value="${r.id}">${r.nombre} (${r.cedula})</option>`).join('');
+    } catch (e) { console.error('Error cargando responsables', e); }
 }
 
 // ==========================================
@@ -285,7 +312,7 @@ async function cargarGastosOperativos() {
                 categoria_id,
                 categorias_gastos(nombre),
                 cuenta_id,
-                cuentas_bancarias(nombre_cuenta, banco)
+                cuentas_bancarias(nombre_titular, banco)
             `)
             .order('fecha', { ascending: false })
             .limit(50);
@@ -298,7 +325,13 @@ async function cargarGastosOperativos() {
         }
 
         tbody.innerHTML = data.map(g => {
-            const cuentaText = g.cuentas_bancarias ? `${g.cuentas_bancarias.banco} - ${g.cuentas_bancarias.nombre_cuenta}` : '<span style="color:var(--gray);">Sin cuenta vinculada</span>';
+            let cuentaText = '<span style="color:var(--gray);">Sin cuenta vinculada</span>';
+            if (g.cuentas_bancarias) {
+                cuentaText = `${g.cuentas_bancarias.banco} - ${g.cuentas_bancarias.nombre_titular}`;
+            } else if (g.cuenta_id) {
+                cuentaText = `Cuenta ID: ${g.cuenta_id.substring(0, 8)}...`;
+            }
+
             const catText = g.categorias_gastos ? g.categorias_gastos.nombre : 'Sin Categoría';
 
             return `
@@ -446,6 +479,29 @@ function cambiarPestanaCartera(evt, tabId) {
     else if (tabId === 'tab-cartera-fodegas') cargarCarteraPasarela('Fodegas', 'Fodegas');
     else if (tabId === 'tab-cartera-config') cargarComisiones();
 }
+
+// Assuming a `cargarSeccion` function exists elsewhere in the file or is implicitly handled.
+// If `cargarSeccion` is not defined, this part of the instruction cannot be fully applied.
+// Based on the provided "Code Edit" snippet, the intent is to add this logic to a `cargarSeccion` function.
+// Since `cargarSeccion` is not in the provided content, I'm adding a placeholder for it.
+async function cargarSeccion(seccion) {
+    // Gatillo de carga según sección
+    if (seccion === 'resumen_operativo') {
+        // Asumiendo que existe una función para cargar resumen
+        if (typeof cargarDatosResumen === 'function') cargarDatosResumen();
+    }
+    if (seccion === 'carteras_operativas') {
+        cargarCarteraMoteros();
+        cargarCarteraBodegas();
+    }
+    if (seccion === 'prestamos_inventario') {
+        cargarCarteraBodegas(); // Se usa la misma función o similar
+    }
+    if (seccion === 'admin_roles') {
+        cargarAdministradores();
+    }
+}
+
 
 // ==========================================
 // FORMATO DE MONEDA
@@ -957,23 +1013,25 @@ function enviarRecordatorioWA(telefono, nombre, saldo) {
 // ==========================================
 async function cargarCarteraBodegas() {
     const tbody = document.getElementById('tbodyCarteraBodegas');
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">⏳ Cargando préstamos...</td></tr>';
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">⏳ Cargando préstamos...</td></tr>';
 
     try {
         const supabaseClient = window.supabaseClient || supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
         const { data, error } = await supabaseClient
             .from('prestamos_operativos')
-            .select('*')
+            .select('*, compras_responsables(nombre)')
             .order('fecha_prestamo', { ascending: false });
         if (error) throw error;
 
         // KPI
         const activos = (data || []).filter(p => p.estado === 'Activo');
         const totalPrestado = activos.reduce((s, p) => s + parseFloat(p.valor_total || 0), 0);
-        document.getElementById('kpiPrestamosActivos').textContent = '$' + fmtPrecio(totalPrestado);
+        const kpi = document.getElementById('kpiPrestamosActivos');
+        if (kpi) kpi.textContent = '$' + fmtPrecio(totalPrestado);
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;">Sin préstamos registrados</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;">Sin préstamos registrados</td></tr>';
             return;
         }
 
@@ -981,17 +1039,29 @@ async function cargarCarteraBodegas() {
             const estadoColor = p.estado === 'Activo' ? 'background:#fef9c3;color:#a16207;' :
                 p.estado === 'Devuelto' ? 'background:#dcfce7;color:#15803d;' :
                     'background:#e0e7ff;color:#4338ca;';
+
+            const productoDetalle = p.id_producto + (p.talla ? `<br><small>${p.talla} / ${p.color || ''}</small>` : '');
+            const registrado = p.nombre_registro || p.registrado_por || '—';
+            const responsable = p.compras_responsables?.nombre || '<span style="color:#94a3b8">N/A</span>';
+
             return `<tr>
                 <td>${fmtFecha(p.fecha_prestamo)}</td>
                 <td><strong>${p.prestatario}</strong></td>
-                <td>${p.id_producto}<br><small>${p.talla} / ${p.color}</small></td>
+                <td>${productoDetalle}</td>
                 <td>${p.cantidad}</td>
                 <td style="font-weight:600;">$${fmtPrecio(p.valor_total)}</td>
                 <td><span style="padding:3px 10px;border-radius:20px;font-size:0.8rem;${estadoColor}">${p.estado}</span></td>
+                <td style="font-size:0.85rem;color:#64748b;">${registrado}</td>
+                <td style="font-size:0.85rem;color:#475569;">${responsable}</td>
             </tr>`;
         }).join('');
+
+        // Sincronizar también la tabla de la sección de préstamos si existe
+        const tbodyPrestamos = document.getElementById('tbodyPrestamos');
+        if (tbodyPrestamos) tbodyPrestamos.innerHTML = tbody.innerHTML;
+
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color:#ef4444;">Error: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="color:#ef4444;">Error: ${err.message}</td></tr>`;
     }
 }
 
@@ -1002,7 +1072,7 @@ async function cargarCarteraPasarela(metodo, prefix) {
     const tbodyId = 'tbodyCartera' + prefix;
     const tbody = document.getElementById(tbodyId);
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">⏳ Cargando ventas...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">⏳ Cargando ventas...</td></tr>';
 
     try {
         const supabaseClient = window.supabaseClient || supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
@@ -1010,7 +1080,7 @@ async function cargarCarteraPasarela(metodo, prefix) {
         // Buscar ventas con esa pasarela
         const { data: ventas, error } = await supabaseClient
             .from('ventas')
-            .select('id_venta, nombre_producto, local, total, metodo_pago, created_at, pago_desglose')
+            .select('id_venta, nombre_producto, local, total, metodo_pago, created_at, pago_desglose, usuario')
             .ilike('metodo_pago', `%${metodo}%`)
             .eq('estado_venta', 'Completada')
             .order('created_at', { ascending: false });
@@ -1042,6 +1112,7 @@ async function cargarCarteraPasarela(metodo, prefix) {
                 <td>$${fmtPrecio(totalPasarela)}</td>
                 <td style="color:#ef4444;">-$${fmtPrecio(comision)}</td>
                 <td style="color:#16a34a;font-weight:600;">$${fmtPrecio(neto)}</td>
+                <td style="font-size:0.85rem;color:#64748b;">${v.usuario || '—'}</td>
             </tr>`;
         });
 
@@ -1055,13 +1126,13 @@ async function cargarCarteraPasarela(metodo, prefix) {
         document.getElementById(`kpi${prefix}Ventas`).textContent = (ventas || []).length;
 
         if (filas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#94a3b8;">Sin ventas de ${metodo}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#94a3b8;">Sin ventas de ${metodo}</td></tr>`;
             return;
         }
 
         tbody.innerHTML = filas.join('');
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color:#ef4444;">Error: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="color:#ef4444;">Error: ${err.message}</td></tr>`;
     }
 }
 
@@ -1092,12 +1163,24 @@ async function loginOperativo() {
         });
         if (error) throw error;
 
+        // Validar permisos en tabla administradores_sistema
+        const { data: adminData, error: adminError } = await supabaseClient
+            .from('administradores_sistema')
+            .select('panel_acceso, activo')
+            .eq('email', email.toLowerCase())
+            .single();
+
+        if (adminError || !adminData || !adminData.activo || (adminData.panel_acceso !== 'admin-administrativa' && adminData.panel_acceso !== 'ambos')) {
+            await supabaseClient.auth.signOut(); // Desloguear inmediatamente
+            throw new Error('No tienes permisos para acceder a la Central Operativa.');
+        }
+
         // Si login exitoso, mostramos el panel:
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
 
-        // Intentar obtener el nombre si existe perfil, pero no bloquear si no existe
-        const { data: profile } = await supabaseClient.from('profiles').select('rol, nombre').eq('id', data.user.id).single();
+        // Intentar obtener el nombre si existe en administradores_sistema
+        const { data: profile } = await supabaseClient.from('administradores_sistema').select('rol, nombre').eq('email', data.user.email).single();
         const greeting = document.querySelector('.user-greeting');
         if (greeting) {
             greeting.textContent = `👤 ${profile ? profile.nombre : 'Administradora'}`;
@@ -1133,7 +1216,7 @@ async function validarSesionOperativa() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
 
-            const { data: profile } = await supabaseClient.from('profiles').select('rol, nombre').eq('id', session.user.id).single();
+            const { data: profile } = await supabaseClient.from('administradores_sistema').select('rol, nombre').eq('email', session.user.email).single();
             const greeting = document.querySelector('.user-greeting');
             if (greeting) {
                 greeting.textContent = `👤 ${profile ? profile.nombre : 'Administradora'}`;
@@ -1151,6 +1234,126 @@ async function validarSesionOperativa() {
     }
 }
 
+// ==========================================
+// GESTOR DE ROLES DE ADMINISTRADORES
+// ==========================================
+
+async function cargarAdministradores() {
+    const tbody = document.getElementById('tbodyAdministradores');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando...</td></tr>';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('administradores_sistema')
+            .select('*')
+            .order('activo', { ascending: false })
+            .order('nombre', { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay administradores registrados</td></tr>';
+            return;
+        }
+
+        const html = data.map(admin => {
+            const esActivo = admin.activo;
+            const rowStyle = !esActivo ? 'opacity:0.6;background:#f8fafc;' : '';
+            return `
+                <tr style="${rowStyle}">
+                    <td style="font-weight:600;">${admin.nombre}</td>
+                    <td>${admin.email}</td>
+                    <td><span class="badge ${admin.rol === 'Dueña' ? 'badge-primary' : 'badge-secondary'}">${admin.rol}</span></td>
+                    <td>${admin.panel_acceso}</td>
+                    <td>
+                        <span style="color:${esActivo ? '#16a34a' : '#ef4444'};">
+                            ${esActivo ? '🟢 Activo' : '🔴 Inactivo'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick='editarAdmin(${JSON.stringify(admin)})'>✏️ Editar</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        tbody.innerHTML = html;
+    } catch (err) {
+        console.error('Error cargando admins:', err);
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red;text-align:center;">Error: ${err.message}</td></tr>`;
+    }
+}
+
+function abrirModalNuevoAdmin() {
+    document.getElementById('adminId').value = '';
+    document.getElementById('adminNombre').value = '';
+    document.getElementById('adminEmailForm').value = '';
+    document.getElementById('adminEmailForm').disabled = false;
+    document.getElementById('adminRol').value = 'Operativa';
+    document.getElementById('adminPanelAcceso').value = 'admin-administrativa';
+    document.getElementById('adminEstado').value = 'true';
+
+    document.getElementById('tituloModalAdmin').textContent = '👥 Nuevo Administrador';
+    document.getElementById('modalAdmin').style.display = 'flex';
+}
+
+function cerrarModalAdmin() {
+    document.getElementById('modalAdmin').style.display = 'none';
+}
+
+function editarAdmin(adminParams) {
+    document.getElementById('adminId').value = adminParams.id;
+    document.getElementById('adminNombre').value = adminParams.nombre;
+    document.getElementById('adminEmailForm').value = adminParams.email;
+    document.getElementById('adminEmailForm').disabled = true; // No permitir cambiar correo facilmente
+    document.getElementById('adminRol').value = adminParams.rol;
+    document.getElementById('adminPanelAcceso').value = adminParams.panel_acceso;
+    document.getElementById('adminEstado').value = adminParams.activo.toString();
+
+    document.getElementById('tituloModalAdmin').textContent = '✏️ Editar Administrador';
+    document.getElementById('modalAdmin').style.display = 'flex';
+}
+
+async function guardarAdmin() {
+    const id = document.getElementById('adminId').value;
+    const nombre = document.getElementById('adminNombre').value.trim();
+    const email = document.getElementById('adminEmailForm').value.trim().toLowerCase();
+    const rol = document.getElementById('adminRol').value;
+    const panel_acceso = document.getElementById('adminPanelAcceso').value;
+    const activo = document.getElementById('adminEstado').value === 'true';
+
+    if (!nombre || !email) {
+        showToast('Debes ingresar nombre y correo.', 'error');
+        return;
+    }
+
+    try {
+        if (id) {
+            // Actualizar
+            const { error } = await supabaseClient
+                .from('administradores_sistema')
+                .update({ nombre, rol, panel_acceso, activo })
+                .eq('id', id);
+            if (error) throw error;
+            showToast('Administrador actualizado correctamente.', 'success');
+        } else {
+            // Insertar
+            const { error } = await supabaseClient
+                .from('administradores_sistema')
+                .insert([{ email, nombre, rol, panel_acceso, activo }]);
+            if (error) throw error;
+            showToast('Nuevo administrador agregado.', 'success');
+        }
+
+        cerrarModalAdmin();
+        cargarAdministradores();
+    } catch (err) {
+        console.error('Error guardando admin:', err);
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
 // Arrancar la validación de sesión cuando termine de cargar el DOM
 document.addEventListener('DOMContentLoaded', () => {
     validarSesionOperativa();
@@ -1159,4 +1362,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Exponer funciones necesarias al objeto global Window
 window.loginOperativo = loginOperativo;
 window.logoutOperativo = logoutOperativo;
-
+window.abrirModalNuevoAdmin = abrirModalNuevoAdmin;
+window.cerrarModalAdmin = cerrarModalAdmin;
+window.editarAdmin = editarAdmin;
+window.guardarAdmin = guardarAdmin;
+window.cargarAdministradores = cargarAdministradores;

@@ -157,6 +157,18 @@ async function loginAdmin() {
 
         if (error) throw error;
 
+        // Validar permisos en tabla administradores_sistema
+        const { data: adminData, error: adminError } = await supabaseClient
+            .from('administradores_sistema')
+            .select('panel_acceso, activo')
+            .eq('email', email.toLowerCase())
+            .single();
+
+        if (adminError || !adminData || !adminData.activo || (adminData.panel_acceso !== 'admin' && adminData.panel_acceso !== 'ambos')) {
+            await supabaseClient.auth.signOut(); // Desloguear inmediatamente
+            throw new Error('No tienes permisos para acceder al Panel Principal.');
+        }
+
         // Login exitoso - onAuthStateChange manejar la UI
         showToast('!Bienvenido al panel de administración!', 'success');
 
@@ -392,6 +404,7 @@ async function cargarSeccion(section) {
         case 'proveedores': await cargarProveedores(); break;
         case 'compras': await cargarCompras(); break;
         case 'deudas': await cargarDeudasNegocio(); break;
+        case 'cartera-bodegas': await cargarBodegasExternas(); break;
         case 'creditos': await cargarCreditos(); break;
         case 'promociones': await cargarPromociones(); break;
         case 'blog': await cargarPosts(); break;
@@ -418,6 +431,15 @@ async function inicializarAdmin() {
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
 
+        if (user) {
+            const { data: adminData } = await supabaseClient
+                .from('administradores_sistema')
+                .select('nombre')
+                .eq('email', user.email.toLowerCase())
+                .single();
+            window.adminNombre = adminData?.nombre || user.email;
+            console.log('Admin detectado:', window.adminNombre);
+        }
 
         await Promise.all([cargarProductos(), cargarTodosLosInventarios()]);
         await cargarDashboard();
@@ -3569,6 +3591,237 @@ async function confirmarPagoDeuda(id) {
 }
 
 window.confirmarPagoDeuda = confirmarPagoDeuda;
+
+// ---------------------------------------------------------------
+// CARTERA BODEGAS EXTERNAS
+// ---------------------------------------------------------------
+async function cargarBodegasExternas() {
+    const tbody = document.getElementById('listaBodegasExternas');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Cargando bodegas...</td></tr>';
+
+    try {
+        // 1. Obtener bodegas
+        const { data: bodegas, error: errBodegas } = await supabaseClient
+            .from('bodegas_externas')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (errBodegas) throw errBodegas;
+
+        // 2. Obtener saldo de prestamos asociados (estado Activo o Parcialmente Pagado)
+        // La columna monto_abonado se resta del valor_total para hallar el saldo de la bodega
+        const { data: prestamos, error: errPrestamos } = await supabaseClient
+            .from('prestamos_operativos')
+            .select('bodega_id, valor_total, monto_abonado, estado')
+            .in('estado', ['Activo', 'Parcialmente Pagado'])
+            .not('bodega_id', 'is', null);
+
+        if (errPrestamos) throw errPrestamos;
+
+        // Mapear saldos por bodega
+        const saldosBodegas = {};
+        let saldoGlobalPendiente = 0;
+
+        prestamos.forEach(p => {
+            if (!saldosBodegas[p.bodega_id]) saldosBodegas[p.bodega_id] = 0;
+            const saldoItem = (p.valor_total || 0) - (p.monto_abonado || 0);
+            saldosBodegas[p.bodega_id] += saldoItem;
+            saldoGlobalPendiente += saldoItem;
+        });
+
+        // 3. Pintar en UI
+        document.getElementById('kpiBodegasTotal').textContent = bodegas.length;
+        document.getElementById('kpiBodegasSaldoGlobal').textContent = '$' + formatearPrecio(saldoGlobalPendiente);
+
+        if (!bodegas || bodegas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay bodegas registradas</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        bodegas.forEach(bodega => {
+            const saldoBodega = saldosBodegas[bodega.id] || 0;
+            const badgeEstado = bodega.estado === 'Activa'
+                ? '<span class="badge badge-success">Activa</span>'
+                : '<span class="badge badge-danger">Inactiva</span>';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:600; color:var(--dark);">${bodega.nombre}</td>
+                <td>${bodega.responsable || 'N/A'}</td>
+                <td>${bodega.telefono || 'N/A'}</td>
+                <td>${badgeEstado}</td>
+                <td style="font-weight:700; color:${saldoBodega > 0 ? 'var(--danger)' : 'var(--success)'};">
+                    $${formatearPrecio(saldoBodega)}
+                </td>
+                <td>
+                    <button class="btn btn-primary" onclick="editarBodegaExterna('${bodega.id}')" style="padding:0.4rem 0.8rem; font-size:0.8rem;">✏️ Editar</button>
+                    <button class="btn btn-secondary" onclick="abrirDetallesBodegaExterna('${bodega.id}', '${bodega.nombre}')" style="padding:0.4rem 0.8rem; font-size:0.8rem;">👁️ Ver Detalles</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (error) {
+        console.error('Error cargando bodegas:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al cargar bodegas</td></tr>';
+        showToast('Error cargando bodegas: ' + error.message, 'error');
+    }
+}
+
+function abrirModalBodegaExterna() {
+    document.getElementById('modalBodegaExterna').style.display = 'flex';
+    document.getElementById('tituloModalBodegaExterna').textContent = '📦 Nueva Bodega Externa';
+
+    // Limpiar form
+    document.getElementById('bodegaExternaId').value = '';
+    document.getElementById('bodegaExternaNombre').value = '';
+    document.getElementById('bodegaExternaResponsable').value = '';
+    document.getElementById('bodegaExternaTelefono').value = '';
+    document.getElementById('bodegaExternaDireccion').value = '';
+
+    // Ocultar estado en creación
+    document.getElementById('estadoBodegaExternaContainer').style.display = 'none';
+}
+
+function cerrarModalBodegaExterna() {
+    document.getElementById('modalBodegaExterna').style.display = 'none';
+}
+
+window.abrirModalBodegaExterna = abrirModalBodegaExterna;
+window.cerrarModalBodegaExterna = cerrarModalBodegaExterna;
+
+async function guardarBodegaExterna() {
+    const id = document.getElementById('bodegaExternaId').value;
+    const nombre = document.getElementById('bodegaExternaNombre').value.trim();
+    const responsable = document.getElementById('bodegaExternaResponsable').value.trim();
+    const telefono = document.getElementById('bodegaExternaTelefono').value.trim();
+    const direccion = document.getElementById('bodegaExternaDireccion').value.trim();
+    const estado = document.getElementById('bodegaExternaEstado').value;
+
+    if (!nombre) {
+        showToast('El nombre de la bodega es obligatorio', 'warning');
+        return;
+    }
+
+    try {
+        const payload = {
+            nombre,
+            responsable,
+            telefono,
+            direccion
+        };
+
+        if (id) {
+            // Editando
+            payload.estado = estado;
+            const { error } = await supabaseClient
+                .from('bodegas_externas')
+                .update(payload)
+                .eq('id', id);
+            if (error) throw error;
+            showToast('Bodega actualizada correctamente', 'success');
+        } else {
+            // Creando
+            const { error } = await supabaseClient
+                .from('bodegas_externas')
+                .insert([payload]);
+            if (error) throw error;
+            showToast('Bodega creada correctamente', 'success');
+        }
+
+        cerrarModalBodegaExterna();
+        cargarBodegasExternas();
+    } catch (error) {
+        console.error('Error guardando bodega:', error);
+        showToast('Error al guardar bodega: ' + error.message, 'error');
+    }
+}
+
+window.guardarBodegaExterna = guardarBodegaExterna;
+
+async function editarBodegaExterna(id) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('bodegas_externas')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        document.getElementById('modalBodegaExterna').style.display = 'flex';
+        document.getElementById('tituloModalBodegaExterna').textContent = '✏️ Editar Bodega Externa';
+
+        document.getElementById('bodegaExternaId').value = data.id;
+        document.getElementById('bodegaExternaNombre').value = data.nombre;
+        document.getElementById('bodegaExternaResponsable').value = data.responsable || '';
+        document.getElementById('bodegaExternaTelefono').value = data.telefono || '';
+        document.getElementById('bodegaExternaDireccion').value = data.direccion || '';
+
+        const estadoSelect = document.getElementById('bodegaExternaEstado');
+        if (estadoSelect) {
+            estadoSelect.value = data.estado || 'Activa';
+            document.getElementById('estadoBodegaExternaContainer').style.display = 'block';
+        }
+
+    } catch (error) {
+        console.error('Error cargando bodega para editar:', error);
+        showToast('Error cargando datos de la bodega', 'error');
+    }
+}
+
+window.editarBodegaExterna = editarBodegaExterna;
+
+async function abrirDetallesBodegaExterna(bodegaId, bodegaNombre) {
+    document.getElementById('modalDetallesBodegaExterna').style.display = 'flex';
+    document.getElementById('tituloDetallesBodega').textContent = `📦 Inventario prestado a: ${bodegaNombre}`;
+
+    const tbody = document.getElementById('listaDetallesBodegaExterna');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">⏳ Cargando detalles...</td></tr>';
+
+    try {
+        const { data: prestamos, error } = await supabaseClient
+            .from('prestamos_operativos')
+            .select('*')
+            .eq('bodega_id', bodegaId)
+            .order('fecha_prestamo', { ascending: false });
+
+        if (error) throw error;
+
+        if (!prestamos || prestamos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay mercancía asignada a esta bodega actualmente.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = prestamos.map(p => {
+            const estadoColor = p.estado === 'Activo' ? 'background:#fefce8;color:#a16207;' :
+                (p.estado === 'Parcialmente Pagado' ? 'background:#dbeafe;color:#1e40af;' : 'background:#dcfce7;color:#166534;');
+
+            return `
+                <tr>
+                    <td>${formatearFecha(p.fecha_prestamo)}</td>
+                    <td><strong>${p.id_producto}</strong><br><small>${p.talla || '-'} / ${p.color || '-'}</small></td>
+                    <td>${p.cantidad}</td>
+                    <td>$${formatearPrecio(p.valor_total)}</td>
+                    <td>$${formatearPrecio(p.monto_abonado || 0)}</td>
+                    <td><span style="padding:3px 8px;border-radius:12px;font-size:0.75rem;${estadoColor}">${p.estado}</span></td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error cargando detalles bodega:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error cargando información.</td></tr>';
+    }
+}
+window.abrirDetallesBodegaExterna = abrirDetallesBodegaExterna;
+
+function cerrarDetallesBodegaExterna() {
+    document.getElementById('modalDetallesBodegaExterna').style.display = 'none';
+}
+window.cerrarDetallesBodegaExterna = cerrarDetallesBodegaExterna;
 
 // CRÉDITOS MOTERO - NO TOCAR - SOLO SE CREAN DESDE TIENDA
 async function cargarCreditos() {
@@ -9508,6 +9761,8 @@ function renderizarProveedores(lista) {
 }
 
 function mostrarFormProveedor() {
+    // Navegar a la sección de proveedores usando el sistema de navegación
+    navegarASeccion('proveedores');
     limpiarFormProveedor();
     document.getElementById('formProveedor').style.display = 'block';
     document.getElementById('formTituloProveedor').textContent = '➕ Nuevo Proveedor';
@@ -12034,6 +12289,7 @@ function buscarProveedores() {
 window.buscarProveedores = buscarProveedores;
 
 function mostrarFormProveedor() {
+    navegarASeccion('proveedores');
     document.getElementById('formProveedor').style.display = 'block';
     document.getElementById('formTituloProveedor').textContent = '➕ Nuevo Proveedor';
 
