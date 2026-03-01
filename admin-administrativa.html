@@ -742,45 +742,459 @@
             <!-- PLACEHOLDERS FUTURAS -->
             <div id="section-documentos_legales" class="section">
                 <div class="page-header">
-                    <h1>⚠️ Alerta Documentos Legales</h1>
-                    <p>Próximamente: control de vencimientos de documentos y alertas automáticas.</p>
+                    <h1>⚠️ Control de Documentos Legales</h1>
+                    <p>Gestión de vencimientos de cámara de comercio, bomberos, DIAN, Sayco y demás documentos
+                        obligatorios por sede.</p>
                 </div>
-                <div class="card">
+
+                <!-- KPIs Documentos -->
+                <div class="stats-grid" id="docKpis">
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3 id="kpiDocsVigentes">0</h3>
+                            <p>Vigentes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;">⏰</div>
+                        <div class="stat-info">
+                            <h3 id="kpiDocsProximos">0</h3>
+                            <p>Próximos a Vencer</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">🔴</div>
+                        <div class="stat-info">
+                            <h3 id="kpiDocsVencidos">0</h3>
+                            <p>Vencidos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📄</div>
+                        <div class="stat-info">
+                            <h3 id="kpiDocsTotal">0</h3>
+                            <p>Total Registrados</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acciones -->
+                <div class="card" style="margin-top:1.5rem;">
                     <div class="card-body">
-                        <p>🚧 Módulo en desarrollo (Fase 2)</p>
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+                            <h3 style="margin:0;">📋 Documentos por Sede</h3>
+                            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+                                <select id="filtroDocSede" class="form-control" style="width:auto;min-width:140px;"
+                                    onchange="cargarDocumentosLegales()">
+                                    <option value="">Todas las sedes</option>
+                                    <option value="Alcalá">Alcalá</option>
+                                    <option value="Local 01">Local 01</option>
+                                    <option value="Jordán">Jordán</option>
+                                    <option value="Digital">Digital</option>
+                                    <option value="General">General (empresa)</option>
+                                </select>
+                                <select id="filtroDocEstado" class="form-control" style="width:auto;min-width:140px;"
+                                    onchange="cargarDocumentosLegales()">
+                                    <option value="">Todos</option>
+                                    <option value="vigente">Vigentes</option>
+                                    <option value="proximo">Próximos a Vencer</option>
+                                    <option value="vencido">Vencidos</option>
+                                </select>
+                                <span style="border-left:1px solid #e2e8f0;height:24px;"></span>
+                                <button class="btn btn-primary btn-sm" onclick="abrirModalDocumento()">+ Nuevo
+                                    Documento</button>
+                                <button class="btn btn-secondary btn-sm"
+                                    onclick="exportarCarteraPDF('tablaDocumentosLegales','Documentos_Legales','⚠️ Documentos Legales')">📄
+                                    PDF</button>
+                                <button class="btn btn-secondary btn-sm"
+                                    onclick="exportarCarteraExcel('tablaDocumentosLegales','Documentos_Legales')">📊
+                                    Excel</button>
+                            </div>
+                        </div>
+                        <!-- Leyenda semáforo -->
+                        <div style="display:flex; gap:1.5rem; margin-bottom:1rem; font-size:0.8rem; color:#64748b;">
+                            <span>🟢 Vigente (>30 días)</span>
+                            <span>🟡 Próximo a vencer (≤30 días)</span>
+                            <span>🔴 Vencido</span>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table" id="tablaDocumentosLegales">
+                                <thead>
+                                    <tr>
+                                        <th>Estado</th>
+                                        <th>Documento</th>
+                                        <th>Entidad</th>
+                                        <th>Sede</th>
+                                        <th>Expedición</th>
+                                        <th>Vencimiento</th>
+                                        <th>Días Restantes</th>
+                                        <th>Archivo</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyDocumentosLegales">
+                                    <tr>
+                                        <td colspan="9" style="text-align:center;">Cargando documentos...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Nuevo/Editar Documento Legal -->
+            <div id="modalDocumentoLegal" class="modal-overlay" style="display:none;">
+                <div class="modal"
+                    style="background:white;padding:2rem;border-radius:1rem;max-width:700px;width:95%;max-height:95vh;overflow-y:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+                        <h3 id="tituloModalDocumento" style="margin:0;">📄 Nuevo Documento Legal</h3>
+                        <button onclick="cerrarModalDocumento()"
+                            style="background:none;border:none;font-size:1.5rem;cursor:pointer;">✕</button>
+                    </div>
+                    <input type="hidden" id="documentoId">
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div class="form-group">
+                            <label>Nombre del Documento <span class="required">*</span></label>
+                            <input type="text" id="documentoNombre" class="form-control"
+                                placeholder="Ej: Cámara de Comercio Alcalá">
+                        </div>
+                        <div class="form-group">
+                            <label>Entidad Expedidora</label>
+                            <input type="text" id="documentoEntidad" class="form-control"
+                                placeholder="Ej: Bomberos, DIAN, Sayco, CCB">
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem;">
+                        <div class="form-group">
+                            <label>Sede <span class="required">*</span></label>
+                            <select id="documentoSede" class="form-control">
+                                <option value="">Seleccione...</option>
+                                <option value="Alcalá">Alcalá</option>
+                                <option value="Local 01">Local 01</option>
+                                <option value="Jordán">Jordán</option>
+                                <option value="Digital">Digital</option>
+                                <option value="General">General (empresa)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Expedición <span class="required">*</span></label>
+                            <input type="date" id="documentoExpedicion" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Vencimiento <span class="required">*</span></label>
+                            <input type="date" id="documentoVencimiento" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Alertar con anticipación (días)</label>
+                        <input type="number" id="documentoAlertaDias" class="form-control" value="30" min="1" max="365"
+                            style="max-width:200px;">
+                        <small style="color:#64748b;">Se mostrará como ⚠️ cuando falten estos días o menos para
+                            vencer.</small>
+                    </div>
+
+                    <!-- Sección de Archivo: Upload o URL -->
+                    <div
+                        style="border:1px solid #e2e8f0; border-radius:0.75rem; padding:1rem; margin-top:0.5rem; background:#fafbfc;">
+                        <label style="font-weight:600; margin-bottom:0.75rem; display:block;">📎 Documento
+                            Adjunto</label>
+
+                        <!-- Upload desde dispositivo -->
+                        <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:200px;">
+                                <label
+                                    style="display:flex;align-items:center;justify-content:center;gap:0.5rem;padding:1rem;border:2px dashed #cbd5e1;border-radius:0.5rem;cursor:pointer;transition:all 0.2s;background:white;"
+                                    onmouseover="this.style.borderColor='#f97316';this.style.background='#fff7ed'"
+                                    onmouseout="this.style.borderColor='#cbd5e1';this.style.background='white'">
+                                    <span style="font-size:1.5rem;">📷</span>
+                                    <span style="font-size:0.85rem;color:#475569;">Subir foto o PDF del documento</span>
+                                    <input type="file" id="documentoArchivoFile" accept="image/*,.pdf"
+                                        capture="environment" style="display:none;"
+                                        onchange="previsualizarArchivoDoc(this)">
+                                </label>
+                                <div id="previewArchivoDoc"
+                                    style="display:none; margin-top:0.5rem; padding:0.5rem; background:#f1f5f9; border-radius:0.5rem;">
+                                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                                        <img id="previewImgDoc" src="" alt=""
+                                            style="max-width:60px;max-height:60px;border-radius:4px;object-fit:cover;">
+                                        <div>
+                                            <p id="previewNombreDoc" style="margin:0;font-size:0.8rem;font-weight:600;">
+                                            </p>
+                                            <p id="previewTamanoDoc" style="margin:0;font-size:0.75rem;color:#64748b;">
+                                            </p>
+                                        </div>
+                                        <button onclick="limpiarArchivoDoc()"
+                                            style="margin-left:auto;background:none;border:none;cursor:pointer;color:#ef4444;font-size:1.2rem;"
+                                            title="Quitar">✕</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display:flex;align-items:center;color:#94a3b8;font-weight:600;">ó</div>
+                            <div style="flex:1; min-width:200px;">
+                                <label style="font-size:0.85rem; color:#475569;">Pegar enlace (URL / Google
+                                    Drive)</label>
+                                <input type="text" id="documentoArchivo" class="form-control"
+                                    placeholder="https://drive.google.com/..." style="margin-top:0.25rem;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1.5rem;">
+                        <button class="btn btn-secondary" onclick="cerrarModalDocumento()">Cancelar</button>
+                        <button class="btn btn-success" onclick="guardarDocumentoLegal()">💾 Guardar Documento</button>
                     </div>
                 </div>
             </div>
             <div id="section-predictor_stock" class="section">
                 <div class="page-header">
-                    <h1>🤖 Predictor de Stock</h1>
-                    <p>Próximamente: alertas de quiebre de stock basadas en velocidad de venta.</p>
+                    <h1>🤖 Predictor de Stock — Alertas de Quiebre</h1>
+                    <p>Productos con inventario bajo basado en la velocidad de venta del último mes. Los productos se
+                        ordenan por urgencia.</p>
                 </div>
-                <div class="card">
+
+                <!-- KPIs Stock -->
+                <div class="stats-grid" id="stockKpis">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">🚨</div>
+                        <div class="stat-info">
+                            <h3 id="kpiStockCritico">0</h3>
+                            <p>Stock Crítico (0-2)</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;">⚠️</div>
+                        <div class="stat-info">
+                            <h3 id="kpiStockBajo">0</h3>
+                            <p>Stock Bajo (3-5)</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3 id="kpiStockNormal">0</h3>
+                            <p>Stock Normal (>5)</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📦</div>
+                        <div class="stat-info">
+                            <h3 id="kpiStockAgotado">0</h3>
+                            <p>Agotados (0)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:1.5rem;">
                     <div class="card-body">
-                        <p>🚧 Módulo en desarrollo (Fase 2)</p>
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                            <h3 style="margin:0;">🔍 Productos con Alerta de Stock</h3>
+                            <div style="display:flex; gap:0.5rem;">
+                                <select id="filtroStockAlerta" class="form-control" style="width:auto;min-width:160px;"
+                                    onchange="cargarPredictorStock()">
+                                    <option value="critico">🚨 Solo Críticos</option>
+                                    <option value="bajo">⚠️ Críticos + Bajos</option>
+                                    <option value="todos" selected>📋 Todos</option>
+                                </select>
+                                <button class="btn btn-secondary btn-sm"
+                                    onclick="exportarCarteraPDF('tablaStockPredictor','Stock_Predictor','🤖 Predictor Stock')">📄
+                                    PDF</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table" id="tablaStockPredictor">
+                                <thead>
+                                    <tr>
+                                        <th>Alerta</th>
+                                        <th>Producto</th>
+                                        <th>Marca</th>
+                                        <th>Stock Total</th>
+                                        <th>Vendidos (30d)</th>
+                                        <th>Velocidad/Día</th>
+                                        <th>Días Restantes Est.</th>
+                                        <th>Recomendación</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyStockPredictor">
+                                    <tr>
+                                        <td colspan="8" style="text-align:center;">Cargando análisis...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
+
             <div id="section-simulador_rentabilidad" class="section">
                 <div class="page-header">
-                    <h1>📈 Simulador Rentabilidad</h1>
-                    <p>Próximamente: calculadora "What if?" para simular descuentos y promociones.</p>
+                    <h1>📈 Simulador de Rentabilidad</h1>
+                    <p>Calculadora "What if?" para simular el impacto de descuentos, cambios de costo y volumen en la
+                        rentabilidad.</p>
                 </div>
-                <div class="card">
+
+                <div class="card" style="margin-top:1rem;">
                     <div class="card-body">
-                        <p>🚧 Módulo en desarrollo (Fase 2)</p>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
+                            <!-- Panel de entrada -->
+                            <div>
+                                <h3 style="margin-top:0;">⚙️ Parámetros del Escenario</h3>
+                                <div class="form-group">
+                                    <label>💰 Ingreso Mensual Base ($)</label>
+                                    <input type="number" id="simIngresoBase" class="form-control" value="15000000"
+                                        oninput="calcularSimulacion()">
+                                    <small style="color:#64748b;">Ingreso promedio mensual estimado</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>📦 Costo de Mercancía (%): <strong id="simCostoLabel">55%</strong></label>
+                                    <input type="range" id="simCostoPct" min="30" max="80" value="55" step="1"
+                                        style="width:100%;"
+                                        oninput="document.getElementById('simCostoLabel').textContent=this.value+'%'; calcularSimulacion()">
+                                </div>
+                                <div class="form-group">
+                                    <label>🏷️ Descuento Promedio (%): <strong
+                                            id="simDescuentoLabel">0%</strong></label>
+                                    <input type="range" id="simDescuentoPct" min="0" max="50" value="0" step="1"
+                                        style="width:100%;"
+                                        oninput="document.getElementById('simDescuentoLabel').textContent=this.value+'%'; calcularSimulacion()">
+                                </div>
+                                <div class="form-group">
+                                    <label>📊 Cambio en Volumen de Ventas (%): <strong
+                                            id="simVolumenLabel">0%</strong></label>
+                                    <input type="range" id="simVolumenPct" min="-30" max="50" value="0" step="5"
+                                        style="width:100%;"
+                                        oninput="document.getElementById('simVolumenLabel').textContent=(this.value>0?'+':'')+this.value+'%'; calcularSimulacion()">
+                                </div>
+                                <div class="form-group">
+                                    <label>💸 Gastos Fijos Mensuales ($)</label>
+                                    <input type="number" id="simGastosFijos" class="form-control" value="3000000"
+                                        oninput="calcularSimulacion()">
+                                </div>
+                            </div>
+
+                            <!-- Panel de resultados -->
+                            <div>
+                                <h3 style="margin-top:0;">📊 Resultado Proyectado</h3>
+                                <div style="display:grid; gap:1rem;">
+                                    <div
+                                        style="padding:1.5rem; border-radius:0.75rem; background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
+                                        <p style="margin:0 0 0.25rem; font-size:0.85rem; color:#15803d;">💰 Ingreso Neto
+                                            (después de descuento)</p>
+                                        <h2 style="margin:0; color:#15803d;" id="simResultIngreso">$15,000,000</h2>
+                                    </div>
+                                    <div
+                                        style="padding:1.5rem; border-radius:0.75rem; background:linear-gradient(135deg,#eff6ff,#dbeafe);">
+                                        <p style="margin:0 0 0.25rem; font-size:0.85rem; color:#1d4ed8;">📦 Costo de
+                                            Mercancía</p>
+                                        <h2 style="margin:0; color:#1d4ed8;" id="simResultCosto">$8,250,000</h2>
+                                    </div>
+                                    <div
+                                        style="padding:1.5rem; border-radius:0.75rem; background:linear-gradient(135deg,#fef3c7,#fde68a);">
+                                        <p style="margin:0 0 0.25rem; font-size:0.85rem; color:#92400e;">📈 Margen Bruto
+                                        </p>
+                                        <h2 style="margin:0; color:#92400e;" id="simResultMargen">$6,750,000</h2>
+                                        <p style="margin:0.25rem 0 0; font-size:0.85rem; color:#a16207;"
+                                            id="simResultMargenPct">45.0%</p>
+                                    </div>
+                                    <div style="padding:1.5rem; border-radius:0.75rem;" id="simResultUtilidadBox">
+                                        <p style="margin:0 0 0.25rem; font-size:0.85rem;" id="simResultUtilidadLabel">🎯
+                                            Utilidad Neta</p>
+                                        <h2 style="margin:0;" id="simResultUtilidad">$3,750,000</h2>
+                                        <p style="margin:0.25rem 0 0; font-size:0.85rem;" id="simResultUtilidadPct">
+                                            25.0%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
             <div id="section-metas_ia" class="section">
                 <div class="page-header">
-                    <h1>🎯 Metas Sugeridas IA</h1>
-                    <p>Próximamente: sugerencias automáticas de metas basadas en historial.</p>
+                    <h1>🎯 Metas Inteligentes</h1>
+                    <p>Objetivos sugeridos basados en el historial de ventas y tendencias. Actualización automática
+                        mensual.</p>
                 </div>
-                <div class="card">
+
+                <div class="stats-grid" id="metasKpis">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(249,115,22,0.15);color:#f97316;">🎯</div>
+                        <div class="stat-info">
+                            <h3 id="kpiMetaMensual">$0</h3>
+                            <p>Meta Mensual Sugerida</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">📈</div>
+                        <div class="stat-info">
+                            <h3 id="kpiMetaDiaria">$0</h3>
+                            <p>Meta Diaria</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📊</div>
+                        <div class="stat-info">
+                            <h3 id="kpiVentaActualMes">$0</h3>
+                            <p>Venta Actual del Mes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">🔥</div>
+                        <div class="stat-info">
+                            <h3 id="kpiCumplimientoMeta">0%</h3>
+                            <p>Cumplimiento</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de progreso -->
+                <div class="card" style="margin-top:1.5rem;">
                     <div class="card-body">
-                        <p>🚧 Módulo en desarrollo (Fase 2)</p>
+                        <h3 style="margin-top:0;">📊 Progreso hacia la Meta</h3>
+                        <div
+                            style="background:#e2e8f0; border-radius:12px; height:40px; overflow:hidden; margin:1rem 0;">
+                            <div id="barraProgresoMeta"
+                                style="height:100%; background:linear-gradient(90deg,#22c55e,#16a34a); border-radius:12px; transition:width 0.5s ease; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:0.9rem; min-width:40px; width:0%;">
+                                0%
+                            </div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#64748b;">
+                            <span>$0</span>
+                            <span id="metaBarraLabel">Meta: $0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de metas por local -->
+                <div class="card" style="margin-top:1rem;">
+                    <div class="card-body">
+                        <h3 style="margin-top:0;">🏪 Desglose por Local</h3>
+                        <div class="table-container">
+                            <table class="data-table" id="tablaMetasLocal">
+                                <thead>
+                                    <tr>
+                                        <th>Local</th>
+                                        <th>Venta Mes Anterior</th>
+                                        <th>Meta Sugerida (+10%)</th>
+                                        <th>Venta Actual</th>
+                                        <th>Cumplimiento</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyMetasLocal">
+                                    <tr>
+                                        <td colspan="6" style="text-align:center;">Cargando metas...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

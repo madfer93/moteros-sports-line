@@ -353,17 +353,32 @@ async function cargarProyeccionesMetas() {
     }
 
     // Consultar DB para estos meses
-    // Simplificación: Traemos todo el año de cada año involucrado
     const anios = [...new Set(meses.map(m => m.anio))];
 
     let metasFuturas = [];
+    let ventasTotales = [];
     try {
-        const { data, error } = await supabaseClient
+        const { data } = await supabaseClient
             .from('metas_locales')
             .select('*')
             .in('anio', anios);
 
         if (data) metasFuturas = data;
+
+        // Query fetching actual sales to calculate 'Total Logrado'
+        const fechaMin = new Date(fechaBase.getFullYear(), fechaBase.getMonth(), 1).toISOString();
+        const dMax = new Date(fechaBase);
+        dMax.setMonth(dMax.getMonth() + 6);
+        dMax.setDate(0);
+        const fechaMax = dMax.toISOString();
+
+        const { data: ventasData } = await supabaseClient
+            .from('ventas')
+            .select('local, total, created_at')
+            .gte('created_at', fechaMin)
+            .lte('created_at', fechaMax);
+
+        if (ventasData) ventasTotales = ventasData;
 
     } catch (e) { console.error(e); }
 
@@ -387,7 +402,31 @@ async function cargarProyeccionesMetas() {
         const vLocal01 = filtro('local01');
         const vJordan = filtro('jordan');
         const vDigital = filtro('digital');
-        const total = vAlcala + vLocal01 + vJordan + vDigital;
+        const totalProyectado = vAlcala + vLocal01 + vJordan + vDigital;
+
+        // Calcular Ventas logradas en este mes
+        const ventasMes = ventasTotales.filter(v => {
+            const fd = new Date(v.created_at);
+            return fd.getMonth() + 1 === m.mes && fd.getFullYear() === m.anio;
+        });
+
+        let logrado = {
+            alcala: 0,
+            local01: 0,
+            jordan: 0,
+            digital: 0
+        };
+
+        ventasMes.forEach(v => {
+            const amt = parseFloat(v.total || 0);
+            if (v.local === 'Alcalá') logrado.alcala += amt;
+            else if (v.local === 'Local 01' || v.local === 'Cero1') logrado.local01 += amt;
+            else if (v.local === 'Jordán') logrado.jordan += amt;
+            else if (v.local === 'Digital') logrado.digital += amt;
+        });
+
+        const totalLogrado = logrado.alcala + logrado.local01 + logrado.jordan + logrado.digital;
+        const cumplimiento = totalProyectado > 0 ? ((totalLogrado / totalProyectado) * 100).toFixed(1) : 0;
 
         datosGrafica.alcala.push(vAlcala);
         datosGrafica.local01.push(vLocal01);
@@ -401,7 +440,11 @@ async function cargarProyeccionesMetas() {
                 <td>$${vLocal01.toLocaleString('es-CO')}</td>
                 <td>$${vJordan.toLocaleString('es-CO')}</td>
                 <td>$${vDigital.toLocaleString('es-CO')}</td>
-                <td style="font-weight:bold; color:var(--primary);">$${total.toLocaleString('es-CO')}</td>
+                <td style="font-weight:bold; color:var(--primary);">$${totalProyectado.toLocaleString('es-CO')}</td>
+                <td style="font-weight:bold; color:${cumplimiento >= 100 ? 'var(--success)' : (cumplimiento >= 50 ? 'var(--warning)' : 'var(--danger)')};">
+                    $${totalLogrado.toLocaleString('es-CO')} <br>
+                    <span style="font-size:0.8rem; opacity:0.8">${cumplimiento}% completado</span>
+                </td>
             </tr>
         `;
     });

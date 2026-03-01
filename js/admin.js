@@ -1675,6 +1675,7 @@ async function cargarTodosLosInventarios() {
 
 async function cargarInventarioLocal() {
     const tabla = document.getElementById('inventarioLocal').value;
+    const estadoFiltro = document.getElementById('inventarioEstadoFiltro')?.value;
     const contenido = document.getElementById('contenidoInventario');
     if (!tabla) { contenido.innerHTML = '<div class="card-body"><div class="alert alert-info">👆 Selecciona un local</div></div>'; return; }
     contenido.innerHTML = '<div class="card-body"><div class="loading"><div class="spinner"></div><p>Cargando...</p></div></div>';
@@ -1682,13 +1683,30 @@ async function cargarInventarioLocal() {
         const { data, error } = await supabaseClient.from(tabla).select('*').order('id_producto');
         if (error) throw error;
         if (!data || data.length === 0) { contenido.innerHTML = '<div class="card-body"><div class="alert alert-warning">No hay productos en este inventario</div></div>'; return; }
-        contenido.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Producto</th><th>Categoría</th><th>Cantidad</th><th>Stock Mín.</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${data.map(inv => {
+
+        let htmlRows = '';
+
+        data.forEach(inv => {
             const producto = productos.find(p => p.id_producto === inv.id_producto);
-            let badge = 'badge-success', texto = 'OK';
-            if (inv.cantidad === 0) { badge = 'badge-danger'; texto = 'Agotado'; }
-            else if (inv.cantidad <= (inv.stock_minimo || 5)) { badge = 'badge-warning'; texto = 'Bajo'; }
-            return `<tr><td><strong>${producto?.nombre || inv.id_producto}</strong><br><small style="color:#666">${producto?.marca || ''}</small></td><td>${producto?.categoria || '-'}</td><td style="font-size:1.1rem; font-weight:700;">${inv.cantidad}</td><td>${inv.stock_minimo || 5}</td><td><span class="badge ${badge}">${texto}</span></td><td><button onclick="ajustarStock('${tabla}','${inv.id}',${inv.cantidad})" class="btn btn-secondary btn-sm">✏️ Ajustar</button></td></tr>`;
-        }).join('')}</tbody></table></div>`;
+            let badge = 'badge-success', texto = 'OK', estadoActual = 'OK';
+            if (inv.cantidad === 0) { badge = 'badge-danger'; texto = 'Agotado'; estadoActual = 'Agotado'; }
+            else if (inv.cantidad <= (inv.stock_minimo || 5)) { badge = 'badge-warning'; texto = 'Bajo'; estadoActual = 'Bajo'; }
+
+            if (estadoFiltro && estadoFiltro !== '' && estadoFiltro !== estadoActual) {
+                return;
+            }
+
+            const btnEditar = producto?.id ? `<button onclick="editarProducto('${producto.id}')" class="btn btn-primary btn-sm" title="Editar Producto">✏️ Editar</button>` : '';
+
+            htmlRows += `<tr><td><strong>${producto?.nombre || inv.id_producto}</strong><br><small style="color:#666">${producto?.marca || ''}</small></td><td>${producto?.categoria || '-'}</td><td style="font-size:1.1rem; font-weight:700;">${inv.cantidad}</td><td>${inv.stock_minimo || 5}</td><td><span class="badge ${badge}">${texto}</span></td><td><div style="display:flex; gap:0.5rem;"><button onclick="ajustarStock('${tabla}','${inv.id}',${inv.cantidad})" class="btn btn-secondary btn-sm">🔢 Ajustar</button>${btnEditar}</div></td></tr>`;
+        });
+
+        if (htmlRows === '') {
+            contenido.innerHTML = '<div class="card-body"><div class="alert alert-warning">No hay productos que coincidan con el filtro de estado</div></div>';
+            return;
+        }
+
+        contenido.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Producto</th><th>Categoría</th><th>Cantidad</th><th>Stock Mín.</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${htmlRows}</tbody></table></div>`;
     } catch (error) { contenido.innerHTML = `<div class="card-body"><div class="alert alert-danger">Error: ${error.message}</div></div>`; }
 }
 
@@ -2938,45 +2956,7 @@ async function cargarAlertasStock() {
     contenido.innerHTML = `<div class="card-header"><h3>⚠️ ${alertas.length} alertas</h3></div><div class="table-container"><table class="data-table"><thead><tr><th>Estado</th><th>Local</th><th>Producto</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody>${alertas.map(a => `<tr><td><span class="badge ${a.tipo === 'agotado' ? 'badge-danger' : 'badge-warning'}">${a.tipo === 'agotado' ? '❌ AGOTADO' : '⚠️ BAJO'}</span></td><td>${a.local}</td><td><strong>${a.producto}</strong></td><td style="font-weight:700; color:${a.tipo === 'agotado' ? 'var(--danger)' : 'var(--warning)'}">${a.cantidad}</td><td>${a.stockMin}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
-// ---------------------------------------------------------------
-// DEUDORES
-// ---------------------------------------------------------------
-async function cargarDeudores() {
-    try {
-        const estado = document.getElementById('deudoresEstadoFiltro')?.value || 'ABIERTO';
-        const local = document.getElementById('deudoresLocalFiltro')?.value || '';
-        let query = supabaseClient.from('deudores').select('*').order('saldo_actual', { ascending: false });
-        if (estado) query = query.eq('estado', estado);
-        if (local) query = query.ilike('sede_venta', `%${local}%`);
-        const { data, error } = await query;
-        if (error) throw error;
-        todosDeudores = data || [];
-        renderizarDeudores(todosDeudores);
-        const { data: todos } = await supabaseClient.from('deudores').select('*');
-        const abiertos = todos?.filter(d => d.estado === 'ABIERTO') || [];
-        const totalDeuda = abiertos.reduce((s, d) => s + (d.saldo_actual || 0), 0);
-        document.getElementById('deudoresTotalDeuda').textContent = '$' + formatearPrecio(totalDeuda);
-        document.getElementById('deudoresActivos').textContent = abiertos.length;
-        document.getElementById('deudoresCerrados').textContent = todos?.filter(d => d.estado === 'CERRADO').length || 0;
-    } catch (error) { if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando deudores:', error); showToast('Error al cargar deudores', 'error'); }
-}
 
-function renderizarDeudores(lista) {
-    const tbody = document.getElementById('tbodyDeudores');
-    if (!lista || lista.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding:2rem;color:var(--gray-500);">No hay deudores</td></tr>'; return; }
-    tbody.innerHTML = lista.map(d => {
-        const fechaRef = d.ultimo_pago || d.fecha_compra;
-        let diasSinPago = 0; if (fechaRef) { diasSinPago = Math.floor((new Date() - new Date(fechaRef)) / (1000 * 60 * 60 * 24)); }
-        const estadoBadge = d.estado === 'ABIERTO' ? (diasSinPago > 30 ? 'badge-danger' : 'badge-warning') : 'badge-success';
-        return `<tr><td><strong>${d.nombre_completo}</strong></td><td>${d.telefono || '-'}</td><td>${d.sede_venta || '-'}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${d.descripcion_compra || '-'}</td><td>$${formatearPrecio(d.monto_original || 0)}</td><td><strong style="color:${d.saldo_actual > 0 ? 'var(--danger)' : 'var(--success)'}">$${formatearPrecio(d.saldo_actual || 0)}</strong></td><td><span class="badge ${diasSinPago > 30 ? 'badge-danger' : 'badge-info'}">${diasSinPago} días</span></td><td><span class="badge ${estadoBadge}">${d.estado}</span></td><td><button onclick="editarDeudor('${d.id}')" class="btn btn-sm btn-secondary">✏️</button><button onclick="registrarPagoDeudor('${d.id}')" class="btn btn-sm btn-success">💰</button><a href="https://wa.me/57${(d.telefono || '').replace(/\D/g, '')}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;">📱</a></td></tr>`;
-    }).join('');
-}
-
-function buscarDeudores() {
-    const query = document.getElementById('deudoresBuscar').value.toLowerCase();
-    if (!query) { renderizarDeudores(todosDeudores); return; }
-    renderizarDeudores(todosDeudores.filter(d => d.nombre_completo?.toLowerCase().includes(query) || d.telefono?.includes(query)));
-}
 
 // ---------------------------------------------------------------
 // PRODUCTOS
@@ -6170,9 +6150,9 @@ async function cargarProveedoresParaGastos() {
     }
 }
 
-function mostrarFormGasto() {
+async function mostrarFormGasto() {
     document.getElementById('formGasto').style.display = 'block';
-    document.getElementById('formTituloGasto').textContent = '? Nuevo Gasto';
+    document.getElementById('formTituloGasto').textContent = '➕ Nuevo Gasto';
     ['gastoId', 'gastoDescripcion', 'gastoMonto', 'gastoProveedor', 'gastoFactura', 'gastoNotas', 'gastoRegistradoPor'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
@@ -6181,6 +6161,20 @@ function mostrarFormGasto() {
     document.getElementById('gastoCategoria').value = '';
     document.getElementById('gastoMetodo').value = 'efectivo';
     document.getElementById('gastoFecha').value = new Date().toISOString().split('T')[0];
+
+    // Cargar Categorías
+    try {
+        const { data: categorias } = await supabaseClient.from('categorias_gastos').select('*').order('nombre');
+        const selectCategoria = document.getElementById('gastoCategoria');
+        if (selectCategoria) {
+            selectCategoria.innerHTML = '<option value="">Cargando...</option>';
+            setTimeout(() => {
+                selectCategoria.innerHTML = '<option value="">Seleccionar...</option>' +
+                    (categorias ? categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('') : '');
+            }, 100);
+        }
+    } catch (e) { console.error('Error cargando categorías:', e); }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -6209,26 +6203,12 @@ async function guardarGasto() {
             fecha_gasto: document.getElementById('gastoFecha')?.value || new Date().toISOString().split('T')[0]
         };
 
-        // Esquema Correcto: categoria_id (Integer)
-        // Buscamos el ID correspondiente al nombre seleccionado en el HTML
-        const categoriaNombre = document.getElementById('gastoCategoria')?.value;
-        if (categoriaNombre) {
-            // Intentar buscar el ID en la tabla 'categorias_gastos'
-            // Nota: Como no tenemos los IDs cargados en el HTML, hacemos una consulta rápida.
-            // Optimización futura: Cargar IDs en el <select> al inicio.
-            const { data: catData, error: catError } = await supabaseClient
-                .from('categorias_gastos')
-                .select('id')
-                .eq('nombre', categoriaNombre) // Asumiendo que 'nombre' es la columna de texto
-                .maybeSingle();
-
-            if (catData?.id) {
-                gasto.categoria_id = catData.id;
-            } else {
-                console.warn(`Categoría "${categoriaNombre}" no encontrada en DB. Guardando en notas.`);
-                gasto.notas = (gasto.notas ? gasto.notas + ' ' : '') + `[Categoría: ${categoriaNombre}]`;
-                // No enviamos 'categoria' string porque causa error 400
-            }
+        const categoriaId = document.getElementById('gastoCategoria')?.value;
+        if (categoriaId) {
+            gasto.categoria_id = parseInt(categoriaId, 10);
+        } else {
+            showToast('Seleccione una categoría válida', 'warning');
+            return;
         }
 
         const proveedor = document.getElementById('gastoProveedor')?.value;
@@ -6289,8 +6269,6 @@ async function eliminarGasto(id) {
 }
 
 async function editarGasto(id) {
-
-
     const gasto = gastosData.find(g => g.id === id);
     if (!gasto) {
         showToast('Gasto no encontrado', 'error');
@@ -6301,7 +6279,6 @@ async function editarGasto(id) {
     document.getElementById('formTituloGasto').textContent = '✏️ Editar Gasto';
     document.getElementById('gastoId').value = gasto.id;
     document.getElementById('gastoLocal').value = gasto.local || '';
-    document.getElementById('gastoCategoria').value = gasto.categoria || '';
     document.getElementById('gastoDescripcion').value = gasto.descripcion || '';
     document.getElementById('gastoMonto').value = gasto.monto || '';
     document.getElementById('gastoMetodo').value = gasto.metodo_pago || 'efectivo';
@@ -6310,6 +6287,21 @@ async function editarGasto(id) {
     document.getElementById('gastoFecha').value = gasto.fecha_gasto || '';
     document.getElementById('gastoRegistradoPor').value = gasto.registrado_por || '';
     document.getElementById('gastoNotas').value = gasto.notas || '';
+
+    // Cargar Categorías y seleccionar la actual
+    const catId = gasto.categoria_id || '';
+    try {
+        const { data: categorias } = await supabaseClient.from('categorias_gastos').select('*').order('nombre');
+        const selectCategoria = document.getElementById('gastoCategoria');
+        if (selectCategoria) {
+            selectCategoria.innerHTML = '<option value="">Cargando...</option>';
+            setTimeout(() => {
+                selectCategoria.innerHTML = '<option value="">Seleccionar...</option>' +
+                    (categorias ? categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('') : '');
+                selectCategoria.value = catId;
+            }, 100);
+        }
+    } catch (e) { console.error('Error cargando categorías:', e); }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -6352,6 +6344,88 @@ async function exportarGastosExcel() {
     }
 }
 window.exportarGastosExcel = exportarGastosExcel;
+
+// GESTION DE CATEGORIAS DE GASTOS (MODAL)
+function abrirModalCategoriasGastos() {
+    document.getElementById('modalCategoriasGastos').style.display = 'flex';
+    cargarListaCategoriasGastos();
+}
+
+function cerrarModalCategoriasGastos() {
+    document.getElementById('modalCategoriasGastos').style.display = 'none';
+}
+
+async function cargarListaCategoriasGastos() {
+    const tbody = document.getElementById('tbodyCategoriasGastos');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1rem;">Cargando categorías...</td></tr>';
+    try {
+        const { data, error } = await supabaseClient.from('categorias_gastos').select('*').order('nombre', { ascending: true });
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1rem; color:#64748b;">No hay categorías registradas.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(c => `
+            <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:1rem;"><strong>${c.nombre}</strong></td>
+                <td style="padding:1rem;">${c.descripcion || '<span style="color:#94a3b8;">Sin descripción</span>'}</td>
+                <td style="padding:1rem; text-align:center;">
+                    <button onclick="eliminarCategoriaGasto('${c.id}', '${c.nombre}')" style="background:#ef4444; color:white; border:none; padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; font-weight:bold;" title="Eliminar Categoría">🗑️ Eliminar</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        console.error('Error cargando categorías de gastos:', err);
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:1rem; color:red;">Error: ${err.message}</td></tr>`;
+    }
+}
+
+async function crearCategoriaGasto() {
+    const nombre = document.getElementById('nuevaCategoriaNombre').value.trim();
+    const descripcion = document.getElementById('nuevaCategoriaDesc').value.trim();
+
+    if (!nombre) {
+        showToast('El nombre de la categoría es obligatorio.', 'warning');
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient.from('categorias_gastos').insert([{
+            nombre,
+            descripcion: descripcion || null,
+            activo: true
+        }]);
+
+        if (error) throw error;
+
+        showToast('✅ Categoría agregada exitosamente', 'success');
+        document.getElementById('nuevaCategoriaNombre').value = '';
+        document.getElementById('nuevaCategoriaDesc').value = '';
+
+        cargarListaCategoriasGastos();
+    } catch (err) {
+        console.error('Error creando categoría:', err);
+        showToast('Error al crear: ' + err.message, 'error');
+    }
+}
+
+async function eliminarCategoriaGasto(id, nombreCategoria) {
+    if (!confirm(`¿Estás seguro de eliminar la categoría "${nombreCategoria}"? Esto no se puede deshacer y puede afectar los gastos que ya la tengan vinculada.`)) return;
+
+    try {
+        const { error } = await supabaseClient.from('categorias_gastos').delete().eq('id', id);
+        if (error) throw error;
+
+        showToast('🗑️ Categoría eliminada permanentemente', 'success');
+        cargarListaCategoriasGastos();
+    } catch (err) {
+        console.error('Error eliminando categoría:', err);
+        showToast('No se puede eliminar porque seguramente se está usando en un gasto. Detalles: ' + err.message, 'error');
+    }
+}
 
 // DESTACADOS
 async function cargarDestacadosAdmin() { if (productos.length === 0) { await cargarProductos(); } renderizarPanelesDestacados(); }
@@ -7555,7 +7629,7 @@ window.limpiarMoneda = limpiarMoneda;
 
 // Deudores
 window.cargarDeudores = cargarDeudores;
-window.buscarDeudores = buscarDeudores;
+
 window.mostrarFormDeudor = mostrarFormDeudor;
 window.cancelarFormDeudor = cancelarFormDeudor;
 window.guardarDeudor = guardarDeudor;
@@ -14027,10 +14101,10 @@ async function abonarDeuda(id) {
 window.registrarPagoDeuda = abonarDeuda;
 window.abonarDeuda = abonarDeuda;
 
-function cerrarModalAbono() {
+function cerrarModalAbonoDeuda() {
     document.getElementById('modalAbonoDeuda').style.display = 'none';
 }
-window.cerrarModalAbono = cerrarModalAbono;
+window.cerrarModalAbonoDeuda = cerrarModalAbonoDeuda;
 
 function setMontoTotal() {
     const el = document.getElementById('abonoMonto');
@@ -14153,7 +14227,7 @@ async function confirmarAbono() {
         if (errDeuda) throw errDeuda;
 
         showToast(`Abono de $${formatearPrecio(monto)} registrado.`, 'success');
-        cerrarModalAbono();
+        cerrarModalAbonoDeuda();
         if (window.cargarDeudasNegocio) window.cargarDeudasNegocio();
 
     } catch (e) {

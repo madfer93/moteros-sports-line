@@ -1622,7 +1622,7 @@
                                         <th>Teléfono</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tbodyDeudores">
+                                <tbody id="tbodyTopDeudores">
                                     <tr>
                                         <td colspan="5" class="text-center">Genera un reporte para ver datos</td>
                                     </tr>
@@ -2266,6 +2266,13 @@
                         <option value="inventario_jordan">🏢 Jordán</option>
                         <option value="inventario_digital">🌐 Digital</option>
                     </select>
+                    <select id="inventarioEstadoFiltro" class="form-control" style="max-width:200px;"
+                        onchange="cargarInventarioLocal()">
+                        <option value="">Todos los estados</option>
+                        <option value="OK">🟢 OK</option>
+                        <option value="Bajo">🟡 Bajo</option>
+                        <option value="Agotado">🔴 Agotado</option>
+                    </select>
                     <button onclick="cargarInventarioLocal()" class="btn btn-secondary">🔄 Recargar</button>
                     <button onclick="exportarInventarioExcel()" class="btn btn-success">📊 Excel</button>
                     <button onclick="exportarInventarioPDF()" class="btn btn-danger">📄 PDF</button>
@@ -2550,6 +2557,55 @@
                     </select>
                     <button onclick="cargarGastos()" class="btn btn-secondary">🔄 Actualizar</button>
                     <button onclick="exportarGastosExcel()" class="btn btn-info">📊 Exportar Excel</button>
+                    <button onclick="abrirModalCategoriasGastos()" class="btn btn-warning"
+                        style="background:#f59e0b; color:white; border:none; margin-left:0.5rem; border-radius:8px;">🏷️
+                        Categorías Gastos</button>
+                </div>
+
+                <!-- MODAL CATEGORIAS GASTOS -->
+                <div id="modalCategoriasGastos" class="modal-overlay"
+                    style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+                    <div class="modal-premium-content"
+                        style="background:white; border-radius:1rem; max-width:800px; width:90%; padding:2rem; box-shadow:0 20px 60px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto;">
+                        <div class="modal-premium-header"
+                            style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:1rem; margin-bottom:1rem;">
+                            <h3 style="margin:0; font-size:1.5rem;">🏷️ Gestionar Categorías de Gastos</h3>
+                            <button onclick="cerrarModalCategoriasGastos()"
+                                style="background:transparent; border:none; font-size:1.5rem; cursor:pointer; color:#64748b;">✕</button>
+                        </div>
+                        <div class="modal-premium-body">
+                            <div
+                                style="margin-bottom:1.5rem; display:flex; gap:0.5rem; flex-wrap:wrap; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0;">
+                                <input type="text" id="nuevaCategoriaNombre" placeholder="Nombre (ej. Publicidad)"
+                                    class="form-control" style="flex:2; min-width:150px;">
+                                <input type="text" id="nuevaCategoriaDesc" placeholder="Descripción (opcional)"
+                                    class="form-control" style="flex:3; min-width:200px;">
+                                <button onclick="crearCategoriaGasto()" class="btn btn-primary"
+                                    style="padding:0.75rem 1.5rem;">➕ Agregar</button>
+                            </div>
+                            <div
+                                style="max-height:400px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px;">
+                                <table class="data-table"
+                                    style="width:100%; text-align:left; border-collapse:collapse;">
+                                    <thead style="background:#f1f5f9; position:sticky; top:0;">
+                                        <tr>
+                                            <th style="padding:1rem; border-bottom:1px solid #e2e8f0;">Nombre</th>
+                                            <th style="padding:1rem; border-bottom:1px solid #e2e8f0;">Descripción</th>
+                                            <th
+                                                style="padding:1rem; border-bottom:1px solid #e2e8f0; text-align:center;">
+                                                Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyCategoriasGastos">
+                                        <tr>
+                                            <td colspan="3" style="text-align:center; padding:1rem;">Cargando
+                                                categorías...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="formGasto" class="form-modal" style="display:none;">
@@ -2575,26 +2631,7 @@
                                 <div class="form-group">
                                     <label>Categoría <span class="required">*</span></label>
                                     <select id="gastoCategoria" class="form-control" required>
-                                        <option value="">Seleccionar...</option>
-                                        <option value="Arriendo/Servicios/Vigilancia">🏠 Arriendo / Servicios /
-                                            Vigilancia</option>
-                                        <option value="Nomina/Comisiones/Alimentacion">👥 Nómina / Comisiones /
-                                            Alimentación</option>
-                                        <option value="Cafeteria/Aseo/Papeleria">🧹 Cafetería / Aseo / Papelería
-                                        </option>
-                                        <option value="Publicidad FB/IG">📱 Publicidad FB/IG</option>
-                                        <option value="Publicidad Google/Tik-Tok">🎬 Publicidad Google / Tik-Tok
-                                        </option>
-                                        <option value="Publicidad Otros">📢 Publicidad Otros</option>
-                                        <option value="Software/Asesoria">💻 Software / Asesoría</option>
-                                        <option value="Domicilios">🛵 Domicilios</option>
-                                        <option value="Eventos">🎪 Eventos</option>
-                                        <option value="Locativos">🛠️ Gastos Locativos</option>
-                                        <option value="Prestamos">🏦 Pago Préstamos</option>
-                                        <option value="Nomina Administrativa">📂 Nómina Administrativa</option>
-                                        <option value="Patrocinios/Obsequios">🎁 Patrocinios y Obsequios</option>
-                                        <option value="Pago a Proveedores">🚚 Pago a Proveedores</option>
-                                        <option value="Otros">❓ Otros</option>
+                                        <option value="">Cargando categorías...</option>
                                     </select>
                                 </div>
                             </div>
@@ -4003,39 +4040,6 @@
             </section>
 
 
-            <!-- ═══════════════════ GASTOS TEMU / OPERATIVOS ═══════════════════ -->
-            <section id="gastosTemuSection" class="section">
-                <div class="page-header">
-                    <h1>💸 Registrar Gasto / Egreso Operativo</h1>
-                    <p>Registra compras en plataformas (Temu, Shein, etc.) y otros egresos. Se sincroniza con el panel
-                        administrativa.</p>
-                </div>
-                <div class="actions-bar">
-                    <button class="btn btn-danger" onclick="abrirModalNuevoGastoOperativo()">🔴 Registrar Egreso /
-                        Compra</button>
-                </div>
-                <div class="card">
-                    <div class="table-container">
-                        <table class="data-table" id="tablaGastosAdmin">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Categoría</th>
-                                    <th>Monto</th>
-                                    <th>Cuenta Origen</th>
-                                    <th>Concepto / Proveedor</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbodyGastosAdmin">
-                                <tr>
-                                    <td colspan="5" style="text-align:center;">Cargando gastos...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
             <!-- ═══════════════════ PRÉSTAMOS BODEGA ═══════════════════ -->
             <section id="prestamosBodegaSection" class="section">
                 <div class="page-header">
@@ -4640,6 +4644,7 @@
                                             <th>Jordán</th>
                                             <th>Digital</th>
                                             <th>Total Proyectado</th>
+                                            <th>Total Logrado (%)</th>
                                         </tr>
                                     </thead>
                                     <tbody id="tbodyProyeccionLocales">
@@ -7181,7 +7186,7 @@
 
                 <!-- Botones Acción -->
                 <div style="display: flex; gap: 1rem;">
-                    <button onclick="cerrarModalAbono()" class="btn btn-secondary"
+                    <button onclick="cerrarModalAbonoDeuda()" class="btn btn-secondary"
                         style="flex: 1; padding: 0.75rem; border-radius: 8px; border: none; background: #e5e7eb; color: #374151; font-weight: 600; cursor: pointer;">Cancelar</button>
                     <button onclick="confirmarAbono()" class="btn btn-success"
                         style="flex: 1; padding: 0.75rem; border-radius: 8px; border: none; background: #22c55e; color: white; font-weight: 600; cursor: pointer; box-shadow: 0 4px 6px rgba(34, 197, 94, 0.2);">Confirmar
