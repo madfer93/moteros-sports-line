@@ -1648,6 +1648,17 @@ window.limpiarFiltros = limpiarFiltros;
 window.toggleFiltro = typeof toggleFiltro !== 'undefined' ? toggleFiltro : null;
 window.cargarSubcategoriasFiltro = typeof cargarSubcategoriasFiltro !== 'undefined' ? cargarSubcategoriasFiltro : null;
 window.toggleSidebarMobile = toggleSidebarMobile;
+window.toggleMobileMenu = toggleMobileMenu;
+window.verDetalle = verDetalle;
+window.cerrarModalDetalle = cerrarModalDetalle;
+window.abrirCarrito = abrirCarrito;
+window.cerrarModalCarrito = cerrarModalCarrito;
+window.agregarAlCarrito = agregarAlCarrito;
+window.agregarAlCarritoRapido = agregarAlCarritoRapido;
+window.cambiarCantidad = cambiarCantidad;
+window.eliminarDelCarrito = eliminarDelCarrito;
+window.vaciarCarrito = vaciarCarrito;
+window.enviarPedidoWhatsApp = enviarPedidoWhatsApp;
 
 // Evento para cerrar sidebar al hacer click en overlay
 document.addEventListener('DOMContentLoaded', () => {
