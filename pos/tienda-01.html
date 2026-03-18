@@ -365,7 +365,10 @@
     <!-- ===== MODAL: CERRAR CAJA ===== -->
     <div id="modalCerrarCaja" class="modal-overlay">
         <div class="modal modal-large">
-            <h3>🔐 Cierre de Caja</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="margin:0;">🔐 Cierre de Caja</h3>
+                <button onclick="cerrarModal()" style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">✖</button>
+            </div>
 
             <!-- Resumen del sistema -->
             <div id="resumenCierreModal"></div>

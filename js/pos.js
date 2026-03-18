@@ -1085,7 +1085,7 @@ async function cargarProductos() {
         }
 
         const { data: prods, error } = await db.from('productos')
-            .select('id, id_producto, nombre, marca, precio, variantes, url_imagen, categoria')
+            .select('id, id_producto, nombre, marca, precio, precio_compra, variantes, url_imagen, categoria')
             .eq('estado', 'Activo')
             .order('nombre');
 
@@ -1270,8 +1270,8 @@ function renderizarProductos() {
                     </div>
                 </div>
 
-                <div class="producto-precio" style="align-self: flex-start;">
-                    <span class="precio" style="font-size:1.1rem; color:#1e293b;">$${(p.precio || 0).toLocaleString('es-CO')}</span>
+                <div class="producto-precio">
+                    <span class="precio" style="font-size:1.3rem; font-weight:800; color:#ff6b00;">$${(p.precio || 0).toLocaleString('es-CO')}</span>
                 </div>
             </div>`;
         } else {
@@ -1329,7 +1329,7 @@ function renderizarProductos() {
 
                     </div>
                     <div class="producto-precio">
-                        <span class="precio">$${(p.precio || 0).toLocaleString('es-CO')}</span>
+                        <span class="precio" style="font-size:1.3rem; font-weight:800; color:#ff6b00;">$${(p.precio || 0).toLocaleString('es-CO')}</span>
                     </div>
                 </div>
             `;
@@ -1621,6 +1621,7 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
 
             carrito.push({
                 id_producto: prod.id_producto,
+                ref_bodega: prod.ref_bodega, // IMPORTANTE: Para descuentos de inventario
                 nombre: descripcion,
                 nombreBase: prod.nombre,
                 variante: tallaSeleccionada,
@@ -1628,10 +1629,10 @@ function agregarAlCarrito(idProducto, arg2 = null, arg3 = null, arg4 = null) { /
                 marca: prod.marca,
                 precioOriginal: prod.precio,
                 precio: precioFinal,
-                costo_unitario: prod.precio_compra || 0, // CAPTURANDO COSTO
+                costo_unitario: prod.precio_compra || 0, // CAPTURANDO COSTO REAL
                 cantidad: 1,
                 stockMax: stockDisponible,
-                tiendaOrigen: 'Tienda',
+                tiendaOrigen: TIENDA.nombre, // DINÁMICO: Evita el error de 'Tienda'
                 motivo: motivo
             });
         }
@@ -1745,18 +1746,12 @@ function renderizarCarrito() {
         return `
             <div class="carrito-item">
                 <div class="carrito-item-info">
-                    <strong>${item.nombre}</strong>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <small>
-                            ${tieneDescuento ? `<span class="precio-descuento">$${item.precioOriginal.toLocaleString('es-CO')}</span>` : ''}
-                            $${item.precio.toLocaleString('es-CO')} × ${item.cantidad} = $${(item.precio * item.cantidad).toLocaleString('es-CO')}
-                            ${tieneDescuento ? `<span class="motivo-descuento">⏳ ${item.motivo}</span>` : ''}
-                        </small>
-                        <!-- INDICADOR DE MARGEN -->
-                        <span class="margen-indicator" title="Margen de utilidad sugerido" 
-                              style="font-size:0.65rem; font-weight:700; color:${colorMargen}; background:${colorMargen}20; padding:1px 5px; border-radius:4px; border:1px solid ${colorMargen}50;">
-                            ${margenPct}% margen
-                        </span>
+                    <strong style="font-size:1rem; display:block; margin-bottom:4px;">${item.nombre}</strong>
+                    <div>
+                        ${tieneDescuento ? `<span style="text-decoration:line-through; color:#94a3b8; font-size:0.9rem; margin-right:6px;">$${item.precioOriginal.toLocaleString('es-CO')}</span>` : ''}
+                        <span style="font-size:1.05rem; font-weight:600; color:#1e293b;">$${item.precio.toLocaleString('es-CO')} × ${item.cantidad} = </span>
+                        <span style="font-size:1.2rem; font-weight:800; color:#ff6b00;">$${(item.precio * item.cantidad).toLocaleString('es-CO')}</span>
+                        ${tieneDescuento ? `<div style="color:#f59e0b; font-size:0.85rem; margin-top:2px;">⏳ ${item.motivo}</div>` : ''}
                     </div>
                 </div>
                 <div class="carrito-item-acciones">
@@ -1825,6 +1820,81 @@ function aplicarDescuento() {
 // ---------------------------------------------------------------
 // METODOS DE PAGO
 // 
+// ---------------------------------------------------------------
+// ACTUALIZAR DESGLOSE DE MONTOS MULTIMÉTODO (AUTO-CÁLCULO)
+// ---------------------------------------------------------------
+function actualizarDesgloseMontos(inputSource) {
+    const inputs = document.querySelectorAll('.input-monto-metodo');
+    const resumenEl = document.getElementById('resumenDesgloseMontos');
+    const btnVender = document.getElementById('btnVender');
+    if (!inputs.length || !resumenEl) return;
+
+    if (inputSource) {
+        inputSource.dataset.manual = 'true';
+        inputSource.style.borderColor = '#cbd5e1';
+        inputSource.style.background = 'white';
+    }
+
+    const totalVenta = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+    let descuento = 0;
+    if (clienteSeleccionado && clienteSeleccionado.promocion) {
+        descuento = Math.round(totalVenta * (clienteSeleccionado.promocion.descuento_porcentaje / 100));
+    }
+    const totalFinal = totalVenta - descuento;
+
+    let sumaManual = 0;
+    let autoInput = null;
+
+    inputs.forEach(input => {
+        if (input.dataset.manual === 'true') {
+            sumaManual += parseFloat(input.value) || 0;
+        } else if (!autoInput) {
+            autoInput = input;
+        }
+    });
+
+    if (autoInput) {
+        const faltante = totalFinal - sumaManual;
+        autoInput.value = Math.max(0, Math.round(faltante));
+        autoInput.style.borderColor = '#10b981';
+        autoInput.style.background = '#f0fdf4';
+    }
+
+    // Calcular suma final real para validación
+    let sumaActual = 0;
+    inputs.forEach(input => sumaActual += (parseFloat(input.value) || 0));
+
+    const diferencia = totalFinal - sumaActual;
+    if (sumaActual === 0) {
+        resumenEl.innerHTML = `<span style="color:#64748b;">📝 Ingresa los montos para cada método</span>`;
+        resumenEl.style.background = '#f1f5f9';
+        if (btnVender) btnVender.disabled = true;
+    } else if (Math.abs(diferencia) < 2) {
+        resumenEl.innerHTML = `<span style="color:#059669;">✅ Montos correctos — Total cubierto</span>`;
+        resumenEl.style.background = '#dcfce7';
+        if (btnVender) btnVender.disabled = false;
+    } else if (diferencia > 0) {
+        resumenEl.innerHTML = `<span style="color:#dc2626;">⚠️ Faltan: $${Math.round(diferencia).toLocaleString('es-CO')}</span>`;
+        resumenEl.style.background = '#fef2f2';
+        if (btnVender) btnVender.disabled = true;
+    } else {
+        resumenEl.innerHTML = `<span style="color:#dc2626;">⚠️ Excede en: $${Math.round(Math.abs(diferencia)).toLocaleString('es-CO')}</span>`;
+        resumenEl.style.background = '#fef2f2';
+        if (btnVender) btnVender.disabled = true;
+    }
+}
+
+function limpiarMontosDesglose() {
+    const inputs = document.querySelectorAll('.input-monto-metodo');
+    inputs.forEach(input => {
+        input.value = '';
+        delete input.dataset.manual;
+        input.style.borderColor = '#cbd5e1';
+        input.style.background = 'white';
+    });
+    actualizarDesgloseMontos();
+}
+
 function toggleMetodo(el) {
     const metodo = el.dataset.metodo;
 
@@ -1848,24 +1918,43 @@ function toggleMetodo(el) {
     const contenedorMontos = document.getElementById('contenedorMontosMultimetodo');
     const totalVenta = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
 
+    // Aplicar descuento de cliente si existe
+    let descuentoClienteMulti = 0;
+    if (clienteSeleccionado && clienteSeleccionado.promocion) {
+        descuentoClienteMulti = Math.round(totalVenta * (clienteSeleccionado.promocion.descuento_porcentaje / 100));
+    }
+    const totalConDescuento = totalVenta - descuentoClienteMulti;
+
     if (contenedorMontos) {
         if (metodosSeleccionados.size > 1) {
+            const metodos = [...metodosSeleccionados];
             contenedorMontos.innerHTML = `
-                <div style="background: #f8fafc; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid #e2e8f0;">
-                    <p style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: #475569;">Desglose de Pagos (Total: $${totalVenta.toLocaleString('es-CO')})</p>
-                    <div id="listaInputsMontos" style="display: flex; flex-direction: column; gap: 8px;">
-                        ${[...metodosSeleccionados].map(m => `
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <label style="font-size: 0.8rem; flex: 1;">${m}:</label>
+                <div style="background: #f0f9ff; padding: 16px; border-radius: 12px; margin-top: 12px; border: 2px solid #bae6fd;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                        <p style="font-size: 1.1rem; font-weight: 700; margin: 0; color: #0369a1;">
+                            💳 Desglose de Pagos 
+                            <br><span style="font-size: 1.2rem; color: #1e293b;">(Total: $${totalConDescuento.toLocaleString('es-CO')})</span>
+                        </p>
+                        <button onclick="limpiarMontosDesglose()" style="background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: #475569;">
+                            🔄 Limpiar
+                        </button>
+                    </div>
+                    <div id="listaInputsMontos" style="display: flex; flex-direction: column; gap: 10px;">
+                        ${metodos.map(m => `
+                            <div style="display: flex; align-items: center; gap: 12px; background: white; padding: 10px 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                                <label style="font-size: 1.05rem; font-weight: 600; flex: 1; color: #334155;">${m}:</label>
                                 <input type="number" class="input-monto-metodo" data-metodo="${m}" placeholder="$0" 
-                                       style="width: 120px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                                       oninput="actualizarDesgloseMontos(this)"
+                                       style="width: 160px; padding: 10px 14px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 1.3rem; font-weight: 700; text-align: right; color: #1e293b;">
                             </div>
                         `).join('')}
                     </div>
-                    <p id="errorSumaMontos" style="color: #ef4444; font-size: 0.75rem; margin-top: 5px; display: none;">⚠️ La suma debe ser igual al total</p>
+                    <div id="resumenDesgloseMontos" style="margin-top: 10px; padding: 10px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: 700; text-align: center;"></div>
+                    <p id="errorSumaMontos" style="color: #ef4444; font-size: 0.9rem; margin-top: 8px; display: none; text-align: center;">⚠️ La suma debe ser igual al total</p>
                 </div>
             `;
             contenedorMontos.classList.add('visible');
+            actualizarDesgloseMontos();
         } else {
             contenedorMontos.innerHTML = '';
             contenedorMontos.classList.remove('visible');
@@ -2125,7 +2214,7 @@ async function procesarVenta() {
                 ? new Date(fechaPersonalizadaInput.value).toISOString()
                 : new Date().toISOString();
 
-            const origenReal = item.tiendaOrigen || document.getElementById('origenVentaReal')?.value || localRegistro;
+            const origenReal = item.tiendaOrigen || document.getElementById('origenVentaReal')?.value || TIENDA.nombre;
 
             // Recolectar Vouchers Detallados y Evidencias
             let vouchers = [];
@@ -2237,7 +2326,7 @@ async function procesarVenta() {
                 const { data: stockActual } = await db
                     .from(TIENDA.tablaInventario)
                     .select('cantidad')
-                    .eq('id_producto', item.id_producto)
+                    .eq('id_producto', item.ref_bodega) // CORREGIDO: Usar referencia en lugar de UUID
                     .eq('talla', item.variante || 'Única')
                     .eq('color', item.color || '')
                     .maybeSingle();
@@ -2245,7 +2334,7 @@ async function procesarVenta() {
                 if (stockActual) {
                     await db.from(TIENDA.tablaInventario)
                         .update({ cantidad: Math.max(0, stockActual.cantidad - item.cantidad) })
-                        .eq('id_producto', item.id_producto)
+                        .eq('id_producto', item.ref_bodega) // CORREGIDO: Usar referencia
                         .eq('talla', item.variante || 'Única')
                         .eq('color', item.color || '');
                 }

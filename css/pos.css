@@ -282,12 +282,16 @@ body {
     margin-bottom: 1rem;
 }
 
+.panel > .search-box {
+    display: block;
+}
+
 .search-input {
     width: 100%;
-    padding: 0.9rem 1rem 0.9rem 2.8rem;
+    padding: 1.1rem 1rem 1.1rem 3.5rem;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    font-size: 1rem;
+    font-size: 1.15rem;
     transition: all 0.2s;
 }
 
@@ -299,10 +303,13 @@ body {
 
 .search-icon {
     position: absolute;
-    left: 1rem;
+    left: 1.1rem;
     top: 50%;
     transform: translateY(-50%);
     color: var(--gray);
+    font-size: 1.2rem;
+    z-index: 2;
+    pointer-events: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -365,9 +372,23 @@ body {
 }
 
 .producto-info h4 {
-    font-size: 0.88rem;
+    font-size: 1rem;
     margin-bottom: 0.2rem;
     color: var(--dark);
+    font-weight: 700;
+}
+
+.producto-precio {
+    flex-shrink: 0;
+    text-align: right;
+    padding-left: 12px;
+}
+
+.producto-precio .precio {
+    font-size: 1.3rem !important;
+    font-weight: 800 !important;
+    color: var(--primary) !important;
+    white-space: nowrap;
 }
 
 /* Stock Total para Digital */
@@ -659,7 +680,9 @@ body {
 }
 
 .search-box input {
-    padding: 0.75rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    padding-right: 0.75rem;
     border: 2px solid #e2e8f0;
     border-radius: 8px;
     font-size: 0.9rem;

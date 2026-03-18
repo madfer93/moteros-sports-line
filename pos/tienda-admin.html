@@ -375,7 +375,10 @@
     <!-- MODAL CERRAR (Simplificado) -->
     <div id="modalCerrarCaja" class="modal-overlay">
         <div class="modal">
-            <h3>🔐 Cerrar Sesión</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="margin:0;">🔐 Cerrar Sesión</h3>
+                <button onclick="cerrarModal()" style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">✖</button>
+            </div>
             <p>Se cerrará la sesión de facturación histórica.</p>
             <div class="modal-botones">
                 <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
