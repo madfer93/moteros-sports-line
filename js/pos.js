@@ -566,6 +566,8 @@ async function mostrarModalCerrarCaja() {
         let totalUnidades = 0;
 
         (ventas || []).forEach(v => {
+            if (v.estado_venta === 'Anulada') return; // IGNORAR VENTAS ANULADAS EN TOTALES
+
             const monto = v.total || 0;
             totalGeneralVentas += monto;
             totalUnidades += v.cantidad || 0;
@@ -4506,49 +4508,54 @@ function generarDesgloseProductos() {
         return '';
     }
 
-    const productosMap = {};
-    resumenVentas.ventasDelDia.forEach(v => {
-        const nombre = v.nombre_producto || 'Producto sin nombre';
-        if (!productosMap[nombre]) {
-            productosMap[nombre] = { cantidad: 0, total: 0 };
-        }
-        productosMap[nombre].cantidad += (v.cantidad || 1);
-        productosMap[nombre].total += (v.total || 0);
-    });
+    // Listado individual de items para permitir anulación
+    const filas = resumenVentas.ventasDelDia
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .map(v => {
+            const isAnulada = v.estado_venta === 'Anulada';
+            const rowStyle = isAnulada ? 'text-decoration: line-through; color: #94a3b8; background: #f8fafc;' : '';
+            const btnAnular = isAnulada 
+                ? '<span style="color:#94a3b8; font-size:0.75rem;">Anulada</span>' 
+                : `<button onclick="anularVenta('${v.id_venta}', '${v.nombre_producto.replace(/'/g, "\\'")}')" 
+                           style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:1rem;" title="Anular esta venta">🗑️</button>`;
 
-    const filas = Object.entries(productosMap)
-        .sort((a, b) => b[1].total - a[1].total)
-        .map(([nombre, data]) => `
-            <tr>
-                <td style="font-size:0.82rem; padding:0.4rem 0.6rem;">${nombre}</td>
-                <td style="text-align:center; padding:0.4rem;">${data.cantidad}</td>
-                <td style="text-align:right; padding:0.4rem 0.6rem;">$${data.total.toLocaleString('es-CO')}</td>
+            return `
+            <tr style="${rowStyle}">
+                <td style="font-size:0.8rem; padding:0.4rem 0.6rem;">
+                    <div style="font-weight:600;">${v.nombre_producto}</div>
+                    <div style="font-size:0.7rem; color:#64748b;">${v.id_venta}</div>
+                </td>
+                <td style="text-align:center; padding:0.4rem;">${v.cantidad}</td>
+                <td style="text-align:right; padding:0.4rem 0.6rem;">$${(v.total || 0).toLocaleString('es-CO')}</td>
+                <td style="text-align:center; padding:0.4rem;">${btnAnular}</td>
             </tr>
-        `).join('');
+        `}).join('');
 
-    const totalCant = Object.values(productosMap).reduce((s, p) => s + p.cantidad, 0);
-    const totalMonto = Object.values(productosMap).reduce((s, p) => s + p.total, 0);
+    const totalCant = resumenVentas.ventasDelDia.filter(v => v.estado_venta !== 'Anulada').reduce((s, v) => s + (v.cantidad || 0), 0);
+    const totalMonto = resumenVentas.ventasDelDia.filter(v => v.estado_venta !== 'Anulada').reduce((s, v) => s + (v.total || 0), 0);
 
     return `
         <div style="margin-top:1rem; border-top:1px solid #e2e8f0; padding-top:1rem;">
             <h4 style="margin:0 0 0.6rem; font-size:0.9rem; color:#475569; cursor:pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                🧾 Desglose de Productos ▽
+                🧾 Desglose de Productos ▽ (Click para ver/ocultar)
             </h4>
-            <div style="max-height:250px; overflow-y:auto;">
+            <div style="max-height:300px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px;">
                 <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
                     <thead>
-                        <tr style="background:#f1f5f9; border-bottom:2px solid #e2e8f0;">
-                            <th style="text-align:left; padding:0.5rem 0.6rem; color:#475569; font-weight:600;">Producto</th>
+                        <tr style="background:#f1f5f9; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
+                            <th style="text-align:left; padding:0.5rem 0.6rem; color:#475569; font-weight:600;">Venta / Producto</th>
                             <th style="text-align:center; padding:0.5rem; color:#475569; font-weight:600;">Cant.</th>
                             <th style="text-align:right; padding:0.5rem 0.6rem; color:#475569; font-weight:600;">Subtotal</th>
+                            <th style="text-align:center; padding:0.5rem; color:#475569; font-weight:600;">Acción</th>
                         </tr>
                     </thead>
                     <tbody>${filas}</tbody>
                     <tfoot>
-                        <tr style="border-top:2px solid #0369a1; font-weight:700;">
-                            <td style="padding:0.5rem 0.6rem;">TOTAL</td>
+                        <tr style="border-top:2px solid #0369a1; font-weight:700; background:#f8fafc;">
+                            <td style="padding:0.5rem 0.6rem;">TOTAL (Activas)</td>
                             <td style="text-align:center; padding:0.5rem;">${totalCant}</td>
                             <td style="text-align:right; padding:0.5rem 0.6rem; color:#0369a1;">$${totalMonto.toLocaleString('es-CO')}</td>
+                            <td></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -4556,6 +4563,75 @@ function generarDesgloseProductos() {
         </div>
     `;
 }
+
+/**
+ * Anula una venta basándose en su id_venta (Primary Key en el esquema)
+ */
+async function anularVenta(idVenta, nombreProd) {
+    if (!confirm(`¿Estás seguro de que deseas ANULAR la venta:\n${idVenta} - ${nombreProd}?\n\nEsta acción devolverá los productos al inventario.`)) {
+        return;
+    }
+
+    try {
+        mostrarAlerta('⏳ Anulando venta y devolviendo stock...', 'info');
+
+        // 1. Obtener datos de la venta específica usando id_venta (PK)
+        const { data: venta, error: errVenta } = await db.from('ventas').select('*').eq('id_venta', idVenta).single();
+        if (errVenta || !venta) throw new Error('No se encontró la información de la venta');
+
+        if (venta.estado_venta === 'Anulada') {
+            throw new Error('Esta venta ya ha sido anulada previamente');
+        }
+
+        // 2. Determinar tabla de inventario
+        const tablaInventario = 
+            venta.local === 'Jordan' || venta.local === 'Jordán' ? 'inventario_jordan' :
+            venta.local === 'Alcalá' ? 'inventario_alcala' :
+            venta.local === 'Local 01' ? 'inventario_01' : null;
+
+        if (!tablaInventario) throw new Error(`No se reconoce el local ${venta.local} para devolver el stock.`);
+
+        // 3. Devolver stock al inventario
+        if (venta.id_producto) {
+            // Buscamos el producto por su identificador en el inventario
+            const { data: stockActual } = await db.from(tablaInventario)
+                .select('id, cantidad')
+                .eq('id_producto', venta.id_producto)
+                .maybeSingle();
+
+            if (stockActual) {
+                await db.from(tablaInventario)
+                    .update({ cantidad: stockActual.cantidad + (venta.cantidad || 0) })
+                    .eq('id', stockActual.id);
+            } else {
+                console.warn(`No se encontró el producto ${venta.id_producto} en ${tablaInventario} para devolver stock.`);
+            }
+        }
+
+        // 4. Marcar venta como anulada
+        const { error: errUpdate } = await db.from('ventas')
+            .update({ 
+                estado_venta: 'Anulada',
+                motivo_anulacion: 'Anulada desde el POS',
+                updated_at: new Date().toISOString()
+            })
+            .eq('id_venta', idVenta);
+
+        if (errUpdate) throw errUpdate;
+
+        mostrarAlerta('✅ Venta anulada satisfactoriamente', 'success');
+
+        // 5. Refrescar el resumen de cierre
+        if (typeof mostrarModalCerrarCaja === 'function') {
+            await mostrarModalCerrarCaja();
+        }
+
+    } catch (e) {
+        console.error('Error al anular venta:', e);
+        mostrarAlerta('Error: ' + e.message, 'error');
+    }
+}
+window.anularVenta = anularVenta;
 
 // Preview de foto del comprobante
 document.addEventListener('DOMContentLoaded', () => {
