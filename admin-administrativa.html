@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -15,6 +15,7 @@
     <!-- html2pdf y jsPDF (para exportación de reportes) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Fuentes e Iconos -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -190,37 +191,43 @@
 
             <!-- RESUMEN OPERATIVO -->
             <div id="section-resumen_operativo" class="section active">
-                <div class="page-header">
-                    <h1>📊 Resumen Operativo de Ventas</h1>
-                    <p>Desglose de ingresos consolidados en tiempo real.</p>
+                <div class="page-header" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem; align-items:center;">
+                    <div style="flex:1;">
+                        <h1 style="margin:0;">📊 Resumen Operativo de Ventas</h1>
+                        <p style="margin-top:0.25rem;">Resumen de ingresos, selecciona cualquier día para comparar.</p>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.5rem; background:white; padding:0.5rem; border-radius:0.75rem; border:1px solid #e2e8f0; width:fit-content;">
+                        <label style="font-size:0.85rem; font-weight:600; color:#64748b;">Consultar Fecha:</label>
+                        <input type="date" id="filtroFechaResumen" class="form-control" style="width:auto; padding:0.4rem 0.5rem;" onchange="cargarDatosResumen(this.value)">
+                    </div>
                 </div>
                 <div class="stats-grid" id="dashboardOperativoCards">
                     <div class="stat-card">
                         <div class="stat-icon orange">💰</div>
                         <div class="stat-info">
-                            <h3>$0</h3>
-                            <p>Ventas del día</p>
+                            <h3 id="kpiVentasDia">$0</h3>
+                            <p id="labelKpiVentasDia">Ventas del día</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon green">📦</div>
                         <div class="stat-info">
-                            <h3>0</h3>
-                            <p>Unidades vendidas</p>
+                            <h3 id="kpiUnidades">0</h3>
+                            <p id="labelKpiUnidades">Unidades vendidas</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon blue">🏪</div>
                         <div class="stat-info">
-                            <h3>0</h3>
-                            <p>Tiendas activas</p>
+                            <h3 id="kpiTiendas">0</h3>
+                            <p id="labelKpiTiendas">Tiendas activas</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon purple">📈</div>
                         <div class="stat-info">
-                            <h3>$0</h3>
-                            <p>Ventas del mes</p>
+                            <h3 id="kpiVentasMes">$0</h3>
+                            <p id="labelKpiVentasMes">Ventas del mes</p>
                         </div>
                     </div>
                 </div>
@@ -228,9 +235,15 @@
 
             <!-- CARTERAS -->
             <div id="section-carteras_operativas" class="section">
-                <div class="page-header">
-                    <h1>💳 Gestión Integral de Carteras</h1>
-                    <p>Central de cobros y estados de cuenta multipasarela — Datos en tiempo real.</p>
+                <div class="page-header" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem; align-items:center;">
+                    <div style="flex:1;">
+                        <h1 style="margin:0;">💳 Gestión Integral de Carteras</h1>
+                        <p style="margin-top:0.25rem;">Central de cobros y estados de cuenta multipasarela — Usa el filtro para ver datos pasados.</p>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.5rem; background:white; padding:0.5rem; border-radius:0.75rem; border:1px solid #e2e8f0; width:fit-content;">
+                        <label style="font-size:0.85rem; font-weight:600; color:#64748b;">Consultar Fecha:</label>
+                        <input type="date" id="filtroFechaCartera" class="form-control" style="width:auto; padding:0.4rem 0.5rem;" onchange="recargarTodasCarteras(this.value)">
+                    </div>
                 </div>
 
                 <!-- KPIs CARTERA -->
@@ -676,10 +689,15 @@
 
             <!-- INVENTARIO/PRESTAMOS -->
             <div id="section-prestamos_inventario" class="section">
-                <div class="page-header">
-                    <h1>📦 Control de Préstamos y Mercancía Externa</h1>
-                    <p>Vista de mercancía que ha salido de bodega sin facturar. Para registrar nuevos préstamos, usar el
-                        panel de admin principal.</p>
+                <div class="page-header" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem; align-items:center;">
+                    <div style="flex:1;">
+                        <h1 style="margin:0;">📦 Control de Préstamos y Mercancía Externa</h1>
+                        <p style="margin-top:0.25rem;">Vista de mercancía que ha salido de bodega sin facturar. Selecciona un día o mes de registro.</p>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.5rem; background:white; padding:0.5rem; border-radius:0.75rem; border:1px solid #e2e8f0; width:fit-content;">
+                        <label style="font-size:0.85rem; font-weight:600; color:#64748b;">Mes/Fecha Original:</label>
+                        <input type="month" id="filtroFechaPrestamos" class="form-control" style="width:auto; padding:0.4rem 0.5rem;" onchange="cargarCarteraBodegas(this.value)">
+                    </div>
                 </div>
                 <div class="actions-bar">
                     <button class="btn btn-secondary btn-sm" onclick="exportarPDFPrestamos()">📄 PDF</button>
@@ -710,9 +728,15 @@
 
             <!-- GASTOS TEMU (Solo métricas — registro desde admin.html) -->
             <div id="section-gastos_operativos" class="section">
-                <div class="page-header">
-                    <h1>💸 Control de Gastos y Plataformas (Temu)</h1>
-                    <p>Vista de gastos registrados. Para registrar nuevos egresos, usar el panel de admin principal.</p>
+                <div class="page-header" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem; align-items:center;">
+                    <div style="flex:1;">
+                        <h1 style="margin:0;">💸 Control de Gastos y Plataformas (Temu)</h1>
+                        <p style="margin-top:0.25rem;">Vista de gastos registrados. Selecciona el mes o fecha para filtrar los egresos.</p>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.5rem; background:white; padding:0.5rem; border-radius:0.75rem; border:1px solid #e2e8f0; width:fit-content;">
+                        <label style="font-size:0.85rem; font-weight:600; color:#64748b;">Mes a Consultar:</label>
+                        <input type="month" id="filtroFechaGastos" class="form-control" style="width:auto; padding:0.4rem 0.5rem;" onchange="cargarGastosOperativos(this.value)">
+                    </div>
                 </div>
                 <div class="actions-bar">
                     <button class="btn btn-secondary btn-sm" onclick="exportarPDFGastos()">📄 PDF</button>

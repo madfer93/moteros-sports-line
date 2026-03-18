@@ -1528,6 +1528,14 @@ async function cargarDashboard() {
         }
 
         // Preparar Datos para gráficos
+        const hoyStr2 = hoy.toISOString().split('T')[0];
+        const mesInicio = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-01';
+
+        // Leads Hoy
+        const { count: leadsHoy } = await supabaseClient
+            .from('leads_ia')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', hoyStr2 + 'T00:00:00');
 
         // Leads Mes
         const { count: leadsMes } = await supabaseClient
@@ -8744,22 +8752,22 @@ async function eliminarEmpleado(id) {
     const emp = empleados.find(e => e.id === id);
     if (!emp) return;
 
-    if (!confirm(`❌​ Eliminar al empleado "${emp.nombre}"?\n\nEsta acción no se puede deshacer.`)) {
+    if (!confirm(`❌​ ¿Desactivar al empleado "${emp.nombre}"?\n\nNo se puede eliminar debido al historial (nómina, ventas, etc).`)) {
         return;
     }
 
     try {
         const { error } = await supabaseClient
             .from('empleados_tienda')
-            .delete()
+            .update({ activo: false })
             .eq('id', id);
 
         if (error) throw error;
-        alert('? Empleado eliminado');
+        alert('? Empleado desactivado');
         cargarEmpleados();
     } catch (e) {
-        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error eliminando empleado:', e);
-        alert('Error al eliminar: ' + (e.message || 'desconocido'));
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error desactivando empleado:', e);
+        alert('Error al desactivar: ' + (e.message || 'desconocido'));
     }
 }
 
@@ -9933,8 +9941,11 @@ async function eliminarProveedor(id, nombre) {
 
 async function cargarEmpleados() {
     try {
-        const { data, error } = await supabaseClient.from('empleados_tienda').select('*').order('nombre');
+        const { data: todosData, error } = await supabaseClient.from('empleados_tienda').select('*').order('nombre');
         if (error) throw error;
+
+        // Ocultar inactivos de la vista
+        const data = (todosData || []).filter(e => e.activo === true);
 
         const tbody = document.getElementById('tablaEmpleados');
         if (!tbody) return;
@@ -9977,8 +9988,8 @@ async function cargarEmpleados() {
 
         // Update statistics
         if (document.getElementById('statTotalEmpleados')) {
-            document.getElementById('statTotalEmpleados').textContent = data.length;
-            document.getElementById('statEmpleadosActivos').textContent = data.filter(e => e.activo).length;
+            document.getElementById('statTotalEmpleados').textContent = todosData.length;
+            document.getElementById('statEmpleadosActivos').textContent = data.length;
             const nominaTotal = data.reduce((sum, e) => sum + (e.salario_base || 0), 0);
             document.getElementById('statNominaTotal').textContent = '$' + formatearPrecio(nominaTotal);
         }
@@ -10120,11 +10131,11 @@ async function editarEmpleado(id) {
 }
 
 async function eliminarEmpleado(id, nombre) {
-    if (!confirm(`¿Eliminar al empleado ${nombre}? Esta acción no se puede deshacer.`)) return;
+    if (!confirm(`¿Desactivar al empleado ${nombre}? No se puede eliminar permanentemente debido al historial de ventas y eventos.`)) return;
     try {
-        const { error } = await supabaseClient.from('empleados_tienda').delete().eq('id', id);
+        const { error } = await supabaseClient.from('empleados_tienda').update({ activo: false }).eq('id', id);
         if (error) throw error;
-        showToast('Empleado eliminado permanentemente');
+        showToast('Empleado desactivado correctamente');
         cargarEmpleados();
     } catch (e) {
         showToast('Error eliminando: ' + e.message, 'error');

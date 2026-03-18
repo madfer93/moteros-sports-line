@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 // NAVEGACIÓN ENTRE SECCIONES
 // ==========================================
 
@@ -80,74 +80,140 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // RESUMEN OPERATIVO - KPIs en tiempo real
 // ==========================================
-let _resumenCache = { hoy: [], mes: [] };
+let _resumenCache = { dia: [], mes: [], fecha: '', diaAnterior: [] };
 
-async function cargarDatosResumen() {
+async function cargarDatosResumen(fechaFiltro = null) {
     try {
         const supabaseClient = window.supabaseClient || supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-        const hoy = new Date();
-        const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toISOString();
-        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString();
 
-        const [resHoy, resMes] = await Promise.all([
+        let targetDate = new Date();
+        if (fechaFiltro) {
+            targetDate = new Date(fechaFiltro + 'T12:00:00');
+        } else {
+            const d = new Date();
+            const mesStr = (d.getMonth() + 1).toString().padStart(2, '0');
+            const diaStr = d.getDate().toString().padStart(2, '0');
+            const inputFecha = document.getElementById('filtroFechaResumen');
+            if (inputFecha) inputFecha.value = `${d.getFullYear()}-${mesStr}-${diaStr}`;
+        }
+
+        _resumenCache.fecha = targetDate;
+
+        // Fecha actual pedida
+        const inicioDia = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0).toISOString();
+        const finDia = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59).toISOString();
+        const inicioMes = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1, 0, 0, 0).toISOString();
+        const finMes = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+        // Mismo día del MES ANTERIOR para comparar
+        const prevDate = new Date(targetDate.getFullYear(), targetDate.getMonth() - 1, targetDate.getDate());
+        const inicioPrevDia = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate(), 0, 0, 0).toISOString();
+        const finPrevDia = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate(), 23, 59, 59).toISOString();
+
+        const [resDia, resMes, resPrevDia] = await Promise.all([
             supabaseClient.from('ventas').select('total, tienda, productos_vendidos, estado_venta')
-                .gte('created_at', inicioHoy).eq('estado_venta', 'Completada'),
+                .gte('created_at', inicioDia).lte('created_at', finDia).eq('estado_venta', 'Completada'),
             supabaseClient.from('ventas').select('total, tienda, productos_vendidos, estado_venta')
-                .gte('created_at', inicioMes).eq('estado_venta', 'Completada')
+                .gte('created_at', inicioMes).lte('created_at', finMes).eq('estado_venta', 'Completada'),
+            supabaseClient.from('ventas').select('total, tienda, productos_vendidos, estado_venta')
+                .gte('created_at', inicioPrevDia).lte('created_at', finPrevDia).eq('estado_venta', 'Completada')
         ]);
 
-        const ventasHoy = resHoy.data || [];
+        const ventasDia = resDia.data || [];
         const ventasMes = resMes.data || [];
-        _resumenCache = { hoy: ventasHoy, mes: ventasMes };
+        const ventasPrevDia = resPrevDia.data || [];
 
-        const totalHoy = ventasHoy.reduce((s, v) => s + parseFloat(v.total || 0), 0);
+        _resumenCache.dia = ventasDia;
+        _resumenCache.mes = ventasMes;
+        _resumenCache.diaAnterior = ventasPrevDia;
+
+        const totalDia = ventasDia.reduce((s, v) => s + parseFloat(v.total || 0), 0);
         const totalMes = ventasMes.reduce((s, v) => s + parseFloat(v.total || 0), 0);
 
-        // Unidades vendidas hoy
-        let unidadesHoy = 0;
-        ventasHoy.forEach(v => {
+        let unidadesDia = 0;
+        ventasDia.forEach(v => {
             try {
                 const prods = typeof v.productos_vendidos === 'string' ? JSON.parse(v.productos_vendidos) : v.productos_vendidos;
-                (prods || []).forEach(p => unidadesHoy += (p.cantidad || 1));
-            } catch (e) { unidadesHoy++; }
+                (prods || []).forEach(p => unidadesDia += (p.cantidad || 1));
+            } catch (e) { unidadesDia++; }
         });
 
-        // Tiendas activas hoy
-        const tiendasActivas = new Set(ventasHoy.map(v => v.tienda).filter(Boolean)).size;
+        const tiendasActivas = new Set(ventasDia.map(v => v.tienda).filter(Boolean)).size;
 
-        // Actualizar tarjetas
-        const cards = document.getElementById('dashboardOperativoCards');
-        if (cards) {
-            cards.innerHTML = `
-                <div class="stat-card" style="cursor:pointer;" onclick="mostrarDetalleKpi('ventas_dia')">
-                    <div class="stat-icon orange">💰</div>
-                    <div class="stat-info">
-                        <h3>$${fmtPrecio(totalHoy)}</h3>
-                        <p>Ventas del día</p>
+        // Actualizar KPIs del Resumen Operativo via IDs si existen, en lugar del innerHTML destructivo
+        const elTotalDia = document.getElementById('kpiVentasDia');
+        let txtVentasLabel = 'Ventas del Día';
+        let txtUnidadesLabel = 'Unidades (Día)';
+        let txtTiendasLabel = 'Tiendas Activas (Día)';
+        let txtMesLabel = 'Ventas del Mes';
+
+        if (fechaFiltro) {
+            const lblQueryDate = new Date(fechaFiltro + 'T12:00:00');
+            const mArr = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+            txtVentasLabel = `Ventas (${lblQueryDate.getDate()} ${mArr[lblQueryDate.getMonth()]})`;
+            txtMesLabel = `Ventas Acum. (${mArr[lblQueryDate.getMonth()]})`;
+        }
+
+        if (elTotalDia) {
+            elTotalDia.textContent = `$${fmtPrecio(totalDia)}`;
+            document.getElementById('labelKpiVentasDia').textContent = txtVentasLabel;
+
+            document.getElementById('kpiUnidades').textContent = unidadesDia;
+            document.getElementById('labelKpiUnidades').textContent = txtUnidadesLabel;
+
+            document.getElementById('kpiTiendas').textContent = tiendasActivas;
+            document.getElementById('labelKpiTiendas').textContent = txtTiendasLabel;
+
+            document.getElementById('kpiVentasMes').textContent = `$${fmtPrecio(totalMes)}`;
+            document.getElementById('labelKpiVentasMes').textContent = txtMesLabel;
+
+            // Agregar eventos click a las cards parent para que abran modales sin perder HTML
+            elTotalDia.closest('.stat-card').style.cursor = 'pointer';
+            elTotalDia.closest('.stat-card').onclick = () => mostrarDetalleKpi('ventas_dia');
+
+            document.getElementById('kpiUnidades').closest('.stat-card').style.cursor = 'pointer';
+            document.getElementById('kpiUnidades').closest('.stat-card').onclick = () => mostrarDetalleKpi('unidades');
+
+            document.getElementById('kpiTiendas').closest('.stat-card').style.cursor = 'pointer';
+            document.getElementById('kpiTiendas').closest('.stat-card').onclick = () => mostrarDetalleKpi('tiendas');
+
+            document.getElementById('kpiVentasMes').closest('.stat-card').style.cursor = 'pointer';
+            document.getElementById('kpiVentasMes').closest('.stat-card').onclick = () => mostrarDetalleKpi('ventas_mes');
+        } else {
+            // Fallback al metodo anterior si no encuentra los ids inyectados recien (prevencion bugs)
+            const cards = document.getElementById('dashboardOperativoCards');
+            if (cards) {
+                cards.innerHTML = `
+                    <div class="stat-card" style="cursor:pointer;" onclick="mostrarDetalleKpi('ventas_dia')">
+                        <div class="stat-icon orange">💰</div>
+                        <div class="stat-info">
+                            <h3>$${fmtPrecio(totalDia)}</h3>
+                            <p>${txtVentasLabel}</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-card" style="cursor:pointer;" onclick="mostrarDetalleKpi('unidades')">
-                    <div class="stat-icon green">📦</div>
-                    <div class="stat-info">
-                        <h3>${unidadesHoy}</h3>
-                        <p>Unidades vendidas</p>
+                    <div class="stat-card" style="cursor:pointer;" onclick="mostrarDetalleKpi('unidades')">
+                        <div class="stat-icon green">📦</div>
+                        <div class="stat-info">
+                            <h3>${unidadesDia}</h3>
+                            <p>${txtUnidadesLabel}</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-card" style="cursor:pointer;" onclick="mostrarDetalleKpi('tiendas')">
-                    <div class="stat-icon blue">🏪</div>
-                    <div class="stat-info">
-                        <h3>${tiendasActivas}</h3>
-                        <p>Tiendas activas</p>
+                    <div class="stat-card" style="cursor:pointer;" onclick="mostrarDetalleKpi('tiendas')">
+                        <div class="stat-icon blue">🏪</div>
+                        <div class="stat-info">
+                            <h3>${tiendasActivas}</h3>
+                            <p>${txtTiendasLabel}</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-card" style="cursor:pointer;" onclick="mostrarDetalleKpi('ventas_mes')">
-                    <div class="stat-icon purple">📈</div>
-                    <div class="stat-info">
-                        <h3>$${fmtPrecio(totalMes)}</h3>
-                        <p>Ventas del mes</p>
+                    <div class="stat-card" style="cursor:pointer;" onclick="mostrarDetalleKpi('ventas_mes')">
+                        <div class="stat-icon purple">📈</div>
+                        <div class="stat-info">
+                            <h3>$${fmtPrecio(totalMes)}</h3>
+                            <p>${txtMesLabel}</p>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         }
     } catch (err) {
         console.error('Error cargando resumen:', err);
@@ -156,35 +222,62 @@ async function cargarDatosResumen() {
 
 function mostrarDetalleKpi(tipo) {
     const locales = ['Jordán', 'Alcalá', 'Local 01', 'Virtual', 'Evento'];
-    const datos = tipo.includes('mes') ? _resumenCache.mes : _resumenCache.hoy;
-    const periodo = tipo.includes('mes') ? 'Este Mes' : 'Hoy';
+    const datos = tipo.includes('mes') ? _resumenCache.mes : _resumenCache.dia;
+    const datosPrev = _resumenCache.diaAnterior || []; // Para comparativas de dia
+    const d = _resumenCache.fecha || new Date();
+
+    // Nombres en español
+    const idxMeses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const txtDia = `${d.getDate()} de ${idxMeses[d.getMonth()]} ${d.getFullYear()}`;
+    const txtMes = `${idxMeses[d.getMonth()]} de ${d.getFullYear()}`;
+    const periodo = tipo.includes('mes') ? `Acumulado Mes: ${txtMes}` : `Día Consultado: ${txtDia}`;
 
     let titulo, filas;
+    let tieneComparativa = false;
 
     if (tipo === 'ventas_dia' || tipo === 'ventas_mes') {
-        titulo = tipo === 'ventas_dia' ? '💰 Ventas del Día por Local' : '📈 Ventas del Mes por Local';
+        titulo = tipo === 'ventas_dia' ? '💰 Ventas por Local' : '📈 Ventas del Mes por Local';
+        tieneComparativa = tipo === 'ventas_dia';
         const totalGeneral = datos.reduce((s, v) => s + parseFloat(v.total || 0), 0);
+
         filas = locales.map(local => {
             const ventasLocal = datos.filter(v => v.tienda === local);
             const totalLocal = ventasLocal.reduce((s, v) => s + parseFloat(v.total || 0), 0);
             const pct = totalGeneral > 0 ? (totalLocal / totalGeneral * 100).toFixed(1) : 0;
             const cantOps = ventasLocal.length;
+
+            let comparativaHtml = '';
+            if (tieneComparativa) {
+                const ventasPrev = datosPrev.filter(v => v.tienda === local);
+                const totalPrev = ventasPrev.reduce((s, v) => s + parseFloat(v.total || 0), 0);
+
+                if (totalPrev === 0 && totalLocal > 0) comparativaHtml = `<span style="color:#22c55e;font-size:0.85rem;font-weight:bold;">(+ 100%)</span>`;
+                else if (totalPrev === 0 && totalLocal === 0) comparativaHtml = `<span style="color:#64748b;font-size:0.85rem;">(-)</span>`;
+                else {
+                    const diff = ((totalLocal - totalPrev) / totalPrev) * 100;
+                    if (diff > 0) comparativaHtml = `<span style="color:#22c55e;font-size:0.85rem;font-weight:bold;">▲ +${diff.toFixed(1)}%</span>`;
+                    else if (diff < 0) comparativaHtml = `<span style="color:#ef4444;font-size:0.85rem;font-weight:bold;">▼ ${diff.toFixed(1)}%</span>`;
+                    else comparativaHtml = `<span style="color:#64748b;font-size:0.85rem;font-weight:bold;">= 0%</span>`;
+                }
+            }
+
             return `<tr>
-                <td style="padding:1.5rem 1rem; font-size:1.1rem;"><strong>${local}</strong></td>
-                <td style="padding:1.5rem 1rem; font-weight:700; font-size:1.2rem; color:#1e293b;">$${fmtPrecio(totalLocal)}</td>
-                <td style="padding:1.5rem 1rem; font-size:1.05rem; color:#475569;">${cantOps} ventas</td>
-                <td style="padding:1.5rem 1rem;">
-                    <div style="display:flex;align-items:center;gap:1rem;">
-                        <span style="font-size:1.1rem;font-weight:700;color:#334155;min-width:60px;text-align:right;">${pct}%</span>
-                        <div style="flex:1;background:#e2e8f0;border-radius:8px;height:16px;overflow:hidden;min-width:150px;">
+                <td style="font-size:1.1rem;"><strong>${local}</strong></td>
+                <td style="font-weight:700; color:#1e293b; font-size:1.15rem;">$${fmtPrecio(totalLocal)}</td>
+                <td style="color:#475569;">${cantOps} operaciones</td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <span style="font-weight:700;color:#334155;min-width:40px;">${pct}%</span>
+                        <div style="flex:1;background:#e2e8f0;border-radius:8px;height:12px;overflow:hidden;min-width:80px;max-width:200px;">
                             <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#f97316,#ea580c);border-radius:8px;"></div>
                         </div>
                     </div>
                 </td>
+                ${tieneComparativa ? `<td>${comparativaHtml}<br><small style="color:#94a3b8;font-size:0.75rem;">vs mes ant ($${fmtPrecio(datosPrev.filter(v => v.tienda === local).reduce((s, v) => s + parseFloat(v.total || 0), 0))})</small></td>` : ''}
             </tr>`;
         }).join('');
     } else if (tipo === 'unidades') {
-        titulo = '📦 Unidades Vendidas Hoy por Local';
+        titulo = '📦 Unidades Vendidas por Local';
         filas = locales.map(local => {
             const ventasLocal = datos.filter(v => v.tienda === local);
             let unidades = 0;
@@ -195,28 +288,27 @@ function mostrarDetalleKpi(tipo) {
                 } catch (e) { unidades++; }
             });
             return `<tr>
-                <td style="padding:1.5rem 1rem; font-size:1.1rem;"><strong>${local}</strong></td>
-                <td style="padding:1.5rem 1rem; font-weight:700; font-size:1.2rem; color:#1e293b;">${unidades} uds</td>
-                <td style="padding:1.5rem 1rem; font-size:1.05rem; color:#475569;">${ventasLocal.length} ventas</td>
-                <td style="padding:1.5rem 1rem; font-weight:600; font-size:1.1rem;">$${fmtPrecio(ventasLocal.reduce((s, v) => s + parseFloat(v.total || 0), 0))}</td>
+                <td style="font-size:1.1rem;"><strong>${local}</strong></td>
+                <td style="font-weight:700; color:#1e293b; font-size:1.15rem;">${unidades} uds</td>
+                <td style="color:#475569;">${ventasLocal.length} operaciones</td>
+                <td style="font-weight:600;">$${fmtPrecio(ventasLocal.reduce((s, v) => s + parseFloat(v.total || 0), 0))}</td>
             </tr>`;
         }).join('');
     } else {
-        titulo = '🏪 Detalle de Tiendas Activas Hoy';
+        titulo = '🏪 Detalle de Tiendas Activas';
         filas = locales.map(local => {
             const ventasLocal = datos.filter(v => v.tienda === local);
             const totalLocal = ventasLocal.reduce((s, v) => s + parseFloat(v.total || 0), 0);
             const activa = ventasLocal.length > 0;
             return `<tr style="${activa ? '' : 'opacity:0.6;'}">
-                <td style="padding:1.5rem 1rem; font-size:1.1rem;"><strong>${local}</strong></td>
-                <td style="padding:1.5rem 1rem; font-size:1.1rem;">${activa ? '<span style="color:#22c55e;font-weight:700;background:#dcfce7;padding:0.4rem 0.8rem;border-radius:2rem;">🟢 Activa</span>' : '<span style="color:#94a3b8;background:#f1f5f9;padding:0.4rem 0.8rem;border-radius:2rem;">⚪ Sin ventas</span>'}</td>
-                <td style="padding:1.5rem 1rem; font-size:1.05rem; color:#475569;">${ventasLocal.length} operaciones</td>
-                <td style="padding:1.5rem 1rem; font-weight:700; font-size:1.2rem; color:#1e293b;">$${fmtPrecio(totalLocal)}</td>
+                <td style="font-size:1.1rem;"><strong>${local}</strong></td>
+                <td>${activa ? '<span style="color:#22c55e;font-weight:700;background:#dcfce7;padding:0.4rem 0.8rem;border-radius:2rem;font-size:0.85rem;">🟢 Activa</span>' : '<span style="color:#94a3b8;background:#f1f5f9;padding:0.4rem 0.8rem;border-radius:2rem;font-size:0.85rem;">⚪ Sin ventas</span>'}</td>
+                <td style="color:#475569;">${ventasLocal.length} operaciones</td>
+                <td style="font-weight:700; color:#1e293b; font-size:1.15rem;">$${fmtPrecio(totalLocal)}</td>
             </tr>`;
         }).join('');
     }
 
-    // Crear modal
     const existing = document.getElementById('modalDetalleKpi');
     if (existing) existing.remove();
 
@@ -226,24 +318,29 @@ function mostrarDetalleKpi(tipo) {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 
+    // AMpliado el max-width a 1100px para que encaje mejor si hay comparativa
     modal.innerHTML = `
-        <div style="background:white;border-radius:1.5rem;max-width:950px;width:100%;max-height:85vh;overflow-y:auto;padding:2.5rem;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
-                <h3 style="margin:0;font-size:1.8rem;color:#0f172a;font-weight:800;">${titulo}</h3>
-                <button onclick="document.getElementById('modalDetalleKpi').remove()" style="background:#f1f5f9;border:none;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;color:#64748b;display:flex;align-items:center;justify-content:center;transition:0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">✕</button>
+        <div style="background:white;border-radius:1rem;max-width:1100px;width:100%;max-height:90vh;overflow-y:auto;padding:2rem;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+                <h3 style="margin:0;font-size:1.6rem;color:#0f172a;font-weight:800;">${titulo}</h3>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <button class="btn btn-secondary btn-sm" onclick="exportarCarteraPDF('tablaDetalleKpi','Reporte_${tipo}','${titulo}')">📄 Descargar PDF</button>
+                    <button onclick="document.getElementById('modalDetalleKpi').remove()" style="background:#f1f5f9;border:none;border-radius:50%;width:35px;height:35px;font-size:1.2rem;cursor:pointer;color:#64748b;display:flex;align-items:center;justify-content:center;">✕</button>
+                </div>
             </div>
-            <p style="color:#64748b;margin-bottom:1.5rem;font-size:1.1rem;">📅 Periodo: <strong style="color:#334155;">${periodo}</strong></p>
-            <div class="table-container" style="border-radius:1rem;overflow:hidden;border:1px solid #e2e8f0;">
-                <table class="data-table" style="width:100%;border-collapse:collapse;">
-                    <thead style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+            <p style="color:#64748b;margin-bottom:1.5rem;font-size:1.05rem;">📅 Fecha: <strong style="color:#334155;">${periodo}</strong></p>
+            <div class="table-container">
+                <table class="data-table" id="tablaDetalleKpi">
+                    <thead>
                         <tr>
-                            <th style="padding:1.2rem 1rem;font-size:1.05rem;color:#475569;text-transform:uppercase;letter-spacing:0.5px;">Local</th>
-                            <th style="padding:1.2rem 1rem;font-size:1.05rem;color:#475569;text-transform:uppercase;letter-spacing:0.5px;">${tipo.includes('unidades') ? 'Unidades' : 'Total'}</th>
-                            <th style="padding:1.2rem 1rem;font-size:1.05rem;color:#475569;text-transform:uppercase;letter-spacing:0.5px;">Operaciones</th>
-                            <th style="padding:1.2rem 1rem;font-size:1.05rem;color:#475569;text-transform:uppercase;letter-spacing:0.5px;">${tipo.includes('ventas') ? '% Participación' : tipo === 'unidades' ? 'Ingresos' : 'Estado'}</th>
+                            <th>Local</th>
+                            <th>${tipo.includes('unidades') ? 'Unidades' : 'Total'}</th>
+                            <th>Operaciones</th>
+                            <th>${tipo.includes('ventas') ? '% Participación' : tipo === 'unidades' ? 'Ingresos' : 'Estado'}</th>
+                            ${tieneComparativa ? '<th>Vs. Mes Ant.</th>' : ''}
                         </tr>
                     </thead>
-                    <tbody style="border-top:none;">${filas}</tbody>
+                    <tbody>${filas}</tbody>
                 </table>
             </div>
         </div>
@@ -481,7 +578,7 @@ async function cargarResponsablesAdmin(selectId) {
 // MÓDULO: GASTOS TIPO TEMU / EXTERNOS
 // ==========================================
 
-async function cargarGastosOperativos() {
+async function cargarGastosOperativos(mesFiltro = null) {
     const tbody = document.getElementById('tbodyGastosOperativos');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando gastos...</td></tr>';
@@ -489,16 +586,25 @@ async function cargarGastosOperativos() {
     try {
         const supabaseClient = window.supabaseClient || supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 
-        const { data, error } = await supabaseClient
+        let query = supabaseClient
             .from('gastos_tienda')
-            .select('id, fecha_gasto, monto, descripcion, categoria_id, cuenta_id, local, registrado_por, metodo_pago')
+            .select('id, fecha_gasto, monto, descripcion, categoria_id, cuenta_id, local, registrado_por, metodo_pago');
+
+        if (mesFiltro) {
+            const tempDate = new Date(mesFiltro + '-01T12:00:00');
+            const inicioMes = new Date(tempDate.getFullYear(), tempDate.getMonth(), 1, 0, 0, 0).toISOString();
+            const finMes = new Date(tempDate.getFullYear(), tempDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+            query = query.gte('fecha_gasto', inicioMes).lte('fecha_gasto', finMes);
+        }
+
+        const { data, error } = await query
             .order('fecha_gasto', { ascending: false })
-            .limit(50);
+            .limit(150);
 
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;">No hay gastos recientes registrados.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;">No hay gastos registrados en la fecha seleccionada.</td></tr>';
             return;
         }
 
@@ -1214,17 +1320,25 @@ function enviarRecordatorioWA(telefono, nombre, saldo) {
 // ==========================================
 // CARTERA BODEGAS (prestamos_operativos)
 // ==========================================
-async function cargarCarteraBodegas() {
+async function cargarCarteraBodegas(mesFiltro = null) {
     const tbody = document.getElementById('tbodyCarteraBodegas');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">⏳ Cargando préstamos...</td></tr>';
 
     try {
         const supabaseClient = window.supabaseClient || supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-        const { data, error } = await supabaseClient
-            .from('prestamos_operativos')
-            .select('*')
-            .order('fecha_prestamo', { ascending: false });
+
+        let query = supabaseClient.from('prestamos_operativos').select('*');
+
+        if (mesFiltro) {
+            const tempDate = new Date(mesFiltro + '-01T12:00:00');
+            const inicioMes = new Date(tempDate.getFullYear(), tempDate.getMonth(), 1, 0, 0, 0).toISOString();
+            const finMes = new Date(tempDate.getFullYear(), tempDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+            query = query.gte('fecha_prestamo', inicioMes).lte('fecha_prestamo', finMes);
+        }
+
+        const { data, error } = await query.order('fecha_prestamo', { ascending: false });
+
         if (error) throw error;
 
         // KPI
@@ -1234,7 +1348,7 @@ async function cargarCarteraBodegas() {
         if (kpi) kpi.textContent = '$' + fmtPrecio(totalPrestado);
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;">Sin préstamos registrados</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;">Sin préstamos registrados en el periodo seleccionado</td></tr>';
             return;
         }
 
@@ -1271,6 +1385,22 @@ async function cargarCarteraBodegas() {
 // ==========================================
 // CARTERA PASARELAS (Addi, Sistecrédito, Fodegas)
 // ==========================================
+
+function recargarTodasCarteras(fecha = null) {
+    if (fecha) {
+        window._carteraFiltroFecha = fecha;
+    } else {
+        window._carteraFiltroFecha = null;
+    }
+
+    // Recargar pasarelas con el filtro inyectado
+    cargarCarteraPasarela('Addi', 'Addi');
+    cargarCarteraPasarela('Sistecredito', 'Siste');
+    cargarCarteraPasarela('Fodegas', 'Fodegas');
+
+    // (Opcional) podriamos filtrar creditos moteros por fecha creacion, pero funciona diferente por vencimiento
+}
+
 async function cargarCarteraPasarela(metodo, prefix) {
     const tbodyId = 'tbodyCartera' + prefix;
     const tbody = document.getElementById(tbodyId);
@@ -1280,13 +1410,20 @@ async function cargarCarteraPasarela(metodo, prefix) {
     try {
         const supabaseClient = window.supabaseClient || supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 
-        // Buscar ventas con esa pasarela
-        const { data: ventas, error } = await supabaseClient
+        let query = supabaseClient
             .from('ventas')
             .select('id_venta, nombre_producto, local, total, metodo_pago, created_at, pago_desglose, usuario')
             .ilike('metodo_pago', `%${metodo}%`)
-            .eq('estado_venta', 'Completada')
-            .order('created_at', { ascending: false });
+            .eq('estado_venta', 'Completada');
+
+        if (window._carteraFiltroFecha) {
+            const qDate = new Date(window._carteraFiltroFecha + 'T12:00:00');
+            const inicioDia = new Date(qDate.getFullYear(), qDate.getMonth(), qDate.getDate(), 0, 0, 0).toISOString();
+            const finDia = new Date(qDate.getFullYear(), qDate.getMonth(), qDate.getDate(), 23, 59, 59).toISOString();
+            query = query.gte('created_at', inicioDia).lte('created_at', finDia);
+        }
+
+        const { data: ventas, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
 
