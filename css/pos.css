@@ -1383,11 +1383,11 @@ body {
 
 .resumen-cierre-premium {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2.5rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
     background: #f8fafc;
     border-radius: 2rem;
-    padding: 2.5rem;
+    padding: 2rem;
     border: 1px solid #e2e8f0;
 }
 
@@ -1525,45 +1525,6 @@ body {
     }
 }
 
-.seccion-voucher-titulo {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #0369a1;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.seccion-voucher input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 2px solid #bae6fd;
-    border-radius: 10px;
-    font-size: 1rem;
-    background: var(--white);
-    color: var(--dark);
-    font-weight: 600;
-}
-
-.seccion-voucher input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 /* ═══════════════════════════════════════════════════════════════
    ESTILOS POS DIGITAL (Stock Global Colorido)
    ═══════════════════════════════════════════════════════════════ */
@@ -1621,7 +1582,6 @@ body {
     opacity: 1;
     line-height: 1;
     margin-bottom: 2px;
-    /* Hereda color negro del padre */
 }
 
 .btn-stock-tienda .talla-qty {

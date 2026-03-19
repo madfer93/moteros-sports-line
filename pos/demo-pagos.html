@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Pagos Digitales | Moteros Sports Line</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --nequi: #7124cc;
+            --daviplata: #ed1c24;
+            --premium-black: #0f172a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --neon-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            overflow: hidden;
+        }
+
+        .demo-container {
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        .payment-card {
+            background: var(--glass);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--neon-border);
+            border-radius: 32px;
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .payment-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.02) 100%);
+            z-index: 0;
+        }
+
+        .payment-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+
+        .icon-box {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nequi-icon { background: var(--nequi); box-shadow: 0 0 30px rgba(113, 36, 204, 0.4); }
+        .davi-icon { background: var(--daviplata); box-shadow: 0 0 30px rgba(237, 28, 36, 0.4); }
+
+        h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; position: relative; z-index: 1; }
+        p { color: #94a3b8; font-size: 0.95rem; margin-bottom: 2rem; position: relative; z-index: 1; }
+
+        .btn-start {
+            background: white;
+            color: black;
+            padding: 1rem 2rem;
+            border-radius: 99px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-start:hover { transform: scale(1.1); }
+
+        /* OVERLAY PARA DEMO */
+        .demo-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .demo-modal {
+            width: 90%;
+            max-width: 450px;
+            background: #1e293b;
+            border-radius: 28px;
+            padding: 2.5rem;
+            border: 1px solid var(--neon-border);
+            position: relative;
+        }
+
+        .modal-header { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
+        
+        .step { display: none; }
+        .step.active { display: block; animation: slideIn 0.3s ease-out; }
+
+        @keyframes slideIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            background: #0f172a;
+            border: 1px solid var(--neon-border);
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 1rem;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        .success-box { text-align: center; }
+        .success-box i { font-size: 4rem; color: #10b981; margin-bottom: 1.5rem; }
+
+        .header-top {
+            position: absolute;
+            top: 3rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .demo-container { grid-template-columns: 1fr; padding-top: 5rem; }
+            .header-top { top: 1.5rem; }
+        }
+
+        /* TABLA DE PRECIOS */
+        .pricing-section {
+            grid-column: 1 / -1;
+            margin-top: 3rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            padding: 2rem;
+            border: 1px solid var(--neon-border);
+        }
+
+        .pricing-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .pricing-table th {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--neon-border);
+            color: white;
+            font-weight: 700;
+        }
+
+        .pricing-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .highlight-cost {
+            color: #4ade80;
+            font-weight: 700;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-top">
+        <h1 style="font-size: 2.5rem; font-weight: 900; background: linear-gradient(to right, #6366f1, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Experiencia de Pago Digital 2026
+        </h1>
+        <p style="color: #94a3b8; font-size: 1.1rem; margin-top: 0.5rem;">Tecnología VisionGuard aplicada a Moteros Sports Line</p>
+    </div>
+
+    <div class="demo-container">
+        <!-- CARD NEQUI -->
+        <div class="payment-card" onclick="openDemo('nequi')">
+            <div class="icon-box nequi-icon"><i class="fas fa-qrcode"></i></div>
+            <h2>Nequi QR</h2>
+            <p>Escanear y validar en segundos lo que el cliente ya pagó. Seguro y automático.</p>
+            <button class="btn-start">Probar Demo</button>
+        </div>
+
+        <!-- CARD DAVIPLATA -->
+        <div class="payment-card" onclick="openDemo('daviplata')">
+            <div class="icon-box davi-icon"><i class="fas fa-mobile-alt"></i></div>
+            <h2>Daviplata Push</h2>
+            <p>Tú inicias el cobro. El cliente confirma desde su app. Control total del comercio.</p>
+            <button class="btn-start">Probar Demo</button>
+        </div>
+
+        <!-- TABLA DE COSTOS OPERATIVOS -->
+        <div class="pricing-section">
+            <h3 style="display:flex; align-items:center; gap:0.75rem;">
+                <i class="fas fa-chart-line" style="color:#6366f1"></i>
+                Estructura de Costos Operativos (Basado en Consumo)
+            </h3>
+            <p style="margin-top:0.5rem; margin-bottom:1rem;">Las APIs bancarias oficiales operan bajo un modelo de pago por llamada. Este es un costo operativo mínimo comparado con las comisiones de datáfonos (3% +).</p>
+            
+            <table class="pricing-table">
+                <thead>
+                    <tr>
+                        <th>Banda de Transacciones (Mensual)</th>
+                        <th>Costo por Llamada API (Daviplata)</th>
+                        <th>Estimado Nequi QR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1 - 1,000 transacciones</td>
+                        <td class="highlight-cost">COP 1.4</td>
+                        <td>Incluido / % Transacción*</td>
+                    </tr>
+                    <tr>
+                        <td>1,001 - 5,000 transacciones</td>
+                        <td class="highlight-cost">COP 1.3</td>
+                        <td>Tarifa Especial</td>
+                    </tr>
+                    <tr>
+                        <td>5,001 - 20,000 transacciones</td>
+                        <td class="highlight-cost">COP 1.2</td>
+                        <td>Tarifa Especial</td>
+                    </tr>
+                    <tr>
+                        <td>20,001 - 100,000 transacciones</td>
+                        <td class="highlight-cost">COP 1.0</td>
+                        <td>Tarifa Especial</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="font-size:0.75rem; margin-top:1.5rem; opacity:0.6;">*Nequi suele manejar comisiones del 1.5% + IVA si se procesa vía Wompi o integraciones directas con Pasarelas. El costo por consulta individual de estado es ínfimo.</p>
+        </div>
+    </div>
+
+    <!-- MODAL DEMO NEQUI -->
+    <div id="modal-nequi" class="demo-overlay" onclick="closeDemo(event, 'modal-nequi')">
+        <div class="demo-modal" onclick="event.stopPropagation()">
+            <div class="modal-header"><i class="fas fa-qrcode" style="color:var(--nequi)"></i> Verificador Nequi</div>
+            <!-- Step 1: Scan Simulation -->
+            <div class="step active" id="nequi-step-1">
+                <p style="margin-bottom:1.5rem">Simula el escaneo del código QR entregado por el cliente.</p>
+                <div style="width:100%; height:200px; border:2px dashed #475569; border-radius:20px; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="nextStep('nequi', 2)">
+                    <i class="fas fa-camera" style="font-size: 3rem; opacity: 0.5;"></i>
+                    <span style="font-weight:600; margin-left:1rem">Click para simular escaneo</span>
+                </div>
+            </div>
+            <!-- Step 2: Result -->
+            <div class="step" id="nequi-step-2">
+                <div class="success-box">
+                    <i class="fas fa-check-circle"></i>
+                    <h2>¡Pago Verificado!</h2>
+                    <p style="margin-top:1rem; font-size:1.2rem; color:white">$ 85,000 COP</p>
+                    <p style="font-size:0.9rem">Referencia: 98214582</p>
+                    <button class="btn-start" style="margin-top:2rem; width:100%" onclick="resetDemo('nequi')">Volver</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DEMO DAVIPLATA -->
+    <div id="modal-daviplata" class="demo-overlay" onclick="closeDemo(event, 'modal-daviplata')">
+        <div class="demo-modal" onclick="event.stopPropagation()">
+            <div class="modal-header"><i class="fas fa-mobile-alt" style="color:var(--daviplata)"></i> Cobro Daviplata</div>
+            <!-- Step 1: Input Data -->
+            <div class="step active" id="davi-step-1">
+                <p style="margin-bottom:1.5rem">Inicia el proceso ingresando los datos del cliente.</p>
+                <label style="font-size:0.8rem; opacity:0.7">Número de Celular</label>
+                <input type="text" placeholder="Ej: 3113408416" id="davi-tel">
+                <label style="font-size:0.8rem; opacity:0.7">Valor a Cobrar</label>
+                <input type="text" placeholder="Ej: 50000" id="davi-val">
+                <button class="btn-start" style="width:100%; background:var(--daviplata); color:white" onclick="nextStep('davi', 2)">Lanzar Cobro</button>
+            </div>
+            <!-- Step 2: OTP -->
+            <div class="step" id="davi-step-2">
+                <p style="margin-bottom:1rem">Pídele al cliente el código de 6 dígitos que le llegó a su celular.</p>
+                <input type="text" placeholder="Ingresa OTP" maxlength="6" style="font-size:1.5rem; letter-spacing:10px; font-weight:700">
+                <button class="btn-start" style="width:100%; background:var(--daviplata); color:white" onclick="nextStep('davi', 3)">Confirmar Pago</button>
+                <p style="font-size:0.75rem; text-align:center; margin-top:1rem; cursor:pointer" onclick="nextStep('davi', 1)">Retroceder</p>
+            </div>
+            <!-- Step 3: Success -->
+            <div class="step" id="davi-step-3">
+                <div class="success-box">
+                    <i class="fas fa-check-circle"></i>
+                    <h2 style="color:var(--daviplata)">¡Cobro Exitoso!</h2>
+                    <p style="margin-top:1rem">Se han descontado los fondos correctamente.</p>
+                    <p style="font-size:1.2rem; color:white; margin-top:0.5rem" id="davi-res-monto">$ 0</p>
+                    <button class="btn-start" style="margin-top:2rem; width:100%" onclick="resetDemo('davi')">Finalizar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openDemo(type) {
+            document.getElementById('modal-' + type).style.display = 'flex';
+        }
+
+        function closeDemo(e, id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function nextStep(type, num) {
+            // Validaciones básicas para Daviplata
+            if(type === 'davi' && num === 2) {
+                const tel = document.getElementById('davi-tel').value;
+                const val = document.getElementById('davi-val').value;
+                if(!tel || !val) { alert("Complete los datos"); return; }
+                document.getElementById('davi-res-monto').textContent = '$ ' + parseInt(val).toLocaleString() + ' COP';
+            }
+
+            // Ocultar todos los pasos del tipo y mostrar el actual
+            const steps = document.querySelectorAll(type === 'nequi' ? '#modal-nequi .step' : '#modal-daviplata .step');
+            steps.forEach(s => s.classList.remove('active'));
+            
+            const targetId = type === 'nequi' ? 'nequi-step-' + num : 'davi-step-' + num;
+            document.getElementById(targetId).classList.add('active');
+        }
+
+        function resetDemo(type) {
+            const steps = document.querySelectorAll(type === 'nequi' ? '#modal-nequi .step' : '#modal-daviplata .step');
+            steps.forEach(s => s.classList.remove('active'));
+            
+            const startStep = type === 'nequi' ? 'nequi-step-1' : 'davi-step-1';
+            document.getElementById(startStep).classList.add('active');
+            
+            if(type === 'davi') {
+                document.getElementById('davi-tel').value = '';
+                document.getElementById('davi-val').value = '';
+            }
+
+            document.getElementById('modal-' + type).style.display = 'none';
+        }
+    </script>
+</body>
+</html>

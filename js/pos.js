@@ -641,13 +641,46 @@ async function mostrarModalCerrarCaja() {
         };
 
         // Renderizar resumen ultra-detallado
+        // Calcular ventas anuladas para mostrar
+        const ventasAnuladas = (ventas || []).filter(v => v.estado_venta === 'Anulada');
+        const totalAnulado = ventasAnuladas.reduce((s, v) => s + (v.total || 0), 0);
+
+        // Generar filas de desglose por método (solo mostrar > 0)
+        const metodoLabels = {
+            efectivo: '💵 Efectivo',
+            transferencia: '🏦 Transferencia',
+            nequi: '📱 Nequi',
+            daviplata: '📱 Daviplata',
+            tarjeta: '💳 Tarjeta',
+            datafono: '🖥️ Datáfono',
+            addi: '🅰️ Addi',
+            sistecredito: '📋 Sistecrédito',
+            credito_motero: '🏍️ Crédito Motero',
+            fodegas: '📦 Fodegas'
+        };
+        const desgloseMetodosHTML = Object.entries(metodoLabels)
+            .filter(([key]) => (totales[key] || 0) > 0)
+            .map(([key, label]) => `
+                <div class="resumen-row">
+                    <span class="label">${label}</span>
+                    <span class="value" style="color:${key === 'efectivo' ? '#16a34a; font-weight:800' : '#1e293b'}">$${Math.round(totales[key] || 0).toLocaleString('es-CO')}</span>
+                </div>
+            `).join('');
+
         const resumenHTML = `
             <div class="resumen-cierre-premium">
                 <div class="resumen-seccion" style="border-left-color: var(--primary);">
                     <h4>💵​ VENTAS DE PRODUCTOS</h4>
                     <div class="resumen-row"><span class="label">Transacciones</span><span class="value">${resumenVentas.numTransacciones}</span></div>
                     <div class="resumen-row"><span class="label">Unidades Vendidas</span><span class="value">${resumenVentas.totalUnidades}</span></div>
+                    ${ventasAnuladas.length > 0 ? `<div class="resumen-row" style="color:#ef4444;"><span class="label">🚫 Anuladas (${ventasAnuladas.length})</span><span class="value" style="color:#ef4444; text-decoration:line-through;">-$${Math.round(totalAnulado).toLocaleString('es-CO')}</span></div>` : ''}
                     <div class="resumen-row total-section"><span class="label">Subtotal Ventas</span><span class="value">$${Math.round(totalGeneralVentas).toLocaleString('es-CO')}</span></div>
+                </div>
+
+                <div class="resumen-seccion" style="border-left-color: #22c55e;">
+                    <h4>💰 DESGLOSE POR MÉTODO</h4>
+                    ${desgloseMetodosHTML || '<div class="resumen-row"><span class="label" style="color:#94a3b8;">Sin ventas registradas</span></div>'}
+                    <div class="resumen-row total-section" style="color:#22c55e;"><span class="label">Total Métodos</span><span class="value">$${Math.round(totalGeneralVentas).toLocaleString('es-CO')}</span></div>
                 </div>
 
                 <div class="resumen-seccion" style="border-left-color: #3b82f6;">
@@ -4508,53 +4541,105 @@ function generarDesgloseProductos() {
         return '';
     }
 
-    // Listado individual de items para permitir anulación
-    const filas = resumenVentas.ventasDelDia
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .map(v => {
-            const isAnulada = v.estado_venta === 'Anulada';
-            const rowStyle = isAnulada ? 'text-decoration: line-through; color: #94a3b8; background: #f8fafc;' : '';
-            const btnAnular = isAnulada 
-                ? '<span style="color:#94a3b8; font-size:0.75rem;">Anulada</span>' 
-                : `<button onclick="anularVenta('${v.id_venta}', '${v.nombre_producto.replace(/'/g, "\\'")}')" 
-                           style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:1rem;" title="Anular esta venta">🗑️</button>`;
+    const ventasActivas = resumenVentas.ventasDelDia.filter(v => v.estado_venta !== 'Anulada');
+    const ventasAnuladas = resumenVentas.ventasDelDia.filter(v => v.estado_venta === 'Anulada');
 
-            return `
-            <tr style="${rowStyle}">
-                <td style="font-size:0.8rem; padding:0.4rem 0.6rem;">
-                    <div style="font-weight:600;">${v.nombre_producto}</div>
-                    <div style="font-size:0.7rem; color:#64748b;">${v.id_venta}</div>
-                </td>
-                <td style="text-align:center; padding:0.4rem;">${v.cantidad}</td>
-                <td style="text-align:right; padding:0.4rem 0.6rem;">$${(v.total || 0).toLocaleString('es-CO')}</td>
-                <td style="text-align:center; padding:0.4rem;">${btnAnular}</td>
-            </tr>
-        `}).join('');
+    // Agrupar por nombre_producto + precio_unitario
+    const grupos = {};
+    ventasActivas.forEach(v => {
+        const precio = v.precio_unitario || v.total || 0;
+        const key = `${v.nombre_producto}__${precio}`;
+        if (!grupos[key]) {
+            grupos[key] = {
+                nombre: v.nombre_producto,
+                precioUnitario: precio,
+                cantidad: 0,
+                total: 0,
+                ventas: [] // guardar individuales para anulación
+            };
+        }
+        grupos[key].cantidad += (v.cantidad || 0);
+        grupos[key].total += (v.total || 0);
+        grupos[key].ventas.push(v);
+    });
 
-    const totalCant = resumenVentas.ventasDelDia.filter(v => v.estado_venta !== 'Anulada').reduce((s, v) => s + (v.cantidad || 0), 0);
-    const totalMonto = resumenVentas.ventasDelDia.filter(v => v.estado_venta !== 'Anulada').reduce((s, v) => s + (v.total || 0), 0);
+    // Filas agrupadas
+    const filasAgrupadas = Object.values(grupos)
+        .sort((a, b) => a.nombre.localeCompare(b.nombre))
+        .map((g, idx) => {
+            const detalleId = `detalle_grupo_${idx}`;
+            const btnExpandir = g.ventas.length > 1 
+                ? `<button onclick="document.getElementById('${detalleId}').style.display = document.getElementById('${detalleId}').style.display === 'none' ? 'table-row' : 'none'" 
+                    style="background:none; border:none; cursor:pointer; color:#64748b; font-size:0.75rem;" title="Ver detalle individual">▼ ${g.ventas.length} ventas</button>`
+                : `<button onclick="anularVenta('${g.ventas[0].id_venta}', '${g.nombre.replace(/'/g, "\\\\'")}')" 
+                    style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:1rem;" title="Anular esta venta">🗑️</button>`;
+
+            // Fila principal agrupada
+            let html = `
+            <tr>
+                <td style="font-size:0.85rem; padding:0.5rem 0.6rem; font-weight:600;">${g.nombre}</td>
+                <td style="text-align:right; padding:0.5rem; font-size:0.85rem; color:#64748b;">$${Math.round(g.precioUnitario).toLocaleString('es-CO')}</td>
+                <td style="text-align:center; padding:0.5rem; font-weight:700;">${g.cantidad}</td>
+                <td style="text-align:right; padding:0.5rem 0.6rem; font-weight:700;">$${Math.round(g.total).toLocaleString('es-CO')}</td>
+                <td style="text-align:center; padding:0.5rem;">${btnExpandir}</td>
+            </tr>`;
+
+            // Detalle expandible para anulación individual (solo si hay más de 1 venta)
+            if (g.ventas.length > 1) {
+                html += `<tr id="${detalleId}" style="display:none;">
+                    <td colspan="5" style="padding:0; background:#f8fafc;">
+                        <div style="padding:0.5rem 1rem;">
+                            ${g.ventas.map(v => `
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px dashed #e2e8f0; font-size:0.8rem;">
+                                    <span style="color:#64748b;">${v.id_venta} — $${Math.round(v.total || 0).toLocaleString('es-CO')}</span>
+                                    <button onclick="anularVenta('${v.id_venta}', '${v.nombre_producto.replace(/'/g, "\\\\'")}')" 
+                                        style="background:none; border:none; cursor:pointer; color:var(--danger); font-size:0.9rem;" title="Anular">🗑️</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </td>
+                </tr>`;
+            }
+            return html;
+        }).join('');
+
+    // Filas para ventas anuladas
+    const filasAnuladas = ventasAnuladas.map(v => `
+        <tr style="text-decoration: line-through; color: #94a3b8; background: #f8fafc;">
+            <td style="font-size:0.8rem; padding:0.4rem 0.6rem;">🚫 ${v.nombre_producto}</td>
+            <td style="text-align:right; padding:0.4rem; font-size:0.8rem;">$${Math.round(v.precio_unitario || v.total || 0).toLocaleString('es-CO')}</td>
+            <td style="text-align:center; padding:0.4rem;">${v.cantidad}</td>
+            <td style="text-align:right; padding:0.4rem 0.6rem;">$${Math.round(v.total || 0).toLocaleString('es-CO')}</td>
+            <td style="text-align:center; padding:0.4rem;"><span style="font-size:0.7rem;">Anulada</span></td>
+        </tr>
+    `).join('');
+
+    const totalCant = ventasActivas.reduce((s, v) => s + (v.cantidad || 0), 0);
+    const totalMonto = ventasActivas.reduce((s, v) => s + (v.total || 0), 0);
 
     return `
         <div style="margin-top:1rem; border-top:1px solid #e2e8f0; padding-top:1rem;">
             <h4 style="margin:0 0 0.6rem; font-size:0.9rem; color:#475569; cursor:pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
                 🧾 Desglose de Productos ▽ (Click para ver/ocultar)
             </h4>
-            <div style="max-height:300px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px;">
+            <div style="max-height:350px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px;">
                 <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
                     <thead>
                         <tr style="background:#f1f5f9; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
-                            <th style="text-align:left; padding:0.5rem 0.6rem; color:#475569; font-weight:600;">Venta / Producto</th>
+                            <th style="text-align:left; padding:0.5rem 0.6rem; color:#475569; font-weight:600;">Producto</th>
+                            <th style="text-align:right; padding:0.5rem; color:#475569; font-weight:600;">P. Unit.</th>
                             <th style="text-align:center; padding:0.5rem; color:#475569; font-weight:600;">Cant.</th>
                             <th style="text-align:right; padding:0.5rem 0.6rem; color:#475569; font-weight:600;">Subtotal</th>
                             <th style="text-align:center; padding:0.5rem; color:#475569; font-weight:600;">Acción</th>
                         </tr>
                     </thead>
-                    <tbody>${filas}</tbody>
+                    <tbody>${filasAgrupadas}${filasAnuladas}</tbody>
                     <tfoot>
                         <tr style="border-top:2px solid #0369a1; font-weight:700; background:#f8fafc;">
                             <td style="padding:0.5rem 0.6rem;">TOTAL (Activas)</td>
+                            <td></td>
                             <td style="text-align:center; padding:0.5rem;">${totalCant}</td>
-                            <td style="text-align:right; padding:0.5rem 0.6rem; color:#0369a1;">$${totalMonto.toLocaleString('es-CO')}</td>
+                            <td style="text-align:right; padding:0.5rem 0.6rem; color:#0369a1;">$${Math.round(totalMonto).toLocaleString('es-CO')}</td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -4563,6 +4648,7 @@ function generarDesgloseProductos() {
         </div>
     `;
 }
+
 
 /**
  * Anula una venta basándose en su id_venta (Primary Key en el esquema)

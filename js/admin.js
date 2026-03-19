@@ -20,7 +20,8 @@ var comprasData = comprasData || [];
 var enviosData = enviosData || []; // Cache de envíos para acceso rápido
 var chartStockLocales = chartStockLocales || null;
 var chartCategorias = chartCategorias || null;
-var chartMetodosPago = chartMetodosPago || null;
+var chartMetodosPagoDash = chartMetodosPagoDash || null;
+var chartVentas7Dias = chartVentas7Dias || null;
 var chartVentasLocales = chartVentasLocales || null;
 var archivosTemporal = archivosTemporal || { producto: null, post: null, logo: null };
 var MAX_DESTACADOS = 8;
@@ -69,6 +70,22 @@ function limpiarMoneda(valor) {
     return parseFloat(valStr.replace(/[^\d]/g, '')) || 0;
 }
 
+// Helper para colores consistentes en reportes y dashboard
+function getColorMetodo(metodo) {
+    if (!metodo) return '#94a3b8';
+    const m = metodo.split(' ')[0].toLowerCase();
+    const colors = {
+        'efectivo': '#10b981', // Verde
+        'nequi': '#ec4899', // Rosa
+        'daviplata': '#ef4444', // Rojo
+        'tarjeta': '#3b82f6', // Azul
+        'transferencia': '#8b5cf6', // Violeta
+        'credito': '#f59e0b', // Naranja
+        'sistecredito': '#06b6d4' // Cyan
+    };
+    return colors[m] || '#94a3b8'; // Gris por defecto
+}
+
 
 window.activarMenu = function (sectionId) {
     // Nav links
@@ -107,29 +124,23 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN') {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
-        if (!window.adminInicializado) {
-            inicializarAdmin();
-            window.adminInicializado = true;
-        }
+        inicializarAdmin();
     } else if (event === 'SIGNED_OUT') {
         document.getElementById('adminPanel').style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
         window.adminInicializado = false;
+        window.adminCargando = false;
     }
 });
 
 // Inicialización de la aplicación
 document.addEventListener('DOMContentLoaded', async () => {
-    // Verificar sesión al cargar
     const { data: { session } } = await supabaseClient.auth.getSession();
 
     if (session) {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
-        if (!window.adminInicializado) {
-            inicializarAdmin();
-            window.adminInicializado = true;
-        }
+        inicializarAdmin();
     } else {
         document.getElementById('adminPanel').style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
@@ -395,7 +406,10 @@ async function cargarSeccion(section) {
         case 'ventas': await cargarVentasDia(); await cargarLocalesCaja(); break;
         case 'envios': await cargarEnvios(); break;
         case 'envios-estadisticas': await cargarEstadisticasEnvios(); break;
-        case 'alertas': await cargarAlertasStock(); break;
+        // case 'alertas': await cargarAlertasStock(); break;
+        case 'inventario': if (typeof cargarInventarioLocal === 'function') await cargarInventarioLocal(); break;
+        case 'clientes': if (typeof cargarClientesAdmin === 'function') await cargarClientesAdmin(); break;
+        case 'reportes': break; // Sección estática, no necesita carga
         case 'reportes-ejecutivos': await cargarReporteEjecutivo(); break;
         case 'rentabilidad': await cargarRentabilidadDiaria(); break;
         case 'cierres': await cargarCierresCaja(); break;
@@ -427,6 +441,9 @@ async function cargarSeccion(section) {
 }
 
 async function inicializarAdmin() {
+    if (window.adminCargando || window.adminInicializado) return;
+    window.adminCargando = true;
+    
     showToast('Cargando datos...', 'info');
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
@@ -442,9 +459,18 @@ async function inicializarAdmin() {
         }
 
         await Promise.all([cargarProductos(), cargarTodosLosInventarios()]);
+        setupNavigation();
         await cargarDashboard();
+        
+        window.adminInicializado = true;
         showToast('Panel listo');
-    } catch (error) { showToast('Error al cargar datos', 'error'); if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", error); }
+    } catch (error) { 
+        console.error('Error en inicializarAdmin:', error);
+        showToast('Error al cargar datos: ' + (error.message || 'Error desconocido'), 'error'); 
+        if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", error); 
+    } finally {
+        window.adminCargando = false;
+    }
 }
 
 
@@ -1500,17 +1526,24 @@ async function cargarDashboard() {
 
         const totalVentasHoy = ventasHoy?.reduce((sum, v) => sum + parseFloat(v.total || 0), 0) || 0;
 
+        // Guardar datos para charts
+        if (!window.dashboardData) window.dashboardData = {};
+        window.dashboardData.ventasHoyList = ventasHoy || [];
+
         // Promedio 30 dias (Tabla 'ventas')
         const hace30dias = new Date();
         hace30dias.setDate(hace30dias.getDate() - 30);
 
         const { data: ventasMes } = await supabaseClient
             .from('ventas')
-            .select('total, created_at') // created_at para grafico 7 dias si lo sacaramos de aqui, pero mejor query aparte
+            .select('total, created_at, metodo_pago')
             .gte('created_at', hace30dias.toISOString());
 
         const totalMes = ventasMes?.reduce((sum, v) => sum + parseFloat(v.total || 0), 0) || 0;
         const promedioDiario = totalMes / 30;
+
+        // Guardar datos para charts
+        window.dashboardData.ventasMesList = ventasMes || [];
 
         // UI Update
         const statVentas = document.getElementById('statVentasHoy');
@@ -1550,14 +1583,22 @@ async function cargarDashboard() {
     } catch (e) { if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando stats leads:', e); }
 
 
-    // renderizarChartsDashboard(); // ⚠️ DESACTIVADO: Usar Lógica centralizada en admin-productos.js
+    renderizarChartsDashboard();
+    
+    // Cargar secciones de apoyo
+    await Promise.allSettled([
+        // cargarAlertasStock(),
+        cargarEventos()
+    ]);
 }
 
 function renderizarChartsDashboard() {
     // 1. Stock por Local
     const ctx1 = document.getElementById('chartStockLocales');
     if (ctx1) {
-        if (chartStockLocales) chartStockLocales.destroy();
+        const existingChart1 = Chart.getChart(ctx1);
+        if (existingChart1) existingChart1.destroy();
+        
         chartStockLocales = new Chart(ctx1.getContext('2d'), {
             type: 'bar',
             data: { labels: ['Alcalá', 'Local 01', 'Jordán'], datasets: [{ label: 'Unidades en Stock', data: [inventarios.alcala.reduce((s, i) => s + (i.cantidad || 0), 0), inventarios.local01.reduce((s, i) => s + (i.cantidad || 0), 0), inventarios.jordan.reduce((s, i) => s + (i.cantidad || 0), 0)], backgroundColor: ['#ff6b00', '#10b981', '#3b82f6'], borderRadius: 8 }] },
@@ -1565,21 +1606,19 @@ function renderizarChartsDashboard() {
         });
     }
 
-    // 2. Categoías
+    // 2. Categorías
     const ctx2 = document.getElementById('chartCategorias');
     if (ctx2) {
-        if (chartCategorias) chartCategorias.destroy();
+        const existingChart2 = Chart.getChart(ctx2);
+        if (existingChart2) existingChart2.destroy();
+        
         const categorias = {};
         productos.filter(p => p.estado === 'Activo').forEach(p => {
-            // FIX: Normalizar a mayúsculas para evitar duplicados (Maleteros vs MALETEROS)
             let catNombre = p.categoria ? p.categoria.trim().toUpperCase() : 'SIN CATEGORÍA';
-            // Mapeo manual para unificar singulares/plurales si fuera necesario (opcional)
-            // if (catNombre === 'CASCO') catNombre = 'CASCOS';
-
             categorias[catNombre] = (categorias[catNombre] || 0) + 1;
         });
 
-        const labels = Object.keys(categorias).sort(); // Ordenar alfabéticamente
+        const labels = Object.keys(categorias).sort();
         const dataValues = labels.map(l => categorias[l]);
         chartCategorias = new Chart(ctx2.getContext('2d'), {
             type: 'doughnut',
@@ -1587,78 +1626,91 @@ function renderizarChartsDashboard() {
             options: { responsive: true, plugins: { legend: { position: 'right' } } }
         });
     }
-
-    // 3. Ventas por Método de Pago (Hoy) - NUEVO
+    
+    // 3. Ventas por Método de Pago (Hoy)
     const ctx3 = document.getElementById('chartMetodosPagoDash');
-    if (ctx3 && window.dashboardData?.ventasHoyList) {
-        // Agrupar 'ventasHoyList' por metodo
+    if (ctx3 && window.dashboardData && window.dashboardData.ventasHoyList) {
+        const existingChart3 = Chart.getChart(ctx3);
+        if (existingChart3) existingChart3.destroy();
+        
         const metodos = {};
         window.dashboardData.ventasHoyList.forEach(v => {
-            const m = v.metodo_pago || 'Desconocido';
-            metodos[m] = (metodos[m] || 0) + (v.total || 0);
+            const m = v.metodo_pago || 'EFECTIVO';
+            metodos[m] = (metodos[m] || 0) + parseFloat(v.total || 0);
         });
-
-        // Limpiar previo si existe (usando variable global genérica chartMetodosPago)
-        if (chartMetodosPago) chartMetodosPago.destroy();
-
-        chartMetodosPago = new Chart(ctx3.getContext('2d'), {
+        
+        const labelsM = Object.keys(metodos);
+        const dataM = labelsM.map(l => metodos[l]);
+        
+        chartMetodosPagoDash = new Chart(ctx3.getContext('2d'), {
             type: 'pie',
             data: {
-                labels: Object.keys(metodos),
-                datasets: [{
-                    data: Object.values(metodos),
-                    backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b']
+                labels: labelsM,
+                datasets: [{ 
+                    data: dataM, 
+                    backgroundColor: labelsM.map(l => getColorMetodo(l)) 
                 }]
             },
-            options: {
-                responsive: true,
-                plugins: {
+            options: { 
+                responsive: true, 
+                plugins: { 
                     legend: { position: 'bottom' },
-                    title: { display: true, text: 'Total Hoy: $' + formatearPrecio(Object.values(metodos).reduce((a, b) => a + b, 0)) }
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: $${formatearPrecio(context.raw)}`;
+                            }
+                        }
+                    }
                 }
             }
         });
     }
-
-    // 4. Ventas últimos 7 Días - NUEVO
+    
+    // 4. Ventas Últimos 7 Días
     const ctx4 = document.getElementById('chartVentas7Dias');
-    if (ctx4 && window.dashboardData?.ventasMesList) {
-        // Procesar ultimos 7 dias desde 'ventasMesList' (que trae 30 dias)
-        const ultimos7 = {};
-        // Inicializar ultimos 7 dias en 0
+    if (ctx4 && window.dashboardData && window.dashboardData.ventasMesList) {
+        const existingChart4 = Chart.getChart(ctx4);
+        if (existingChart4) existingChart4.destroy();
+        
+        const ultimos7Dias = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            ultimos7[d.toLocaleDateString('es-CO')] = 0;
+            ultimos7Dias.push(d.toISOString().split('T')[0]);
         }
-
-        window.dashboardData.ventasMesList.forEach(v => {
-            const fecha = new Date(v.created_at).toLocaleDateString('es-CO');
-            if (ultimos7.hasOwnProperty(fecha)) {
-                ultimos7[fecha] += (v.total || 0);
-            }
+        
+        const ventas7d = ultimos7Dias.map(fecha => {
+            return window.dashboardData.ventasMesList
+                .filter(v => v.created_at && v.created_at.startsWith(fecha))
+                .reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
         });
-
-        if (chartVentasLocales) chartVentasLocales.destroy(); // Reusamos chartVentasLocales variable para este chart de linea
-
-        chartVentasLocales = new Chart(ctx4.getContext('2d'), {
+        
+        chartVentas7Dias = new Chart(ctx4.getContext('2d'), {
             type: 'line',
             data: {
-                labels: Object.keys(ultimos7),
+                labels: ultimos7Dias.map(f => f.split('-').slice(1).reverse().join('/')),
                 datasets: [{
                     label: 'Ventas ($)',
-                    data: Object.values(ultimos7),
-                    borderColor: '#ff6b00',
-                    backgroundColor: 'rgba(255, 107, 0, 0.1)',
+                    data: ventas7d,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     fill: true,
-                    tension: 0.4
+                    tension: 0.3,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#10b981'
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: { beginAtZero: true, ticks: { callback: function (val) { return '$' + val / 1000 + 'k'; } } }
+                    y: { 
+                        beginAtZero: true,
+                        ticks: { callback: value => '$' + (value/1000) + 'k' }
+                    }
                 }
             }
         });
@@ -1682,31 +1734,76 @@ async function cargarTodosLosInventarios() {
 }
 
 async function cargarInventarioLocal() {
-    const tabla = document.getElementById('inventarioLocal').value;
+    const selector = document.getElementById('inventarioLocal');
+    const tabla = selector.value;
     const estadoFiltro = document.getElementById('inventarioEstadoFiltro')?.value;
     const contenido = document.getElementById('contenidoInventario');
-    if (!tabla) { contenido.innerHTML = '<div class="card-body"><div class="alert alert-info">👆 Selecciona un local</div></div>'; return; }
+    
+    if (!tabla) { 
+        contenido.innerHTML = '<div class="card-body"><div class="alert alert-info">👆 Selecciona un local</div></div>'; 
+        return; 
+    }
+    
     contenido.innerHTML = '<div class="card-body"><div class="loading"><div class="spinner"></div><p>Cargando...</p></div></div>';
+    
     try {
-        const { data, error } = await supabaseClient.from(tabla).select('*').order('id_producto');
-        if (error) throw error;
-        if (!data || data.length === 0) { contenido.innerHTML = '<div class="card-body"><div class="alert alert-warning">No hay productos en este inventario</div></div>'; return; }
+        let data = [];
+        let esConsolidado = (tabla === 'todos');
+
+        if (esConsolidado) {
+            // Cargar de todas las tablas
+            const [rA, r01, rJ, rD] = await Promise.all([
+                supabaseClient.from('inventario_alcala').select('*'),
+                supabaseClient.from('inventario_01').select('*'),
+                supabaseClient.from('inventario_jordan').select('*'),
+                supabaseClient.from('inventario_digital').select('*')
+            ]);
+            
+            // Marcar procedencia
+            if (rA.data) rA.data.forEach(x => x.sede_nombre = 'Alcalá');
+            if (r01.data) r01.data.forEach(x => x.sede_nombre = 'Local 01');
+            if (rJ.data) rJ.data.forEach(x => x.sede_nombre = 'Jordán');
+            if (rD.data) rD.data.forEach(x => x.sede_nombre = 'Digital');
+            
+            data = [...(rA.data || []), ...(r01.data || []), ...(rJ.data || []), ...(rD.data || [])];
+        } else {
+            const { data: res, error } = await supabaseClient.from(tabla).select('*').order('id_producto');
+            if (error) throw error;
+            data = res || [];
+        }
+
+        if (!data || data.length === 0) { 
+            contenido.innerHTML = '<div class="card-body"><div class="alert alert-warning">No hay productos en este inventario</div></div>'; 
+            return; 
+        }
 
         let htmlRows = '';
-
         data.forEach(inv => {
             const producto = productos.find(p => p.id_producto === inv.id_producto);
             let badge = 'badge-success', texto = 'OK', estadoActual = 'OK';
             if (inv.cantidad === 0) { badge = 'badge-danger'; texto = 'Agotado'; estadoActual = 'Agotado'; }
             else if (inv.cantidad <= (inv.stock_minimo || 5)) { badge = 'badge-warning'; texto = 'Bajo'; estadoActual = 'Bajo'; }
 
-            if (estadoFiltro && estadoFiltro !== '' && estadoFiltro !== estadoActual) {
-                return;
-            }
+            if (estadoFiltro && estadoFiltro !== '' && estadoFiltro !== estadoActual) return;
 
-            const btnEditar = producto?.id ? `<button onclick="editarProducto('${producto.id}')" class="btn btn-primary btn-sm" title="Editar Producto">✏️ Editar</button>` : '';
+            const btnEditar = producto?.id ? `<button onclick="editarProducto('${producto.id}')" class="btn btn-primary btn-sm" title="Editar Producto">✏️</button>` : '';
+            const sedeCol = esConsolidado ? `<td>${inv.sede_nombre}</td>` : '';
+            const tablaParaAjuste = esConsolidado ? getTablaPorSede(inv.sede_nombre) : tabla;
 
-            htmlRows += `<tr><td><strong>${producto?.nombre || inv.id_producto}</strong><br><small style="color:#666">${producto?.marca || ''}</small></td><td>${producto?.categoria || '-'}</td><td style="font-size:1.1rem; font-weight:700;">${inv.cantidad}</td><td>${inv.stock_minimo || 5}</td><td><span class="badge ${badge}">${texto}</span></td><td><div style="display:flex; gap:0.5rem;"><button onclick="ajustarStock('${tabla}','${inv.id}',${inv.cantidad})" class="btn btn-secondary btn-sm">🔢 Ajustar</button>${btnEditar}</div></td></tr>`;
+            htmlRows += `<tr>
+                ${sedeCol}
+                <td><strong>${producto?.nombre || inv.id_producto}</strong><br><small style="color:#666">${producto?.marca || ''}</small></td>
+                <td>${producto?.categoria || '-'}</td>
+                <td style="font-size:1.1rem; font-weight:700;">${inv.cantidad}</td>
+                <td>${inv.stock_minimo || 5}</td>
+                <td><span class="badge ${badge}">${texto}</span></td>
+                <td>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button onclick="ajustarStock('${tablaParaAjuste}','${inv.id}',${inv.cantidad})" class="btn btn-secondary btn-sm">🔢</button>
+                        ${btnEditar}
+                    </div>
+                </td>
+            </tr>`;
         });
 
         if (htmlRows === '') {
@@ -1714,8 +1811,34 @@ async function cargarInventarioLocal() {
             return;
         }
 
-        contenido.innerHTML = `<div class="table-container"><table class="data-table"><thead><tr><th>Producto</th><th>Categoría</th><th>Cantidad</th><th>Stock Mín.</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${htmlRows}</tbody></table></div>`;
-    } catch (error) { contenido.innerHTML = `<div class="card-body"><div class="alert alert-danger">Error: ${error.message}</div></div>`; }
+        contenido.innerHTML = `
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            ${esConsolidado ? '<th>Sede</th>' : ''}
+                            <th>Producto</th>
+                            <th>Categoría</th>
+                            <th>Cantidad</th>
+                            <th>Stock Mín.</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>${htmlRows}</tbody>
+                </table>
+            </div>`;
+    } catch (error) { 
+        contenido.innerHTML = `<div class="card-body"><div class="alert alert-danger">Error: ${error.message}</div></div>`; 
+    }
+}
+
+function getTablaPorSede(nombre) {
+    if (nombre === 'Alcalá') return 'inventario_alcala';
+    if (nombre === 'Local 01') return 'inventario_01';
+    if (nombre === 'Jordán') return 'inventario_jordan';
+    if (nombre === 'Digital') return 'inventario_digital';
+    return 'inventario_alcala';
 }
 
 async function ajustarStock(tabla, id, actual) {
@@ -1846,7 +1969,42 @@ async function cargarEstadisticasLocales() {
     const alertasEl = document.getElementById('alertasGlobal'); if (alertasEl) alertasEl.textContent = todosInv.filter(i => i.cantidad <= (i.stock_minimo || 5)).length;
     const localesData = [{ nombre: 'Alcalá', icono: '🏪', data: inventarios.alcala }, { nombre: 'Local 01', icono: '🏬', data: inventarios.local01 }, { nombre: 'Jordán', icono: '🏢', data: inventarios.jordan }];
     const grid = document.getElementById('localesStatsGrid');
-    if (grid) { grid.innerHTML = localesData.map(local => { const stats = calcularEstadisticasLocal(local.data); return `<div class="local-card"><div class="local-card-header"><h4>${local.icono} ${local.nombre}</h4><span class="badge badge-success">Activo</span></div><div class="local-card-body"><div class="local-stat-row"><span class="label">Stock Total</span><span class="value">${stats.stockTotal.toLocaleString('es-CO')}</span></div><div class="local-stat-row"><span class="label">Productos</span><span class="value">${stats.productos}</span></div><div class="local-stat-row"><span class="label">Stock Bajo</span><span class="value" style="color:${stats.stockBajo > 0 ? '#f59e0b' : '#10b981'}">${stats.stockBajo}</span></div><div class="local-stat-row"><span class="label">Agotados</span><span class="value" style="color:${stats.agotados > 0 ? '#ef4444' : '#10b981'}">${stats.agotados}</span></div><div class="local-stat-row"><span class="label">Valor Est.</span><span class="value">$${Math.round(stats.valor / 1000000)}M</span></div></div></div>`; }).join(''); }
+    if (grid) {
+        grid.innerHTML = localesData.map(local => {
+            const stats = calcularEstadisticasLocal(local.data);
+            return `
+                <div class="local-card" style="padding: 1.5rem; border-radius: 1.25rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; background: white;">
+                    <div class="local-card-header" style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem;">
+                        <h4 style="font-size: 1.4rem; font-weight: 800; color: #1e293b; margin: 0;">${local.icono} ${local.nombre}</h4>
+                        <span class="badge badge-success" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 1rem;">Activo</span>
+                    </div>
+                    <div class="local-card-body" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div class="local-stat-row" style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <span class="label" style="color: #64748b; font-size: 1rem; font-weight: 500;">Stock Total</span>
+                            <span class="value" style="font-size: 1.6rem; font-weight: 800; color: #ff6b00;">${stats.stockTotal.toLocaleString('es-CO')}</span>
+                        </div>
+                        <div class="local-stat-row" style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <span class="label" style="color: #64748b; font-size: 1rem; font-weight: 500;">Productos</span>
+                            <span class="value" style="font-size: 1.2rem; font-weight: 700; color: #334155;">${stats.productos}</span>
+                        </div>
+                        <div class="local-stat-row" style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <span class="label" style="color: #64748b; font-size: 1rem; font-weight: 500;">Valor Estimado</span>
+                            <span class="value" style="font-size: 1.4rem; font-weight: 800; color: #10b981;">$${Math.round(stats.valor / 1000000)}M</span>
+                        </div>
+                        <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                            <div style="flex: 1; background: #fff7ed; padding: 0.75rem; border-radius: 0.75rem; text-align: center; border: 1px solid #ffedd5;">
+                                <div style="font-size: 0.75rem; color: #c2410c; font-weight: 700; text-transform: uppercase;">Stock Bajo</div>
+                                <div style="font-size: 1.25rem; font-weight: 800; color: ${stats.stockBajo > 0 ? '#f59e0b' : '#10b981'}">${stats.stockBajo}</div>
+                            </div>
+                            <div style="flex: 1; background: #fef2f2; padding: 0.75rem; border-radius: 0.75rem; text-align: center; border: 1px solid #fee2e2;">
+                                <div style="font-size: 0.75rem; color: #b91c1c; font-weight: 700; text-transform: uppercase;">Agotados</div>
+                                <div style="font-size: 1.25rem; font-weight: 800; color: ${stats.agotados > 0 ? '#ef4444' : '#10b981'}">${stats.agotados}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
 
     // Llenar resumen de rendimiento
     const resumenEl = document.getElementById('resumenRendimiento');
@@ -2187,85 +2345,7 @@ async function cargarReporteMetodos() {
     } catch (e) { body.innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`; }
 }
 
-async function cargarReportePromedioVentas() {
-    const contenedor = document.getElementById('contenidoReporte');
-    const body = document.getElementById('bodyReporte');
-    const titulo = document.getElementById('tituloReporte');
-    if (!contenedor || !body) return;
-
-    contenedor.style.display = 'block';
-    titulo.textContent = 'Análisis de Promedios';
-    tituloReporteActual = 'Promedios_Venta';
-    body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Calculando...</p></div>';
-
-    try {
-        const { data: ventas, error } = await supabaseClient.from('ventas').select('*').eq('estado', 'pagado');
-        if (error) throw error;
-
-        const totalVentas = ventas.reduce((s, v) => s + (v.total || 0), 0);
-        const ticketPromedio = ventas.length > 0 ? totalVentas / ventas.length : 0;
-
-        // Ventas por día de semana
-        const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        const diasStats = [0, 0, 0, 0, 0, 0, 0];
-
-        ventas.forEach(v => {
-            const d = new Date(v.created_at).getDay();
-            diasStats[d]++;
-        });
-
-        datosReporteActual = [
-            { Indicador: 'Ticket Promedio', Valor: '$' + formatearPrecio(ticketPromedio) },
-            { Indicador: 'Total Transacciones', Valor: ventas.length },
-            ...dias.map((d, i) => ({ Indicador: 'Ventas en ' + d, Valor: diasStats[i] }))
-        ];
-        columnasReporteActual = ['Indicador', 'Valor'];
-
-        body.innerHTML = `
-            <div class="stats-grid" style="margin-bottom:2rem;">
-                <div class="stat-card">
-                    <div class="stat-icon blue">🎟️</div>
-                    <div class="stat-info">
-                        <h3>$${formatearPrecio(ticketPromedio)}</h3>
-                        <p>Ticket Promedio</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon green">🛒</div>
-                    <div class="stat-info">
-                        <h3>${ventas.length}</h3>
-                        <p>Transacciones Totales</p>
-                    </div>
-                </div>
-            </div>
-            
-            <h4>Distribucíon por D́a de la Semana</h4>
-            <div style="height:300px; margin-top:1rem;">
-                <canvas id="chartDiasSemana"></canvas>
-            </div>
-        `;
-
-        setTimeout(() => {
-            const ctx = document.getElementById('chartDiasSemana');
-            if (ctx) {
-                new Chart(ctx.getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: dias,
-                        datasets: [{
-                            label: 'Cantidad de Ventas',
-                            data: diasStats,
-                            backgroundColor: '#6366f1',
-                            borderRadius: 6
-                        }]
-                    },
-                    options: { responsive: true, scales: { y: { beginAtZero: true } } }
-                });
-            }
-        }, 100);
-
-    } catch (e) { body.innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`; }
-}
+// Función cargarReportePromedioVentas eliminada por duplicidad (ver línea 7927)
 
 function exportarReporte() {
     if (!datosReporteActual || datosReporteActual.length === 0) {
@@ -2818,6 +2898,20 @@ async function cargarVentasRango(rango, resetDate = false) {
 
             textoFecha = hoy.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
             if (titulo) titulo.textContent = '📊 Ventas del Mes';
+        } else if (rango === 'quincena') {
+            const diaDelMes = hoy.getDate();
+            if (diaDelMes <= 15) {
+                fechaInicio.setDate(1);
+                fechaFin.setDate(15);
+            } else {
+                fechaInicio.setDate(16);
+                fechaFin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+            }
+            fechaInicio.setHours(0, 0, 0, 0);
+            fechaFin.setHours(23, 59, 59, 999);
+
+            textoFecha = `${fechaInicio.toLocaleDateString('es-CO')} - ${fechaFin.toLocaleDateString('es-CO')}`;
+            if (titulo) titulo.textContent = '📊 Ventas de la Quincena';
         }
 
         const fechaEl = document.getElementById('fechaHoy');
@@ -2858,15 +2952,70 @@ function navegarPeriodoVentas(delta) {
         fechaBaseVentas.setDate(fechaBaseVentas.getDate() + (delta * 7));
     } else if (rangoActual === 'mes') {
         fechaBaseVentas.setMonth(fechaBaseVentas.getMonth() + delta);
+    } else if (rangoActual === 'quincena') {
+        const dia = fechaBaseVentas.getDate();
+        if (delta > 0) {
+            if (dia <= 15) { fechaBaseVentas.setDate(16); }
+            else { fechaBaseVentas.setMonth(fechaBaseVentas.getMonth() + 1); fechaBaseVentas.setDate(1); }
+        } else {
+            if (dia > 15) { fechaBaseVentas.setDate(1); }
+            else { fechaBaseVentas.setMonth(fechaBaseVentas.getMonth() - 1); fechaBaseVentas.setDate(16); }
+        }
     }
 
     cargarVentasRango(rangoActual);
 }
 window.navegarPeriodoVentas = navegarPeriodoVentas;
 
+async function cargarVentasRangoPersonalizado() {
+    const desde = document.getElementById('ventasFechaDesde')?.value;
+    const hasta = document.getElementById('ventasFechaHasta')?.value;
+    if (!desde || !hasta) {
+        showToast('Selecciona ambas fechas', 'warning');
+        return;
+    }
+    const statsContainer = document.getElementById('ventasDiaStats');
+    const tbody = document.getElementById('tbodyVentasDia');
+    const fechaEl = document.getElementById('fechaHoy');
+
+    // Desactivar botones de rango
+    document.querySelectorAll('[id^="btnVentas"]').forEach(btn => {
+        btn.classList.remove('btn-active');
+        btn.classList.add('btn-outline');
+    });
+    if (fechaEl) fechaEl.textContent = `${desde} → ${hasta}`;
+
+    try {
+        const fechaInicio = new Date(desde + 'T00:00:00');
+        const fechaFin = new Date(hasta + 'T23:59:59.999');
+
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-center">Cargando...</td></tr>';
+
+        const { data, error } = await supabaseClient
+            .from('ventas')
+            .select('*')
+            .gte('created_at', fechaInicio.toISOString())
+            .lte('created_at', fechaFin.toISOString())
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        ventasActuales = data || [];
+        renderizarTablaVentas(ventasActuales, statsContainer, tbody);
+        actualizarGraficosVentas(ventasActuales);
+    } catch (error) {
+        console.error('Error cargando ventas rango personalizado:', error);
+        if (statsContainer) statsContainer.innerHTML = '<div class="alert alert-warning">Error cargando datos</div>';
+    }
+}
+window.cargarVentasRangoPersonalizado = cargarVentasRangoPersonalizado;
+
 function renderizarTablaVentas(ventas, statsContainer, tbody) {
-    const totalVentas = ventas.reduce((sum, v) => sum + (v.total || 0), 0);
-    const totalUnidades = ventas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
+    const ventasActivas = ventas.filter(v => v.estado_venta !== 'Anulada');
+    const ventasAnuladas = ventas.filter(v => v.estado_venta === 'Anulada');
+    const totalVentas = ventasActivas.reduce((sum, v) => sum + (v.total || 0), 0);
+    const totalUnidades = ventasActivas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
+    const totalAnulado = ventasAnuladas.reduce((sum, v) => sum + (v.total || 0), 0);
 
     if (statsContainer) {
         statsContainer.innerHTML = `
@@ -2880,7 +3029,7 @@ function renderizarTablaVentas(ventas, statsContainer, tbody) {
             <div class="stat-card">
                 <div class="stat-icon blue">🛒</div>
                 <div class="stat-info">
-                    <h3>${ventas.length}</h3>
+                    <h3>${ventasActivas.length}</h3>
                     <p>Transacciones</p>
                 </div>
             </div>
@@ -2891,16 +3040,25 @@ function renderizarTablaVentas(ventas, statsContainer, tbody) {
                     <p>Unidades Vendidas</p>
                 </div>
             </div>
+            ${ventasAnuladas.length > 0 ? `
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#fee2e2; color:#ef4444;">🚫</div>
+                <div class="stat-info">
+                    <h3 style="color:#ef4444;">${ventasAnuladas.length} (-$${formatearPrecio(totalAnulado)})</h3>
+                    <p>Anuladas</p>
+                </div>
+            </div>` : ''}
         `;
     }
 
     if (tbody) {
         if (ventas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--gray-500);">No hay ventas en este periodo</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--gray-500);">No hay ventas en este periodo</td></tr>';
         } else {
-            // Actualizar encabezado si es necesario (asumiendo que está en el HTML)
-            // En admin.html ya lo tiene
             tbody.innerHTML = ventas.map(v => {
+                const isAnulada = v.estado_venta === 'Anulada';
+                const rowStyle = isAnulada ? 'text-decoration: line-through; opacity: 0.5; background: #fef2f2;' : '';
+
                 let metodoDisplay = `<span class="badge badge-success">${v.metodo_pago || 'N/A'}</span>`;
                 if (v.pago_desglose && Object.keys(v.pago_desglose).length > 1) {
                     const desglose = Object.entries(v.pago_desglose)
@@ -2909,7 +3067,6 @@ function renderizarTablaVentas(ventas, statsContainer, tbody) {
                     metodoDisplay += desglose;
                 }
 
-                // Formatear vouchers multiples y fotos
                 let voucherDisplay = '-';
                 if (v.voucher_code) {
                     const fotos = v.comprobantes_fotos || {};
@@ -2924,8 +3081,12 @@ function renderizarTablaVentas(ventas, statsContainer, tbody) {
                     }).join('');
                 }
 
+                const estadoBadge = isAnulada
+                    ? '<span class="badge badge-danger" style="font-size:0.7rem;">🚫 Anulada</span>'
+                    : '<span class="badge badge-success" style="font-size:0.7rem;">✅ OK</span>';
+
                 return `
-                <tr>
+                <tr style="${rowStyle}">
                     <td>
                         <div>${new Date(v.created_at).toLocaleDateString('es-CO')}</div>
                         <small style="color:#888">${formatearHora(v.created_at)}</small>
@@ -2936,6 +3097,7 @@ function renderizarTablaVentas(ventas, statsContainer, tbody) {
                     <td><strong>$${formatearPrecio(v.total)}</strong></td>
                     <td>${metodoDisplay}</td>
                     <td><small style="font-weight:600; color:var(--primary)">${voucherDisplay}</small></td>
+                    <td>${estadoBadge}</td>
                 </tr>
                 `;
             }).join('');
@@ -2953,16 +3115,7 @@ function exportarVentasDia() {
 // ---------------------------------------------------------------
 // ALERTAS DE STOCK
 // ---------------------------------------------------------------
-async function cargarAlertasStock() {
-    await cargarTodosLosInventarios();
-    const alertas = [];
-    const procesarLocal = (inv, nombre) => { inv.forEach(i => { if (i.cantidad <= (i.stock_minimo || 5)) { alertas.push({ local: nombre, id_producto: i.id_producto, producto: productos.find(p => p.id_producto === i.id_producto)?.nombre || i.id_producto, cantidad: i.cantidad, stockMin: i.stock_minimo || 5, tipo: i.cantidad === 0 ? 'agotado' : 'bajo' }); } }); };
-    procesarLocal(inventarios.alcala, '🏪 Alcalá'); procesarLocal(inventarios.local01, '🏬 Local 01'); procesarLocal(inventarios.jordan, '🏢 Jordán');
-    const contenido = document.getElementById('contenidoAlertas'); if (!contenido) return;
-    if (alertas.length === 0) { contenido.innerHTML = '<div class="card-body"><div class="alert alert-success">✅ Todo el inventario está en orden</div></div>'; return; }
-    alertas.sort((a, b) => a.cantidad - b.cantidad);
-    contenido.innerHTML = `<div class="card-header"><h3>⚠️ ${alertas.length} alertas</h3></div><div class="table-container"><table class="data-table"><thead><tr><th>Estado</th><th>Local</th><th>Producto</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody>${alertas.map(a => `<tr><td><span class="badge ${a.tipo === 'agotado' ? 'badge-danger' : 'badge-warning'}">${a.tipo === 'agotado' ? '❌ AGOTADO' : '⚠️ BAJO'}</span></td><td>${a.local}</td><td><strong>${a.producto}</strong></td><td style="font-weight:700; color:${a.tipo === 'agotado' ? 'var(--danger)' : 'var(--warning)'}">${a.cantidad}</td><td>${a.stockMin}</td></tr>`).join('')}</tbody></table></div>`;
-}
+// Alertas de Stock Redundante Eliminado (Se mantiene la implementación en la línea 10306)
 
 
 
@@ -4860,6 +5013,16 @@ async function cargarEventos() {
                     .join(', ');
             }
 
+            const fechaFin = ev.fecha_fin ? new Date(ev.fecha_fin + 'T23:59:59') : null;
+            const hoy = new Date();
+            let estadoVisual = ev.estado;
+            let badgeClass = ev.estado === 'Finalizado' ? 'badge-danger' : 'badge-success';
+
+            if (ev.estado === 'Activo' && fechaFin && fechaFin < hoy) {
+                estadoVisual = 'VENCIDO (Pendiente Cierre)';
+                badgeClass = 'badge-warning';
+            }
+
             return `
             <tr>
                 <td><strong>${ev.nombre_evento}</strong></td>
@@ -4867,7 +5030,7 @@ async function cargarEventos() {
                 <td>${ev.fecha_fin ? new Date(ev.fecha_fin).toLocaleDateString() : 'N/A'}</td>
                 <td>${ev.ubicación || 'N/A'}</td>
                 <td style="font-size:0.85rem;">${personal}</td>
-                <td><span class="badge ${ev.estado === 'Finalizado' ? 'badge-danger' : 'badge-success'}">${ev.estado}</span></td>
+                <td><span class="badge ${badgeClass}">${estadoVisual}</span></td>
                 <td>
                     <div style="display:flex; gap:0.3rem;">
                         <button class="btn btn-sm btn-outline-info" onclick="editarEvento('${ev.id}')" title="Editar Evento">✏️</button>
@@ -4882,11 +5045,19 @@ async function cargarEventos() {
 
         // Actualizar stats
         const hoy = new Date();
-        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString();
-        document.getElementById('statsEventosMes').textContent = data.filter(e => e.fecha_inicio >= inicioMes).length;
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const elStatsMes = document.getElementById('statEventosMes') || document.getElementById('statsEventosMes');
+        if (elStatsMes) {
+            const countMes = data.filter(e => {
+                const fInicio = new Date(e.fecha_inicio);
+                return fInicio >= inicioMes;
+            }).length;
+            elStatsMes.textContent = countMes;
+        }
 
         const ingresosTotales = data.reduce((sum, e) => sum + (e.ganancias || 0), 0);
-        document.getElementById('statsIngresosEventos').textContent = '$' + formatearPrecio(ingresosTotales);
+        const elStatsVentas = document.getElementById('statVentasEventos') || document.getElementById('statsIngresosEventos');
+        if (elStatsVentas) elStatsVentas.textContent = '$' + formatearPrecio(ingresosTotales);
 
     } catch (err) {
         showToast('Error al cargar eventos: ' + err.message, 'error');
@@ -5127,30 +5298,22 @@ async function cargarConfiguracion() {
         const config = (data || []).reduce((acc, item) => { acc[item.clave] = item.valor; return acc; }, {});
         const campos = {
             'configWhatsapp': 'whatsapp',
-            'configFacebook': 'facebook',
-            'configInstagram': 'instagram',
-            'configTiktok': 'tiktok',
-            'configEmail': 'email',
-            'configTelefono': 'telefono',
-            'configDireccion': 'direccion',
             'configLogo': 'logo_url',
             'configNombre': 'nombre_tienda',
             'configSlogan': 'slogan',
             'configStockMinimo': 'stock_minimo',
             'configMoneda': 'moneda',
-            'configHorarioAlcala': 'horario_alcala',
-            'configTelefonoAlcala': 'telefono_alcala',
-            'configHorarioLocal01': 'horario_local01',
-            'configTelefonoLocal01': 'telefono_local01',
-            'configHorarioJordan': 'horario_jordan',
-            'configTelefonoJordan': 'telefono_jordan',
             'configAiIndex': 'ai_key_index',
             'configAiTienda': 'ai_key_tienda',
             'configAiAdmin': 'ai_key_admin',
             'configAiPos': 'ai_key_pos',
             'configAiExtra1': 'ai_key_extra1',
             'configAiExtra2': 'ai_key_extra2',
-            'configAiExtra3': 'ai_key_extra3'
+            'configAiExtra3': 'ai_key_extra3',
+            'configNequiClientId': 'nequi_client_id',
+            'configNequiClientSecret': 'nequi_client_secret',
+            'configNequiApiKey': 'nequi_api_key',
+            'configNequiAmbiente': 'nequi_ambiente'
         };
         Object.entries(campos).forEach(([elId, clave]) => {
             const el = document.getElementById(elId);
@@ -5170,6 +5333,7 @@ async function cargarConfiguracion() {
         cargarMetodosPagoConfig();
         if (typeof cargarLogsIA === 'function') cargarLogsIA();
         if (typeof cargarTelemetriaIA === 'function') cargarTelemetriaIA();
+        if (typeof cargarLogsNequi === 'function') cargarLogsNequi();
     } catch (error) {
         if (window.registrarLogSistema) window.registrarLogSistema("error_sistema", 'Error cargando configuración:', error);
     }
@@ -5186,31 +5350,23 @@ async function guardarConfiguracion() {
     }
     const configs = [
         { clave: 'whatsapp', valor: document.getElementById('configWhatsapp').value.trim() },
-        { clave: 'facebook', valor: document.getElementById('configFacebook').value.trim() },
-        { clave: 'instagram', valor: document.getElementById('configInstagram').value.trim() },
-        { clave: 'tiktok', valor: document.getElementById('configTiktok').value.trim() },
-        { clave: 'email', valor: document.getElementById('configEmail').value.trim() },
-        { clave: 'telefono', valor: document.getElementById('configTelefono').value.trim() },
-        { clave: 'direccion', valor: document.getElementById('configDireccion').value.trim() },
         { clave: 'logo_url', valor: logoUrl },
         { clave: 'nombre_tienda', valor: document.getElementById('configNombre').value.trim() },
         { clave: 'slogan', valor: document.getElementById('configSlogan').value.trim() },
         { clave: 'color_primary', valor: document.getElementById('configColor').value },
         { clave: 'stock_minimo', valor: document.getElementById('configStockMinimo').value.trim() },
         { clave: 'moneda', valor: document.getElementById('configMoneda').value },
-        { clave: 'horario_alcala', valor: document.getElementById('configHorarioAlcala').value.trim() },
-        { clave: 'telefono_alcala', valor: document.getElementById('configTelefonoAlcala').value.trim() },
-        { clave: 'horario_local01', valor: document.getElementById('configHorarioLocal01').value.trim() },
-        { clave: 'telefono_local01', valor: document.getElementById('configTelefonoLocal01').value.trim() },
-        { clave: 'horario_jordan', valor: document.getElementById('configHorarioJordan').value.trim() },
-        { clave: 'telefono_jordan', valor: document.getElementById('configTelefonoJordan').value.trim() },
         { clave: 'ai_key_index', valor: document.getElementById('configAiIndex').value.trim() },
         { clave: 'ai_key_tienda', valor: document.getElementById('configAiTienda').value.trim() },
         { clave: 'ai_key_admin', valor: document.getElementById('configAiAdmin').value.trim() },
         { clave: 'ai_key_pos', valor: document.getElementById('configAiPos').value.trim() },
         { clave: 'ai_key_extra1', valor: document.getElementById('configAiExtra1').value.trim() },
         { clave: 'ai_key_extra2', valor: document.getElementById('configAiExtra2').value.trim() },
-        { clave: 'ai_key_extra3', valor: document.getElementById('configAiExtra3').value.trim() }
+        { clave: 'ai_key_extra3', valor: document.getElementById('configAiExtra3').value.trim() },
+        { clave: 'nequi_client_id', valor: document.getElementById('configNequiClientId').value.trim() },
+        { clave: 'nequi_client_secret', valor: document.getElementById('configNequiClientSecret').value.trim() },
+        { clave: 'nequi_api_key', valor: document.getElementById('configNequiApiKey').value.trim() },
+        { clave: 'nequi_ambiente', valor: document.getElementById('configNequiAmbiente').value }
     ];
     try {
         for (const config of configs) {
@@ -5255,6 +5411,50 @@ async function cargarLogsIA() {
     }
 }
 window.cargarLogsIA = cargarLogsIA;
+
+async function cargarLogsNequi() {
+    const tbody = document.getElementById('tbodyLogsNequi');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando historial...</td></tr>';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('nequi_pagos_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay escaneos registrados aún.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(log => {
+            const fecha = new Date(log.created_at).toLocaleString('es-CO');
+            const colorEstado = log.estado === 'exitoso' ? '#10b981' : '#f43f5e';
+            const badge = `<span style="background:${colorEstado}22; color:${colorEstado}; padding:2px 8px; border-radius:12px; font-weight:700; font-size:0.75rem;">${log.estado.toUpperCase()}</span>`;
+            
+            return `
+                <tr>
+                    <td>${fecha}</td>
+                    <td style="font-family:monospace;">${log.referencia}</td>
+                    <td style="font-weight:700;">$ ${log.monto}</td>
+                    <td style="text-align:center;">${badge}</td>
+                    <td style="font-size:0.75rem; color:#64748b; font-family:monospace; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${log.metadata?.original_qr || ''}">
+                        ${log.metadata?.original_qr || '-'}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error('Error cargando logs Nequi:', e);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al conectar con la base de datos (Verifica tabla nequi_pagos_logs)</td></tr>';
+    }
+}
+window.cargarLogsNequi = cargarLogsNequi;
 
 // CIERRES
 // ---------------------------------------------------------------
@@ -5798,13 +5998,13 @@ async function verDetalleCierre(id) {
                         </div>
                     </div>
 
-                    <!-- ════════════ DETALLE DE PRODUCTOS (MUY AMPLIO) ════════════ -->
+                    <!-- ════════════ DETALLE DE PRODUCTOS (AGRUPADO) ════════════ -->
                     <div style="background:white; border:1px solid #e2e8f0; border-radius:1.5rem; overflow:hidden; margin-bottom:2.5rem; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
                         <div style="padding:1.25rem 1.5rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
                             <h4 style="margin:0; font-size:1rem; color:#1e293b; font-weight:800; text-transform:uppercase; display:flex; align-items:center; gap:0.75rem;">
                                 📦 Desglose Detallado de Productos
                             </h4>
-                            <span style="background:var(--primary); color:white; padding:0.4rem 1rem; border-radius:2rem; font-size:0.85rem; font-weight:800;">${(data.detalles_cierre || []).length} ÍTEMS VENDIDOS</span>
+                            <span style="background:var(--primary); color:white; padding:0.4rem 1rem; border-radius:2rem; font-size:0.85rem; font-weight:800;">${(data.detalles_cierre || []).length} ÍTEMS</span>
                         </div>
                         <div style="max-height:800px; overflow-y:auto;">
                             <table style="width:100%; border-collapse:collapse; font-size:1rem;">
@@ -5815,43 +6015,69 @@ async function verDetalleCierre(id) {
                                         <th style="padding:1.25rem 1.5rem; text-align:right; font-weight:800;">Precio Unit.</th>
                                         <th style="padding:1.25rem 1.5rem; text-align:right; font-weight:800;">Total Item</th>
                                         <th style="padding:1.25rem 1.5rem; text-align:left; font-weight:800; min-width:250px;">Estatus de Pago / Comprobante</th>
+                                        <th style="padding:1.25rem 1.5rem; text-align:center; font-weight:800;">Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${(data.detalles_cierre && data.detalles_cierre.length > 0) ?
-                data.detalles_cierre.map(p => `
-                                            <tr style="border-bottom:1px solid #f1f5f9; transition:all 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                    ${(() => {
+                    const items = data.detalles_cierre || [];
+                    if (items.length === 0) return '<tr><td colspan="6" style="padding:4rem; text-align:center;"> <div style="font-size:3rem; margin-bottom:1rem;">📦</div> <div style="color:#94a3b8; font-size:1.1rem; font-weight:600;">No hay registro detallado de productos para este cierre.</div></td></tr>';
+
+                    // Agrupar productos por nombre + precio
+                    const agrupados = {};
+                    items.forEach(p => {
+                        const nombre = p.producto || p.nombre_producto || p.nombre || 'Item';
+                        const precio = p.precio_unitario || p.precio || 0;
+                        const key = nombre + '|' + precio;
+                        const isAnulada = p.estado_venta === 'Anulada';
+                        if (!agrupados[key]) {
+                            agrupados[key] = { ...p, nombre, precio, cantidad: 0, total: 0, isAnulada, metodos: [] };
+                        }
+                        agrupados[key].cantidad += (p.cantidad || 1);
+                        agrupados[key].total += (p.total || 0);
+                        if (p.metodo_pago && !agrupados[key].metodos.includes(p.metodo_pago)) {
+                            agrupados[key].metodos.push(p.metodo_pago);
+                        }
+                    });
+
+                    return Object.values(agrupados).map(p => {
+                        const rowStyle = p.isAnulada ? 'text-decoration: line-through; opacity: 0.5; background: #fef2f2;' : '';
+                        const estadoBadge = p.isAnulada
+                            ? '<span style="background:#fee2e2; color:#ef4444; padding:0.3rem 0.75rem; border-radius:0.5rem; font-size:0.8rem; font-weight:700;">🚫 Anulada</span>'
+                            : '<span style="background:#ecfdf5; color:#059669; padding:0.3rem 0.75rem; border-radius:0.5rem; font-size:0.8rem; font-weight:700;">✅ OK</span>';
+
+                        return `
+                                            <tr style="border-bottom:1px solid #f1f5f9; transition:all 0.2s; ${rowStyle}" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='${p.isAnulada ? '#fef2f2' : 'transparent'}'">
                                                 <td style="padding:1.25rem 1.5rem; color:#1e293b;">
-                                                    <div style="font-weight:700; font-size:1.05rem; color:#0f172a;">${p.producto || p.nombre_producto || p.nombre || 'Item'}</div>
+                                                    <div style="font-weight:700; font-size:1.05rem; color:#0f172a;">${p.nombre}</div>
                                                     ${p.variante ? `<div style="font-size:0.85rem; color:#64748b; margin-top:0.25rem;">🎨 ${p.variante}</div>` : ''}
                                                 </td>
                                                 <td style="padding:1.25rem 1.5rem; text-align:center;">
                                                     <span style="background:#f1f5f9; padding:0.4rem 0.8rem; border-radius:0.5rem; font-weight:800;">${p.cantidad}</span>
                                                 </td>
-                                                <td style="padding:1.25rem 1.5rem; text-align:right; color:#475569;">$${formatearPrecio(p.precio_unitario || p.precio || 0)}</td>
-                                                <td style="padding:1.25rem 1.5rem; text-align:right; font-weight:800; color:#0f172a; font-size:1.1rem;">$${formatearPrecio(p.total || 0)}</td>
+                                                <td style="padding:1.25rem 1.5rem; text-align:right; color:#475569;">$${formatearPrecio(p.precio)}</td>
+                                                <td style="padding:1.25rem 1.5rem; text-align:right; font-weight:800; color:#0f172a; font-size:1.1rem;">$${formatearPrecio(p.total)}</td>
                                                 <td style="padding:1.25rem 1.5rem;">
                                                     <div style="background:#fff; border:1px solid #e2e8f0; padding:0.75rem; border-radius:0.75rem; display:inline-flex; flex-direction:column; gap:0.4rem; min-width:200px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                                                         <span style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; font-weight:800; color:#1e293b;">
-                                                            💳 ${p.metodo_pago || 'N/A'}
+                                                            💳 ${p.metodos.length > 0 ? p.metodos.join(' | ') : (p.metodo_pago || 'N/A')}
                                                         </span>
                                                         ${p.cuenta_id && mapaCuentas[p.cuenta_id] ? `<span style="display:flex; align-items:center; gap:0.5rem; font-size:0.75rem; color:#64748b; font-weight:600;">🏦 ${mapaCuentas[p.cuenta_id]}</span>` : ''}
                                                         <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; margin-top:0.25rem; padding-top:0.4rem; border-top:1px solid #f1f5f9;">
                                                             ${p.voucher_code ? `<span style="font-size:0.8rem; color:var(--primary); font-weight:700; background:rgba(255,107,0,0.05); padding:2px 6px; border-radius:4px;">🎫 ${p.voucher_code}</span>` : ''}
                                                             ${(p.comprobantes_fotos && p.comprobantes_fotos[p.metodo_pago]) ? `
                                                                 <a href="${p.comprobantes_fotos[p.metodo_pago]}" target="_blank" 
-                                                                   style="text-decoration:none; background:#ecfdf5; color:#059669; border:1px solid #34d399; padding:0.4rem 0.75rem; border-radius:0.5rem; font-size:0.8rem; font-weight:700; display:flex; align-items:center; gap:0.4rem; transition:0.2s;"
-                                                                   onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)'"
-                                                                   onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                                                                   style="text-decoration:none; background:#ecfdf5; color:#059669; border:1px solid #34d399; padding:0.4rem 0.75rem; border-radius:0.5rem; font-size:0.8rem; font-weight:700; display:flex; align-items:center; gap:0.4rem; transition:0.2s;">
                                                                     🖼️ Ver Comprobante
                                                                 </a>` : ''}
                                                         </div>
                                                     </div>
                                                 </td>
+                                                <td style="padding:1.25rem 1.5rem; text-align:center;">${estadoBadge}</td>
                                             </tr>
-                                        `).join('')
-                : '<tr><td colspan="5" style="padding:4rem; text-align:center;"> <div style="font-size:3rem; margin-bottom:1rem;">📦</div> <div style="color:#94a3b8; font-size:1.1rem; font-weight:600;">No hay registro detallado de productos para este cierre.</div></td></tr>'
-            }
+                                        `;
+                    }).join('');
+                })()}
                                 </tbody>
                             </table>
                         </div>
@@ -6831,7 +7057,15 @@ async function cargarReporteMetodos() {
     const tituloContainer = document.getElementById('tituloReporte');
     tituloContainer.innerHTML = '<i class="fas fa-credit-card" style="margin-right:10px; color:#ff6b00;"></i> Ventas por Método de Pago';
 
-    body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Analizando transacciones...</p></div>';
+    body.innerHTML = `
+        <div style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:1rem; margin-bottom:1.5rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+             <div style="display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-info-circle" style="color:#3b82f6;"></i>
+                <span style="color:#475569; font-weight:500;">Periodo: <strong style="color:#1e293b;">Mes Actual</strong> | Generado: <strong style="color:#1e293b;">${new Date().toLocaleString()}</strong></span>
+             </div>
+             <div style="color:#64748b; font-size:0.85rem;">Sede: <span class="badge badge-info" style="font-size:0.75rem;">Todas las Sedes</span></div>
+        </div>
+        <div class="loading"><div class="spinner"></div><p>Analizando transacciones...</p></div>`;
 
     try {
         // Consultar ventas de los últimos 30 días o todo el mes actual
@@ -6967,21 +7201,35 @@ async function cargarReporteMetodos() {
             </div>
         `;
 
-        // Pequeño helper para colores consistentes
-        function getColorMetodo(metodo) {
-            const colors = {
-                'Efectivo': '#10b981', // Verde
-                'Nequi': '#ec4899', // Rosa
-                'Daviplata': '#ef4444', // Rojo
-                'Tarjeta': '#3b82f6', // Azul
-                'Transferencia': '#8b5cf6', // Violeta
-                'Credito': '#f59e0b', // Naranja
-                'Sistecredito': '#06b6d4' // Cyan
-            };
-            return colors[metodo.split(' ')[0]] || '#94a3b8'; // Gris por defecto
-        }
 
         body.innerHTML = html;
+
+        // 4. Inicializar Gráfico después de un pequeño delay
+        setTimeout(() => {
+            const ctx = document.getElementById('chartMetodosPago');
+            if (ctx && reporteArray.length > 0) {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: reporteArray.map(r => r.metodo),
+                        datasets: [{
+                            data: reporteArray.map(r => r.total),
+                            backgroundColor: reporteArray.map(r => getColorMetodo(r.metodo)),
+                            borderWidth: 2,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
+        }, 100);
 
         // Guardar datos globales para exportación si se requiere
         window.datosReporteActual = reporteArray;
@@ -7882,7 +8130,7 @@ async function cargarReportePromedioVentas() {
                         </tr>
                     </thead>
                     <tbody>
-                        ${fechas.reverse().slice(0, 30).map(f => {
+                        ${[...fechas].reverse().slice(0, 30).map(f => {
             const diaTotal = ventasPorDia[f].total;
             const diff = diaTotal - promedioGeneral;
             const diffPerc = ((diff / promedioGeneral) * 100).toFixed(1);
@@ -7893,9 +8141,14 @@ async function cargarReportePromedioVentas() {
                                     <td style="font-weight:700;">$${formatearPrecio(diaTotal)}</td>
                                     <td>${Object.keys(ventasPorDia[f].porLocal).join(', ')}</td>
                                     <td>
-                                        <span style="color:${color}; font-weight:700;">
-                                            ${diff >= 0 ? '?' : '?'} ${Math.abs(diffPerc)}%
-                                        </span>
+                                        <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                                            <span style="color:${color}; font-weight:700; font-size:1rem;">
+                                                ${diff >= 0 ? '▲' : '▼'} ${Math.abs(diffPerc)}%
+                                            </span>
+                                            <span style="color:${color}; font-size:0.75rem; opacity:0.85;">
+                                                ${diff >= 0 ? '+' : '-'}$${formatearPrecio(Math.abs(diff))} vs prom.
+                                            </span>
+                                        </div>
                                     </td>
                                 </tr>
                             `;
@@ -7905,15 +8158,15 @@ async function cargarReportePromedioVentas() {
             </div>
         `;
 
-        // Gráfico
+        // Gráfico (Usamos los arrays originales que vienen ordenados por fecha ascendente)
         const ctx = document.getElementById('chartPromedioVentas').getContext('2d');
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: fechas.reverse(),
+                labels: fechas, // Ya están ordenados ASC (1, 2, 3...)
                 datasets: [{
                     label: 'Venta Diaria',
-                    data: totales.reverse(),
+                    data: totales, // Ya están ordenados ASC
                     borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     borderWidth: 3,
@@ -9490,7 +9743,7 @@ async function cargarTraslados() {
     try {
         const { data, error } = await supabaseClient
             .from('movimientos_transferencia')
-            .select('*, productos(nombre)') // Attempt to join if FK exists, else fallback
+            .select('*') 
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -10234,7 +10487,7 @@ async function cargarAlertasStock() {
                                 <td>${a.producto.referencia || '-'}</td>
                                 <td><span class="badge ${a.tipo === 'critico' ? 'badge-danger' : 'badge-warning'}">${a.mensaje}</span></td>
                                 <td>
-                                    <button class="btn-icon blue" onclick="editarProducto('${a.producto.id}')" title="Ver Producto">✏️</button>
+                                    <button class="btn btn-primary btn-sm" onclick="window.editarProducto('${a.producto.id}')" title="Editar Producto">✏️ Editar</button>
                                 </td>
                             </tr>
                         `).join('')}

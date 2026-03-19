@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -567,7 +567,6 @@
                         <a href="#" data-section="inventario">📋 Inventario</a>
                         <a href="#" data-section="traslados">🔄 Traslados</a>
                         <a href="#" data-section="contenido">📄 Contenido del Sitio</a>
-                        <a href="#" data-section="alertas">⚠️ Alertas Stock</a>
                     </div>
                 </div>
 
@@ -683,7 +682,6 @@
                     <a href="#" data-section="inventario" onclick="toggleMobileMenu()">📋 Inventario</a>
                     <a href="#" data-section="traslados" onclick="toggleMobileMenu()">🔄 Traslados</a>
                     <a href="#" data-section="contenido" onclick="toggleMobileMenu()">📄 Contenido del Sitio</a>
-                    <a href="#" data-section="alertas" onclick="toggleMobileMenu()">⚠️ Alertas Stock</a>
                 </div>
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">💵 Finanzas</div>
@@ -739,21 +737,21 @@
                 </div>
 
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('inventario')" style="cursor:pointer;">
                         <div class="stat-icon orange">📦</div>
                         <div class="stat-info">
                             <h3 id="statProductos">-</h3>
                             <p>Productos Activos</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('inventario')" style="cursor:pointer;">
                         <div class="stat-icon green">📊</div>
                         <div class="stat-info">
                             <h3 id="statStockTotal">-</h3>
                             <p>Stock Total</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('inventario')" style="cursor:pointer;">
                         <div class="stat-icon green">💲</div>
                         <div class="stat-info">
                             <h3 id="statValorInventario">$0</h3>
@@ -761,28 +759,28 @@
                         </div>
                     </div>
                     <!-- LEADS RESTAURADOS -->
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('clientes')" style="cursor:pointer;">
                         <div class="stat-icon purple">🤖</div>
                         <div class="stat-info">
                             <h3 id="statLeadsHoy">0</h3>
                             <p>Leads IA Hoy</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('clientes')" style="cursor:pointer;">
                         <div class="stat-icon blue">📅</div>
                         <div class="stat-info">
                             <h3 id="statLeadsMes">0</h3>
                             <p>Leads IA Mes</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('ventas')" style="cursor:pointer;">
                         <div class="stat-icon blue">💰</div>
                         <div class="stat-info">
                             <h3 id="statVentasHoy">$0</h3>
                             <p>Ventas Hoy</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('clientes')" style="cursor:pointer;">
                         <div class="stat-icon red">👥</div>
                         <div class="stat-info">
                             <h3 id="statDeudores">0</h3>
@@ -792,28 +790,28 @@
                 </div>
 
                 <div class="stats-grid" style="margin-top:1rem;">
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('inventario')" style="cursor:pointer;">
                         <div class="stat-icon yellow">⚠️</div>
                         <div class="stat-info">
                             <h3 id="statStockBajo">-</h3>
                             <p>Stock Bajo</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('inventario')" style="cursor:pointer;">
                         <div class="stat-icon red">❌</div>
                         <div class="stat-info">
                             <h3 id="statAgotados">-</h3>
                             <p>Agotados</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('clientes')" style="cursor:pointer;">
                         <div class="stat-icon purple">💳</div>
                         <div class="stat-info">
                             <h3 id="statDeudaTotal">$0</h3>
                             <p>Por Cobrar (Deudores)</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navegarASeccion('proveedores')" style="cursor:pointer;">
                         <div class="stat-icon orange">🏭</div>
                         <div class="stat-info">
                             <h3 id="statProveedores">$0</h3>
@@ -860,36 +858,7 @@
                     <p>Análisis detallado del inventario por sede</p>
                 </div>
 
-                <div class="stats-grid" style="margin-bottom:2rem;">
-                    <div class="stat-card">
-                        <div class="stat-icon blue">🏷️</div>
-                        <div class="stat-info">
-                            <h3 id="totalProductosGlobal">-</h3>
-                            <p>Productos en Catálogo</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon green">📦</div>
-                        <div class="stat-info">
-                            <h3 id="totalUnidadesGlobal">-</h3>
-                            <p>Unidades Totales</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon orange">💰</div>
-                        <div class="stat-info">
-                            <h3 id="valorInventarioGlobal">-</h3>
-                            <p>Valor Inventario</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon red">🚨</div>
-                        <div class="stat-info">
-                            <h3 id="alertasGlobal">-</h3>
-                            <p>Alertas Activas</p>
-                        </div>
-                    </div>
-                </div>
+                <!-- Métricas Globales eliminadas por redundancia -->
 
                 <div class="locales-grid" id="localesStatsGrid">
                     <div class="loading">
@@ -2086,6 +2055,8 @@
                             <button type="button" class="btn btn-outline btn-sm"
                                 onclick="cargarVentasRango('semana', true)" id="btnVentasSemana">Semana</button>
                             <button type="button" class="btn btn-outline btn-sm"
+                                onclick="cargarVentasRango('quincena', true)" id="btnVentasQuincena">Quincena</button>
+                            <button type="button" class="btn btn-outline btn-sm"
                                 onclick="cargarVentasRango('mes', true)" id="btnVentasMes">Mes</button>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -2095,6 +2066,15 @@
                                 style="color:var(--secondary); font-size:1rem; font-weight:700; min-width:140px; text-align:center;"></span>
                             <button onclick="navegarPeriodoVentas(1)" class="btn btn-outline btn-sm"
                                 title="Periodo Siguiente">▶</button>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.4rem; margin-left:0.5rem;">
+                            <input type="date" id="ventasFechaDesde" class="form-control"
+                                style="width:auto; font-size:0.85rem; padding:0.3rem 0.5rem;">
+                            <span style="color:var(--gray); font-size:0.85rem;">a</span>
+                            <input type="date" id="ventasFechaHasta" class="form-control"
+                                style="width:auto; font-size:0.85rem; padding:0.3rem 0.5rem;">
+                            <button onclick="cargarVentasRangoPersonalizado()" class="btn btn-primary btn-sm"
+                                title="Buscar por rango">🔍</button>
                         </div>
                         <div style="margin-left:auto; display:flex; gap:0.5rem;">
                             <button onclick="exportarVentasExcel()" class="btn btn-success btn-sm"
@@ -2147,6 +2127,7 @@
                                         <th>Total</th>
                                         <th>Método</th>
                                         <th>Ref./Voucher</th>
+                                        <th>Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbodyVentasDia"></tbody>
@@ -2261,6 +2242,7 @@
                     <select id="inventarioLocal" class="form-control" style="max-width:300px;"
                         onchange="cargarInventarioLocal()">
                         <option value="">-- Seleccionar Local --</option>
+                        <option value="todos">🌍 Todos los locales</option>
                         <option value="inventario_alcala">🏪 Alcalá</option>
                         <option value="inventario_01">🏬 Local 01</option>
                         <option value="inventario_jordan">🏢 Jordán</option>
@@ -2388,23 +2370,6 @@
                 </div>
             </section>
 
-            <!-- ═══════════════════ ALERTAS ═══════════════════ -->
-            <section id="alertasSection" class="section">
-                <div class="page-header">
-                    <h1>Alertas de Stock</h1>
-                    <p>Productos que requieren atención</p>
-                </div>
-                <div class="actions-bar"><button onclick="cargarAlertasStock()" class="btn btn-secondary">🔄
-                        Actualizar</button></div>
-                <div id="contenidoAlertas" class="card">
-                    <div class="card-body">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <p>Cargando alertas...</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             <!-- ═══════════════════ CIERRES DE CAJA ═══════════════════ -->
             <section id="cierresSection" class="section">
@@ -4681,27 +4646,36 @@
                             <div class="color-picker-group"><input type="color" id="configColor" value="#ff6b00"
                                     class="color-preview"></div>
                         </div>
-                    </div>
-                    <div class="config-card">
-                        <h4>📱 Redes Sociales</h4>
-                        <div class="form-group"><label>WhatsApp (con código país)</label><input type="text"
+                        <div class="form-group"><label>WhatsApp (Link/Número)</label><input type="text"
                                 id="configWhatsapp" class="form-control" placeholder="573113408416"></div>
-                        <div class="form-group"><label>Facebook</label><input type="url" id="configFacebook"
-                                class="form-control" placeholder="https://facebook.com/..."></div>
-                        <div class="form-group"><label>Instagram</label><input type="url" id="configInstagram"
-                                class="form-control" placeholder="https://instagram.com/..."></div>
-                        <div class="form-group"><label>TikTok</label><input type="url" id="configTiktok"
-                                class="form-control" placeholder="https://tiktok.com/..."></div>
                     </div>
-                    <div class="config-card">
-                        <h4>📧 Contacto</h4>
-                        <div class="form-group"><label>Email principal</label><input type="email" id="configEmail"
-                                class="form-control" placeholder="moterossportline@gmail.com"></div>
-                        <div class="form-group"><label>Teléfono</label><input type="text" id="configTelefono"
-                                class="form-control" placeholder="3113408416"></div>
-                        <div class="form-group"><label>Dirección principal</label><input type="text"
-                                id="configDireccion" class="form-control" placeholder="Calle 123 #45-67"></div>
+
+                    <!-- NUEVA SECCION NEQUI (Requerimiento) -->
+                    <div class="config-card" style="border-top: 4px solid #7124cc;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h4 style="margin:0;">🟣 Nequi Conecta (API QR)</h4>
+                            <select id="configNequiAmbiente" class="form-control" style="width: auto; height: 32px; font-size: 0.8rem; padding: 0 10px;">
+                                <option value="sandbox">Ambiente: Sandbox</option>
+                                <option value="production">Ambiente: Producción</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Client ID</label>
+                            <input type="password" id="configNequiClientId" class="form-control" placeholder="Su Client ID de Nequi Conecta">
+                        </div>
+                        <div class="form-group">
+                            <label>Client Secret</label>
+                            <input type="password" id="configNequiClientSecret" class="form-control" placeholder="Su Client Secret">
+                        </div>
+                        <div class="form-group">
+                            <label>ApiKey</label>
+                            <input type="password" id="configNequiApiKey" class="form-control" placeholder="Su API Key">
+                        </div>
+                        <p style="font-size: 0.75rem; color: #64748b; margin-top: 1rem;">
+                            💡 Estas credenciales permiten verificar pagos automáticamente escaneando el QR.
+                        </p>
                     </div>
+
                     <div class="config-card">
                         <h4>⚙️ Sistema</h4>
                         <div class="form-group"><label>Stock mínimo por defecto</label><input type="number"
@@ -4711,25 +4685,28 @@
                                 <option value="USD">USD - Dólar</option>
                             </select></div>
                     </div>
-                    <div class="config-card">
-                        <h4>🕒 Horarios y Teléfonos</h4>
-                        <div class="form-group"><label>Alcalá (H/T)</label>
-                            <div style="display:flex; gap:0.5rem;"><input type="text" id="configHorarioAlcala"
-                                    class="form-control" placeholder="Horario" style="flex:2;"><input type="text"
-                                    id="configTelefonoAlcala" class="form-control" placeholder="Tel" style="flex:1;">
-                            </div>
+
+                    <!-- NUEVA SECCION LOGS NEQUI (Visual Control al final de la grid) -->
+                    <div class="config-card" style="grid-column: 1 / -1; border-top: 1px solid #e2e8f0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h4 style="margin:0;">📖 Historial de Escaneos Nequi</h4>
+                            <button class="btn btn-sm btn-outline" onclick="cargarLogsNequi()">🔄 Actualizar</button>
                         </div>
-                        <div class="form-group"><label>Local 01 (H/T)</label>
-                            <div style="display:flex; gap:0.5rem;"><input type="text" id="configHorarioLocal01"
-                                    class="form-control" placeholder="Horario" style="flex:2;"><input type="text"
-                                    id="configTelefonoLocal01" class="form-control" placeholder="Tel" style="flex:1;">
-                            </div>
-                        </div>
-                        <div class="form-group"><label>Jordán (H/T)</label>
-                            <div style="display:flex; gap:0.5rem;"><input type="text" id="configHorarioJordan"
-                                    class="form-control" placeholder="Horario" style="flex:2;"><input type="text"
-                                    id="configTelefonoJordan" class="form-control" placeholder="Tel" style="flex:1;">
-                            </div>
+                        <div class="table-container" style="max-height:300px; overflow-y:auto; border:1px solid #f1f5f9; border-radius:0.5rem;">
+                            <table class="data-table" style="font-size:0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Referencia</th>
+                                        <th>Monto</th>
+                                        <th>Estado</th>
+                                        <th>Detalle QR</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyLogsNequi">
+                                    <tr><td colspan="5" class="text-center text-muted">Haz clic en actualizar para cargar los datos...</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -6324,7 +6301,7 @@
     <script src="js/ai-widget.js"></script>
     <script src="js/ticket-printer.js"></script>
     <script src="js/report-exporter.js"></script>
-    <script src="js/admin.js?v=20250225"></script>
+    <script src="js/admin.js?v=20260318-2"></script>
     <script src="js/admin-feedback.js"></script>
     <script src="js/admin-nomina.js"></script>
     <script src="js/admin-compras.js"></script>
@@ -7023,7 +7000,7 @@
     </script>
     <!-- ════════════ MODAL RECORDATORIOS DE PAGO ════════════ -->
     <div id="modalRecordatorios" class="modal-overlay">
-        <div class="modal-content modal-large">
+        <div class="modal-content" style="max-width: 1400px; width: 95%;">
             <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);">
                 <h2>🔔 Pagos Recurrentes y Alertas</h2>
                 <button class="close-modal" onclick="cerrarModalRecordatorios()">&times;</button>
@@ -7031,46 +7008,44 @@
             <div class="modal-body">
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                     <!-- Columna Izquierda: Formulario -->
-                    <div style="background: #fffbeb; padding: 1.5rem; border-radius: 12px; border: 1px solid #fcd34d;">
-                        <h3 style="color:#b45309; margin-bottom:1rem; font-size:1.1rem;">➕ Nuevo Recordatorio</h3>
+                    <div style="background: #fffbeb; padding: 2.5rem; border-radius: 16px; border: 1px solid #fcd34d; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1);">
+                        <h3 style="color:#b45309; margin-bottom:1.5rem; font-size:1.4rem;">➕ Nuevo Recordatorio</h3>
 
-                        <div class="form-group" style="margin-bottom:1rem;">
-                            <label style="font-size:0.9rem; font-weight:600;">Título del Gasto</label>
-                            <input type="text" id="recTitulo" class="form-control" placeholder="Ej: Energía Local 1">
+                        <div class="form-group" style="margin-bottom:1.5rem;">
+                            <label style="font-size:1rem; font-weight:700;">Título del Gasto</label>
+                            <input type="text" id="recTitulo" class="form-control" placeholder="Ej: Energía Local 1" style="padding: 1rem;">
                         </div>
 
-                        <div class="form-row" style="margin-bottom:1rem;">
+                        <div class="form-row" style="margin-bottom:1.5rem; display: flex; gap: 1.5rem;">
                             <div class="form-group" style="flex:1;">
-                                <label style="font-size:0.9rem; font-weight:600;">Día de Pago (1-31)</label>
-                                <input type="number" id="recDia" class="form-control" placeholder="Ej: 5" min="1"
-                                    max="31">
+                                <label style="font-size:1rem; font-weight:700;">Día de Pago (1-31)</label>
+                                <input type="number" id="recDia" class="form-control" placeholder="Ej: 5" min="1" max="31" style="padding: 1rem;">
                             </div>
                             <div class="form-group" style="flex:1;">
-                                <label style="font-size:0.9rem; font-weight:600;">Monto Aprox.</label>
-                                <input type="number" id="recMonto" class="form-control" placeholder="0">
+                                <label style="font-size:1rem; font-weight:700;">Monto Aprox.</label>
+                                <input type="number" id="recMonto" class="form-control" placeholder="0" style="padding: 1rem;">
                             </div>
-                        </div>
-
-                        <div class="form-group" style="margin-bottom:1rem;">
-                            <label style="font-size:0.9rem; font-weight:600;">Responsable (Nombre)</label>
-                            <input type="text" id="recNombre" class="form-control" placeholder="Ej: Maria Perez">
                         </div>
 
                         <div class="form-group" style="margin-bottom:1.5rem;">
-                            <label style="font-size:0.9rem; font-weight:600;">WhatsApp Responsable</label>
-                            <input type="text" id="recWhatsapp" class="form-control" placeholder="Ej: 3101234567">
-                            <small class="text-muted">Sin códigos de país, solo el número.</small>
+                            <label style="font-size:1rem; font-weight:700;">Responsable (Nombre)</label>
+                            <input type="text" id="recNombre" class="form-control" placeholder="Ej: Maria Perez" style="padding: 1rem;">
                         </div>
 
-                        <button class="btn btn-primary" onclick="guardarRecordatorio()" style="width:100%;">💾 Guardar
-                            Recordatorio</button>
+                        <div class="form-group" style="margin-bottom:2rem;">
+                            <label style="font-size:1rem; font-weight:700;">WhatsApp Responsable</label>
+                            <input type="text" id="recWhatsapp" class="form-control" placeholder="Ej: 3101234567" style="padding: 1rem;">
+                            <small class="text-muted" style="display: block; margin-top: 0.5rem;">Sin códigos de país, solo el número.</small>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="guardarRecordatorio()" style="width:100%; padding: 1.25rem; font-size: 1.1rem; font-weight: 700;">💾 Guardar Recordatorio</button>
                     </div>
 
                     <!-- Columna Derecha: Lista -->
-                    <div>
-                        <h3 style="color:#1e293b; margin-bottom:1rem; font-size:1.1rem;">📅 Lista de Pagos</h3>
+                    <div style="display: flex; flex-direction: column;">
+                        <h3 style="color:#1e293b; margin-bottom:1.5rem; font-size:1.4rem;">📅 Lista de Pagos</h3>
                         <div id="listaRecordatorios"
-                            style="max-height: 400px; overflow-y: auto; display:flex; flex-direction:column; gap:0.8rem;">
+                            style="max-height: 600px; overflow-y: auto; display:flex; flex-direction:column; gap:1rem; padding-right: 0.5rem;">
                             <!-- Items cargados via JS -->
                             <div class="text-center text-muted">Cargando...</div>
                         </div>
