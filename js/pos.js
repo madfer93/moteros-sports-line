@@ -1408,6 +1408,10 @@ function abrirSelectorVisual(id) {
     const btnConfirmar = document.getElementById('btnConfirmarVisual') || document.getElementById('btnConfirmarSeleccion');
     if (btnConfirmar) btnConfirmar.disabled = true;
 
+    // Reset search input
+    const inputBuscarColor = document.getElementById('inputBuscarColor');
+    if (inputBuscarColor) inputBuscarColor.value = '';
+
     // Poblar colores si existen variantes
     let colores = [];
     if (p.variantes && Array.isArray(p.variantes)) {
@@ -1547,6 +1551,21 @@ function cerrarSelectorVisual() {
         modal.style.display = 'none';
     }
     visualProductoActual = null;
+}
+
+// NUEVO: Filtrar colores en el selector visual
+function filtrarColoresVisual() {
+    const query = document.getElementById('inputBuscarColor').value.toLowerCase().trim();
+    const chips = document.querySelectorAll('#visualColorGrid .chip');
+    
+    chips.forEach(chip => {
+        const text = chip.textContent.toLowerCase();
+        if (text.includes(query)) {
+            chip.style.display = 'flex'; // Usamos flex porque el contenedor es chip-grid
+        } else {
+            chip.style.display = 'none';
+        }
+    });
 }
 
 // Alias para botones viejos o HTML inconsistente
