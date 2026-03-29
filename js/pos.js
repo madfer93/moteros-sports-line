@@ -74,6 +74,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cargar cuentas bancarias para transferencias
     await cargarCuentasBancariasPOS();
 
+    // Event listeners para LOGIN con ENTER
+    const loginUser = document.getElementById('loginUsuario');
+    const loginPass = document.getElementById('loginPassword');
+    if (loginUser) loginUser.addEventListener('keydown', (e) => { if (e.key === 'Enter') verificarLogin(); });
+    if (loginPass) loginPass.addEventListener('keydown', (e) => { if (e.key === 'Enter') verificarLogin(); });
+
     // Sincronización automática de ventas offline
     if (window.OfflineManager) {
         window.OfflineManager.sincronizarPendientes(db);
@@ -281,15 +287,37 @@ async function abrirModalCajaConEmpleado() {
     document.getElementById('cargoEmpleadoLogueado').textContent = empleadoLogueado.cargo || 'Vendedor';
     document.getElementById('vendedorNombre').value = empleadoLogueado.nombre;
 
-    // Configurar base de caja
+    // Configurar base de caja según Modo Turno
     let basePredeterminada = TIENDA.esDigital ? 0 : 100000;
     try {
-        const { data: localData } = await db.from('locales').select('base_caja').eq('nombre', TIENDA.nombre).maybeSingle();
-        if (localData && localData.base_caja !== undefined && localData.base_caja !== null) {
-            basePredeterminada = localData.base_caja;
+        const { data: localData } = await db.from('locales')
+            .select('base_caja, modo_apertura')
+            .eq('nombre', TIENDA.nombre)
+            .maybeSingle();
+
+        if (localData) {
+            if (localData.modo_apertura === 'acumulativo') {
+                // Buscar el último cierre CERRADO de este local hoy
+                const { data: ultimoCierre } = await db.from('cierres_caja')
+                    .select('total_efectivo, numero_cierre')
+                    .eq('local', TIENDA.nombre)
+                    .eq('estado', 'cerrado')
+                    .order('fecha_apertura', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                
+                if (ultimoCierre) {
+                    basePredeterminada = ultimoCierre.total_efectivo || 0;
+                    mostrarAlerta(`Base heredada del turno anterior: $${basePredeterminada.toLocaleString()}`, 'info');
+                } else {
+                    basePredeterminada = localData.base_caja || 0;
+                }
+            } else {
+                basePredeterminada = localData.base_caja || 0;
+            }
         }
     } catch (e) {
-        // Ignorar error y usar predeterminado
+        console.warn('Error recuperando configuración de local:', e);
     }
     document.getElementById('montoInicial').value = basePredeterminada;
 
@@ -509,19 +537,19 @@ async function mostrarModalCerrarCaja() {
         const { data: ventas } = await db.from('ventas')
             .select('*')
             .eq('local', TIENDA.nombre)
-            .gte('created_at', hoy + 'T00:00:00');
+            .eq('numero_cierre', datosCaja?.numeroCierre);
 
         // Consultar abonos a proveedores del día por LOCAL
         const { data: abonosProv } = await db.from('pagos_proveedor')
             .select('monto, metodo_pago, proveedores(razon_social)')
             .eq('local', TIENDA.nombre)
-            .gte('created_at', hoy + 'T00:00:00');
+            .gte('created_at', datosCaja?.horaApertura || (hoy + 'T00:00:00'));
 
         // Consultar adelantos de nómina del día por LOCAL
         const { data: adelantosNom } = await db.from('adelantos_nomina')
             .select('monto, registrado_por')
             .eq('local', TIENDA.nombre)
-            .gte('created_at', hoy + 'T00:00:00');
+            .gte('created_at', datosCaja?.horaApertura || (hoy + 'T00:00:00'));
 
         // Consultar abonos a CRÉDITOS del día por LOCAL
         const { data: abonosCred } = await db.from('pagos_credito')
@@ -533,7 +561,7 @@ async function mostrarModalCerrarCaja() {
         const { data: abonosServ } = await db.from('pagos_servicios')
             .select('monto, metodo_pago')
             .eq('local', TIENDA.nombre)
-            .gte('created_at', hoy + 'T00:00:00');
+            .gte('created_at', datosCaja?.horaApertura || (hoy + 'T00:00:00'));
 
         // Consultar abonos de DEUDORES del día (Si la tabla existe)
         const { data: abonosDeudores } = await db.from('pagos_deudor')
@@ -624,6 +652,20 @@ async function mostrarModalCerrarCaja() {
 
         const efectivoEsperado = base + (totales.efectivo || 0) + abonosEfectivoCaja - egresosEfectivoCaja;
 
+        // Calcular ventas por vendedor
+        const ventasPorVendedor = {};
+        const { data: empleados } = await db.from('empleados_tienda').select('id, nombre');
+        const mapaEmpleados = (empleados || []).reduce((acc, em) => ({ ...acc, [em.id]: em.nombre }), {});
+
+        (ventas || []).forEach(v => {
+            if (v.estado_venta === 'Anulada') return;
+            const vId = v.vendedor_id || 'Sin Asignar';
+            const nombreV = mapaEmpleados[vId] || vId;
+            if (!ventasPorVendedor[nombreV]) ventasPorVendedor[nombreV] = { total: 0, cant: 0 };
+            ventasPorVendedor[nombreV].total += (v.total || 0);
+            ventasPorVendedor[nombreV].cant += (v.cantidad || 0);
+        });
+
         resumenVentas = {
             totales,
             totalGeneralVentas,
@@ -637,7 +679,8 @@ async function mostrarModalCerrarCaja() {
             totalAbonosDeudores,
             efectivoEsperado,
             totalGeneralCierre: totalGeneralVentas + totalAbonosCreditos + totalAbonosServicios + totalAbonosDeudores,
-            ventasDelDia: ventas || []
+            ventasDelDia: ventas || [],
+            ventasPorVendedor
         };
 
         // Renderizar resumen ultra-detallado
@@ -713,8 +756,19 @@ async function mostrarModalCerrarCaja() {
                         <span class="label">💵​ CONSOLIDADO SISTEMA</span>
                         <span class="value">$${Math.round(resumenVentas.totalGeneralCierre).toLocaleString('es-CO')}</span>
                     </div>
-                </div>
             </div>
+
+                <div class="resumen-seccion" style="border-left-color: #a855f7; margin-top:1.5rem;">
+                    <h4>👥 VENTAS POR VENDEDOR</h4>
+                    ${Object.entries(ventasPorVendedor).length > 0 ? 
+                        Object.entries(ventasPorVendedor).map(([nom, data]) => `
+                            <div class="resumen-row">
+                                <span class="label">${nom}</span>
+                                <span class="value">$${Math.round(data.total).toLocaleString('es-CO')} (${data.cant} und)</span>
+                            </div>
+                        `).join('') : '<div class="resumen-row"><span class="label">Sin vendedores asignados</span></div>'
+                    }
+                </div>
             
             <!-- Desglose de productos PRE-CIERRE -->
             ${generarDesgloseProductos(true) || ''}
@@ -828,9 +882,8 @@ async function confirmarCerrarCaja() {
                 fodegas_contado: fodegasContado,
                 diferencia_efectivo: Math.round(diferenciaEfectivo),
                 diferencia_total: Math.round(diferenciaTotal),
-                total_gastos_dia: totalGastos + resumenVentas.totalAdelantos + resumenVentas.totalAbonosProv,
-                observaciones: observacionesFinal + ` || Desglose: Ventas Productos: $${resumenVentas.totalGeneralVentas} | Abonos: $${resumenVentas.totalAbonosCreditos + resumenVentas.totalAbonosDeudores} | Servicios: $${resumenVentas.totalAbonosServicios} | Adelantos: $${resumenVentas.totalAdelantos} | Pagos Prov: $${resumenVentas.totalAbonosProv}`,
                 detalles_cierre: resumenVentas.ventasDelDia || [],
+                vendedores_detalle: resumenVentas.ventasPorVendedor || {},
                 estado: 'cerrado'
             })
             .eq('numero_cierre', datosCaja?.numeroCierre);
@@ -899,6 +952,7 @@ async function confirmarCerrarCajaDigital() {
                 diferencia_total: Math.round(diferenciaTotal),
                 observaciones: observaciones + ` || Desglose Digital: Ventas: $${resumenVentas.totalGeneralVentas} | Abonos: $${resumenVentas.totalAbonosCreditos + resumenVentas.totalAbonosDeudores} | Servicios: $${resumenVentas.totalAbonosServicios}`,
                 detalles_cierre: resumenVentas.ventasDelDia || [],
+                vendedores_detalle: resumenVentas.ventasPorVendedor || {},
                 estado: 'cerrado'
             })
             .eq('numero_cierre', datosCaja?.numeroCierre);
@@ -1088,7 +1142,7 @@ async function cargarVendedores() {
         const select = document.getElementById('vendedorVenta');
         if (select) {
             select.innerHTML = '<option value="">-- Seleccionar Vendedor --</option>' +
-                vends.map(v => `<option value="${v.nombre}">${v.nombre}</option>`).join('');
+                vends.map(v => `<option value="${v.id}">${v.nombre}</option>`).join('');
         }
     } catch (e) {
         console.error('Error cargando vendedores:', e);
@@ -1098,7 +1152,7 @@ async function cargarVendedores() {
             const select = document.getElementById('vendedorVenta');
             if (select && vendsLocal.length > 0) {
                 select.innerHTML = '<option value="">-- Seleccionar Vendedor (Offline) --</option>' +
-                    vendsLocal.map(v => `<option value="${v.nombre}">${v.nombre}</option>`).join('');
+                    vendsLocal.map(v => `<option value="${v.id}">${v.nombre}</option>`).join('');
             }
         }
     }
@@ -2316,6 +2370,9 @@ async function procesarVenta() {
                 totalItem = totalItem - descuentoValor;
             }
 
+            // Capturar Vendedor de la Venta (Comisiones)
+            const vendedorIdSeleccionado = document.getElementById('vendedorVenta')?.value || null;
+
             // El desglose se guarda proporcionalmente por item para reportes, 
             // aunque el JSON general reside en cada fila por simplicidad técnica actual
             const { error: errorVenta } = await db.from('ventas').insert({
@@ -2335,10 +2392,12 @@ async function procesarVenta() {
                 voucher_code: voucherCode,
                 comprobantes_fotos: fotosComprobantes, // NUEVO: Evidencia fotográfica
                 usuario: `POS ${TIENDA.nombre}`,
+                vendedor_id: vendedorIdSeleccionado,
                 id_evento: TIENDA.id_evento || null,
                 created_at: fechaVenta,
                 cliente_id: clienteId,
-                imprime_tirilla: imprimeTirilla
+                imprime_tirilla: imprimeTirilla,
+                numero_cierre: datosCaja?.numeroCierre || null
             });
 
             if (errorVenta) {
@@ -2358,6 +2417,7 @@ async function procesarVenta() {
                         metodo_pago: metodoPagoStr,
                         voucher_code: voucherCode,
                         usuario: `POS ${TIENDA.nombre}`,
+                        vendedor_id: vendedorIdSeleccionado,
                         id_evento: TIENDA.id_evento || null,
                         created_at: fechaVenta,
                         cliente_id: clienteId,
@@ -4637,7 +4697,7 @@ function generarDesgloseProductos() {
     const totalMonto = ventasActivas.reduce((s, v) => s + (v.total || 0), 0);
 
     return `
-        <div style="margin-top:1rem; border-top:1px solid #e2e8f0; padding-top:1rem;">
+        <div style="margin-top:1rem; border-top:1px solid #e2e8f0; padding-top:1rem; grid-column: span 3;">
             <h4 style="margin:0 0 0.6rem; font-size:0.9rem; color:#475569; cursor:pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
                 🧾 Desglose de Productos ▽ (Click para ver/ocultar)
             </h4>

@@ -282,7 +282,7 @@ async function cargarLocalesCaja() {
     const tbody = document.getElementById('listaTablaLocales');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Cargando locales...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Cargando locales...</td></tr>';
 
     try {
         const { data, error } = await supabaseClient
@@ -293,7 +293,7 @@ async function cargarLocalesCaja() {
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay locales configurados.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No hay locales configurados.</td></tr>';
             return;
         }
 
@@ -304,6 +304,11 @@ async function cargarLocalesCaja() {
                 <td>${local.direccion || '-'}</td>
                 <td>${local.telefono || '-'}</td>
                 <td style="font-weight:700; color:#16a34a;">$${(local.base_caja || 0).toLocaleString('es-CO')}</td>
+                <td>
+                    <span class="badge ${local.modo_apertura === 'acumulativo' ? 'badge-info' : 'badge-secondary'}" style="font-size:0.75rem;">
+                        ${local.modo_apertura === 'acumulativo' ? '🔄 Acumulativo' : '🔓 Independiente'}
+                    </span>
+                </td>
                 <td><span class="badge ${local.estado === 'Activo' ? 'badge-success' : 'badge-danger'}">${local.estado || 'Activo'}</span></td>
                 <td>
                     <button class="btn btn-outline btn-sm" onclick='abrirEdicionLocal(${JSON.stringify(local).replace(/'/g, "&#39;")})'>
@@ -315,7 +320,7 @@ async function cargarLocalesCaja() {
 
     } catch (e) {
         console.error('Error cargando locales:', e);
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:red;">Error: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:red;">Error: ${e.message}</td></tr>`;
     }
 }
 
@@ -332,6 +337,8 @@ function abrirEdicionLocal(local) {
     document.getElementById('editLocalTelefono').value = local.telefono || '';
     document.getElementById('editLocalHorario').value = local.horario || '';
     document.getElementById('editLocalEstado').value = local.estado || 'Activo';
+    document.getElementById('editLocalModoTurno').value = local.modo_apertura || 'independiente';
+    document.getElementById('labelLocalNombreHeader').textContent = local.nombre || '';
 
     const modal = document.getElementById('modalEditarLocal');
     if (modal) {
@@ -359,7 +366,8 @@ async function guardarEdicionLocal() {
             direccion: document.getElementById('editLocalDireccion').value.trim(),
             telefono: document.getElementById('editLocalTelefono').value.trim(),
             horario: document.getElementById('editLocalHorario').value.trim(),
-            estado: document.getElementById('editLocalEstado').value
+            estado: document.getElementById('editLocalEstado').value,
+            modo_apertura: document.getElementById('editLocalModoTurno').value
         };
 
         const { error } = await supabaseClient
@@ -5905,6 +5913,29 @@ async function verDetalleCierre(id) {
                         </div>
                     </div>
 
+                    <!-- NUEVO: Desglose por Vendedor (Si existe) -->
+                    ${data.vendedores_detalle && Object.keys(data.vendedores_detalle).length > 0 ? `
+                        <div style="background:white; border:1px solid #e2e8f0; border-radius:1.5rem; overflow:hidden; box-shadow:0 10px 15px -3px rgba(0,0,0,0.05); margin-bottom:2.5rem;">
+                            <div style="padding:1.25rem 1.5rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; gap:0.75rem;">
+                                <span style="font-size:1.2rem;">👥</span>
+                                <h4 style="margin:0; font-size:1rem; color:#1e293b; font-weight:800; text-transform:uppercase;">Ventas por Vendedor</h4>
+                            </div>
+                            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:1.5rem; padding:1.5rem;">
+                                ${Object.entries(data.vendedores_detalle).map(([vendedor, stats]) => `
+                                    <div style="background:#f1f5f9; padding:1.25rem; border-radius:1rem; display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0;">
+                                        <div>
+                                            <span style="display:block; font-weight:800; color:#0f172a; font-size:1.1rem; margin-bottom:0.25rem;">${vendedor}</span>
+                                            <span style="display:block; font-size:0.85rem; color:#64748b; font-weight:600;">📦 ${stats.cant} unidades</span>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <span style="display:block; font-size:1.2rem; font-weight:900; color:#1e293b;">$${formatearPrecio(stats.total)}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2rem; margin-bottom:2.5rem;">
                         <!-- Columna: Resumen Financiero -->
                         <div style="background:white; border:1px solid #e2e8f0; border-radius:1.5rem; overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
@@ -10599,40 +10630,9 @@ window.cargarAlertasStock = cargarAlertasStock;
 // ---------------------------------------------------------------
 
 async function cargarComisiones() {
-    try {
-        const tbody = document.getElementById('tbodyComisiones');
-        if (!tbody) return;
-
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Cargando comisiones...</td></tr>';
-
-        // TODO: Implementar Lógica completa de comisiones
-        // Por ahora mostrar mensaje de desarrollo
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center" style="padding:2rem;">
-                    <div style="color:#94a3b8;">
-                        <div style="font-size:2rem;margin-bottom:0.5rem;">🚧</div>
-                        <strong>Sistema de Comisiones en Desarrollo</strong>
-                        <p style="margin-top:0.5rem;font-size:0.9rem;">
-                            Esta funcionalidad estará disponible próximamente.<br>
-                            Se calculará automáticamente basado en las ventas de cada empleado.
-                        </p>
-                    </div>
-                </td>
-            </tr>
-        `;
-
-        // Update stats
-        if (document.getElementById('statComisionesTotales')) {
-            document.getElementById('statComisionesTotales').textContent = '$0';
-            document.getElementById('statVentasComisionables').textContent = '$0';
-            document.getElementById('statEmpleadosComision').textContent = '0';
-        }
-
-    } catch (e) {
-        console.error('Error cargando comisiones:', e);
-        const tbody = document.getElementById('tbodyComisiones');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error cargando comisiones</td></tr>';
+    // La lógica ahora reside en js/admin-comisiones.js
+    if (typeof cargarConfiguracionBono === 'function') {
+        await cargarConfiguracionBono();
     }
 }
 
