@@ -358,6 +358,14 @@
         margin: 0 !important;
         padding: 0 !important;
         z-index: 2200 !important;
+        display: none; /* Oculto por defecto en móvil */
+    }
+
+    .mega-menu.active {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: translateY(0) !important;
     }
 
     .mega-menu-grid {
