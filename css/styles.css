@@ -658,7 +658,7 @@ button {
     border: none;
     cursor: pointer;
     padding: 0.5rem;
-    z-index: 1001;
+    z-index: 2000;
 }
 
 .menu-toggle span {
@@ -691,11 +691,12 @@ button {
     right: 0;
     bottom: 0;
     background: rgba(26, 26, 26, 0.98);
-    z-index: 1000;
+    z-index: 1999;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 1.5rem;
+    padding-top: 100px; /* Asegurar espacio para la cabecera si es necesario */
 }
 
 .mobile-nav.active {

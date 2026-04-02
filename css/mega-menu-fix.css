@@ -269,24 +269,96 @@
     .mega-menu-promo img {
         height: 200px;
     }
+
+    /* Ocultar solo los enlaces secundarios, permitir Inicio si es necesario o manejar vía hamburguesa */
+    .header .nav#topNav {
+        display: none !important;
+    }
 }
 
 @media (max-width: 768px) {
+    .header .container {
+        flex-wrap: wrap;
+        padding: 0.5rem 1rem !important;
+    }
+
+    .mega-menu {
+        max-height: 70vh !important;
+        overflow-y: auto !important;
+        border-radius: 0 0 15px 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    .header-left {
+        flex: 1;
+    }
+
+    .header-left .logo img {
+        width: 80px !important;
+        height: auto !important;
+    }
+
+    .header-center {
+        display: none !important; /* Ocultar eslogan en móvil para ganar espacio */
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .header-search {
+        order: 3;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .header-search input {
+        width: 100% !important;
+    }
+
+    .menu-toggle {
+        display: flex !important;
+        order: 2;
+    }
+
     .nav-categories {
         overflow-x: auto;
         justify-content: flex-start;
         -webkit-overflow-scrolling: touch;
+        gap: 1rem !important;
+        padding: 10px 5px !important;
     }
 
     .nav-item-has-mega {
         white-space: nowrap;
-        padding: 0.65rem 1rem;
-        font-size: 0.78rem;
+        padding: 5px !important;
+        width: 70px !important;
+        height: 70px !important;
+        font-size: 0.7rem;
+    }
+
+    .nav-item-has-mega img {
+        width: 30px !important;
+        height: 30px !important;
+    }
+
+    .mega-menu {
+        position: fixed !important;
+        top: 130px !important; /* Ajustado para que no tape los iconos superiores */
+        max-height: 50vh !important;
+        overflow-y: auto !important;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        margin: 0 !important;
+        z-index: 2100 !important; /* Por encima de todo */
     }
 
     .mega-menu-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
+        padding: 1.5rem !important;
     }
 
     .mega-menu-brands {
@@ -294,6 +366,17 @@
         border-top: 1px solid #eee;
         padding-left: 0;
         padding-top: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-left .logo img {
+        width: 60px !important;
+    }
+    
+    .nav-item-has-mega {
+        width: 60px !important;
+        height: 60px !important;
     }
 }
 
