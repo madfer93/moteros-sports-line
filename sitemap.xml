@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <!-- Pagina Principal -->
+    <!-- Pagina Principal (Root para evitar duplicidad index.html) -->
     <url>
         <loc>https://moterossportline.store/</loc>
-        <lastmod>2025-01-01</lastmod>
+        <lastmod>2026-04-07</lastmod>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
     </url>
@@ -11,15 +11,23 @@
     <!-- Catalogo de Productos -->
     <url>
         <loc>https://moterossportline.store/catalogo.html</loc>
-        <lastmod>2025-01-01</lastmod>
+        <lastmod>2026-04-07</lastmod>
         <changefreq>daily</changefreq>
         <priority>0.9</priority>
+    </url>
+
+    <!-- Nosotros -->
+    <url>
+        <loc>https://moterossportline.store/nosotros.html</loc>
+        <lastmod>2026-04-07</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
     </url>
 
     <!-- Blog -->
     <url>
         <loc>https://moterossportline.store/blog.html</loc>
-        <lastmod>2025-01-01</lastmod>
+        <lastmod>2026-04-07</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -27,8 +35,34 @@
     <!-- Contacto y Ubicaciones -->
     <url>
         <loc>https://moterossportline.store/contacto.html</loc>
-        <lastmod>2025-01-01</lastmod>
+        <lastmod>2026-04-07</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
+    </url>
+
+    <!-- Legales -->
+    <url>
+        <loc>https://moterossportline.store/terminos.html</loc>
+        <lastmod>2026-04-07</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
+    </url>
+    <url>
+        <loc>https://moterossportline.store/privacidad.html</loc>
+        <lastmod>2026-04-07</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
+    </url>
+    <url>
+        <loc>https://moterossportline.store/habeas-data.html</loc>
+        <lastmod>2026-04-07</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
+    </url>
+    <url>
+        <loc>https://moterossportline.store/politicas-domicilios.html</loc>
+        <lastmod>2026-04-07</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
     </url>
 </urlset>

@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contacto y Ubicacion | Moteros Sport Line Villavicencio</title>
-    <link rel="icon" href="img/logo-moteros.jpeg">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+    <link rel="manifest" href="img/site.webmanifest">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff6b00">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -36,8 +39,12 @@
         content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
 
     <link rel="canonical" href="https://moterossportline.store/contacto.html">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/premium.css">
+    <link rel="stylesheet" href="css/ai-widget.css">
+    <link rel="stylesheet" href="css/a11y-widget.css">
     <link rel="stylesheet" href="css/mega-menu-fix.css">
 
     <style>
@@ -542,7 +549,7 @@
 
     <!-- Menu Movil -->
     <div class="mobile-nav" id="mobileNav">
-        <a href="index.html">Inicio</a>
+        <a href="/">Inicio</a>
         <a href="catalogo.html">Tienda</a>
         <a href="nosotros.html">Nosotros</a>
         <a href="blog.html">Blog</a>
@@ -553,7 +560,7 @@
     <header class="header">
         <div class="container header-grid">
             <div class="header-left">
-                <a href="index.html" class="logo">
+                <a href="/" class="logo">
                     <img src="img/logo-moteros.jpeg" alt="Moteros Sports Line" width="100" height="100"
                         fetchpriority="high">
                 </a>
@@ -568,7 +575,7 @@
 
             <div class="header-right">
                 <nav class="nav" id="topNav">
-                    <a href="index.html">Inicio</a>
+                    <a href="/">Inicio</a>
                     <a href="catalogo.html">Tienda</a>
                     <a href="nosotros.html">Nosotros</a>
                     <a href="blog.html">Blog</a>
@@ -744,14 +751,14 @@
                                 <span class="local-detail-icon"><i class="fas fa-map-marker-alt"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Direccion</strong>
-                                    <span>Barrio Alcala, Calle Principal<br>Villavicencio, Meta</span>
+                                    <span id="direccionDetalleAlcala">Barrio Alcala, Calle Principal<br>Villavicencio, Meta</span>
                                 </div>
                             </div>
                             <div class="local-detail">
                                 <span class="local-detail-icon"><i class="fas fa-phone"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Telefono</strong>
-                                    <a href="tel:+573113408416">311 340 8416</a>
+                                    <a href="tel:+573113408416" id="telefonoDetalleAlcala">311 340 8416</a>
                                 </div>
                             </div>
                             <div class="local-detail">
@@ -776,7 +783,7 @@
                         <div class="local-map" style="background: none; min-height: auto; height: 100%;">
                             <a href="https://maps.app.goo.gl/MitBYM19LbGGZ9kz8" target="_blank"
                                 style="display: block; height: 100%; position: relative; overflow: hidden; border-radius: 0 1.5rem 1.5rem 0;">
-                                <img src="img/LOCAL-ALCALA.jpg" alt="Fachada Local Alcala"
+                                <img src="img/LOCAL-ALCALA.jpg" alt="Fachada Local Alcala" loading="lazy" width="600" height="450"
                                     style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;">
                                 <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s;"
                                     class="map-overlay">
@@ -819,14 +826,14 @@
                                 <span class="local-detail-icon"><i class="fas fa-map-marker-alt"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Direccion</strong>
-                                    <span>Barrio 01<br>Villavicencio, Meta</span>
+                                    <span id="direccionDetalleLocal01">Barrio 01<br>Villavicencio, Meta</span>
                                 </div>
                             </div>
                             <div class="local-detail">
                                 <span class="local-detail-icon"><i class="fas fa-phone"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Telefono</strong>
-                                    <a href="tel:+573113408416">311 340 8416</a>
+                                    <a href="tel:+573113408416" id="telefonoDetalleLocal01">311 340 8416</a>
                                 </div>
                             </div>
                             <div class="local-detail">
@@ -851,7 +858,7 @@
                         <div class="local-map" style="background: none; min-height: auto; height: 100%;">
                             <a href="https://maps.app.goo.gl/Z2pDJt11sAgE9WH97" target="_blank"
                                 style="display: block; height: 100%; position: relative; overflow: hidden; border-radius: 0 1.5rem 1.5rem 0;">
-                                <img src="img/local01.jpg?v=2" alt="Fachada Local 01"
+                                <img src="img/local01.jpg?v=2" alt="Fachada Local 01" loading="lazy" width="600" height="450"
                                     style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;">
                                 <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s;"
                                     class="map-overlay">
@@ -894,14 +901,14 @@
                                 <span class="local-detail-icon"><i class="fas fa-map-marker-alt"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Direccion</strong>
-                                    <span>Sector Jordan<br>Villavicencio, Meta</span>
+                                    <span id="direccionDetalleJordan">Sector Jordan<br>Villavicencio, Meta</span>
                                 </div>
                             </div>
                             <div class="local-detail">
                                 <span class="local-detail-icon"><i class="fas fa-phone"></i></span>
                                 <div class="local-detail-text">
                                     <strong>Telefono</strong>
-                                    <p><i class="fas fa-phone"></i> <a href="tel:+573113408416">311 340 8416</a></p>
+                                    <p><i class="fas fa-phone"></i> <a href="tel:+573113408416" id="telefonoDetalleJordan">311 340 8416</a></p>
                                 </div>
                             </div>
                             <div class="local-detail">
@@ -949,8 +956,8 @@
                 <div class="footer-section">
                     <h4>Contacto General</h4>
                     <p><i class="fas fa-phone"></i><a href="tel:+573113408416" style="color:white;">311 340 8416</a></p>
-                    <p><i class="fas fa-envelope"></i><a href="mailto:moterossportline@gmail.com"
-                            style="color:white;">moterossportline@gmail.com</a></p>
+                    <p><i class="fas fa-envelope"></i><a href="javascript:void(0)" onclick="window.location.href='mailto:' + atob('bW90ZXJvc3Nwb3J0bGluZUBnbWFpbC5jb20=')"
+                            style="color:white;">Contactar por WebMail</a></p>
                 </div>
                 <div class="footer-section">
                     <h4>Siguenos</h4>
@@ -975,15 +982,15 @@
                     <h4>Pagos</h4>
                     <div class="footer-payments-grid">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
-                            alt="Nequi" title="Nequi">
+                            alt="Nequi" title="Nequi" loading="lazy" width="50" height="30">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
-                            alt="Daviplata" title="Daviplata">
+                            alt="Daviplata" title="Daviplata" loading="lazy" width="50" height="30">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
-                            alt="Addi" title="Addi">
+                            alt="Addi" title="Addi" loading="lazy" width="50" height="30">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
-                            alt="Sistecredito" title="Sistecredito">
+                            alt="Sistecredito" title="Sistecredito" loading="lazy" width="50" height="30">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
-                            alt="Fodegas" title="Fodegas">
+                            alt="Fodegas" title="Fodegas" loading="lazy" width="50" height="30">
                     </div>
                 </div>
                 <!-- Domicilios -->
@@ -997,7 +1004,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 Moteros Sports Line | Variedades JyM - Todos los derechos reservados</p>
+                <p>&copy; 2025 Moteros Sports Line - Todos los derechos reservados | Desarrollado por JyM Tech Solutions</p>
             </div>
         </div>
     </footer>
@@ -1008,12 +1015,15 @@
         <i class="fab fa-whatsapp"></i>
     </a>
 
+    <!-- Scripts -->
+    <script src="js/security-shield.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
-    <script src="js/security.js"></script>
-    <script src="js/ia-core.js"></script>
-    <script src="js/ai-widget.js"></script>
-    <script src="js/index.js"></script>
+    <script src="js/promociones.js" defer></script>
+    <script src="js/ia-core.js" defer></script>
+    <script src="js/ai-widget.js" defer></script>
+    <script src="js/a11y-widget.js" defer></script>
+    <script src="js/index.js" defer></script>
     <script>
         // Menu movil
         function toggleMobileMenu() {
@@ -1028,7 +1038,57 @@
             jordan: { dias: [0, 1, 2, 3, 4, 5, 6], apertura: 10, cierre: 20 }
         };
 
-        // Intentar inferir cambios desde el texto inyectado por el admin
+        // 🔄 SINCRONIZACIÓN CON SUPABASE
+        async function cargarDatosLocalesSupabase() {
+            try {
+                if (!window.supabaseClient) return;
+
+                const { data: locales, error } = await supabaseClient
+                    .from('locales')
+                    .select('*');
+
+                if (error) throw error;
+
+                locales.forEach(local => {
+                    let key = '';
+                    if (local.id_local === 'LOCAL01') key = 'alcala';
+                    else if (local.id_local === 'LOCAL02') key = 'local01';
+                    else if (local.id_local === 'LOCAL03') key = 'jordan';
+
+                    if (key) {
+                        // Actualizar textos en el DOM
+                        const idHorario = key === 'alcala' ? 'horarioDetalleAlcala' : (key === 'local01' ? 'horarioDetalleLocal01' : 'horarioDetalleJordan');
+                        const idDireccion = key === 'alcala' ? 'direccionDetalleAlcala' : (key === 'local01' ? 'direccionDetalleLocal01' : 'direccionDetalleJordan');
+                        const idTelefono = key === 'alcala' ? 'telefonoDetalleAlcala' : (key === 'local01' ? 'telefonoDetalleLocal01' : 'telefonoDetalleJordan');
+
+                        if (local.horario) {
+                            const elH = document.getElementById(idHorario);
+                            if (elH) elH.innerHTML = local.horario.replace(/\n/g, '<br>');
+                        }
+                        if (local.direccion) {
+                            const elD = document.getElementById(idDireccion);
+                            if (elD) elD.innerHTML = local.direccion.replace(/\n/g, '<br>');
+                        }
+                        if (local.telefono) {
+                            const elT = document.getElementById(idTelefono);
+                            if (elT) {
+                                elT.textContent = local.telefono;
+                                elT.href = `tel:+57${local.telefono.replace(/\s/g, '')}`;
+                            }
+                        }
+                    }
+                });
+
+                // Una vez cargados los datos, actualizamos los indicadores de Abierto/Cerrado
+                actualizarEstados();
+
+            } catch (err) {
+                console.error('Error sincronizando locales:', err);
+                actualizarEstados(); // Al menos con los defaults
+            }
+        }
+
+        // Intentar inferir cambios desde el texto inyectado
         function inferirHorariosDesdeTexto() {
             const mappings = {
                 alcala: 'horarioDetalleAlcala',
@@ -1040,23 +1100,27 @@
                 const el = document.getElementById(id);
                 if (el) {
                     const texto = el.textContent.toLowerCase();
-                    // Si dice "domingo" o "todos los dias" o "lun-dom", incluimos el 0 (domingo)
-                    if (texto.includes('domingo') || texto.includes('todos los dias') || texto.includes('lun-dom')) {
+                    
+                    // Lógica de días
+                    if (texto.includes('domingo') || texto.includes('todos los dias') || texto.includes('lun-dom') || texto.includes('lunes a domingo')) {
                         if (!horariosConfig[local].dias.includes(0)) {
                             horariosConfig[local].dias.push(0);
                         }
-                    } else if (texto.includes('lun-sab') || texto.includes('lunes a sabado')) {
-                        // Forzar exclusi�n de domingo si el admin especifica lun-sab
+                    } else if (texto.includes('lun-sab') || texto.includes('lunes a sabado') || texto.includes('lunes a sábado')) {
                         horariosConfig[local].dias = [1, 2, 3, 4, 5, 6];
                     }
 
-                    // Intento muy b�sico de detectar horas (ej: "9am-7pm")
-                    const matchHoras = texto.match(/(\d+)(am|pm).*?(\d+)(am|pm)/);
+                    // Detección de horas (ej: "9am-7pm" o "09:00 - 19:00")
+                    const matchHoras = texto.match(/(\d+)(?::\d+)?\s*(am|pm)?.*?(\d+)(?::\d+)?\s*(am|pm)?/i);
                     if (matchHoras) {
                         let h1 = parseInt(matchHoras[1]);
-                        let ampm1 = matchHoras[2];
+                        let ampm1 = matchHoras[2]?.toLowerCase();
                         let h2 = parseInt(matchHoras[3]);
-                        let ampm2 = matchHoras[4];
+                        let ampm2 = matchHoras[4]?.toLowerCase();
+
+                        // Si no hay AM/PM, intentamos inferir por el número (24h)
+                        if (!ampm1 && h1 < 7) h1 += 12; // Probablemente PM si es 1-6 sin AM
+                        if (!ampm2 && h2 > 0 && h2 < 12 && h2 < h1) h2 += 12;
 
                         if (ampm1 === 'pm' && h1 < 12) h1 += 12;
                         if (ampm1 === 'am' && h1 === 12) h1 = 0;
@@ -1091,7 +1155,7 @@
 
                 if (badge) {
                     badge.className = `estado-badge ${abierto ? 'abierto' : 'cerrado'}`;
-                    badge.querySelector('.texto').textContent = abierto ? 'Abierto ahora' : 'Cerrado';
+                    badge.querySelector('.texto').textContent = abierto ? 'Abierto ahora' : 'Cerrado ahora';
                 }
 
                 if (tabEstado) {
@@ -1103,11 +1167,9 @@
 
         // Cambiar entre tabs
         function mostrarLocal(local) {
-            // Ocultar todos
             document.querySelectorAll('.local-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-            // Mostrar seleccionado
             document.getElementById(`local-${local}`).classList.add('active');
             event.currentTarget.classList.add('active');
         }
@@ -1116,7 +1178,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             if (window.sincronizarBrandingGlobal) window.sincronizarBrandingGlobal();
             if (window.inicializarAIWidget) window.inicializarAIWidget('INDEX');
-            actualizarEstados();
+            
+            // Cargar datos desde Supabase
+            cargarDatosLocalesSupabase();
+            
             // Actualizar cada minuto
             setInterval(actualizarEstados, 60000);
         });
@@ -1129,12 +1194,6 @@
                 setTimeout(() => preloader.style.display = 'none', 300);
             }
         });
-
-        // Menu movil
-        function toggleMobileMenu() {
-            document.getElementById('mobileNav').classList.toggle('active');
-            document.getElementById('menuToggle').classList.toggle('active');
-        }
 
     </script>
 </body>

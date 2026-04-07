@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nosotros | Moteros Sport Line Villavicencio</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+    <link rel="manifest" href="img/site.webmanifest">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ff6b00">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="img/logo-moteros.jpeg">
     <meta name="description"
         content="Conoce a Moteros Sports Line - La Casa Oficial de los Moteros en Villavicencio. Nuestra misión, visión y valores como líderes en accesorios para motociclistas.">
     
@@ -33,8 +33,12 @@
     <meta property="twitter:image" content="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg">
 
     <link rel="canonical" href="https://moterossportline.store/nosotros.html">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/premium.css">
+    <link rel="stylesheet" href="css/ai-widget.css">
+    <link rel="stylesheet" href="css/a11y-widget.css">
     <link rel="stylesheet" href="css/mega-menu-fix.css">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -233,7 +237,7 @@
 
     <!-- Menu Movil -->
     <div class="mobile-nav" id="mobileNav">
-        <a href="index.html">Inicio</a>
+        <a href="/">Inicio</a>
         <a href="catalogo.html">Tienda</a>
         <a href="nosotros.html">Nosotros</a>
         <a href="blog.html">Blog</a>
@@ -244,7 +248,7 @@
     <header class="header">
         <div class="container header-grid">
             <div class="header-left">
-                <a href="index.html" class="logo">
+                <a href="/" class="logo">
                     <img src="img/logo-moteros.jpeg" alt="Moteros Sports Line" width="100" height="100"
                         fetchpriority="high">
                 </a>
@@ -259,7 +263,7 @@
 
             <div class="header-right">
                 <nav class="nav" id="topNav">
-                    <a href="index.html">Inicio</a>
+                    <a href="/">Inicio</a>
                     <a href="catalogo.html">Tienda</a>
                     <a href="nosotros.html" class="active">Nosotros</a>
                     <a href="blog.html">Blog</a>
@@ -356,8 +360,8 @@
                 <div class="footer-section">
                     <h4>Contacto General</h4>
                     <p><i class="fas fa-phone"></i><a href="tel:+573113408416" style="color:white;">311 340 8416</a></p>
-                    <p><i class="fas fa-envelope"></i><a href="mailto:moterossportline@gmail.com"
-                            style="color:white;">moterossportline@gmail.com</a></p>
+                    <p><i class="fas fa-envelope"></i><a href="javascript:void(0)" onclick="window.location.href='mailto:' + atob('bW90ZXJvc3Nwb3J0bGluZUBnbWFpbC5jb20=')"
+                            style="color:white;">Contactar por WebMail</a></p>
                 </div>
                 <div class="footer-section">
                     <h4>Siguenos</h4>
@@ -382,15 +386,15 @@
                     <h4>Pagos</h4>
                     <div class="footer-payments-grid">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
-                            alt="Nequi" title="Nequi">
+                            alt="Nequi" title="Nequi" loading="lazy" width="50" height="50">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
-                            alt="Daviplata" title="Daviplata">
+                            alt="Daviplata" title="Daviplata" loading="lazy" width="50" height="50">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
-                            alt="Addi" title="Addi">
+                            alt="Addi" title="Addi" loading="lazy" width="50" height="50">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
-                            alt="Sistecredito" title="Sistecredito">
+                            alt="Sistecredito" title="Sistecredito" loading="lazy" width="50" height="50">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
-                            alt="Fodegas" title="Fodegas">
+                            alt="Fodegas" title="Fodegas" loading="lazy" width="50" height="50">
                     </div>
                 </div>
                 <!-- Domicilios -->
@@ -404,7 +408,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 Moteros Sports Line | Variedades JyM - Todos los derechos reservados</p>
+                <p>&copy; 2025 Moteros Sports Line - Todos los derechos reservados | Desarrollado por JyM Tech Solutions</p>
             </div>
         </div>
     </footer>
@@ -418,11 +422,14 @@
         </svg>
     </a>
 
+    <!-- Scripts -->
+    <script src="js/security-shield.js"></script>
     <script src="js/config.js"></script>
-    <script src="js/security.js"></script>
-    <script src="js/ia-core.js"></script>
-    <script src="js/ai-widget.js"></script>
-    <script src="js/index.js"></script>
+    <script src="js/promociones.js" defer></script>
+    <script src="js/ia-core.js" defer></script>
+    <script src="js/ai-widget.js" defer></script>
+    <script src="js/a11y-widget.js" defer></script>
+    <script src="js/index.js" defer></script>
     <script>
         const db = window.supabaseClient;
 

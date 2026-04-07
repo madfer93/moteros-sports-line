@@ -931,8 +931,9 @@ button {
     }
 }
 
-/* BLOQUEO CLICK DERECHO */
-.no-select {
+/* BLOQUEO CLICK DERECHO - Desactivado en modo accesibilidad */
+body:not(.a11y-reader-mode) .no-select,
+body:not(.a11y-reader-mode).no-select {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;

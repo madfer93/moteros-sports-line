@@ -1,0 +1,212 @@
+/**
+ * MOTEROS SPORT LINE - A11Y WIDGET CSS
+ * Estilos para el Hub de Accesibilidad e Inclusividad
+ */
+
+:root {
+    --a11y-primary: #ff6b00;
+    --a11y-dark: #0f172a;
+    --a11y-white: #ffffff;
+    --a11y-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* El Widget Flotante */
+#a11y-widget-container {
+    position: fixed;
+    bottom: 90px; /* Encima de WhatsApp */
+    left: 20px;
+    z-index: 10001;
+    font-family: 'Inter', sans-serif;
+}
+
+.a11y-toggle-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--a11y-dark);
+    color: var(--a11y-white);
+    border: 2px solid var(--a11y-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: var(--a11y-shadow);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    padding: 0;
+}
+
+.a11y-toggle-btn:hover {
+    transform: scale(1.1) rotate(5deg);
+    background: var(--a11y-primary);
+}
+
+/* El Menú */
+.a11y-menu {
+    position: absolute;
+    bottom: 70px;
+    left: 0;
+    width: 280px;
+    background: var(--a11y-white);
+    border-radius: 15px;
+    box-shadow: var(--a11y-shadow);
+    padding: 1.5rem;
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+    animation: slideUpIn 0.3s ease-out;
+    border: 1px solid #e2e8f0;
+}
+
+.a11y-menu.active {
+    display: flex;
+}
+
+.a11y-menu h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--a11y-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 0.5rem;
+}
+
+.a11y-options-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+.a11y-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.9rem;
+    color: #475569;
+    font-weight: 500;
+}
+
+.a11y-option:hover {
+    background: #f1f5f9;
+}
+
+.a11y-option.active {
+    background: #fff7ed;
+    border-color: var(--a11y-primary);
+    color: var(--a11y-primary);
+}
+
+.a11y-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+/* Estilos de Modos de Accesibilidad (Body Classes) */
+
+/* 1. Alto Contraste */
+body.a11y-high-contrast {
+    filter: contrast(1.5) !important;
+}
+body.a11y-high-contrast *:not(.a11y-exclude) {
+    background-color: #000 !important;
+    color: #fff !important;
+    border-color: #fff !important;
+}
+
+/* 2. Tamaño de Texto */
+body.a11y-text-lg {
+    font-size: 1.25rem !important;
+}
+body.a11y-text-xl {
+    font-size: 1.5rem !important;
+}
+
+/* 3. Fuente Dislexia */
+body.a11y-dyslexia {
+    font-family: 'Comic Sans MS', 'OpenDyslexic', sans-serif !important;
+}
+
+/* 4. Resaltar Enlaces */
+body.a11y-highlight-links a {
+    background: yellow !important;
+    color: black !important;
+    font-weight: 800 !important;
+    outline: 3px solid black !important;
+}
+
+/* 5. Detener Animaciones */
+body.a11y-stop-animations * {
+    animation: none !important;
+    transition: none !important;
+}
+
+/* Estilizacion del selector de Idioma (Google Translate) */
+.a11y-lang-selector {
+    border-top: 1px solid #f1f5f9;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+}
+
+.goog-te-gadget {
+    font-family: 'Inter', sans-serif !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.goog-te-gadget .goog-te-combo {
+    width: 100% !important;
+    padding: 10px !important;
+    border-radius: 10px !important;
+    border: 1px solid #e2e8f0 !important;
+    background: #f8fafc !important;
+    color: #475569 !important;
+    font-size: 0.9rem !important;
+    outline: none !important;
+    cursor: pointer;
+}
+
+.goog-te-gadget span {
+    display: none !important;
+}
+
+.goog-logo-link {
+    display: none !important;
+}
+
+/* Permitimos que el combo sea visible */
+.goog-te-gadget .goog-te-combo {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Ocultar barra de Google Translate en escritorio */
+#goog-gt-tt { display: none !important; }
+.goog-te-banner-frame { display: none !important; }
+body { top: 0 !important; }
+
+@keyframes slideUpIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile Ajustes */
+@media (max-width: 600px) {
+    .a11y-menu {
+        width: calc(100vw - 40px);
+        left: 0;
+    }
+}

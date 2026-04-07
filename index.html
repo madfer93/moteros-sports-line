@@ -46,8 +46,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="img/hero-bg.jpg">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/premium.css">
     <link rel="stylesheet" href="css/ai-widget.css">
+    <link rel="stylesheet" href="css/a11y-widget.css">
 
     <meta name="description"
         content="Moteros Sport Line - La Casa Oficial de los Moteros en Villavicencio, Meta. Cascos, guantes, chaquetas, botas, intercomunicadores y accesorios de calidad para motociclistas. 3 locales: Alcalá, Jordán y Local 01.">
@@ -458,7 +462,7 @@
 
     <!-- Menu Movil -->
     <div class="mobile-nav" id="mobileNav">
-        <a href="index.html">Inicio</a>
+        <a href="/">Inicio</a>
         <a href="catalogo.html">Tienda</a>
         <a href="nosotros.html">Nosotros</a>
         <a href="blog.html">Blog</a>
@@ -469,9 +473,9 @@
     <header class="header">
         <div class="container">
             <div class="header-left">
-                <a href="index.html" class="logo">
+                <a href="/" class="logo">
                     <img src="img/logo-moteros.jpeg" alt="Moteros Sports Line" width="150" height="150"
-                        fetchpriority="high">
+                        fetchpriority="high" decoding="async" loading="eager">
                 </a>
             </div>
 
@@ -484,7 +488,7 @@
 
             <div class="header-right">
                 <nav class="nav" id="topNav">
-                    <a href="index.html">Inicio</a>
+                    <a href="/">Inicio</a>
                     <a href="catalogo.html">Tienda</a>
                     <a href="nosotros.html">Nosotros</a>
                     <a href="blog.html">Blog</a>
@@ -540,10 +544,8 @@
             <!-- Columna Izquierda: Marca y Acciones -->
             <div class="hero-brand-col">
                 <div class="hero-logo">
-                    <img id="siteLogo"
-                        src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
-                        alt="Moteros Sport Line Logo" class="hero-logo-img" width="300" height="300"
-                        fetchpriority="high" decoding="async">
+                    <img id="siteLogo" src="img/logo-moteros.jpeg" alt="Moteros Sport Line Logo" class="hero-logo-img"
+                        width="300" height="300" fetchpriority="high" decoding="async">
                 </div>
                 <div class="ai-badge-hero">
                     <span class="ai-badge-pulse"></span>
@@ -574,7 +576,8 @@
             <div class="hero-locations-col">
                 <div class="location-gallery-item">
                     <a href="https://maps.app.goo.gl/Z2pDJt11sAgE9WH97" target="_blank" class="location-map">
-                        <img src="img/local01.jpg?v=2" alt="Local Jordan" class="location-img">
+                        <img src="img/local01.jpg?v=2" alt="Local Jordan" class="location-img" width="400" height="300"
+                            loading="lazy" decoding="async">
                         <div class="location-overlay">
                             <span><i class="fas fa-map-marked-alt"></i> LOCAL 01</span>
                         </div>
@@ -582,7 +585,8 @@
                 </div>
                 <div class="location-gallery-item">
                     <a href="https://maps.app.goo.gl/MitBYM19LbGGZ9kz8" target="_blank" class="location-map">
-                        <img src="img/LOCAL-ALCALA.jpg" alt="Local Alcalá" class="location-img">
+                        <img src="img/LOCAL-ALCALA.jpg" alt="Local Alcalá" class="location-img" width="400" height="300"
+                            loading="lazy" decoding="async">
                         <div class="location-overlay">
                             <span><i class="fas fa-map-marked-alt"></i> LOCAL ALCALÁ</span>
                         </div>
@@ -922,8 +926,9 @@
                 <div class="footer-section">
                     <h4>Contacto General</h4>
                     <p><i class="fas fa-phone"></i><a href="tel:+573113408416" style="color:white;">311 340 8416</a></p>
-                    <p><i class="fas fa-envelope"></i><a href="mailto:moterossportline@gmail.com"
-                            style="color:white;">moterossportline@gmail.com</a></p>
+                    <p><i class="fas fa-envelope"></i><a href="javascript:void(0)"
+                            onclick="window.location.href='mailto:' + atob('bW90ZXJvc3Nwb3J0bGluZUBnbWFpbC5jb20=')"
+                            style="color:white;">Contactar por WebMail</a></p>
                 </div>
                 <div class="footer-section">
                     <h4>Siguenos</h4>
@@ -948,15 +953,16 @@
                     <h4>Pagos</h4>
                     <div class="footer-payments-grid">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/NEQUI.jpg"
-                            alt="Nequi" title="Nequi">
+                            alt="Nequi" title="Nequi" width="60" height="30" loading="lazy" decoding="async">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/daviplata.jpg"
-                            alt="Daviplata" title="Daviplata">
+                            alt="Daviplata" title="Daviplata" width="60" height="30" loading="lazy" decoding="async">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/Addi.jpg"
-                            alt="Addi" title="Addi">
+                            alt="Addi" title="Addi" width="60" height="30" loading="lazy" decoding="async">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/sistecredito.png"
-                            alt="Sistecredito" title="Sistecredito">
+                            alt="Sistecredito" title="Sistecredito" width="60" height="30" loading="lazy"
+                            decoding="async">
                         <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/fodegas.jpg"
-                            alt="Fodegas" title="Fodegas">
+                            alt="Fodegas" title="Fodegas" width="60" height="30" loading="lazy" decoding="async">
                     </div>
                 </div>
                 <!-- Domicilios -->
@@ -986,12 +992,14 @@
     </a>
 
     <!-- Scripts -->
+    <script src="js/security-shield.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="js/security.js" defer></script>
     <script src="js/config.js" onerror="this.src='js/config.js.example'" defer></script>
     <script src="js/promociones.js" defer></script>
     <script src="js/ia-core.js" defer></script>
     <script src="js/ai-widget.js" defer></script>
+    <script src="js/a11y-widget.js" defer></script>
     <script src="js/index.js" defer></script>
     <script>
         function toggleMobileMenu() {
