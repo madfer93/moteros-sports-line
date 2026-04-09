@@ -48,6 +48,7 @@ let cuentasBancarias = []; // Cuentas de la empresa para transferencias
 let visualProductoActual = null;
 let visualColorSeleccionado = null;
 let visualTallaSeleccionada = null;
+let visualTiendaOrigenSeleccionada = null;
 let visualStockActual = 0;
 
 
@@ -534,10 +535,27 @@ async function mostrarModalCerrarCaja() {
     const hoy = new Date().toISOString().split('T')[0];
 
     try {
-        const { data: ventas } = await db.from('ventas')
+        const hoyStr = hoy + 'T00:00:00';
+
+        // Query principal: por numero_cierre (más exacto)
+        let { data: ventas } = await db.from('ventas')
             .select('*')
             .eq('local', TIENDA.nombre)
             .eq('numero_cierre', datosCaja?.numeroCierre);
+
+        // Fallback: si no hay ventas por numero_cierre, buscar por fecha y local del día actual
+        // Útil cuando las ventas de prueba no tienen el numero_cierre asignado o es una sesión nueva
+        if ((!ventas || ventas.length === 0) && datosCaja) {
+            const fallback = await db.from('ventas')
+                .select('*')
+                .eq('local', TIENDA.nombre)
+                .gte('created_at', datosCaja.horaApertura || hoyStr);
+            if (fallback.data && fallback.data.length > 0) {
+                ventas = fallback.data;
+                console.info('⚠️ Usando fallback por fecha para ventas del cierre');
+            }
+        }
+
 
         // Consultar abonos a proveedores del día por LOCAL
         const { data: abonosProv } = await db.from('pagos_proveedor')
@@ -582,7 +600,7 @@ async function mostrarModalCerrarCaja() {
 
         // Estructura de totales según tipo de tienda
         const totales = TIENDA.esDigital ? {
-            transferencia: 0, nequi: 0, daviplata: 0, tarjeta: 0,
+            efectivo: 0, transferencia: 0, nequi: 0, daviplata: 0, tarjeta: 0,
             contraentrega: 0, addi: 0, sistecredito: 0, fodegas: 0
         } : {
             efectivo: 0, transferencia: 0, tarjeta: 0, daviplata: 0,
@@ -592,6 +610,15 @@ async function mostrarModalCerrarCaja() {
 
         let totalGeneralVentas = 0;
         let totalUnidades = 0;
+
+        // Mapa de cuentas bancarias por ID → banco (para desglose de transferencias)
+        const mapaCuentas = (cuentasBancarias || []).reduce((acc, c) => {
+            acc[c.id] = (c.banco || '').toLowerCase();
+            return acc;
+        }, {});
+
+        // Totales de transferencias desglosadas por banco
+        const transferenciasPorBanco = {};
 
         (ventas || []).forEach(v => {
             if (v.estado_venta === 'Anulada') return; // IGNORAR VENTAS ANULADAS EN TOTALES
@@ -605,16 +632,29 @@ async function mostrarModalCerrarCaja() {
                 // Si existe el nuevo campo JSON, usarlo directamente
                 Object.entries(v.pago_desglose).forEach(([metodo, valor]) => {
                     const mKey = metodo.toLowerCase().replace(/á/g, 'a').replace(/é/g, 'e');
-                    if (totales.hasOwnProperty(mKey)) {
+
+                    // Si es transferencia, desglosa por banco de la cuenta seleccionada
+                    if (mKey === 'transferencia' && v.cuenta_id) {
+                        const banco = mapaCuentas[v.cuenta_id] || '';
+                        // Siempre suma al total de transferencias
+                        totales.transferencia += valor;
+                        // También suma al campo específico del banco
+                        if (banco.includes('nequi')) {
+                            totales.nequi += valor;
+                        } else if (banco.includes('daviplata')) {
+                            totales.daviplata += valor;
+                        } else {
+                            // Bancolombia u otro banco → campo Bancolombia (tarjeta)
+                            totales.tarjeta += valor;
+                        }
+                        // Acumular detalle por banco para el resumen
+                        transferenciasPorBanco[banco || 'otros'] = (transferenciasPorBanco[banco || 'otros'] || 0) + valor;
+                    } else if (totales.hasOwnProperty(mKey)) {
                         totales[mKey] += valor;
                     } else if (mKey.includes('tarjeta') || mKey.includes('datafono')) {
                         totales.tarjeta += valor;
                     } else if (mKey.includes('credito motero')) {
                         totales.credito_motero += valor;
-                    }
-                    // Sumar a efectivo total si no es digital
-                    if (mKey === 'efectivo' && !TIENDA.esDigital) {
-                        // Ya se sumó arriba si mKey existe en totales
                     }
                 });
             } else {
@@ -623,8 +663,17 @@ async function mostrarModalCerrarCaja() {
                 const numMetodos = (metodos.match(/\+/g) || []).length + 1;
                 const montoPorMetodo = monto / numMetodos;
 
-                if (metodos.includes('efectivo') && !TIENDA.esDigital) totales.efectivo += montoPorMetodo;
-                if (metodos.includes('transferencia')) totales.transferencia += montoPorMetodo;
+                if (metodos.includes('efectivo')) totales.efectivo += montoPorMetodo;
+                if (metodos.includes('transferencia')) {
+                    totales.transferencia += montoPorMetodo;
+                    // Si tiene cuenta_id, desglosar por banco
+                    if (v.cuenta_id) {
+                        const banco = mapaCuentas[v.cuenta_id] || '';
+                        if (banco.includes('nequi')) totales.nequi += montoPorMetodo;
+                        else if (banco.includes('daviplata')) totales.daviplata += montoPorMetodo;
+                        else totales.tarjeta += montoPorMetodo;
+                    }
+                }
                 if (metodos.includes('tarjeta')) totales.tarjeta += montoPorMetodo;
                 if (metodos.includes('daviplata')) totales.daviplata += montoPorMetodo;
                 if (metodos.includes('nequi')) totales.nequi += montoPorMetodo;
@@ -636,6 +685,7 @@ async function mostrarModalCerrarCaja() {
                 if (metodos.includes('contraentrega')) totales.contraentrega = (totales.contraentrega || 0) + montoPorMetodo;
             }
         });
+
 
         const base = datosCaja?.montoInicial || 0;
         const totalGastos = gastosDelDia.reduce((sum, g) => sum + (g.monto || 0), 0);
@@ -691,11 +741,11 @@ async function mostrarModalCerrarCaja() {
         // Generar filas de desglose por método (solo mostrar > 0)
         const metodoLabels = {
             efectivo: '💵 Efectivo',
-            transferencia: '🏦 Transferencia',
+            transferencia: '🏦 Transferencias (Total)',
             nequi: '📱 Nequi',
             daviplata: '📱 Daviplata',
-            tarjeta: '💳 Tarjeta',
-            datafono: '🖥️ Datáfono',
+            tarjeta: '🏦 Bancolombia',
+            datafono: '🖥️ Datáfono/Tarjeta',
             addi: '🅰️ Addi',
             sistecredito: '📋 Sistecrédito',
             credito_motero: '🏍️ Crédito Motero',
@@ -798,7 +848,13 @@ async function mostrarModalCerrarCaja() {
             if (document.getElementById('fodegasContado')) document.getElementById('fodegasContado').value = Math.round(totales.fodegas || 0);
 
             // Efectivo vacío para obligar al conteo
-            if (document.getElementById('efectivoContado')) document.getElementById('efectivoContado').value = '';
+            // Efectivo vacío para obligar al conteo
+            if (document.getElementById('efectivoContado')) {
+                document.getElementById('efectivoContado').value = '';
+            }
+            if(document.getElementById('balanceCierreCard')) {
+                document.getElementById('balanceCierreCard').classList.remove('visible');
+            }
         }
 
         const obsEl = document.getElementById('observacionesCierre');
@@ -819,6 +875,54 @@ async function mostrarModalCerrarCaja() {
 }
 
 // ---------------------------------------------------------------
+// CALCULADORA DE DENOMINACIONES - POS MOTEROS
+// ---------------------------------------------------------------
+function actualizarBalanceCierre() {
+    if (!resumenVentas) return;
+
+    const contado = parseFloat(document.getElementById('efectivoContado')?.value) || 0;
+    const baseCaja = resumenVentas.base || 0;
+    const esperado = resumenVentas.efectivoEsperado || 0;
+    const balance = contado - esperado;
+
+    const card = document.getElementById('balanceCierreCard');
+    const title = document.getElementById('balanceTitle');
+    const amount = document.getElementById('balanceAmount');
+    const msg = document.getElementById('balanceMsg');
+
+    if (!card) return;
+
+    if (contado === 0) {
+        card.classList.remove('visible');
+        return;
+    }
+
+    card.classList.add('visible');
+    amount.textContent = `${balance >= 0 ? '+' : ''}$${Math.abs(balance).toLocaleString('es-CO')}`;
+
+    // LÓGICA DE ESTADOS
+    const faltaExactamenteBase = Math.abs(contado - (esperado - baseCaja)) < 500;
+
+    if (faltaExactamenteBase) {
+        card.className = 'balance-card visible danger';
+        title.textContent = '🚨 ¡FALTA LA BASE!';
+        msg.textContent = `No sumaste los $${baseCaja.toLocaleString('es-CO')} iniciales.`;
+    } else if (balance === 0) {
+        card.className = 'balance-card visible success';
+        title.textContent = '✅ BALANCE PERFECTO';
+        msg.textContent = 'El efectivo coincide con el sistema.';
+    } else if (balance > 0) {
+        card.className = 'balance-card visible success';
+        title.textContent = '💰 SOBRANTE EN CAJA';
+        msg.textContent = 'Hay más dinero contado que el esperado.';
+    } else {
+        card.className = 'balance-card visible danger';
+        title.textContent = '📉 FALTANTE EN CAJA';
+        msg.textContent = 'El dinero contado es menor al esperado.';
+    }
+}
+
+// ---------------------------------------------------------------
 // CIERRE DE CAJA - CONFIRMAR (TIENDA FISICA)
 // ---------------------------------------------------------------
 async function confirmarCerrarCaja() {
@@ -832,6 +936,7 @@ async function confirmarCerrarCaja() {
     const sistecreditoContado = parseFloat(document.getElementById('sistecreditoContado')?.value) || 0;
     const fodegasContado = parseFloat(document.getElementById('fodegasContado')?.value) || 0;
     const observaciones = document.getElementById('observacionesCierre')?.value.trim() || '';
+    const motivoSobrante = document.getElementById('motivoSobrante')?.value.trim() || '';
 
     // Validar efectivo si hubo ventas en efectivo
     if ((resumenVentas?.totales?.efectivo || 0) > 0 && efectivoContado <= 0) {
@@ -845,6 +950,7 @@ async function confirmarCerrarCaja() {
         .map(g => `${g.descripcion}: $${g.monto.toLocaleString('es-CO')}`).join(' | ');
 
     const diferenciaEfectivo = efectivoContado - (resumenVentas?.efectivoEsperado || 0);
+    const montoSobrante = diferenciaEfectivo > 0 ? diferenciaEfectivo : 0;
 
     const totalContado = efectivoContado + transferenciaContado + tarjetaContado +
         daviplataContado + nequiContado + addiContado + datafonoContado +
@@ -852,7 +958,12 @@ async function confirmarCerrarCaja() {
 
     const totalEsperado = (resumenVentas?.totalGeneralCierre || 0) + base - (resumenVentas?.totalAdelantos || 0) - totalGastos - (resumenVentas?.totalAbonosProv || 0);
     const diferenciaTotal = totalContado - totalEsperado;
-    const observacionesFinal = [observaciones, gastosDetalle].filter(Boolean).join(' || Gastos: ');
+    // Construir observaciones finales incluyendo gastos y motivo del sobrante
+    const partesSobrante = [];
+    if (motivoSobrante && montoSobrante > 0) {
+        partesSobrante.push(`Sobrante $${montoSobrante.toLocaleString('es-CO')}: ${motivoSobrante}`);
+    }
+    const observacionesFinal = [observaciones, gastosDetalle ? `Gastos: ${gastosDetalle}` : '', ...partesSobrante].filter(Boolean).join(' || ');
 
     try {
         const { error } = await db.from('cierres_caja')
@@ -884,7 +995,10 @@ async function confirmarCerrarCaja() {
                 diferencia_total: Math.round(diferenciaTotal),
                 detalles_cierre: resumenVentas.ventasDelDia || [],
                 vendedores_detalle: resumenVentas.ventasPorVendedor || {},
-                estado: 'cerrado'
+                estado: 'cerrado',
+                dinero_sobrante: Math.round(montoSobrante),
+                total_gastos_dia: Math.round(totalGastos),
+                observaciones: observacionesFinal,
             })
             .eq('numero_cierre', datosCaja?.numeroCierre);
 
@@ -1558,18 +1672,73 @@ function actualizarTallasVisual() {
 function seleccionarTallaVisual(talla, qty, element) {
     visualTallaSeleccionada = talla;
     visualStockActual = qty;
+    visualTiendaOrigenSeleccionada = null;
 
     document.querySelectorAll('#visualTallaGrid .chip').forEach(c => c.classList.remove('active'));
     element.classList.add('active');
 
+    const btnConfirmar = document.getElementById('btnConfirmarVisual') || document.getElementById('btnConfirmarSeleccion');
+    if (btnConfirmar) btnConfirmar.disabled = true; // Deshabilitado hasta cumplir lógica de stock
+
     const stockInfo = document.getElementById('visualStockInfo');
     if (stockInfo) {
         if (qty > 0) {
-            stockInfo.innerHTML = `<span style="color:#059669; font-weight:700;">✅ Stock Disponible: ${qty} unidades</span>`;
+            let infoHtml = `<span style="color:#059669; font-weight:700;">✅ Stock Disponible: ${qty} unidades</span>`;
+            
+            if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
+                // Inyectar UI de selección de Tienda de Despacho
+                infoHtml += `<div style="margin-top:0.8rem; padding-top:0.8rem; border-top:1px dashed #cbd5e1;">
+                    <label style="font-size:0.8rem; font-weight:700; color:#334155; display:block; margin-bottom:0.6rem;">📍 Selecciona Sucursal de Despacho:</label>
+                    <div id="visualStoreGrid" class="chip-grid" style="grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));">`;
+                
+                let tiendas = [];
+                if (visualProductoActual.stocks_globales) {
+                    for (const [t, coloresObj] of Object.entries(visualProductoActual.stocks_globales)) {
+                        const q = (coloresObj[visualColorSeleccionado || ''] || {})[talla] || 0;
+                        if (q > 0) {
+                            tiendas.push({ nombre: t, qty: q });
+                        }
+                    }
+                }
+                
+                tiendas.forEach(ts => {
+                    infoHtml += `<div class="chip" onclick="seleccionarTiendaDeDespacho('${ts.nombre}', this)" style="font-size:0.8rem; padding:0.4rem;">${ts.nombre} <br><small>(${ts.qty})</small></div>`;
+                });
+                infoHtml += `</div></div>`;
+            } else {
+                if (btnConfirmar) btnConfirmar.disabled = false; // Tienda física no necesita elegir origen
+            }
+            
+            stockInfo.innerHTML = infoHtml;
+            
+            // Auto-seleccionar si solo existe una sola sucursal con stock
+            if ((TIENDA.esDigital || TIENDA.nombre === 'Admin') && stockInfo.querySelectorAll('#visualStoreGrid .chip').length === 1) {
+                stockInfo.querySelector('#visualStoreGrid .chip').click();
+            }
+
         } else {
             stockInfo.innerHTML = `<span style="color:#dc2626; font-weight:700;">⚠️ Sin Stock (Solo Referencia)</span>`;
+            if (TIENDA.nombre === 'Admin' && btnConfirmar) btnConfirmar.disabled = false;
         }
+    } else {
+        if (btnConfirmar && qty > 0) btnConfirmar.disabled = false;
     }
+}
+
+function seleccionarTiendaDeDespacho(tiendaNombre, element) {
+    visualTiendaOrigenSeleccionada = tiendaNombre;
+    document.querySelectorAll('#visualStoreGrid .chip').forEach(c => {
+        c.classList.remove('active');
+        c.style.background = '#f8fafc';
+        c.style.color = '#334155';
+        c.style.borderColor = '#e2e8f0';
+    });
+    
+    // Estilizar el chip seleccionado
+    element.classList.add('active');
+    element.style.background = '#0ea5e9';
+    element.style.color = '#fff';
+    element.style.borderColor = '#0ea5e9';
 
     const btnConfirmar = document.getElementById('btnConfirmarVisual') || document.getElementById('btnConfirmarSeleccion');
     if (btnConfirmar) btnConfirmar.disabled = false;
@@ -1579,17 +1748,13 @@ function confirmarSeleccionVisual() {
     if (!visualProductoActual || !visualTallaSeleccionada) return;
 
     if (TIENDA.esDigital || TIENDA.nombre === 'Admin') {
-        let tiendaOrigen = TIENDA.nombre;
-        // Buscar en qué p* tienda hay stock de esta combinación
-        if (visualProductoActual.stocks_globales) {
-            for (const [t, coloresObj] of Object.entries(visualProductoActual.stocks_globales)) {
-                const q = (coloresObj[visualColorSeleccionado || ''] || {})[visualTallaSeleccionada] || 0;
-                if (q > 0) {
-                    tiendaOrigen = t;
-                    break;
-                }
-            }
+        let tiendaOrigen = visualTiendaOrigenSeleccionada || TIENDA.nombre;
+        
+        if (!visualTiendaOrigenSeleccionada) {
+            mostrarAlerta('⚠️ Por favor elige una sucursal de despacho', 'warning');
+            return;
         }
+        
         agregarAlCarrito(visualProductoActual.id_producto, tiendaOrigen, visualTallaSeleccionada, visualColorSeleccionado);
     } else {
         agregarAlCarrito(visualProductoActual.id_producto, visualTallaSeleccionada, visualColorSeleccionado);
@@ -2184,10 +2349,10 @@ async function registrarClienteDigital() {
     // Solo para tienda digital
     if (!TIENDA.esDigital) return null;
 
-    const nombre = document.getElementById('clienteNombre')?.value.trim();
-    const telefono = document.getElementById('clienteTelefono')?.value.trim();
-    const cedula = document.getElementById('clienteCedula')?.value.trim();
-    const direccion = document.getElementById('direccionEnvio')?.value.trim();
+    const nombre = (document.getElementById('clienteNombre')?.value || '').trim();
+    const telefono = (document.getElementById('clienteTelefono')?.value || '').trim();
+    const cedula = (document.getElementById('clienteCedula')?.value || '').trim();
+    const direccion = (document.getElementById('direccionEnvio')?.value || '').trim();
 
     // Si no hay datos de cliente, retornar consumidor final
     if (!nombre || !telefono) return null;
@@ -2251,10 +2416,10 @@ async function procesarVenta() {
 
     // Validar datos de crédito
     if (destino === 'tienda' && tieneCredito) {
-        const nombre = document.getElementById('creditoNombre')?.value.trim();
-        const telefono = document.getElementById('creditoTelefono')?.value.trim();
-        const cedula = document.getElementById('creditoCedula')?.value.trim();
-        const direccion = document.getElementById('creditoDireccion')?.value.trim();
+        const nombre = (document.getElementById('creditoNombre')?.value || '').trim();
+        const telefono = (document.getElementById('creditoTelefono')?.value || '').trim();
+        const cedula = (document.getElementById('creditoCedula')?.value || '').trim();
+        const direccion = (document.getElementById('creditoDireccion')?.value || '').trim();
         const autoriza = document.getElementById('creditoAutoriza')?.value;
 
         if (!nombre || !telefono || !cedula || !direccion || !autoriza) {
@@ -2377,7 +2542,7 @@ async function procesarVenta() {
             // aunque el JSON general reside en cada fila por simplicidad técnica actual
             const { error: errorVenta } = await db.from('ventas').insert({
                 id_venta: id_venta,
-                local: origenReal,
+                local: TIENDA.nombre, // El dinero entra a esta tienda
                 id_producto: item.id_producto,
                 nombre_producto: item.nombre,
                 cantidad: item.cantidad,
@@ -2406,7 +2571,7 @@ async function procesarVenta() {
                     console.warn('Offline: Venta fallá en Supabase, encolando localmente...');
                     const ventaOffline = {
                         id_venta: id_venta,
-                        local: origenReal,
+                        local: TIENDA.nombre,
                         id_producto: item.id_producto,
                         nombre_producto: item.nombre,
                         cantidad: item.cantidad,
@@ -2652,13 +2817,13 @@ async function procesarVentaDigital() {
     if (metodosSeleccionados.size === 0) return mostrarAlerta('Selecciona método de pago', 'error');
 
     // Validar datos de envío (obligatorios para digital)
-    const clienteNombre = document.getElementById('clienteNombre').value.trim();
-    const clienteTelefono = document.getElementById('clienteTelefono').value.trim();
-    const clienteCedula = document.getElementById('clienteCedula').value.trim();
-    const direccionEnvio = document.getElementById('direccionEnvio').value.trim();
-    const ciudadEnvio = document.getElementById('ciudadEnvio').value.trim();
-    const departamentoEnvio = document.getElementById('departamentoEnvio').value;
-    const notasEnvio = document.getElementById('notasEnvio').value.trim();
+    const clienteNombre = (document.getElementById('clienteNombre')?.value || '').trim();
+    const clienteTelefono = (document.getElementById('clienteTelefono')?.value || '').trim();
+    const clienteCedula = (document.getElementById('clienteCedula')?.value || '').trim();
+    const direccionEnvio = (document.getElementById('direccionEnvio')?.value || '').trim();
+    const ciudadEnvio = (document.getElementById('ciudadEnvio')?.value || '').trim();
+    const departamentoEnvio = document.getElementById('departamentoEnvio')?.value;
+    const notasEnvio = (document.getElementById('notasEnvio')?.value || '').trim();
 
     if (!clienteNombre || !clienteTelefono || !clienteCedula || !direccionEnvio || !ciudadEnvio || !departamentoEnvio) {
         return mostrarAlerta('⚠️ Completa todos los datos de envío', 'error');

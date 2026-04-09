@@ -442,9 +442,16 @@
             <!-- Conteo por mtodo -->
             <h4 style="margin:1rem 0 0.6rem; font-size:0.9rem; color:#475569;">💵 Conteo de Dinero</h4>
             <div class="cierre-grid">
-                <div class="form-group">
-                    <label>💵 Efectivo contado *</label>
-                    <input type="number" id="efectivoContado" min="0" placeholder="0">
+                <div class="cierre-fila-efectivo" style="grid-column: span 2; display: flex; gap: 0.5rem; align-items: flex-end; margin-bottom: 0;">
+                    <div class="form-group" style="flex:1; margin:0; display:flex; flex-direction:column; justify-content:flex-end;">
+                        <label>💵 Efectivo contado *</label>
+                        <input type="number" id="efectivoContado" min="0" placeholder="0" oninput="actualizarBalanceCierre()">
+                    </div>
+                    <div id="balanceCierreCard" class="balance-card" style="flex:1; margin:0; padding:0.4rem; justify-content:center;">
+                        <span id="balanceTitle" class="balance-title" style="font-size:0.7rem; margin-bottom:2px;">Balance de Caja</span>
+                        <span id="balanceAmount" class="balance-amount" style="font-size:1rem; font-weight:bold;">$0</span>
+                        <span id="balanceMsg" class="balance-msg" style="font-size:0.65rem; display:none;"></span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>🏦 Transferencias</label>
@@ -459,11 +466,11 @@
                     <input type="number" id="daviplataContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>💳 Tarjeta</label>
+                    <label>💳 Bancolombia</label>
                     <input type="number" id="tarjetaContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>🖥️ Datáfono</label>
+                    <label>🖥️ Datáfono/Tarjeta</label>
                     <input type="number" id="datafonoContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">

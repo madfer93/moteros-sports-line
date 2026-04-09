@@ -426,94 +426,85 @@
 
     <!-- ===== MODAL: CERRAR CAJA ===== -->
     <div id="modalCerrarCaja" class="modal-overlay">
-        <div class="modal modal-large">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h3 style="margin:0;">🔐 Cierre de Caja</h3>
-                <button onclick="cerrarModal()" style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">✖</button>
+        <div class="modal modal-large modal-cierre">
+
+            <!-- HEADER -->
+            <div class="cierre-header">
+                <h3>🔐 Cierre de Caja</h3>
+                <button onclick="cerrarModal()" class="cierre-close-btn">✖</button>
             </div>
 
-            <!-- Resumen del sistema -->
-            <div id="resumenCierreModal"></div>
+            <!-- ZONA SCROLLABLE (todo el contenido) -->
+            <div class="cierre-scroll-zone">
 
-            <!-- Conteo por método -->
-            <h4 style="margin:1rem 0 0.6rem; font-size:0.9rem; color:#475569;">💵 Conteo de Dinero</h4>
-            <div class="cierre-grid">
-                <div class="form-group">
-                    <label>💵 Efectivo contado *</label>
-                    <input type="number" id="efectivoContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>🏦 Transferencias</label>
-                    <input type="number" id="transferenciaContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>📱 Nequi</label>
-                    <input type="number" id="nequiContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>📱 Daviplata</label>
-                    <input type="number" id="daviplataContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>💳 Tarjeta</label>
-                    <input type="number" id="tarjetaContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>🖥️ Datáfono</label>
-                    <input type="number" id="datafonoContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>🅰️ Addi</label>
-                    <input type="number" id="addiContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>📋 Sistecrédito</label>
-                    <input type="number" id="sistecreditoContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>📦 Fodegas</label>
-                    <input type="number" id="fodegasContado" min="0" placeholder="0">
-                </div>
-            </div>
+                <!-- ① RESUMEN ARRIBA -->
+                <div id="resumenCierreModal"></div>
 
-            <!-- Gastos del día -->
-            <div class="gastos-container">
-                <h4>🧾 Gastos del Día</h4>
-                <div id="gastosLista"></div>
-                <button class="btn-agregar-gasto" onclick="agregarGasto()">➕ Agregar Gasto</button>
-                <div class="gastos-total">
-                    <span>Total Gastos:</span>
-                    <span id="totalGastos">$0</span>
-                </div>
-            </div>
+                <div class="cierre-divider">📝 Conteo de Dinero</div>
 
-            <!-- Dinero Sobrante - NUEVO -->
-            <div id="seccionSobrante"
-                style="margin:1rem 0; padding:1rem; background:#f0f9ff; border-radius:12px; border:1px solid #bae6fd;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h4 style="margin:0; color:#0369a1;">💰 Dinero Sobrante / Ajuste</h4>
-                    <span id="labelMontoSobrante" style="font-weight:700; color:#0369a1;">$0</span>
+                <!-- ② EFECTIVO + BALANCE (fila completa) -->
+                <div class="cierre-fila-efectivo">
+                    <div class="cierre-efectivo-box">
+                        <label class="cierre-lbl">💵 Efectivo Contado en Caja</label>
+                        <input type="number" id="efectivoContado" class="input-efectivo" placeholder="$0" oninput="actualizarBalanceCierre()">
+                    </div>
+                    <div id="balanceCierreCard" class="balance-card balance-card-wide">
+                        <span id="balanceTitle" class="balance-title">Balance de Caja</span>
+                        <span id="balanceAmount" class="balance-amount">$0</span>
+                        <span id="balanceMsg" class="balance-msg"></span>
+                    </div>
                 </div>
-                <div class="form-group" style="margin-top:0.5rem;">
-                    <label>Motivo del dinero extra (opcional)</label>
-                    <input type="text" id="motivoSobrante" placeholder="Ej: Propina, cliente no llevó cambio, etc.">
+
+                <!-- ③ OTROS MÉTODOS (fila completa, grid amplio) -->
+                <div class="cierre-otros-bloque">
+                    <label class="cierre-lbl">🏦 Otros Métodos de Pago</label>
+                    <div class="cierre-metodos-grid-wide">
+                        <div class="cierre-campo"><label>Transferencias</label><input type="number" id="transferenciaContado" min="0" placeholder="0"></div>
+                        <div class="cierre-campo"><label>Nequi</label><input type="number" id="nequiContado" min="0" placeholder="0"></div>
+                        <div class="cierre-campo"><label>Daviplata</label><input type="number" id="daviplataContado" min="0" placeholder="0"></div>
+                        <div class="cierre-campo"><label>Bancolombia</label><input type="number" id="tarjetaContado" min="0" placeholder="0"></div>
+                        <div class="cierre-campo"><label>Datáfono/Tarjeta</label><input type="number" id="datafonoContado" min="0" placeholder="0"></div>
+                        <div class="cierre-campo"><label>Addi</label><input type="number" id="addiContado" min="0" placeholder="0"></div>
+                        <div class="cierre-campo"><label>Sistecrédito</label><input type="number" id="sistecreditoContado" min="0" placeholder="0"></div>
+                        <div class="cierre-campo"><label>Crédito Motero</label><input type="number" id="creditoMoteroContado" min="0" placeholder="0"></div>
+                        <div class="cierre-campo"><label>Fodegas</label><input type="number" id="fodegasContado" min="0" placeholder="0"></div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Observaciones -->
-            <div class="form-group">
-                <label>📝 Observaciones (opcional)</label>
-                <textarea id="observacionesCierre" rows="2" placeholder="Notas adicionales del cierre..."></textarea>
-            </div>
+                <!-- ④ GASTOS + SOBRANTE + OBSERVACIONES (fila completa) -->
+                <div class="cierre-extras-wide">
+                    <div class="gastos-container">
+                        <h4>🧾 Gastos del Día</h4>
+                        <div id="gastosLista"></div>
+                        <button class="btn-agregar-gasto" onclick="agregarGasto()">➕ Agregar Gasto</button>
+                        <div class="gastos-total"><span>Total Gastos:</span><span id="totalGastos">$0</span></div>
+                    </div>
+                    <div id="seccionSobrante" class="sobrante-container">
+                        <h4>💰 Sobrante / Ajuste</h4>
+                        <span id="labelMontoSobrante" class="sobrante-monto">$0</span>
+                        <input type="text" id="motivoSobrante" placeholder="Motivo (opcional)">
+                    </div>
+                    <div class="cierre-campo" style="flex:2;">
+                        <label>📝 Observaciones (opcional)</label>
+                        <textarea id="observacionesCierre" rows="3" placeholder="Notas adicionales del cierre..."></textarea>
+                    </div>
+                </div>
 
-            <div class="modal-botones">
+            </div><!-- /cierre-scroll-zone -->
+
+            <!-- FOOTER -->
+            <div class="cierre-footer">
                 <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
-                <button class="btn btn-success" onclick="confirmarCerrarCaja()">✅ Cerrar y Guardar</button>
+                <button class="btn btn-success btn-large" onclick="confirmarCerrarCaja()">✅ Cerrar y Guardar</button>
             </div>
         </div>
     </div>
 
+
+
+
     <!-- ===== MODAL: EDITAR PRECIO ===== -->
+
     <div id="modalEditarPrecio" class="modal-overlay">
         <div class="modal">
             <h3>Modificar Precio</h3>
@@ -875,8 +866,38 @@
                 <button onclick="cerrarModalServicios()" class="btn btn-outline"
                     style="flex:1; padding:1rem;">Cancelar</button>
             </div>
+
+            <div style="margin-top:1.5rem; border-top:1px solid #eee; padding-top:1rem; text-align:center;">
+                <a href="#" onclick="abrirBuscadorServicios(); return false;"
+                    style="color:var(--primary); font-weight:600; text-decoration:none; font-size:0.9rem;">🔍 Buscar /
+                    Entregar Servicio Existente</a>
+            </div>
         </div>
     </div>
+
+    <!-- MODAL BUSCADOR SERVICIOS -->
+    <div id="modalBuscarServicios" class="modal-overlay">
+        <div class="modal" style="max-width:700px;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:1rem; margin-bottom:1.5rem;">
+                <h3 style="margin:0; color:var(--dark);">🔍 Seguimiento de Servicios</h3>
+                <button onclick="document.getElementById('modalBuscarServicios').style.display='none'"
+                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <input type="text" id="queryServicio" class="search-input"
+                        placeholder="Nombre o Teléfono del cliente..."
+                        onkeyup="if(event.key==='Enter') buscarServicios()">
+                    <button onclick="buscarServicios()" class="btn btn-primary">Buscar</button>
+                </div>
+                <div id="resultadosServicios" style="max-height:400px; overflow-y:auto; margin-top:1rem;">
+                    <!-- Se llena vía JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- ====== MODAL: REGISTRO RÁPIDO DE CLIENTE ====== -->
     <div id="modalRegistroCliente" class="modal-overlay">

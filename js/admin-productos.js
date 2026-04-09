@@ -522,6 +522,27 @@ async function mostrarFormProducto() {
         if (el) el.value = (id === 'productoEstado') ? 'Activo' : '';
     });
 
+    // Limpiar listas dinámicas (Colores, Fotos y Tallas)
+    const containerColores = document.getElementById('containerColoresFotos');
+    if (containerColores) containerColores.innerHTML = '';
+    const tbodyTallas = document.getElementById('tbodyTallasStock');
+    if (tbodyTallas) tbodyTallas.innerHTML = '';
+
+    // Limpiar vista previa de la imagen principal
+    const previewContainer = document.getElementById('previewContainerProducto');
+    if (previewContainer) previewContainer.style.display = 'none';
+    const previewImg = document.getElementById('previewProducto');
+    if (previewImg) previewImg.src = '';
+    const fileInput = document.getElementById('fileInputProducto');
+    if (fileInput) fileInput.value = '';
+
+    // Limpiar Checkboxes de etiquetas
+    const checkOferta = document.getElementById('productoEnOferta');
+    if (checkOferta) { checkOferta.checked = false; if (typeof toggleFechaOferta === 'function') toggleFechaOferta(); }
+    
+    const checkNuevo = document.getElementById('productoEsNuevo');
+    if (checkNuevo) { checkNuevo.checked = false; if (typeof toggleFechaNuevo === 'function') toggleFechaNuevo(); }
+
     await cargarProveedoresEnSelectProducto();
     await cargarCategoriasSelect();
 }

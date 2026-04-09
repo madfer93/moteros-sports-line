@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moteros-cache-v2';
+const CACHE_NAME = 'moteros-cache-v3';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -47,15 +47,25 @@ self.addEventListener('activate', event => {
 
 // Estrategia de Cache: Network First, falling back to cache
 self.addEventListener('fetch', event => {
-    // No interceptar peticiones a Supabase (manejo manual en js/offline-db.js)
-    if (event.request.url.includes('supabase.co')) {
+    const url = new URL(event.request.url);
+
+    // No interceptar peticiones no-HTTP (como WebSockets ws:// o extensiones)
+    if (!url.protocol.startsWith('http')) {
+        return;
+    }
+
+    // No interceptar peticiones a Supabase ni a APIs externas como ipapi
+    if (url.hostname.includes('supabase.co') || url.hostname.includes('ipapi.co')) {
         return;
     }
 
     event.respondWith(
         fetch(event.request)
             .catch(() => {
-                return caches.match(event.request);
+                return caches.match(event.request).then(response => {
+                    // Retorna de caché si existe, si no, un error limpio en vez de undefined
+                    return response || Response.error();
+                });
             })
     );
 });

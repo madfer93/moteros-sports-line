@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POS Digital | Moteros Sports Line</title>
-    <link rel="icon" href="../img/logo-moteros.jpeg">
+    <link rel="apple-touch-icon" sizes="180x180" href="../img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../img/favicon-16x16.png">
+    <link rel="manifest" href="../img/site.webmanifest">
     <script src="../js/security-shield.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../css/pos.css">
@@ -33,7 +36,9 @@
 
             <!-- Pantalla inicial para abrir caja -->
             <div id="pantallaAbrirCaja">
-                <img src="../img/logo-moteros.jpeg" alt="Moteros Sports Line" class="locked-logo logo-img">
+                <img id="site-logo"
+                    src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
+                    alt="Moteros Sports Line" class="locked-logo logo-img">
                 <h2>🔒 Caja Cerrada</h2>
                 <p class="tienda-nombre tienda-nombre-display">Digital</p>
                 <p>Abre la caja para comenzar a vender</p>
@@ -47,7 +52,9 @@
     <!-- ====== HEADER ====== -->
     <header class="header">
         <div class="header-left">
-            <img src="../img/logo-moteros.jpeg" alt="Logo" class="header-logo logo-img">
+            <img id="site-logo"
+                src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg"
+                alt="Moteros Sports Line" class="header-logo logo-img">
             <div>
                 <h1>🏪 Moteros - <span class="tienda-nombre-display">Digital</span></h1>
             </div>
@@ -361,7 +368,8 @@
         <div class="modal modal-large">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                 <h3 style="margin:0;">🔐 Cierre de Caja</h3>
-                <button onclick="cerrarModal()" style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">✖</button>
+                <button onclick="cerrarModal()"
+                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">✖</button>
             </div>
 
             <!-- Resumen del sistema -->
@@ -370,9 +378,22 @@
             <!-- Conteo por método -->
             <h4 style="margin:1rem 0 0.6rem; font-size:0.9rem; color:#475569;">💵 Conteo de Dinero</h4>
             <div class="cierre-grid">
-                <div class="form-group">
-                    <label>💵 Efectivo contado *</label>
-                    <input type="number" id="efectivoContado" min="0" placeholder="0">
+                <div class="cierre-fila-efectivo"
+                    style="grid-column: span 2; display: flex; gap: 0.5rem; align-items: flex-end; margin-bottom: 0;">
+                    <div class="form-group"
+                        style="flex:1; margin:0; display:flex; flex-direction:column; justify-content:flex-end;">
+                        <label>💵 Efectivo contado *</label>
+                        <input type="number" id="efectivoContado" min="0" placeholder="0"
+                            oninput="actualizarBalanceCierre()">
+                    </div>
+                    <div id="balanceCierreCard" class="balance-card"
+                        style="flex:1; margin:0; padding:0.4rem; justify-content:center;">
+                        <span id="balanceTitle" class="balance-title"
+                            style="font-size:0.7rem; margin-bottom:2px;">Balance de Caja</span>
+                        <span id="balanceAmount" class="balance-amount"
+                            style="font-size:1rem; font-weight:bold;">$0</span>
+                        <span id="balanceMsg" class="balance-msg" style="font-size:0.65rem; display:none;"></span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>🏦 Transferencias</label>
@@ -387,11 +408,11 @@
                     <input type="number" id="daviplataContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>💳 Tarjeta</label>
+                    <label>💳 Bancolombia</label>
                     <input type="number" id="tarjetaContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>🖥️ Datáfono</label>
+                    <label>🖥️ Datáfono/Tarjeta</label>
                     <input type="number" id="datafonoContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
@@ -881,16 +902,17 @@
                         <img id="visualMainImage" src="" alt="Producto">
                     </div>
                 </div>
-                
+
                 <!-- Columna 2: Colores y Búsqueda -->
                 <div class="visual-column">
                     <div class="option-section">
                         <label>🎨 Selecciona Color / Diseño:</label>
                         <div class="search-box-mini" style="margin-bottom:0.8rem; position:relative;">
-                            <input type="text" id="inputBuscarColor" placeholder="Buscar color o diseño..." 
-                                   oninput="filtrarColoresVisual()" 
-                                   style="width:100%; padding:0.6rem 0.6rem 0.6rem 2.2rem; border:2px solid #e2e8f0; border-radius:10px; font-size:0.9rem;">
-                            <span style="position:absolute; left:0.8rem; top:50%; transform:translateY(-50%); color:#94a3b8;">🔍</span>
+                            <input type="text" id="inputBuscarColor" placeholder="Buscar color o diseño..."
+                                oninput="filtrarColoresVisual()"
+                                style="width:100%; padding:0.6rem 0.6rem 0.6rem 2.2rem; border:2px solid #e2e8f0; border-radius:10px; font-size:0.9rem;">
+                            <span
+                                style="position:absolute; left:0.8rem; top:50%; transform:translateY(-50%); color:#94a3b8;">🔍</span>
                         </div>
                         <div id="visualColorGrid" class="chip-grid"></div>
                     </div>
@@ -904,7 +926,7 @@
                         <div id="visualTallaGrid" class="chip-grid"></div>
                     </div>
                     <div id="visualStockInfo" class="visual-stock-info"></div>
-                    
+
                     <div class="visual-actions" style="flex-direction:column; align-items:flex-start; gap:1rem;">
                         <div class="price-display">
                             <span id="visualPriceDisplay">$0</span>

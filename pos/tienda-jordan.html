@@ -445,9 +445,16 @@
             <!-- Conteo por método -->
             <h4 style="margin:1rem 0 0.6rem; font-size:0.9rem; color:#475569;">💵 Conteo de Dinero</h4>
             <div class="cierre-grid">
-                <div class="form-group">
-                    <label>💵 Efectivo contado *</label>
-                    <input type="number" id="efectivoContado" min="0" placeholder="0">
+                <div class="cierre-fila-efectivo" style="grid-column: span 2; display: flex; gap: 0.5rem; align-items: flex-end; margin-bottom: 0;">
+                    <div class="form-group" style="flex:1; margin:0; display:flex; flex-direction:column; justify-content:flex-end;">
+                        <label>💵 Efectivo contado *</label>
+                        <input type="number" id="efectivoContado" min="0" placeholder="0" oninput="actualizarBalanceCierre()">
+                    </div>
+                    <div id="balanceCierreCard" class="balance-card" style="flex:1; margin:0; padding:0.4rem; justify-content:center;">
+                        <span id="balanceTitle" class="balance-title" style="font-size:0.7rem; margin-bottom:2px;">Balance de Caja</span>
+                        <span id="balanceAmount" class="balance-amount" style="font-size:1rem; font-weight:bold;">$0</span>
+                        <span id="balanceMsg" class="balance-msg" style="font-size:0.65rem; display:none;"></span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>🏦 Transferencias</label>
@@ -462,11 +469,11 @@
                     <input type="number" id="daviplataContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>💳 Tarjeta</label>
+                    <label>💳 Bancolombia</label>
                     <input type="number" id="tarjetaContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label>🖥️ Datáfono</label>
+                    <label>🖥️ Datáfono/Tarjeta</label>
                     <input type="number" id="datafonoContado" min="0" placeholder="0">
                 </div>
                 <div class="form-group">
@@ -883,8 +890,38 @@
                 <button onclick="cerrarModalServicios()" class="btn btn-outline"
                     style="flex:1; padding:1rem;">Cancelar</button>
             </div>
+
+            <div style="margin-top:1.5rem; border-top:1px solid #eee; padding-top:1rem; text-align:center;">
+                <a href="#" onclick="abrirBuscadorServicios(); return false;"
+                    style="color:var(--primary); font-weight:600; text-decoration:none; font-size:0.9rem;">🔍 Buscar /
+                    Entregar Servicio Existente</a>
+            </div>
         </div>
     </div>
+
+    <!-- MODAL BUSCADOR SERVICIOS -->
+    <div id="modalBuscarServicios" class="modal-overlay">
+        <div class="modal" style="max-width:700px;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:1rem; margin-bottom:1.5rem;">
+                <h3 style="margin:0; color:var(--dark);">🔍 Seguimiento de Servicios</h3>
+                <button onclick="document.getElementById('modalBuscarServicios').style.display='none'"
+                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <input type="text" id="queryServicio" class="search-input"
+                        placeholder="Nombre o Teléfono del cliente..."
+                        onkeyup="if(event.key==='Enter') buscarServicios()">
+                    <button onclick="buscarServicios()" class="btn btn-primary">Buscar</button>
+                </div>
+                <div id="resultadosServicios" style="max-height:400px; overflow-y:auto; margin-top:1rem;">
+                    <!-- Se llena vía JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- ====== MODAL: REGISTRO RÁPIDO DE CLIENTE ====== -->
     <div id="modalRegistroCliente" class="modal-overlay">
