@@ -929,10 +929,35 @@
                                 </a>
                             </div>
                         </div>
-                        <div class="local-map">
-                            <iframe
-                                src="https://www.google.com/maps/embed?pb=!3m2!1ses-419!2sco!4v1767146482438!5m2!1ses-419!2sco!6m8!1m7!1swkNYxyusd9n1NnVw4BN7vg!2m2!1d4.148323309652049!2d-73.623960435254!3f42.20731289351911!4f8.338184291131014!5f0.7820865974627469"
-                                allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        <div class="local-map" style="background: none; min-height: auto; height: 100%;">
+                            <a href="https://maps.app.goo.gl/xey3kPoAxGBKRLSL6" target="_blank"
+                                style="display: block; height: 100%; position: relative; overflow: hidden; border-radius: 0 1.5rem 1.5rem 0;">
+                                <img src="img/moterossportlinevip.png" alt="Fachada Local Jordan" loading="lazy" width="600" height="450"
+                                    style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;">
+                                <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s;"
+                                    class="map-overlay">
+                                    <span
+                                        style="background: white; padding: 0.5rem 1rem; border-radius: 2rem; font-weight: bold; color: var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                                        <i class="fas fa-map-marked-alt"></i> Ver en Maps
+                                    </span>
+                                </div>
+                            </a>
+                            <style>
+                                .local-map a:hover img {
+                                    transform: scale(1.05);
+                                }
+
+                                .local-map a:hover .map-overlay {
+                                    opacity: 1;
+                                }
+
+                                @media (max-width: 900px) {
+                                    .local-map a {
+                                        border-radius: 1.5rem 1.5rem 0 0 !important;
+                                        min-height: 300px;
+                                    }
+                                }
+                            </style>
                         </div>
                     </div>
                 </div>
@@ -1106,7 +1131,7 @@
                         if (!horariosConfig[local].dias.includes(0)) {
                             horariosConfig[local].dias.push(0);
                         }
-                    } else if (texto.includes('lun-sab') || texto.includes('lunes a sabado') || texto.includes('lunes a sábado')) {
+                    } else if (texto.includes('lun-sab') || texto.includes('lunes a sabado') || texto.includes('lunes a sábado') || texto.includes('lunes-sábado') || texto.includes('lunes-sabado')) {
                         horariosConfig[local].dias = [1, 2, 3, 4, 5, 6];
                     }
 
