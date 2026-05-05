@@ -244,7 +244,7 @@ npm run build
 
 ## 📄 Licencia
 
-© 2025 Moteros Sports Line - Todos los derechos reservados | Desarrollado por JyM Tech Solutions
+© 2026 Moteros Sports Line - Todos los derechos reservados | Desarrollado por JyM Tech Solutions
 
 Proyecto privado desarrollado para uso exclusivo de Moteros Sports Line.
 

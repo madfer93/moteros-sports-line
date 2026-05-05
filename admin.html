@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel | Moteros Sports Line</title>
+    <meta name="robots" content="noindex, nofollow">
+    <title>Panel de Administración | Moteros Sport Line</title>
     <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
@@ -960,9 +961,11 @@
 
                 <div id="formCategoria" class="form-modal">
                     <div class="modal-content-wrapper"
-                        style="max-width: 500px; height: auto !important; min-height: auto !important; padding: 1.5rem !important;">
-                        <h3 id="formTituloCategoria" style="margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem;">
-                            Nueva Categoría</h3>
+                        style="max-width: 500px; height: auto !important; min-height: auto !important; padding: 1.5rem !important; overflow-y: auto;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; position: sticky; top: -1.5rem; background: white; z-index: 100; margin: -1.5rem -1.5rem 1.5rem -1.5rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; border-radius: 1rem 1rem 0 0;">
+                            <h3 id="formTituloCategoria" style="margin:0; font-size:1.25rem;">Nueva Categoría</h3>
+                            <button type="button" onclick="cancelarFormCategoria()" style="background:none; border:none; font-size:1.5rem; color:#64748b; cursor:pointer;">✖</button>
+                        </div>
                         <input type="hidden" id="categoriaId">
                         <div class="form-row" style="margin-bottom: 0.5rem !important;">
                             <div class="form-group" style="flex: 1;">
@@ -1695,7 +1698,7 @@
                 <div id="formProducto" class="form-modal">
                     <div class="modal-content-wrapper"
                         style="max-width: 1000px; margin: 0 auto; background: white; padding: 2rem; border-radius: 1rem; height: 90vh; overflow-y: auto;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; position: sticky; top: -2rem; background: white; z-index: 100; margin: -2rem -2rem 2rem -2rem; padding: 1.5rem 2rem; border-bottom: 1px solid #e2e8f0; border-radius: 1rem 1rem 0 0;">
                             <h3 id="formTituloProducto" style="margin:0;">➕ Nuevo Producto</h3>
                             <button type="button" onclick="cancelarFormProducto()" style="background:none; border:none; font-size:1.5rem; color:#64748b; cursor:pointer;" title="Cerrar modal">✖</button>
                         </div>
@@ -3054,9 +3057,10 @@
                 <div id="formProveedor" class="form-modal" style="display:none; z-index: 10001;">
                     <div
                         style="background:white; width:95% !important; max-width:1600px !important; margin:auto; padding:2.5rem; border-radius:1rem; box-shadow:0 25px 60px rgba(0,0,0,0.4); height:90vh; display:flex; flex-direction:column; position:relative;">
-                        <h3 id="formTituloProveedor"
-                            style="margin-top:0; font-size:1.5rem; border-bottom:1px solid #e2e8f0; padding-bottom:1rem; margin-bottom:1.5rem;">
-                            ➕ Nuevo Proveedor</h3>
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:1rem; margin-bottom:1.5rem;">
+                            <h3 id="formTituloProveedor" style="margin:0; font-size:1.5rem;">➕ Nuevo Proveedor</h3>
+                            <button type="button" onclick="cancelarFormProveedor()" style="background:none; border:none; font-size:1.5rem; color:#64748b; cursor:pointer;">✖</button>
+                        </div>
                         <input type="hidden" id="proveedorId">
 
                         <div
@@ -3295,7 +3299,7 @@
                             style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:1rem; margin-bottom:1rem;">
                             <h3 id="formTituloCompra" style="margin:0; font-size:1.5rem;">➕ Nueva Compra a Proveedor
                             </h3>
-                            <button onclick="cancelarFormCompra()" class="btn btn-sm btn-secondary">✖️</button>
+                            <button type="button" onclick="cancelarFormCompra()" style="background:none; border:none; font-size:1.5rem; color:#64748b; cursor:pointer;">✖</button>
                         </div>
 
                         <input type="hidden" id="compraId">
@@ -4196,7 +4200,11 @@
                 </div>
 
                 <div id="formPost" class="form-modal" style="display:none;">
-                    <h3 id="formTituloPost">➕ Nueva Publicación</h3>
+                    <div class="modal-content-wrapper" style="max-width: 800px; margin: 0 auto; background: white; padding: 2rem; border-radius: 1rem; max-height: 90vh; overflow-y: auto;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; position: sticky; top: -2rem; background: white; z-index: 100; margin: -2rem -2rem 2rem -2rem; padding: 1.5rem 2rem; border-bottom: 1px solid #e2e8f0; border-radius: 1rem 1rem 0 0;">
+                            <h3 id="formTituloPost" style="margin:0;">➕ Nueva Publicación</h3>
+                            <button type="button" onclick="cancelarFormPost()" style="background:none; border:none; font-size:1.5rem; color:#64748b; cursor:pointer;">✖</button>
+                        </div>
                     <input type="hidden" id="postId">
                     <div class="dropzone" id="dropzonePost" onclick="document.getElementById('fileInputPost').click()">
                         <div class="dropzone-icon">🖼️</div>
@@ -4221,7 +4229,7 @@
                     <div style="display:flex; gap:1rem; margin-top:1.5rem;">
                         <button onclick="guardarPost()" class="btn btn-success">💾 Publicar</button>
                         <button onclick="cancelarFormPost()" class="btn btn-secondary">Cancelar</button>
-                    </div>
+                    </div> <!-- Cierre Wrapper -->
                 </div>
 
                 <div id="listaPosts" class="productos-admin-grid">
@@ -6147,7 +6155,11 @@
 
                 <!-- FORM META PROVEEDOR -->
                 <div id="formMetaProveedor" class="form-modal" style="display:none;">
-                    <h3>➕ Nueva Meta Proveedor</h3>
+                    <div class="modal-content-wrapper" style="max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 1rem; max-height: 90vh; overflow-y: auto;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; position: sticky; top: -2rem; background: white; z-index: 100; margin: -2rem -2rem 2rem -2rem; padding: 1.5rem 2rem; border-bottom: 1px solid #e2e8f0; border-radius: 1rem 1rem 0 0;">
+                            <h3 id="formTituloMetaProveedor" style="margin:0;">➕ Nueva Meta Proveedor</h3>
+                            <button type="button" onclick="cancelarFormMetaProveedor()" style="background:none; border:none; font-size:1.5rem; color:#64748b; cursor:pointer;">✖</button>
+                        </div>
                     <div class="form-group">
                         <label>Proveedor <span class="required">*</span></label>
                         <input type="text" id="metaProvNombre" class="form-control" list="listaProveedoresDatalist"
@@ -6210,7 +6222,7 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </div> <!-- Cierre Wrapper -->
                 </div>
             </section>
 
