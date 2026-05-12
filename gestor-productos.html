@@ -358,60 +358,152 @@
             font-size: 0.8rem;
         }
 
-        /* MODAL CUSTOMIZATION */
+        /* MODAL CUSTOMIZATION - MATCHING ADMIN.HTML */
         .modal-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
             z-index: 11000;
             align-items: center;
             justify-content: center;
+            padding: 1rem;
         }
 
         .modal-content {
             background: white;
             width: 95%;
-            max-width: 1100px;
-            max-height: 90vh;
+            max-width: 1000px;
+            max-height: 98vh;
             border-radius: 1.5rem;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.6);
+            animation: modalSlideUp 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        @keyframes modalSlideUp {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
 
         .modal-header {
-            padding: 1.5rem 2rem;
-            background: white;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem 2.5rem;
+            background: #f1f5f9;
+            border-bottom: 1px solid #cbd5e1;
             display: flex;
             justify-content: space-between;
             align-items: center;
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 100;
         }
 
+        .modal-header h2 { margin: 0; font-size: 1.5rem; font-weight: 800; color: #0f172a; }
+
         .modal-body {
-            padding: 2rem;
+            padding: 2.5rem;
             overflow-y: auto;
             flex: 1;
         }
 
         .modal-footer {
-            padding: 1.5rem 2rem;
-            background: #f8fafc;
-            border-top: 1px solid #e2e8f0;
+            padding: 1.5rem 2.5rem;
+            background: #f1f5f9;
+            border-top: 1px solid #cbd5e1;
             display: flex;
             justify-content: flex-end;
-            gap: 1rem;
+            gap: 1.5rem;
             position: sticky;
             bottom: 0;
+            z-index: 10;
+        }
+
+        /* FORM UTILS FROM ADMIN */
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.25rem;
+            align-items: flex-end;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            flex: 1 1 220px;
+            margin-bottom: 0.5rem;
+        }
+
+        .required { color: #ef4444; margin-left: 2px; }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+
+        .form-section {
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+        }
+
+        /* DROPZONE STYLES */
+        .dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8fafc;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .dropzone:hover {
+            border-color: var(--primary);
+            background: #fff;
+        }
+
+        .dropzone-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .dropzone-text { font-weight: 600; color: #1e293b; }
+        .dropzone-subtext { font-size: 0.85rem; color: #64748b; }
+
+        .preview-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: white;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            z-index: 5;
+        }
+
+        .preview-image {
+            width: 100%; height: 100%;
+            object-fit: contain;
+        }
+
+        .remove-preview {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
             z-index: 10;
         }
 
@@ -427,13 +519,14 @@
             background: white;
             padding: 1rem 1.5rem;
             border-radius: 0.75rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             margin-top: 0.5rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
             animation: slideIn 0.3s ease-out;
             border-left: 4px solid var(--primary);
+            min-width: 300px;
         }
 
         @keyframes slideIn {
@@ -500,120 +593,193 @@
         </section>
     </div>
 
-    <!-- MODAL PRODUCTO (Replicado de admin.html) -->
+    <!-- MODAL PRODUCTO (IGUAL QUE ADMIN.HTML) -->
     <div id="formProducto" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="formTituloProducto">➕ Nuevo Producto</h2>
-                <button onclick="cancelarFormProducto()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+                <button onclick="cancelarFormProducto()" style="background:none; border:none; font-size:1.5rem; color:#64748b; cursor:pointer;">✖</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="productoId">
                 
-                <!-- Estructura del Formulario -->
-                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:2rem;">
-                    <div>
-                        <div class="form-group">
-                            <label>Nombre del Producto *</label>
-                            <input type="text" id="productoNombre" class="form-control" placeholder="Ej: Casco Shaft 581">
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Referencia / SKU</label>
-                                <input type="text" id="productoReferencia" class="form-control" placeholder="SKU-123">
-                            </div>
-                            <div class="form-group">
-                                <label>Marca</label>
-                                <input type="text" id="productoMarca" class="form-control" placeholder="Ej: Shaft">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Categoría</label>
-                                <select id="productoCategoria" class="form-control" onchange="actualizarFormularioPorCategoria()"></select>
-                            </div>
-                            <div class="form-group">
-                                <label>Proveedor</label>
-                                <select id="productoProveedor" class="form-control"></select>
-                            </div>
-                        </div>
-
-                        <!-- Sección de Colores y Fotos -->
-                        <div style="margin-top:2rem;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                                <h4 style="margin:0;">🎨 Colores y Fotos</h4>
-                                <button type="button" class="btn btn-sm btn-primary" onclick="agregarFilaColor()">+ Agregar Color</button>
-                            </div>
-                            <div id="containerColoresFotos" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
-                        </div>
-
-                        <!-- Sección de Tallas y Stock -->
-                        <div id="containerTallasStock" style="margin-top:2rem; display:none;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                                <h4 style="margin:0;">📏 Tallas y Stock</h4>
-                                <button type="button" class="btn btn-sm btn-primary" onclick="agregarFilaTalla()">+ Agregar Variantes</button>
-                            </div>
-                            <div class="table-container">
-                                <table class="data-table" id="tablaTallasStock">
-                                    <thead>
-                                        <tr>
-                                            <th>Color</th>
-                                            <th>Talla</th>
-                                            <th>Alcalá</th>
-                                            <th>Local 01</th>
-                                            <th>Jordán</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyTallasStock"></tbody>
-                                </table>
-                            </div>
-                        </div>
+                <div class="dropzone" id="dropzoneProducto" onclick="document.getElementById('fileInputProducto').click()">
+                    <div class="dropzone-icon">📸</div>
+                    <div class="dropzone-text">Arrastra una imagen aquí</div>
+                    <div class="dropzone-subtext">o haz clic para seleccionar (JPG, PNG, WebP - Max 5MB)</div>
+                    <input type="file" id="fileInputProducto" accept="image/*" style="display:none;" onchange="manejarImagenPrincipal(this)">
+                    <div class="preview-container" id="previewContainerProducto" style="display:none;">
+                        <img id="previewProducto" class="preview-image">
+                        <button class="remove-preview" onclick="event.stopPropagation(); removerPreview()">×</button>
                     </div>
+                    <input type="hidden" id="productoImagen">
+                </div>
 
-                    <!-- Columna Derecha: Precios e Imagen Principal -->
-                    <div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nombre <span class="required">*</span></label>
+                        <input type="text" id="productoNombre" class="form-control" placeholder="Nombre del producto">
+                    </div>
+                    <div class="form-group">
+                        <label>Referencia</label>
+                        <input type="text" id="productoReferencia" class="form-control" placeholder="REF-001">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Categoría <span class="required">*</span></label>
+                        <select id="productoCategoria" class="form-control" onchange="actualizarFormularioPorCategoria()">
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Subcategoría</label>
+                        <input type="text" id="productoSubcategoria" class="form-control" placeholder="Ej: Modular, Integral, Abierto">
+                    </div>
+                    <div class="form-group">
+                        <label>Marca <span class="required">*</span></label>
+                        <input type="text" id="productoMarca" class="form-control" placeholder="Marca">
+                    </div>
+                    <div class="form-group">
+                        <label>Proveedor</label>
+                        <select id="productoProveedor" class="form-control">
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN COLORES Y FOTOS -->
+                <div class="form-section" style="background: #f8fafc;">
+                    <h4 style="margin-bottom: 1rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🎨</span> Colores y Fotos
+                    </h4>
+                    <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;">
+                        Agregue los colores disponibles y asigne una imagen específica a cada uno.
+                    </p>
+                    <div id="containerColoresFotos" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem;"></div>
+                    <button type="button" class="btn btn-secondary" onclick="agregarFilaColor()" style="width: 100%;">
+                        + Agregar Color
+                    </button>
+                </div>
+
+                <!-- SECCIÓN TALLAS Y STOCK -->
+                <div id="containerTallasStock" class="form-section" style="background: #f8f9fa;">
+                    <h4 style="margin-bottom: 1rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>📏</span> Gestión de Tallas y Stock
+                    </h4>
+                    <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                        <table class="data-table" id="tablaTallasStock">
+                            <thead>
+                                <tr>
+                                    <th>Color</th>
+                                    <th>Talla</th>
+                                    <th>Alcalá</th>
+                                    <th>Local 01</th>
+                                    <th>Jordán</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyTallasStock"></tbody>
+                        </table>
+                    </div>
+                    <div style="text-align: right; margin-top: 1rem;">
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="agregarFilaTalla()">
+                            + Agregar Talla
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Precio Compra</label>
+                        <input type="number" id="productoPrecioCompra" class="form-control" placeholder="0">
+                        <p class="form-hint">Costo de adquisición</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio Venta <span class="required">*</span></label>
+                        <input type="number" id="productoPrecio" class="form-control" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Estado</label>
+                        <select id="productoEstado" class="form-control">
+                            <option value="Activo">Activo</option>
+                            <option value="Inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- ETIQUETAS PROMOCIONALES -->
+                <div class="form-section" style="background: #fef3c7; border-color: #fcd34d;">
+                    <h4 style="margin-bottom: 1rem; color: #92400e; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🏷️</span> Etiquetas del Producto
+                    </h4>
+                    <div class="form-row">
                         <div class="form-group">
-                            <label>Imagen Principal</label>
-                            <div style="border:2px dashed #e2e8f0; border-radius:1rem; padding:1rem; text-align:center;">
-                                <img id="previewProducto" src="" style="max-width:100%; display:none; border-radius:0.5rem; margin-bottom:1rem;">
-                                <input type="file" id="fileInputProducto" style="display:none;" onchange="manejarImagenPrincipal(this)">
-                                <button type="button" class="btn-login" style="background:#f1f5f9; color:#475569;" onclick="document.getElementById('fileInputProducto').click()">Subir Imagen</button>
-                                <input type="hidden" id="productoImagen">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="productoEnOferta" onchange="toggleFechaOferta()">
+                                <span style="font-weight: 700; color: #dc2626;">🏷️ En Oferta</span>
+                            </label>
+                            <div id="grupoFechaOferta" style="display: none; margin-top: 0.5rem;">
+                                <div style="display: flex; gap: 0.75rem;">
+                                    <div style="flex:1;">
+                                        <label style="font-size: 0.85rem;">% Descuento:</label>
+                                        <input type="number" id="productoPorcentajeOferta" class="form-control" placeholder="30">
+                                    </div>
+                                    <div style="flex:1;">
+                                        <label style="font-size: 0.85rem;">Válida hasta:</label>
+                                        <input type="date" id="productoOfertaHasta" class="form-control">
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
                         <div class="form-group">
-                            <label>Precio de Compra (Costo)</label>
-                            <input type="number" id="productoPrecioCompra" class="form-control" placeholder="0">
-                        </div>
-                        <div class="form-group">
-                            <label>Precio de Venta</label>
-                            <input type="number" id="productoPrecio" class="form-control" placeholder="0">
-                        </div>
-                        
-                        <div style="background:#f0fdf4; padding:1rem; border-radius:1rem; margin-top:1rem;">
-                            <label style="font-weight:700; color:#166534;">Stock Total Consolidado</label>
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; margin-top:0.5rem;">
-                                <div><small>Alcalá:</small> <input type="number" id="stockAlcala" class="form-control" readonly></div>
-                                <div><small>Local 01:</small> <input type="number" id="stockLocal01" class="form-control" readonly></div>
-                                <div><small>Jordán:</small> <input type="number" id="stockJordan" class="form-control" readonly></div>
-                                <div><small>Digital:</small> <input type="number" id="stockDigital" class="form-control"></div>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="productoEsNuevo" onchange="toggleFechaNuevo()">
+                                <span style="font-weight: 700; color: #059669;">✨ Es Nuevo</span>
+                            </label>
+                            <div id="grupoFechaNuevo" style="display: none; margin-top: 0.5rem;">
+                                <label style="font-size: 0.85rem;">Válido hasta:</label>
+                                <input type="date" id="productoNuevoHasta" class="form-control">
                             </div>
-                        </div>
-
-                        <div class="form-group" style="margin-top:1rem;">
-                            <label>Estado</label>
-                            <select id="productoEstado" class="form-control">
-                                <option value="Activo">Activo</option>
-                                <option value="Inactivo">Inactivo</option>
-                            </select>
                         </div>
                     </div>
                 </div>
+
+                <!-- STOCK CONSOLIDADO -->
+                <div class="form-section" style="background: #f0fdf4; border-color: #bbf7d0;">
+                    <h4 style="margin-bottom: 1rem; color: #166534;">📦 Stock por Tienda (Consolidado)</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>🏪 Alcalá</label>
+                            <input type="number" id="stockAlcala" class="form-control" readonly value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>🏬 Local 01</label>
+                            <input type="number" id="stockLocal01" class="form-control" readonly value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>🏢 Jordán</label>
+                            <input type="number" id="stockJordan" class="form-control" readonly value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>🌐 Digital</label>
+                            <input type="number" id="stockDigital" class="form-control" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción corta</label>
+                    <textarea id="productoDescCorta" class="form-control" rows="2" placeholder="Breve resumen"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Descripción técnica</label>
+                    <textarea id="productoDescTecnica" class="form-control" rows="3" placeholder="Características técnicas"></textarea>
+                </div>
             </div>
             <div class="modal-footer">
-                <button class="logout-btn" style="background:#e2e8f0; color:#475569;" onclick="cancelarFormProducto()">Cancelar</button>
+                <button class="btn btn-secondary" onclick="cancelarFormProducto()">Cancelar</button>
                 <button class="btn btn-primary" onclick="guardarProducto()">💾 Guardar Producto</button>
             </div>
         </div>
