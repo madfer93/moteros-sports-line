@@ -64,8 +64,8 @@
             .from('logs_sistema')
             .select('*')
             .eq('nivel', 'BLOQUEO')
-            .ilike('detalles->>ip', ip)
-            .single();
+            .eq('detalles->>ip', ip)
+            .maybeSingle();
 
         if (data) {
             triggerLockdown(ip, data.detalles?.city || 'Identificada');

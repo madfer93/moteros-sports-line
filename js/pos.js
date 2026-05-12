@@ -3093,6 +3093,13 @@ function limpiarDespuesVenta() {
     // Resetear a Consumidor Final
     seleccionarTipoCliente('consumidor');
 
+    // Limpiar buscador de productos
+    const inputBuscar = document.getElementById('inputBuscar');
+    if (inputBuscar) {
+        inputBuscar.value = '';
+        renderizarProductos(); // Mostrar todos los productos de nuevo
+    }
+
     renderizarCarrito();
 }
 
@@ -4122,6 +4129,11 @@ async function guardarAdelantoNomina() {
         mostrarAlerta(`Adelanto de $${monto.toLocaleString('es-CO')} registrado con éxito`, 'success');
         cerrarModalAdelantoNomina();
 
+        // REINICIAR POS COMPLETAMENTE
+        if (typeof limpiarDespuesVenta === 'function') {
+            limpiarDespuesVenta();
+        }
+
         if (window.moterosIA) {
             window.moterosIA.aprenderEvento('Adelanto de nómina registrado', {
                 monto,
@@ -4329,6 +4341,11 @@ async function confirmarAbonoCredito() {
 
         mostrarAlerta(`Abono de $${montoFinal.toLocaleString('es-CO')} registrado con éxito`, 'success');
         cerrarModalAbonoCredito();
+        
+        // REINICIAR POS COMPLETAMENTE
+        if (typeof limpiarDespuesVenta === 'function') {
+            limpiarDespuesVenta();
+        }
 
         if (window.moterosIA) {
             window.moterosIA.aprenderEvento('Abono crédito registrado', {
@@ -4430,6 +4447,11 @@ async function registrarServicio() {
 
         mostrarAlerta('✅ Servicio registrado exitosamente!', 'success');
         cerrarModalServicios();
+        
+        // REINICIAR POS COMPLETAMENTE
+        if (typeof limpiarDespuesVenta === 'function') {
+            limpiarDespuesVenta();
+        }
 
     } catch (e) {
         console.error('Error al registrar servicio:', e);
@@ -4783,6 +4805,11 @@ async function confirmarPagoProveedorInline() {
 
         mostrarAlerta(`✅ Pago de $${monto.toLocaleString('es-CO')} a ${prov.razon_social} registrado`, 'success');
         cargarProveedoresInline(); // Recargar lista para actualizar saldos
+        
+        // REINICIAR POS COMPLETAMENTE (Solicitud Usuario: evitar que quede info anterior)
+        if (typeof limpiarDespuesVenta === 'function') {
+            limpiarDespuesVenta();
+        }
 
     } catch (e) {
         console.error('Error en pago proveedor inline:', e);
