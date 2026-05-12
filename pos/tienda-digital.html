@@ -70,6 +70,8 @@
                 Crédito</button>
             <button class="btn btn-warning" onclick="abrirModalAdelantoNomina()" title="Adelanto de Nómina">💵
                 Adelanto</button>
+            <button class="btn btn-danger" onclick="abrirModalGastos()" title="Gastos del Día">🧾
+                Gastos</button>
             <button id="btnAbrirCaja" class="btn btn-success" onclick="abrirModalCaja()">🔓 Abrir</button>
             <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">🔒 Cerrar
                 Caja</button>
@@ -365,103 +367,126 @@
 
     <!-- ===== MODAL: CERRAR CAJA ===== -->
     <div id="modalCerrarCaja" class="modal-overlay">
-        <div class="modal modal-large">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h3 style="margin:0;">🔐 Cierre de Caja</h3>
-                <button onclick="cerrarModal()"
-                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">✖</button>
+        <div class="modal modal-large modal-cierre">
+            <!-- HEADER -->
+            <div class="cierre-header">
+                <h3>🔐 Cierre de Caja</h3>
+                <button onclick="cerrarModal()" class="cierre-close-btn">✖</button>
             </div>
+            <div class="cierre-scroll-zone">
 
             <!-- Resumen del sistema -->
             <div id="resumenCierreModal"></div>
 
             <!-- Conteo por método -->
-            <h4 style="margin:1rem 0 0.6rem; font-size:0.9rem; color:#475569;">💵 Conteo de Dinero</h4>
-            <div class="cierre-grid">
-                <div class="cierre-fila-efectivo"
-                    style="grid-column: span 2; display: flex; gap: 0.5rem; align-items: flex-end; margin-bottom: 0;">
-                    <div class="form-group"
-                        style="flex:1; margin:0; display:flex; flex-direction:column; justify-content:flex-end;">
-                        <label>💵 Efectivo contado *</label>
-                        <input type="number" id="efectivoContado" min="0" placeholder="0"
-                            oninput="actualizarBalanceCierre()">
+            <!-- 1. CONTEO PRINCIPAL -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+                <div class="form-group" style="background: #f8fafc; padding: 1.5rem; border-radius: 16px; border: 2px solid #e2e8f0;">
+                    <label style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                        💵 Efectivo Contado en Caja
+                    </label>
+                    <input type="number" id="efectivoContado" min="0" placeholder="0" oninput="actualizarBalanceCierre()"
+                        style="font-size: 3rem; font-weight: 800; text-align: center; border: 2px solid #ff6b00; height: auto; padding: 1rem; border-radius: 16px;">
+                </div>
+                <div id="balanceCierreCard" class="balance-card" style="margin:0; padding:1.5rem; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 2px solid #e2e8f0; min-height: 100%;">
+                    <span id="balanceTitle" class="balance-title" style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; margin-bottom: 0.5rem;">Balance de Caja</span>
+                    <span id="balanceAmount" class="balance-amount" style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">$0</span>
+                    <span id="balanceMsg" class="balance-msg" style="font-size: 0.9rem; font-weight: 600; padding: 0.4rem 1rem; border-radius: 20px; display: none;"></span>
+                </div>
+            </div>
+
+            <!-- 2. OTROS MÉTODOS -->
+            <h4 style="margin: 2rem 0 1rem; font-size: 0.9rem; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                🏛️ Otros Métodos de Pago
+            </h4>
+            <div class="cierre-grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem;">
+                <div class="form-group">
+                    <label style="font-size: 0.7rem;">TRANSFERENCIAS</label>
+                    <input type="number" id="transferenciaContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center;">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 0.7rem;">NEQUI</label>
+                    <input type="number" id="nequiContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center;">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 0.7rem;">DAVIPLATA</label>
+                    <input type="number" id="daviplataContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center;">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 0.7rem;">BANCOLOMBIA</label>
+                    <input type="number" id="tarjetaContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center;">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 0.7rem;">DATÁFONO/TARJETA</label>
+                    <input type="number" id="datafonoContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center;">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 0.7rem;">ADDI</label>
+                    <input type="number" id="addiContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center;">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 0.7rem;">SISTECRÉDITO</label>
+                    <input type="number" id="sistecreditoContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center;">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 0.7rem;">FODEGAS</label>
+                    <input type="number" id="fodegasContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center;">
+                </div>
+            </div>
+
+            <!-- 3. NOTAS Y AJUSTES -->
+            <div style="display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; margin-top: 2rem; align-items: start;">
+                <!-- Dinero Sobrante -->
+                <div id="seccionSobrante" style="margin:0; padding:1.2rem; background:#f0f9ff; border-radius:16px; border:2px solid #bae6fd; display: flex; flex-direction: column; gap: 0.8rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h4 style="margin:0; color:#0369a1; font-size: 0.85rem; font-weight: 800; text-transform: uppercase;">💰 Sobrante / Ajuste</h4>
                     </div>
-                    <div id="balanceCierreCard" class="balance-card"
-                        style="flex:1; margin:0; padding:0.4rem; justify-content:center;">
-                        <span id="balanceTitle" class="balance-title"
-                            style="font-size:0.7rem; margin-bottom:2px;">Balance de Caja</span>
-                        <span id="balanceAmount" class="balance-amount"
-                            style="font-size:1rem; font-weight:bold;">$0</span>
-                        <span id="balanceMsg" class="balance-msg" style="font-size:0.65rem; display:none;"></span>
+                    <span id="labelMontoSobrante" style="font-size: 1.8rem; font-weight: 800; color:#0369a1;">$0</span>
+                    <div class="form-group" style="margin:0;">
+                        <input type="text" id="motivoSobrante" placeholder="Motivo (opcional)" style="padding: 0.6rem; font-size: 0.85rem; border-color: #bae6fd; background: white;">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>🏦 Transferencias</label>
-                    <input type="number" id="transferenciaContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>📱 Nequi</label>
-                    <input type="number" id="nequiContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>📱 Daviplata</label>
-                    <input type="number" id="daviplataContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>💳 Bancolombia</label>
-                    <input type="number" id="tarjetaContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>🖥️ Datáfono/Tarjeta</label>
-                    <input type="number" id="datafonoContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>🅰️ Addi</label>
-                    <input type="number" id="addiContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>📋 Sistecrédito</label>
-                    <input type="number" id="sistecreditoContado" min="0" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>📦 Fodegas</label>
-                    <input type="number" id="fodegasContado" min="0" placeholder="0">
+
+                <!-- Observaciones -->
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+                        📝 Observaciones (opcional)
+                    </label>
+                    <textarea id="observacionesCierre" rows="4" placeholder="Notas adicionales del cierre..." style="border-radius: 16px; padding: 1rem;"></textarea>
                 </div>
             </div>
 
-            <!-- Gastos del día -->
-            <div class="gastos-container">
-                <h4>🧾 Gastos del Día</h4>
-                <div id="gastosLista"></div>
-                <button class="btn-agregar-gasto" onclick="agregarGasto()">➕ Agregar Gasto</button>
-                <div class="gastos-total">
-                    <span>Total Gastos:</span>
-                    <span id="totalGastos">$0</span>
-                </div>
             </div>
 
-            <!-- Dinero Sobrante - NUEVO -->
-            <div id="seccionSobrante"
-                style="margin:1rem 0; padding:1rem; background:#f0f9ff; border-radius:12px; border:1px solid #bae6fd;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h4 style="margin:0; color:#0369a1;">💰 Dinero Sobrante / Ajuste</h4>
-                    <span id="labelMontoSobrante" style="font-weight:700; color:#0369a1;">$0</span>
-                </div>
-                <div class="form-group" style="margin-top:0.5rem;">
-                    <label>Motivo del dinero extra (opcional)</label>
-                    <input type="text" id="motivoSobrante" placeholder="Ej: Propina, cliente no llevó cambio, etc.">
-                </div>
-            </div>
-
-            <!-- Observaciones -->
-            <div class="form-group">
-                <label>📝 Observaciones (opcional)</label>
-                <textarea id="observacionesCierre" rows="2" placeholder="Notas adicionales del cierre..."></textarea>
-            </div>
-
-            <div class="modal-botones">
+            <!-- FOOTER -->
+            <div class="cierre-footer">
                 <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
-                <button class="btn btn-success" onclick="confirmarCerrarCaja()">✅ Cerrar y Guardar</button>
+                <button class="btn btn-success btn-large" onclick="confirmarCerrarCaja()">✅ Cerrar y Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: GASTOS DEL DÍA ===== -->
+    <div id="modalGastos" class="modal-overlay">
+        <div class="modal modal-large" style="padding: 0;">
+            <div class="modal-header"
+                style="padding: 1.5rem 2.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 10;">
+                <h3 style="margin:0;">🧾 Gastos del Día</h3>
+                <button onclick="cerrarModalGastos()"
+                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">✖</button>
+            </div>
+            <div style="padding: 2.5rem;">
+                <div class="gastos-container" style="border:none; padding:0; background:none; box-shadow:none;">
+                    <div id="gastosLista"></div>
+                    <button class="btn-agregar-gasto" onclick="agregarGasto()">➕ Agregar Gasto</button>
+                    <div class="gastos-total">
+                        <span>Total Gastos:</span>
+                        <span id="totalGastos">$0</span>
+                    </div>
+                </div>
+                <div class="modal-botones" style="margin-top: 1.5rem;">
+                    <button class="btn btn-primary btn-full" onclick="cerrarModalGastos()">✅ Guardar y Cerrar</button>
+                </div>
             </div>
         </div>
     </div>

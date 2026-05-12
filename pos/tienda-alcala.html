@@ -68,6 +68,8 @@
                 Adelanto</button>
             <button class="btn btn-primary" onclick="abrirModalGestionBodegas()" title="Recibir Abono Bodega">📦
                 Bodegas</button>
+            <button class="btn btn-danger" onclick="abrirModalGastos()" title="Gastos del Día">🧾
+                Gastos</button>
             <button id="btnAbrirCaja" class="btn btn-success" onclick="abrirModalCaja()">🔓 Abrir</button>
             <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">🔒 Cerrar
                 Caja</button>
@@ -442,51 +444,84 @@
 
                 <div class="cierre-divider">📝 Conteo de Dinero</div>
 
-                <!-- ② EFECTIVO + BALANCE (fila completa) -->
-                <div class="cierre-fila-efectivo">
-                    <div class="cierre-efectivo-box">
-                        <label class="cierre-lbl">💵 Efectivo Contado en Caja</label>
-                        <input type="number" id="efectivoContado" class="input-efectivo" placeholder="$0" oninput="actualizarBalanceCierre()">
+                <!-- 1. CONTEO PRINCIPAL -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+                    <div class="form-group" style="background: #f8fafc; padding: 1.5rem; border-radius: 16px; border: 2px solid #e2e8f0;">
+                        <label style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                            💵 Efectivo Contado en Caja
+                        </label>
+                        <input type="number" id="efectivoContado" min="0" placeholder="0" oninput="actualizarBalanceCierre()"
+                            style="font-size: 3rem; font-weight: 800; text-align: center; border: 2px solid #ff6b00; height: auto; padding: 1rem; border-radius: 16px; width: 100%;">
                     </div>
-                    <div id="balanceCierreCard" class="balance-card balance-card-wide">
-                        <span id="balanceTitle" class="balance-title">Balance de Caja</span>
-                        <span id="balanceAmount" class="balance-amount">$0</span>
-                        <span id="balanceMsg" class="balance-msg"></span>
-                    </div>
-                </div>
-
-                <!-- ③ OTROS MÉTODOS (fila completa, grid amplio) -->
-                <div class="cierre-otros-bloque">
-                    <label class="cierre-lbl">🏦 Otros Métodos de Pago</label>
-                    <div class="cierre-metodos-grid-wide">
-                        <div class="cierre-campo"><label>Transferencias</label><input type="number" id="transferenciaContado" min="0" placeholder="0"></div>
-                        <div class="cierre-campo"><label>Nequi</label><input type="number" id="nequiContado" min="0" placeholder="0"></div>
-                        <div class="cierre-campo"><label>Daviplata</label><input type="number" id="daviplataContado" min="0" placeholder="0"></div>
-                        <div class="cierre-campo"><label>Bancolombia</label><input type="number" id="tarjetaContado" min="0" placeholder="0"></div>
-                        <div class="cierre-campo"><label>Datáfono/Tarjeta</label><input type="number" id="datafonoContado" min="0" placeholder="0"></div>
-                        <div class="cierre-campo"><label>Addi</label><input type="number" id="addiContado" min="0" placeholder="0"></div>
-                        <div class="cierre-campo"><label>Sistecrédito</label><input type="number" id="sistecreditoContado" min="0" placeholder="0"></div>
-                        <div class="cierre-campo"><label>Crédito Motero</label><input type="number" id="creditoMoteroContado" min="0" placeholder="0"></div>
-                        <div class="cierre-campo"><label>Fodegas</label><input type="number" id="fodegasContado" min="0" placeholder="0"></div>
+                    <div id="balanceCierreCard" class="balance-card" style="margin:0; padding:1.5rem; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: 2px solid #e2e8f0; min-height: 100%;">
+                        <span id="balanceTitle" class="balance-title" style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; margin-bottom: 0.5rem;">Balance de Caja</span>
+                        <span id="balanceAmount" class="balance-amount" style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">$0</span>
+                        <span id="balanceMsg" class="balance-msg" style="font-size: 0.9rem; font-weight: 600; padding: 0.4rem 1rem; border-radius: 20px; display: none;"></span>
                     </div>
                 </div>
 
-                <!-- ④ GASTOS + SOBRANTE + OBSERVACIONES (fila completa) -->
-                <div class="cierre-extras-wide">
-                    <div class="gastos-container">
-                        <h4>🧾 Gastos del Día</h4>
-                        <div id="gastosLista"></div>
-                        <button class="btn-agregar-gasto" onclick="agregarGasto()">➕ Agregar Gasto</button>
-                        <div class="gastos-total"><span>Total Gastos:</span><span id="totalGastos">$0</span></div>
+                <!-- 2. OTROS MÉTODOS -->
+                <h4 style="margin: 2rem 0 1rem; font-size: 0.9rem; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                    🏛️ Otros Métodos de Pago
+                </h4>
+                <div class="cierre-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem;">
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 0.3rem;">TRANSFERENCIAS</label>
+                        <input type="number" id="transferenciaContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;">
                     </div>
-                    <div id="seccionSobrante" class="sobrante-container">
-                        <h4>💰 Sobrante / Ajuste</h4>
-                        <span id="labelMontoSobrante" class="sobrante-monto">$0</span>
-                        <input type="text" id="motivoSobrante" placeholder="Motivo (opcional)">
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 0.3rem;">NEQUI</label>
+                        <input type="number" id="nequiContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;">
                     </div>
-                    <div class="cierre-campo" style="flex:2;">
-                        <label>📝 Observaciones (opcional)</label>
-                        <textarea id="observacionesCierre" rows="3" placeholder="Notas adicionales del cierre..."></textarea>
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 0.3rem;">DAVIPLATA</label>
+                        <input type="number" id="daviplataContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 0.3rem;">BANCOLOMBIA</label>
+                        <input type="number" id="tarjetaContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 0.3rem;">DATÁFONO/TARJETA</label>
+                        <input type="number" id="datafonoContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 0.3rem;">ADDI</label>
+                        <input type="number" id="addiContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 0.3rem;">SISTECRÉDITO</label>
+                        <input type="number" id="sistecreditoContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 0.3rem;">CRÉDITO MOTERO</label>
+                        <input type="number" id="creditoMoteroContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.7rem; font-weight: bold; color: #64748b; display: block; margin-bottom: 0.3rem;">FODEGAS</label>
+                        <input type="number" id="fodegasContado" min="0" placeholder="0" style="padding: 0.5rem; font-size: 1.1rem; font-weight: 700; text-align: center; width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
+                </div>
+
+                <!-- 3. NOTAS Y AJUSTES -->
+                <div style="display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; margin-top: 2rem; align-items: start;">
+                    <!-- Dinero Sobrante -->
+                    <div id="seccionSobrante" style="margin:0; padding:1.2rem; background:#f0f9ff; border-radius:16px; border:2px solid #bae6fd; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <h4 style="margin:0; color:#0369a1; font-size: 0.85rem; font-weight: 800; text-transform: uppercase;">💰 Sobrante / Ajuste</h4>
+                        </div>
+                        <span id="labelMontoSobrante" style="font-size: 1.8rem; font-weight: 800; color:#0369a1;">$0</span>
+                        <div class="form-group" style="margin:0;">
+                            <input type="text" id="motivoSobrante" placeholder="Motivo (opcional)" style="padding: 0.6rem; font-size: 0.85rem; border-color: #bae6fd; background: white; width: 100%; border: 1px solid #bae6fd; border-radius: 8px;">
+                        </div>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+                            📝 Observaciones (opcional)
+                        </label>
+                        <textarea id="observacionesCierre" rows="4" placeholder="Notas adicionales del cierre..." style="border-radius: 16px; padding: 1rem; width: 100%; border: 2px solid #e2e8f0;"></textarea>
                     </div>
                 </div>
 
@@ -502,6 +537,31 @@
 
 
 
+
+    <!-- ===== MODAL: GASTOS DEL DÍA ===== -->
+    <div id="modalGastos" class="modal-overlay">
+        <div class="modal modal-large" style="padding: 0;">
+            <div class="modal-header"
+                style="padding: 1.5rem 2.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 10;">
+                <h3 style="margin:0;">🧾 Gastos del Día</h3>
+                <button onclick="cerrarModalGastos()"
+                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">✖</button>
+            </div>
+            <div style="padding: 2.5rem;">
+                <div class="gastos-container" style="border:none; padding:0; background:none; box-shadow:none;">
+                    <div id="gastosLista"></div>
+                    <button class="btn-agregar-gasto" onclick="agregarGasto()">➕ Agregar Gasto</button>
+                    <div class="gastos-total">
+                        <span>Total Gastos:</span>
+                        <span id="totalGastos">$0</span>
+                    </div>
+                </div>
+                <div class="modal-botones" style="margin-top: 1.5rem;">
+                    <button class="btn btn-primary btn-full" onclick="cerrarModalGastos()">✅ Guardar y Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- ===== MODAL: EDITAR PRECIO ===== -->
 

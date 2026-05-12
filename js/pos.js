@@ -1157,6 +1157,19 @@ function reiniciarPantallaCaja() {
     abrirModalCaja();
 }
 
+function abrirModalGastos() {
+    if (!cajaAbierta) {
+        mostrarAlerta('Debes abrir la caja primero', 'warning');
+        return;
+    }
+    document.getElementById('modalGastos').classList.add('visible');
+    renderizarGastos();
+}
+
+function cerrarModalGastos() {
+    document.getElementById('modalGastos').classList.remove('visible');
+}
+
 // ---------------------------------------------------------------
 // GASTOS DEL DIA (solo tiendas físicas)
 // ---------------------------------------------------------------
