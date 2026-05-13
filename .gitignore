@@ -79,3 +79,6 @@ playwright-report/
 test-results/
 test-results-shards/
 playwright/.cache/
+tests/
+playwright.config.js
+SECURITY_SETUP.md
