@@ -103,9 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════════════
 
 async function cargarProveedores() {
-    const { data } = await supabaseClient.from('proveedores').select('id, razon_social, nombre_comercial');
+    const { data } = await supabaseClient.from('proveedores').select('razon_social, nombre_comercial').order('razon_social');
     if (data) {
-        data.forEach(p => proveedoresCache[p.id] = p.razon_social || p.nombre_comercial);
+        proveedoresCache = data.map(p => p.razon_social);
     }
 }
 
@@ -243,7 +243,7 @@ async function mostrarFormProducto() {
     catSel.innerHTML = '<option value="">Seleccionar...</option>' + categoriasCache.map(c => `<option value="${c}">${c}</option>`).join('');
     
     const provSel = document.getElementById('productoProveedor');
-    provSel.innerHTML = '<option value="">Seleccionar...</option>' + Object.entries(proveedoresCache).map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
+    provSel.innerHTML = '<option value="">Seleccionar...</option>' + proveedoresCache.map(name => `<option value="${name}">${name}</option>`).join('');
 
     document.getElementById('containerColoresFotos').innerHTML = '';
     document.getElementById('tbodyTallasStock').innerHTML = '';
@@ -266,7 +266,7 @@ async function editarProducto(id) {
     document.getElementById('productoMarca').value = p.marca || '';
     document.getElementById('productoSubcategoria').value = p.subcategoria || '';
     document.getElementById('productoCategoria').value = p.categoria;
-    document.getElementById('productoProveedor').value = p.proveedor_id;
+    document.getElementById('productoProveedor').value = p.proveedor || '';
     document.getElementById('productoPrecioCompra').value = p.precio_compra;
     document.getElementById('productoPrecio').value = p.precio;
     document.getElementById('stockDigital').value = p.stock_digital || 0;
@@ -290,14 +290,13 @@ async function editarProducto(id) {
         document.getElementById('previewContainerProducto').style.display = 'block';
     }
 
-    // Cargar Colores y Tallas (Si existen en p.configuracion o similar)
-    // El sistema actual usa tablas relacionadas para tallas, pero las variantes pueden estar en JSON
-    if (p.colores_fotos) {
-        p.colores_fotos.forEach(cf => agregarFilaColor(cf.color, cf.url));
+    // Cargar Variantes (Colores y Fotos)
+    if (p.variantes && Array.isArray(p.variantes)) {
+        p.variantes.forEach(cf => agregarFilaColor(cf.color, cf.url));
     }
 
     // Cargar Stock Detallado (Tallas)
-    cargarTallasProducto(p.id);
+    cargarTallasProducto(p.id_producto || p.id);
     actualizarFormularioPorCategoria();
 }
 
@@ -382,7 +381,7 @@ function agregarFilaColor(color = '', url = '') {
             <button type="button" class="btn btn-sm btn-secondary" onclick="subirImagenColor(${index})">📷</button>
         </div>
         <div class="color-preview-img" style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0;">
-            <img src="${url || 'https://via.placeholder.com/50'}" style="width: 100%; height: 100%; object-fit: cover;">
+            <img src="${url || 'img/android-chrome-192x192.png'}" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
         <button type="button" class="btn btn-sm btn-danger" onclick="removerFilaColor(${index})">🗑️</button>
     `;
@@ -516,7 +515,7 @@ async function guardarProducto() {
         marca: document.getElementById('productoMarca').value.trim(),
         subcategoria: document.getElementById('productoSubcategoria').value.trim(),
         categoria: document.getElementById('productoCategoria').value,
-        proveedor_id: document.getElementById('productoProveedor').value,
+        proveedor: document.getElementById('productoProveedor').value,
         precio_compra: parseFloat(document.getElementById('productoPrecioCompra').value) || 0,
         precio: parseFloat(document.getElementById('productoPrecio').value) || 0,
         stock_digital: parseInt(document.getElementById('stockDigital').value) || 0,
@@ -529,10 +528,11 @@ async function guardarProducto() {
         porcentaje_oferta: parseInt(document.getElementById('productoPorcentajeOferta').value) || null,
         fecha_oferta_hasta: document.getElementById('productoOfertaHasta').value || null,
         fecha_nuevo_hasta: document.getElementById('productoNuevoHasta').value || null,
-        colores_fotos: Array.from(document.querySelectorAll('.fila-color')).map(div => ({
+        variantes: Array.from(document.querySelectorAll('.fila-color')).map(div => ({
             color: div.querySelector('.color-name').value,
             url: div.querySelector('.color-url').value
-        }))
+        })),
+        tallas: Array.from(new Set(Array.from(document.querySelectorAll('.talla-name')).map(input => input.value.trim()).filter(t => t)))
     };
 
     // Generar ID Robusto (Slug) si es nuevo producto
@@ -568,7 +568,11 @@ async function guardarProducto() {
         cargarProductos();
     } catch (e) {
         console.error('Error guardar:', e);
-        showToast('Error al guardar: ' + (e.message || 'Error desconocido'), 'error');
+        let msg = e.message || 'Error desconocido';
+        if (e.code === '42501') {
+            msg = 'Error de Permisos (RLS): El sistema de seguridad de Supabase no permite guardar cambios sin una sesión de administrador activa o políticas RLS configuradas.';
+        }
+        showToast('Error al guardar: ' + msg, 'error');
     }
 }
 
