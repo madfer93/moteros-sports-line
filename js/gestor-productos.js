@@ -103,9 +103,14 @@ document.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════════════
 
 async function cargarProveedores() {
-    const { data } = await supabaseClient.from('proveedores').select('razon_social, nombre_comercial').order('razon_social');
-    if (data) {
-        proveedoresCache = data.map(p => p.razon_social);
+    try {
+        const { data, error } = await supabaseClient.from('proveedores').select('razon_social, nombre_comercial').order('razon_social');
+        if (error) throw error;
+        if (data) {
+            proveedoresCache = data.map(p => p.razon_social || p.nombre_comercial || 'Proveedor sin nombre');
+        }
+    } catch (e) {
+        console.error('Error al cargar proveedores:', e);
     }
 }
 
@@ -569,10 +574,12 @@ async function guardarProducto() {
     } catch (e) {
         console.error('Error guardar:', e);
         let msg = e.message || 'Error desconocido';
-        if (e.code === '42501') {
-            msg = 'Error de Permisos (RLS): El sistema de seguridad de Supabase no permite guardar cambios sin una sesión de administrador activa o políticas RLS configuradas.';
+        if (e.code === '42501' || e.message?.includes('RLS') || String(e.status) === '401') {
+            msg = 'Error de Permisos (RLS/401): El producto se creó pero no se pudieron actualizar los stocks por falta de permisos en las tablas de inventario en Supabase.';
         }
-        showToast('Error al guardar: ' + msg, 'error');
+        showToast('Error: ' + msg, 'error');
+        // A pesar del error de stock, recargamos para ver el producto creado
+        cargarProductos();
     }
 }
 
@@ -624,15 +631,34 @@ async function guardarInventarios(id_producto) {
         await supabaseClient.from('inventario').insert(opsUnified);
     }
 }
-
 async function eliminarProducto(id) {
     if (!confirm('¿Seguro que deseas eliminar este producto?')) return;
     try {
+        // 1. Obtener el slug (id_producto) para limpiar inventarios
+        const { data: prod } = await supabaseClient.from('productos').select('id_producto').eq('id', id).single();
+        
+        if (prod && prod.id_producto) {
+            // 2. Limpiar inventarios asociados
+            await Promise.all([
+                supabaseClient.from('inventario_alcala').delete().eq('id_producto', prod.id_producto),
+                supabaseClient.from('inventario_01').delete().eq('id_producto', prod.id_producto),
+                supabaseClient.from('inventario_jordan').delete().eq('id_producto', prod.id_producto),
+                supabaseClient.from('inventario').delete().eq('producto_id', prod.id_producto)
+            ]);
+        }
+
+        // 3. Eliminar el producto principal
         const { error } = await supabaseClient.from('productos').delete().eq('id', id);
         if (error) throw error;
-        showToast('Producto eliminado');
+        
+        showToast('Producto eliminado exitosamente');
         cargarProductos();
     } catch (e) {
-        showToast('Error al eliminar', 'error');
+        console.error('Error al eliminar:', e);
+        let msg = e.message || 'Error desconocido';
+        if (e.code === '42501') {
+            msg = 'Error de Permisos (RLS): No tienes permiso para eliminar productos o sus inventarios.';
+        }
+        showToast('Error al eliminar: ' + msg, 'error');
     }
 }
