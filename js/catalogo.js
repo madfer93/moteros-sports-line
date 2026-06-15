@@ -869,7 +869,7 @@ function mostrarProductos() {
                 <p class="producto-descripcion">${p.descripcion_corta || 'Producto de alta calidad'}</p>
                 <div class="producto-footer" style="flex-direction: column; gap: 0.5rem; align-items: stretch;">
                     <div style="display: flex; justify-content: space-between; align-items: center; min-height: 38px;">
-                        <span class="producto-precio" style="display:none;">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
+                        <span class="producto-precio" style="display:unset;">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
                         <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
                             ${coloresHTML}
                             ${tallasHTML}
