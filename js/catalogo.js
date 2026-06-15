@@ -868,12 +868,13 @@ function mostrarProductos() {
                 <p class="producto-marca">${p.marca}</p>
                 <p class="producto-descripcion">${p.descripcion_corta || 'Producto de alta calidad'}</p>
                 <div class="producto-footer" style="flex-direction: column; gap: 0.5rem; align-items: stretch;">
+                    ${(coloresHTML || tallasHTML) ? `
+                    <div style="display:flex; flex-direction:row; gap:10px; align-items:center; min-height:20px;">
+                        ${coloresHTML}
+                        ${tallasHTML}
+                    </div>` : ''}
                     <div style="display: flex; justify-content: space-between; align-items: center; min-height: 38px;">
                         <span class="producto-precio" style="display:unset;">$${parseInt(p.precio).toLocaleString('es-CO')}</span>
-                        <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
-                            ${coloresHTML}
-                            ${tallasHTML}
-                        </div>
                         <button class="btn-agregar-inline" onclick="event.stopPropagation(); agregarAlCarritoRapido('${p.id}')" ${p.stockTotal <= 0 ? 'disabled' : ''}>
                             <span>${p.stockTotal <= 0 ? '🚫 Agotado' : '🛒 Agregar'}</span>
                         </button>
@@ -1030,6 +1031,25 @@ async function verDetalle(id) {
                 <div style="flex:1;">
                     <h4 style="margin:0; font-size:1.1rem; color:#334155; font-weight:700;">Opiniones</h4>
                     <div id="listaResenasContainer"></div>
+                    
+                    <!-- FORMULARIO RESEÑA -->
+                    <div id="formResena" style="margin-top:1.5rem; background:#f8fafc; padding:1rem; border-radius:8px;">
+                        <h5 style="margin-bottom:0.5rem; font-size:0.95rem; font-weight:600;">Calificar Producto</h5>
+                        <div style="display:flex; gap:0.25rem; margin-bottom:0.75rem;">
+                            <span class="star" style="font-size:1.5rem; cursor:pointer; color:#cbd5e1;" onclick="setRating(1)">☆</span>
+                            <span class="star" style="font-size:1.5rem; cursor:pointer; color:#cbd5e1;" onclick="setRating(2)">☆</span>
+                            <span class="star" style="font-size:1.5rem; cursor:pointer; color:#cbd5e1;" onclick="setRating(3)">☆</span>
+                            <span class="star" style="font-size:1.5rem; cursor:pointer; color:#cbd5e1;" onclick="setRating(4)">☆</span>
+                            <span class="star" style="font-size:1.5rem; cursor:pointer; color:#cbd5e1;" onclick="setRating(5)">☆</span>
+                        </div>
+                        <input type="hidden" id="resenaEstrellas" value="0">
+                        <input type="hidden" id="resenaProductoId" value="${productoActual.id}">
+                        <input type="text" id="resenaNombre" placeholder="Tu Nombre (Opcional)" style="width:100%; padding:0.5rem; margin-bottom:0.5rem; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;">
+                        <textarea id="resenaComentario" placeholder="Escribe tu opinión aquí..." rows="3" style="width:100%; padding:0.5rem; margin-bottom:0.5rem; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem; resize:vertical;"></textarea>
+                        <button onclick="enviarResenaCliente()" style="width:100%; background:#0f172a; color:white; border:none; padding:0.5rem; border-radius:4px; font-weight:600; cursor:pointer;">
+                            Enviar Opinión
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
