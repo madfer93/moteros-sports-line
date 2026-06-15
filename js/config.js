@@ -160,10 +160,15 @@ async function sincronizarBrandingGlobal() {
       const titles = document.querySelectorAll('#siteTitle, .shop-name, .footer-brand h3');
       titles.forEach(el => el.textContent = config.nombre_tienda);
 
-      // Actualizar título de pestaña si es página principal
+      // Actualizar título de pestaña respetando el SEO (sufijos)
       if (document.title.includes('Moteros') || document.title.includes('Sports Line')) {
-        const currentSuffix = document.title.split('|')[1] || '';
-        document.title = config.nombre_tienda + (currentSuffix ? ' | ' + currentSuffix : '');
+        const parts = document.title.split(/[-|]/);
+        if (parts.length > 1) {
+            const currentSuffix = parts.slice(1).join('-').trim();
+            document.title = config.nombre_tienda + ' - ' + currentSuffix;
+        } else {
+            document.title = config.nombre_tienda;
+        }
       }
     }
 
