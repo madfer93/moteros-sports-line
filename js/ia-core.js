@@ -99,21 +99,8 @@ class MoterosIA {
     }
 
     obtenerKey() {
-        let rawKey = window.CONFIG?.AI_KEYS?.[this.contexto];
-
-        // Fallback: Si no hay llave para el contexto actual, usar INDEX
-        if (!rawKey && this.contexto !== 'INDEX') {
-            rawKey = window.CONFIG?.AI_KEYS?.['INDEX'] || '';
-        }
-
-        if (!rawKey) return '';
-
-        if (rawKey.includes(',')) {
-            const keys = rawKey.split(',').map(k => k.trim()).filter(k => k);
-            const selected = keys[Math.floor(Math.random() * keys.length)];
-            return selected;
-        }
-        return rawKey;
+        // Mantenemos esto vacío o devolvemos dummy, ya que la Edge Function manejará la llave real.
+        return 'usa_edge_function';
     }
 
     generarSystemPromptBase() {
@@ -297,16 +284,18 @@ class MoterosIA {
         this.historial.push({ role: "user", content: mensajeUsuario });
 
         try {
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            // Se llama a la Edge Function 'groq-chat' en lugar de la API de Groq directo
+            const response = await fetch(`${window.CONFIG.SUPABASE_URL}/functions/v1/groq-chat`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${this.apiKey}`
+                    "Authorization": `Bearer ${window.CONFIG.SUPABASE_KEY}`
                 },
                 body: JSON.stringify({
                     messages: messages,
                     model: window.CONFIG.AI_MODEL || "llama-3.3-70b-versatile",
-                    temperature: 0.7
+                    temperature: 0.7,
+                    contexto: this.contexto
                 })
             });
 

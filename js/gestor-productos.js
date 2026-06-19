@@ -513,6 +513,12 @@ async function subirImagen(file, carpeta = 'productos-imagenes') {
 // ═══════════════════════════════════════════════════════════════
 
 async function guardarProducto() {
+    const btnGuardar = document.querySelector('button[onclick="guardarProducto()"]');
+    if (btnGuardar) {
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '⏳ Guardando...';
+    }
+
     const id = document.getElementById('productoId').value;
     const datos = {
         nombre: document.getElementById('productoNombre').value.trim(),
@@ -580,6 +586,11 @@ async function guardarProducto() {
         showToast('Error: ' + msg, 'error');
         // A pesar del error de stock, recargamos para ver el producto creado
         cargarProductos();
+    } finally {
+        if (btnGuardar) {
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = '💾 Guardar Producto';
+        }
     }
 }
 

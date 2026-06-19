@@ -91,12 +91,20 @@
     }, 1000);
     */
 
-    // 6. Supresión de Errores Globales
-    // Evita que los errores muestren trazas en la consola (si lograran abrirla)
-    window.onerror = function () {
-        return true;
+    // 6. Supresión de Errores Globales (Modificado para Alertas a Telegram)
+    // Evita que los errores se muestren en consola, pero los envía al backend
+    window.onerror = function (msg, url, lineNo, columnNo, error) {
+        if (window.registrarLogSistema) {
+            window.registrarLogSistema('error_sistema_critico', msg, `Archivo: ${url} Línea: ${lineNo}`);
+        }
+        return true; // Sigue ocultando el error en la consola del navegador
     };
-    window.onunhandledrejection = function () {
+
+    window.onunhandledrejection = function (event) {
+        if (window.registrarLogSistema) {
+            let errorMsg = event.reason ? (event.reason.message || event.reason) : 'Promesa rechazada';
+            window.registrarLogSistema('error_promesa_critico', errorMsg, 'Promesa no manejada');
+        }
         return true;
     };
 

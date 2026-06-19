@@ -75,11 +75,8 @@ const CONFIG = {
   // CONFIGURACIÓN INTELIGENCIA ARTIFICIAL (GROQ)
   // ═══════════════════════════════════════════════════════════════
   AI_KEYS: {
-    INDEX: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_INDEX) || '',
-    TIENDA: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_TIENDA) || '',
-    ADMIN: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_ADMIN) || '',
-    POS: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_POS) || '',
-    CATALOGO: (typeof process !== 'undefined' && process.env?.GROQ_API_KEY_INDEX) || ''
+    // Las llaves ya no se guardan en el frontend por seguridad.
+    // Todas las peticiones de IA pasan por Supabase Edge Functions.
   },
   AI_MODEL: (typeof process !== 'undefined' && process.env?.AI_MODEL) || 'llama-3.3-70b-versatile',
   VERSION: '2026-02-18-17-15'
@@ -199,11 +196,7 @@ async function sincronizarBrandingGlobal() {
       }
     });
 
-    // 5. Actualizar AI Keys si existen en BD
-    if (config.ai_key_index) CONFIG.AI_KEYS.INDEX = config.ai_key_index;
-    if (config.ai_key_tienda) CONFIG.AI_KEYS.TIENDA = config.ai_key_tienda;
-    if (config.ai_key_admin) CONFIG.AI_KEYS.ADMIN = config.ai_key_admin;
-    if (config.ai_key_pos) CONFIG.AI_KEYS.POS = config.ai_key_pos;
+    // 5. Las AI Keys ya no se cargan al cliente, se manejan en Edge Functions
 
   } catch (err) {
     if (window.registrarLogSistema) window.registrarLogSistema('error_sistema', 'Error sincronizando branding global', err.message);
