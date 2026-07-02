@@ -69,6 +69,17 @@
 
     // Método 1: Debugger loop (más agresivo)
     setInterval(() => {
+        if (document.hidden) return; // Evitar falsos positivos en segundo plano
+        
+        const esDevEnv = 
+            window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1' || 
+            window.location.hostname.startsWith('192.168.') || 
+            window.location.hostname.startsWith('100.') || // Tailscale
+            localStorage.getItem('devMode') === 'true';
+            
+        if (esDevEnv) return; // Evitar bloquear a desarrolladores
+        
         const start = Date.now();
         // eslint-disable-next-line no-debugger
         debugger;

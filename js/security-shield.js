@@ -5,6 +5,7 @@
  */
 
 (function () {
+    const startTime = Date.now();
     const SECURITY_CONFIG = {
         MAX_SUSPICIOUS_CLICKS: 10,
         BLOCK_MESSAGE: "⚠️ ACCESO DENEGADO PERMANENTEMENTE",
@@ -33,11 +34,17 @@
         
         // Anti-DevTools Trap
         setInterval(() => {
+            if (document.hidden) return; // Evitar falsos positivos cuando la pestaña está suspendida/segundo plano
+            
             const before = new Date().getTime();
             debugger;
             const after = new Date().getTime();
-            if (after - before > 100) {
-                handleViolation("Intento de depuración (DevTools Detected)");
+            const elapsed = after - before;
+            if (elapsed > 100) {
+                handleViolation("Intento de depuración (DevTools Detected)", {
+                    tipo_evento: 'devtools_trap',
+                    tiempo_pausa_ms: elapsed
+                });
             }
         }, 1000);
     }
@@ -55,6 +62,65 @@
         } catch (e) {
             return { ip: '0.0.0.0', city: 'Unknown' };
         }
+    }
+
+    function obtenerTelemetria(reason, eventDetails = {}) {
+        const tiempoSesion = Math.round((Date.now() - startTime) / 1000);
+
+        // Dispositivo y Pantalla Táctil
+        const esTactil = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0));
+        const esMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const dispositivo = esMobile ? 'Mobile' : 'Desktop';
+
+        // Sistema Operativo (Simple parsing)
+        let os = 'Desconocido';
+        const ua = navigator.userAgent;
+        if (ua.indexOf('Win') !== -1) os = 'Windows';
+        else if (ua.indexOf('Mac') !== -1) os = 'macOS';
+        else if (ua.indexOf('X11') !== -1) os = 'UNIX';
+        else if (ua.indexOf('Linux') !== -1) os = 'Linux';
+        else if (/Android/i.test(ua)) os = 'Android';
+        else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
+
+        // Conexión de Red (si es soportada)
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+        const conexionRed = {
+            tipo: conn.effectiveType || 'Desconocido',
+            rtt_ms: conn.rtt || null,
+            velocidad_downlink_mbps: conn.downlink || null
+        };
+
+        const esDevEnv = 
+            window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1' || 
+            window.location.hostname.startsWith('192.168.') || 
+            window.location.hostname.startsWith('100.') || // Tailscale
+            localStorage.getItem('devMode') === 'true';
+
+        return {
+            pestana_activa: !document.hidden,
+            tiempo_sesion_seg: tiempoSesion,
+            fecha_local_dispositivo: new Date().toString(),
+            url_completa: window.location.href,
+            referrer: document.referrer || 'Ninguno',
+            resolucion_pantalla: `${window.screen.width}x${window.screen.height}`,
+            resolucion_ventana: `${window.innerWidth}x${window.innerHeight}`,
+            dispositivo: dispositivo,
+            es_pantalla_tactil: esTactil,
+            sistema_operativo: os,
+            idioma_navegador: navigator.language || 'Desconocido',
+            conexion_red: conexionRed,
+            es_entorno_desarrollo: esDevEnv,
+            motivo_detallado: reason,
+            detalles_evento: {
+                tipo_evento: eventDetails.tipo_evento || 'desconocido',
+                tiempo_pausa_ms: eventDetails.tiempo_pausa_ms || null,
+                codigo_tecla: eventDetails.codigo_tecla || null,
+                tag_elemento_clicado: eventDetails.tag_elemento_clicado || null,
+                id_elemento_clicado: eventDetails.id_elemento_clicado || null,
+                clases_elemento_clicado: eventDetails.clase_elemento_clicado || null
+            }
+        };
     }
 
     async function checkBlacklist(ip) {
@@ -80,7 +146,12 @@
                 return;
             }
             e.preventDefault();
-            handleViolation("Clic Derecho Bloqueado");
+            handleViolation("Clic Derecho Bloqueado", {
+                tipo_evento: 'clic_derecho',
+                tag_elemento_clicado: e.target.tagName,
+                id_elemento_clicado: e.target.id || null,
+                clase_elemento_clicado: e.target.className || null
+            });
         });
 
         // Bloquear COPIA de texto siempre, incluso si permitimos selección para lectura
@@ -97,25 +168,29 @@
                 (e.ctrlKey && e.keyCode === 85) // U (View Source)
             ) {
                 e.preventDefault();
-                handleViolation(`Intento de acceso a código (${e.keyCode})`);
+                handleViolation(`Intento de acceso a código (${e.keyCode})`, {
+                    tipo_evento: 'atajo_teclado',
+                    codigo_tecla: e.keyCode || e.key
+                });
             }
         });
     }
 
-    function handleViolation(reason) {
+    function handleViolation(reason, eventDetails = {}) {
         suspiciousClicks++;
         console.warn(`[SENTINEL] Actividad sospechosa: ${reason} (${suspiciousClicks}/${SECURITY_CONFIG.MAX_SUSPICIOUS_CLICKS})`);
         
         if (suspiciousClicks >= SECURITY_CONFIG.MAX_SUSPICIOUS_CLICKS) {
-            logAndLock(reason);
+            logAndLock(reason, eventDetails);
         }
     }
 
-    async function logAndLock(reason) {
+    async function logAndLock(reason, eventDetails = {}) {
         if (isLocked) return;
         isLocked = true;
 
         const info = await captureUserMeta();
+        const telemetria = obtenerTelemetria(reason, eventDetails);
         
         // Notificar a Supabase (logs_sistema existente)
         if (window.supabaseClient) {
@@ -129,7 +204,8 @@
                     region: info.region,
                     org: info.org,
                     userAgent: navigator.userAgent,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    telemetria: telemetria
                 }
             });
         }
