@@ -1,5 +1,5 @@
 /**
- * MOTEROS SPORT LINE - SECURITY SHIELD "SENTINEL" v2.1
+ * MOTEROS SPORT LINE - SECURITY SHIELD "SENTINEL" v2.2
  * Protección de Propiedad Intelectual, Anti-Hacking y Rate Limiting.
  * ⚠️ ATENCIÓN: Este script bloquea accesos no autorizados y registra IPs.
  */
@@ -12,7 +12,7 @@
         LOCKDOWN_HTML: `
             <div id="security-lockdown" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;color:#f00;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',Courier,monospace;text-align:center;padding:2rem;">
                 <h1 style="font-size:3rem;margin-bottom:1rem;">INCIDENTE DE SEGURIDAD</h1>
-                <p style="font-size:1.5rem;color:#fff;">Actividad criminal detectada. Su dirección IP ha sido capturada y enviada a J&M Tech Solutions Security Lab.</p>
+                <p style="font-size:1.5rem;color:#fff;">Actividad criminal detectada. Su cuenta o dirección IP ha sido capturada y enviada a J&M Tech Solutions Security Lab.</p>
                 <div id="attacker-info" style="margin-top:2rem;text-align:left;background:#111;padding:1.5rem;border-left:5px solid #f00;width:100%;max-width:600px;">
                     <p>📡 IP: <span id="attacker-ip">Detectando...</span></p>
                     <p>📍 UBICACIÓN: <span id="attacker-city">Monitoreando...</span></p>
@@ -60,14 +60,77 @@
         }
     }
 
+    async function getSessionInfo() {
+        let info = {
+            isAdmin: false,
+            isEmployee: false,
+            email: null,
+            usuario: null,
+            userId: null
+        };
+        
+        try {
+            // 1. Verificar si hay sesión de Supabase Auth (Administradores)
+            if (window.supabaseClient) {
+                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                if (session && session.user) {
+                    info.isAdmin = true;
+                    info.email = session.user.email;
+                    info.userId = session.user.id;
+                    return info;
+                }
+            }
+        } catch (e) {}
+
+        try {
+            // 2. Verificar si hay sesión de empleado en el POS o Gestor
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('empleado_logueado') || key === 'gestor_session')) {
+                    const data = JSON.parse(localStorage.getItem(key));
+                    if (data && data.id) {
+                        info.isEmployee = true;
+                        info.usuario = data.usuario || data.nombre;
+                        info.userId = data.id;
+                        info.email = data.email || null;
+                        return info;
+                    }
+                }
+            }
+        } catch (e) {}
+
+        return info;
+    }
+
     async function init() {
-        // Si estaba pre-bloqueado localmente, aplicar la pantalla roja una vez que el DOM esté listo
+        const sessionInfo = await getSessionInfo();
+        const esDevEnv = 
+            window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1' || 
+            window.location.hostname.startsWith('192.168.') || 
+            window.location.hostname.startsWith('100.') || // Tailscale
+            localStorage.getItem('devMode') === 'true';
+
+        // Exención total para Administradores y entorno de desarrollo
+        if (sessionInfo.isAdmin || esDevEnv) {
+            console.log("[SENTINEL] Modo Administrador o Desarrollo detectado. Protecciones desactivadas.");
+            // Si el usuario fue desbloqueado, remover bloqueos locales residuales
+            if (isLocalBlocked) {
+                localStorage.removeItem('sentinel_blocked');
+                sessionStorage.removeItem('sentinel_blocked');
+                const earlyBlockStyle = document.getElementById('sentinel-early-block');
+                if (earlyBlockStyle) earlyBlockStyle.remove();
+            }
+            return;
+        }
+
+        // Si estaba pre-bloqueado localmente y no es administrador, aplicar la pantalla roja
         if (isLocalBlocked) {
             triggerLockdown('Caché Local', 'Historial de Bloqueos');
         }
 
         const ipInfo = await captureUserMeta();
-        await checkBlacklist(ipInfo.ip);
+        await checkBlacklist(ipInfo.ip, sessionInfo);
         setupProtections();
         
         // Anti-DevTools Trap (Calibrado para evitar falsos positivos por lag de CPU)
@@ -117,7 +180,7 @@
         const esMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const dispositivo = esMobile ? 'Mobile' : 'Desktop';
 
-        // Sistema Operativo (Simple parsing)
+        // OS
         let os = 'Desconocido';
         const ua = navigator.userAgent;
         if (ua.indexOf('Win') !== -1) os = 'Windows';
@@ -127,21 +190,7 @@
         else if (/Android/i.test(ua)) os = 'Android';
         else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
 
-        // Conexión de Red (si es soportada)
         const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
-        const conexionRed = {
-            tipo: conn.effectiveType || 'Desconocido',
-            rtt_ms: conn.rtt || null,
-            velocidad_downlink_mbps: conn.downlink || null
-        };
-
-        const esDevEnv = 
-            window.location.hostname === 'localhost' || 
-            window.location.hostname === '127.0.0.1' || 
-            window.location.hostname.startsWith('192.168.') || 
-            window.location.hostname.startsWith('100.') || // Tailscale
-            localStorage.getItem('devMode') === 'true';
-
         return {
             pestana_activa: !document.hidden,
             tiempo_sesion_seg: tiempoSesion,
@@ -154,8 +203,11 @@
             es_pantalla_tactil: esTactil,
             sistema_operativo: os,
             idioma_navegador: navigator.language || 'Desconocido',
-            conexion_red: conexionRed,
-            es_entorno_desarrollo: esDevEnv,
+            conexion_red: {
+                tipo: conn.effectiveType || 'Desconocido',
+                rtt_ms: conn.rtt || null,
+                velocidad_downlink_mbps: conn.downlink || null
+            },
             motivo_detallado: reason,
             detalles_evento: {
                 tipo_evento: eventDetails.tipo_evento || 'desconocido',
@@ -168,32 +220,75 @@
         };
     }
 
-    async function checkBlacklist(ip) {
-        if (!window.supabaseClient || ip === '0.0.0.0') return;
+    async function checkBlacklist(ip, sessionInfo) {
+        if (!window.supabaseClient) return;
         
         try {
-            // Se usa limit(1) en vez de maybeSingle() para evitar el error PGRST116 si existen múltiples bloqueos para la misma IP
-            const { data, error } = await window.supabaseClient
-                .from('logs_sistema')
-                .select('*')
-                .eq('nivel', 'BLOQUEO')
-                .eq('detalles->>ip', ip)
-                .limit(1);
+            const promises = [];
+            
+            // 1. Buscar por IP
+            if (ip && ip !== '0.0.0.0') {
+                promises.push(
+                    window.supabaseClient
+                        .from('logs_sistema')
+                        .select('detalles')
+                        .eq('nivel', 'BLOQUEO')
+                        .eq('detalles->>ip', ip)
+                        .limit(1)
+                );
+            }
+            
+            // 2. Buscar por ID de usuario
+            if (sessionInfo.userId) {
+                promises.push(
+                    window.supabaseClient
+                        .from('logs_sistema')
+                        .select('detalles')
+                        .eq('nivel', 'BLOQUEO')
+                        .eq('usuario_id', sessionInfo.userId)
+                        .limit(1)
+                );
+            }
 
-            if (data && data.length > 0) {
-                // Sincronizar bloqueo en almacenamiento local para bloqueo instantáneo en refrescos/nuevas pestañas
+            // 3. Buscar por email
+            if (sessionInfo.email) {
+                promises.push(
+                    window.supabaseClient
+                        .from('logs_sistema')
+                        .select('detalles')
+                        .eq('nivel', 'BLOQUEO')
+                        .eq('detalles->>email', sessionInfo.email)
+                        .limit(1)
+                );
+            }
+
+            // 4. Buscar por nombre de usuario
+            if (sessionInfo.usuario) {
+                promises.push(
+                    window.supabaseClient
+                        .from('logs_sistema')
+                        .select('detalles')
+                        .eq('nivel', 'BLOQUEO')
+                        .eq('detalles->>usuario', sessionInfo.usuario)
+                        .limit(1)
+                );
+            }
+
+            const results = await Promise.all(promises);
+            const blockedLog = results.find(r => r.data && r.data.length > 0);
+
+            if (blockedLog) {
+                const logData = blockedLog.data[0];
                 localStorage.setItem('sentinel_blocked', 'true');
                 sessionStorage.setItem('sentinel_blocked', 'true');
-                triggerLockdown(ip, data[0].detalles?.city || 'Identificada');
+                triggerLockdown(ip, logData.detalles?.city || 'Identificada');
             } else {
-                // Si ya no existe el bloqueo en la base de datos (desbloqueado por administrador), limpiar caché local
+                // Si ya no existe ningún bloqueo activo en la DB, liberar el bloqueo local
                 if (localStorage.getItem('sentinel_blocked') === 'true' || sessionStorage.getItem('sentinel_blocked') === 'true') {
                     localStorage.removeItem('sentinel_blocked');
                     sessionStorage.removeItem('sentinel_blocked');
-                    // Remover estilo early-block si existe
                     const earlyBlockStyle = document.getElementById('sentinel-early-block');
                     if (earlyBlockStyle) earlyBlockStyle.remove();
-                    // Recargar para restaurar la interfaz normal si fue desbloqueado
                     location.reload();
                 }
             }
@@ -248,6 +343,7 @@
         isLocked = true;
 
         const info = await captureUserMeta();
+        const sessionInfo = await getSessionInfo();
         const telemetria = obtenerTelemetria(reason, eventDetails);
         
         localStorage.setItem('sentinel_blocked', 'true');
@@ -259,11 +355,14 @@
                 nivel: 'BLOQUEO',
                 mensaje: `ATAQUE BLOQUEADO: ${reason}`,
                 origen: window.location.pathname,
+                usuario_id: sessionInfo.userId || null,
                 detalles: {
                     ip: info.ip,
                     city: info.city,
                     region: info.region,
                     org: info.org,
+                    email: sessionInfo.email || null,
+                    usuario: sessionInfo.usuario || null,
                     userAgent: navigator.userAgent,
                     timestamp: new Date().toISOString(),
                     telemetria: telemetria
@@ -275,7 +374,6 @@
     }
 
     function triggerLockdown(ip, city) {
-        // Asegurar que el estilo early block esté activo para ocultar todo
         applyImmediateStyleBlock();
         
         if (document.getElementById('security-lockdown')) return;
@@ -290,7 +388,7 @@
             if (attackerCity) attackerCity.textContent = city;
             if (attackerOs) attackerOs.textContent = navigator.platform;
 
-            // "Digital Deterrence": Consumir atención del atacante
+            // "Digital Deterrence"
             setInterval(() => {
                 document.body.style.backgroundColor = (document.body.style.backgroundColor === 'black') ? '#200' : 'black';
             }, 100);
@@ -309,7 +407,6 @@
         }, true);
     }
 
-    // Iniciar cuando el DOM esté listo
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
