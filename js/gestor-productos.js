@@ -90,11 +90,34 @@ async function inicializarGestor() {
 }
 
 // Check session on load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const session = localStorage.getItem('gestor_session');
     if (session) {
-        usuarioLogueado = JSON.parse(session);
-        mostrarPanel();
+        try {
+            usuarioLogueado = JSON.parse(session);
+            
+            // Si estamos en línea, validar en tiempo real contra Supabase
+            if (navigator.onLine && window.supabaseClient) {
+                const { data: emp, error } = await window.supabaseClient
+                    .from('empleados_tienda')
+                    .select('activo, cargo')
+                    .eq('id', usuarioLogueado.id)
+                    .maybeSingle();
+
+                if (error || !emp || !emp.activo || !['Gestor de Productos', 'Administrador'].includes(emp.cargo)) {
+                    console.warn('[GESTOR] Sesión inválida o empleado inactivo. Cerrando sesión...');
+                    localStorage.removeItem('gestor_session');
+                    usuarioLogueado = null;
+                    location.reload();
+                    return;
+                }
+            }
+            mostrarPanel();
+        } catch (e) {
+            console.error('[GESTOR] Error al verificar sesión:', e);
+            localStorage.removeItem('gestor_session');
+            location.reload();
+        }
     }
 });
 

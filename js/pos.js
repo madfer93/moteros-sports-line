@@ -66,6 +66,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Verificar estado de caja
     verificarCaja();
 
+    // Restaurar y validar sesión de empleado si la caja está abierta y no es panel de administrador
+    if (cajaAbierta && TIENDA.nombre !== 'Admin') {
+        const sesionExistente = verificarSesionExistente();
+        if (sesionExistente) {
+            // Validar en línea contra Supabase para seguridad en tiempo real
+            if (navigator.onLine && db) {
+                try {
+                    const { data: emp, error } = await db
+                        .from('empleados_tienda')
+                        .select('activo')
+                        .eq('id', empleadoLogueado.id)
+                        .maybeSingle();
+
+                    if (error || !emp || !emp.activo) {
+                        console.warn('[POS] Sesión inválida o empleado inactivo. Cerrando sesión...');
+                        localStorage.removeItem('empleado_logueado_' + TIENDA.storageKey);
+                        empleadoLogueado = null;
+                        location.reload();
+                        return;
+                    }
+                } catch (e) {
+                    console.error('[POS] Error al validar empleado:', e);
+                }
+            }
+            // Actualizar la interfaz del POS con el nombre del vendedor
+            const vendedorBadge = document.getElementById('vendedorBadge');
+            const nomEmp = document.getElementById('nombreEmpleadoLogueado');
+            const cargEmp = document.getElementById('cargoEmpleadoLogueado');
+            if (vendedorBadge) {
+                vendedorBadge.textContent = `👤 ${empleadoLogueado.nombre}`;
+                vendedorBadge.classList.remove('hidden');
+            }
+            if (nomEmp) nomEmp.textContent = empleadoLogueado.nombre;
+            if (cargEmp) cargEmp.textContent = empleadoLogueado.cargo || 'Vendedor';
+            const vendNombreInput = document.getElementById('vendedorNombre');
+            if (vendNombreInput) vendNombreInput.value = empleadoLogueado.nombre;
+        } else {
+            // Si la caja está abierta pero la sesión expiró o no existe, forzar login
+            mostrarLoginEmpleado();
+        }
+    }
+
     // Cargar productos
     await cargarProductos();
 
@@ -185,8 +227,23 @@ async function verificarLogin() {
         if (empLocal && empLocal.password === password) {
             empleadoLogueado = empLocal;
             document.getElementById('modalLoginEmpleado').classList.remove('visible');
-            abrirModalCajaConEmpleado();
-            mostrarAlerta('Sesión iniciada (Modo Offline)', 'info');
+            if (cajaAbierta) {
+                const nomEmp = document.getElementById('nombreEmpleadoLogueado');
+                const cargEmp = document.getElementById('cargoEmpleadoLogueado');
+                if (nomEmp) nomEmp.textContent = empleadoLogueado.nombre;
+                if (cargEmp) cargEmp.textContent = empleadoLogueado.cargo || 'Vendedor';
+                const badge = document.getElementById('vendedorBadge');
+                if (badge) {
+                    badge.textContent = `👤 ${empleadoLogueado.nombre}`;
+                    badge.classList.remove('hidden');
+                }
+                const vendNombreInput = document.getElementById('vendedorNombre');
+                if (vendNombreInput) vendNombreInput.value = empleadoLogueado.nombre;
+                mostrarAlerta('Sesión iniciada (Modo Offline)', 'info');
+            } else {
+                abrirModalCajaConEmpleado();
+                mostrarAlerta('Sesión iniciada (Modo Offline)', 'info');
+            }
             return;
         } else if (empLocal) {
             errorDiv.textContent = 'Contraseña incorrecta (Offline)';
@@ -198,10 +255,6 @@ async function verificarLogin() {
             return;
         }
     }
-
-
-
-
 
     try {
         // Buscar empleado por usuario o cédula
@@ -260,9 +313,24 @@ async function verificarLogin() {
             fecha: new Date().toISOString()
         });
 
-        // Cerrar modal login y abrir modal caja
+        // Cerrar modal login y abrir modal caja o actualizar UI
         document.getElementById('modalLoginEmpleado').classList.remove('visible');
-        abrirModalCajaConEmpleado();
+        if (cajaAbierta) {
+            const nomEmp = document.getElementById('nombreEmpleadoLogueado');
+            const cargEmp = document.getElementById('cargoEmpleadoLogueado');
+            if (nomEmp) nomEmp.textContent = empleadoLogueado.nombre;
+            if (cargEmp) cargEmp.textContent = empleadoLogueado.cargo || 'Vendedor';
+            const badge = document.getElementById('vendedorBadge');
+            if (badge) {
+                badge.textContent = `👤 ${empleadoLogueado.nombre}`;
+                badge.classList.remove('hidden');
+            }
+            const vendNombreInput = document.getElementById('vendedorNombre');
+            if (vendNombreInput) vendNombreInput.value = empleadoLogueado.nombre;
+            mostrarAlerta('Sesión iniciada correctamente', 'success');
+        } else {
+            abrirModalCajaConEmpleado();
+        }
 
     } catch (e) {
         console.error('Error en login:', e);

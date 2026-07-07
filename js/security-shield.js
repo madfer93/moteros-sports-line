@@ -1,5 +1,5 @@
 /**
- * MOTEROS SPORT LINE - SECURITY SHIELD "SENTINEL" v2.0
+ * MOTEROS SPORT LINE - SECURITY SHIELD "SENTINEL" v2.1
  * Protección de Propiedad Intelectual, Anti-Hacking y Rate Limiting.
  * ⚠️ ATENCIÓN: Este script bloquea accesos no autorizados y registra IPs.
  */
@@ -26,27 +26,72 @@
 
     let suspiciousClicks = 0;
     let isLocked = false;
+    let devToolsConsecutiveTriggers = 0;
+
+    // --- BLOQUEO SINCRÓNICO PREVIO A LA RENDERIZACIÓN ---
+    const isLocalBlocked = localStorage.getItem('sentinel_blocked') === 'true' || sessionStorage.getItem('sentinel_blocked') === 'true';
+    if (isLocalBlocked) {
+        isLocked = true;
+        applyImmediateStyleBlock();
+    }
+
+    function applyImmediateStyleBlock() {
+        if (document.head) {
+            const style = document.createElement('style');
+            style.id = 'sentinel-early-block';
+            style.innerHTML = `
+                html, body {
+                    background: #000 !important;
+                    color: #f00 !important;
+                    overflow: hidden !important;
+                }
+                body > * {
+                    display: none !important;
+                }
+            `;
+            document.head.appendChild(style);
+        } else {
+            const checkHead = setInterval(() => {
+                if (document.head) {
+                    clearInterval(checkHead);
+                    applyImmediateStyleBlock();
+                }
+            }, 5);
+        }
+    }
 
     async function init() {
+        // Si estaba pre-bloqueado localmente, aplicar la pantalla roja una vez que el DOM esté listo
+        if (isLocalBlocked) {
+            triggerLockdown('Caché Local', 'Historial de Bloqueos');
+        }
+
         const ipInfo = await captureUserMeta();
         await checkBlacklist(ipInfo.ip);
         setupProtections();
         
-        // Anti-DevTools Trap
+        // Anti-DevTools Trap (Calibrado para evitar falsos positivos por lag de CPU)
         setInterval(() => {
-            if (document.hidden) return; // Evitar falsos positivos cuando la pestaña está suspendida/segundo plano
+            if (document.hidden) return; // Evitar falsos positivos cuando la pestaña está en segundo plano
             
             const before = new Date().getTime();
             debugger;
             const after = new Date().getTime();
             const elapsed = after - before;
-            if (elapsed > 100) {
-                handleViolation("Intento de depuración (DevTools Detected)", {
-                    tipo_evento: 'devtools_trap',
-                    tiempo_pausa_ms: elapsed
-                });
+            
+            // Un lag del sistema rara vez supera los 500ms, un breakpoint de debugger casi siempre es > 1000ms
+            if (elapsed > 1000) {
+                devToolsConsecutiveTriggers++;
+                if (devToolsConsecutiveTriggers >= 2) { // Requiere al menos 2 detecciones consecutivas
+                    handleViolation("Intento de depuración (DevTools Detected)", {
+                        tipo_evento: 'devtools_trap',
+                        tiempo_pausa_ms: elapsed
+                    });
+                }
+            } else {
+                devToolsConsecutiveTriggers = 0; // Resetear si se ejecuta normalmente
             }
-        }, 1000);
+        }, 1500);
     }
 
     async function captureUserMeta() {
@@ -126,35 +171,48 @@
     async function checkBlacklist(ip) {
         if (!window.supabaseClient || ip === '0.0.0.0') return;
         
-        const { data, error } = await window.supabaseClient
-            .from('logs_sistema')
-            .select('*')
-            .eq('nivel', 'BLOQUEO')
-            .eq('detalles->>ip', ip)
-            .maybeSingle();
+        try {
+            // Se usa limit(1) en vez de maybeSingle() para evitar el error PGRST116 si existen múltiples bloqueos para la misma IP
+            const { data, error } = await window.supabaseClient
+                .from('logs_sistema')
+                .select('*')
+                .eq('nivel', 'BLOQUEO')
+                .eq('detalles->>ip', ip)
+                .limit(1);
 
-        if (data) {
-            triggerLockdown(ip, data.detalles?.city || 'Identificada');
+            if (data && data.length > 0) {
+                // Sincronizar bloqueo en almacenamiento local para bloqueo instantáneo en refrescos/nuevas pestañas
+                localStorage.setItem('sentinel_blocked', 'true');
+                sessionStorage.setItem('sentinel_blocked', 'true');
+                triggerLockdown(ip, data[0].detalles?.city || 'Identificada');
+            } else {
+                // Si ya no existe el bloqueo en la base de datos (desbloqueado por administrador), limpiar caché local
+                if (localStorage.getItem('sentinel_blocked') === 'true' || sessionStorage.getItem('sentinel_blocked') === 'true') {
+                    localStorage.removeItem('sentinel_blocked');
+                    sessionStorage.removeItem('sentinel_blocked');
+                    // Remover estilo early-block si existe
+                    const earlyBlockStyle = document.getElementById('sentinel-early-block');
+                    if (earlyBlockStyle) earlyBlockStyle.remove();
+                    // Recargar para restaurar la interfaz normal si fue desbloqueado
+                    location.reload();
+                }
+            }
+        } catch (e) {
+            console.error('[SENTINEL] Error en verificación de blacklist:', e);
         }
     }
 
     function setupProtections() {
-        // Bloquear clic derecho (Excepto si el modo lectura está activo para accesibilidad)
+        // Bloquear clic derecho (Previene el menú, pero NO bloquea el acceso permanentemente para evitar falsos positivos)
         document.addEventListener('contextmenu', e => {
             if (window.moteros_reader_active) {
-                // Permitimos el clic derecho pero bloqueamos opciones de inspección si es posible
                 return;
             }
             e.preventDefault();
-            handleViolation("Clic Derecho Bloqueado", {
-                tipo_evento: 'clic_derecho',
-                tag_elemento_clicado: e.target.tagName,
-                id_elemento_clicado: e.target.id || null,
-                clase_elemento_clicado: e.target.className || null
-            });
+            console.warn("[SENTINEL] Clic derecho bloqueado.");
         });
 
-        // Bloquear COPIA de texto siempre, incluso si permitimos selección para lectura
+        // Bloquear COPIA de texto siempre
         document.addEventListener('copy', e => {
             e.preventDefault();
             console.warn("[SENTINEL] Intento de copia bloqueado por seguridad.");
@@ -192,6 +250,9 @@
         const info = await captureUserMeta();
         const telemetria = obtenerTelemetria(reason, eventDetails);
         
+        localStorage.setItem('sentinel_blocked', 'true');
+        sessionStorage.setItem('sentinel_blocked', 'true');
+
         // Notificar a Supabase (logs_sistema existente)
         if (window.supabaseClient) {
             await window.supabaseClient.from('logs_sistema').insert({
@@ -214,17 +275,32 @@
     }
 
     function triggerLockdown(ip, city) {
+        // Asegurar que el estilo early block esté activo para ocultar todo
+        applyImmediateStyleBlock();
+        
         if (document.getElementById('security-lockdown')) return;
         
-        document.body.innerHTML = SECURITY_CONFIG.LOCKDOWN_HTML;
-        document.getElementById('attacker-ip').textContent = ip;
-        document.getElementById('attacker-city').textContent = city;
-        document.getElementById('attacker-os').textContent = navigator.platform;
+        const showRedScreen = () => {
+            document.body.innerHTML = SECURITY_CONFIG.LOCKDOWN_HTML;
+            const attackerIp = document.getElementById('attacker-ip');
+            const attackerCity = document.getElementById('attacker-city');
+            const attackerOs = document.getElementById('attacker-os');
+            
+            if (attackerIp) attackerIp.textContent = ip;
+            if (attackerCity) attackerCity.textContent = city;
+            if (attackerOs) attackerOs.textContent = navigator.platform;
 
-        // "Digital Deterrence": Consumir atención del atacante
-        setInterval(() => {
-            document.body.style.backgroundColor = (document.body.style.backgroundColor === 'black') ? '#200' : 'black';
-        }, 100);
+            // "Digital Deterrence": Consumir atención del atacante
+            setInterval(() => {
+                document.body.style.backgroundColor = (document.body.style.backgroundColor === 'black') ? '#200' : 'black';
+            }, 100);
+        };
+
+        if (document.body) {
+            showRedScreen();
+        } else {
+            document.addEventListener('DOMContentLoaded', showRedScreen);
+        }
 
         // Bloqueo total de clics
         window.addEventListener('click', e => {
@@ -241,3 +317,4 @@
     }
 
 })();
+
