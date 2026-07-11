@@ -118,10 +118,10 @@ async function registrarLogSistema(tipo, mensaje, contexto = '') {
     await window.supabaseClient
       .from('logs_sistema')
       .insert({
-        tipo: tipo,
+        nivel: tipo || 'INFO',
         mensaje: mensaje,
-        contexto: contexto,
-        created_at: new Date().toISOString()
+        origen: 'config.js',
+        detalles: { contexto: contexto }
       });
   } catch (e) { }
 }

@@ -426,7 +426,8 @@ async function cargarSeccion(section) {
         case 'proveedores': await cargarProveedores(); break;
         case 'compras': await cargarCompras(); break;
         case 'deudas': await cargarDeudasNegocio(); break;
-        case 'cartera-bodegas': await cargarBodegasExternas(); break;
+        case 'sistecredito': await cargarRecaudosSistecredito(); break;
+        case 'devoluciones': await cargarDevolucionesAdmin(); break;
         case 'creditos': await cargarCreditos(); break;
         case 'promociones': await cargarPromociones(); break;
         case 'blog': await cargarPosts(); break;
@@ -14776,3 +14777,187 @@ function cerrarModalDetallesCierre() {
 */
 // window.verDetalleCierre = verDetalleCierre;
 // window.cerrarModalDetallesCierre = cerrarModalDetallesCierre;
+
+// =========================================================================
+// MÓDULOS DE SISTECRÉDITO Y DEVOLUCIONES (ADMINISTRACIÓN)
+// =========================================================================
+
+async function cargarRecaudosSistecredito() {
+    const tbody = document.getElementById('listaSistecreditoRecaudo');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">⏳ Cargando transacciones de Sistecrédito...</td></tr>';
+
+    try {
+        const estadoFiltro = document.getElementById('filtroSistecreditoEstado')?.value || 'todos';
+        const localFiltro = document.getElementById('filtroSistecreditoLocal')?.value || '';
+
+        let query = supabaseClient.from('recaudo_sistecredito').select('*').order('created_at', { ascending: false });
+
+        if (estadoFiltro !== 'todos') {
+            query = query.eq('estado', estadoFiltro);
+        }
+        if (localFiltro) {
+            query = query.ilike('local', `%${localFiltro}%`);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        // Calcular KPIs de todos los registros que coinciden con los filtros
+        let totalFinanciado = 0;
+        let totalRetencion = 0;
+        let totalNeto = 0;
+        let totalRecibido = 0;
+        let totalPendiente = 0;
+
+        if (data && data.length > 0) {
+            data.forEach(item => {
+                const total = item.monto_total || 0;
+                const ret = item.retencion || 0;
+                const neto = item.monto_neto || 0;
+
+                totalFinanciado += total;
+                totalRetencion += ret;
+                totalNeto += neto;
+
+                if (item.estado === 'recibido') {
+                    totalRecibido += neto;
+                } else {
+                    totalPendiente += neto;
+                }
+            });
+        }
+
+        document.getElementById('kpiSistecreditoTotal').textContent = `$${totalFinanciado.toLocaleString('es-CO')}`;
+        document.getElementById('kpiSistecreditoRetencion').textContent = `$${totalRetencion.toLocaleString('es-CO')}`;
+        document.getElementById('kpiSistecreditoNeto').textContent = `$${totalNeto.toLocaleString('es-CO')}`;
+        document.getElementById('kpiSistecreditoRecibido').textContent = `$${totalRecibido.toLocaleString('es-CO')}`;
+        document.getElementById('kpiSistecreditoPendiente').textContent = `$${totalPendiente.toLocaleString('es-CO')}`;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--gray);">No hay transacciones registradas.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(item => {
+            const fecha = new Date(item.created_at).toLocaleString('es-CO');
+            const total = item.monto_total || 0;
+            const ret = item.retencion || 0;
+            const neto = item.monto_neto || 0;
+
+            const badgeCls = item.estado === 'recibido' ? 'badge badge-success' : 'badge badge-warning';
+            const badgeTxt = item.estado === 'recibido' ? 'Recibido' : 'Pendiente';
+
+            let actionHtml = '';
+            if (item.estado === 'pendiente') {
+                actionHtml = `<button class="btn btn-success" onclick="marcarRecibidoSistecredito('${item.id}')" style="padding:0.25rem 0.5rem; font-size:0.8rem; border-radius:4px;"><i class="fas fa-check"></i> Recibido</button>`;
+            } else {
+                actionHtml = `<span style="font-size:0.85rem; color:var(--gray); font-style:italic;">Liquidado</span>`;
+            }
+
+            return `
+            <tr>
+                <td>${fecha}</td>
+                <td><b>${item.local}</b></td>
+                <td>${item.cliente_nombre || 'Cliente'}</td>
+                <td><span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:bold;">${item.tipo_operacion || 'Venta'}</span></td>
+                <td><code>${item.referencia_id || ''}</code></td>
+                <td><b>$${total.toLocaleString('es-CO')}</b></td>
+                <td style="color:var(--danger); font-size:0.85rem;">-$${ret.toLocaleString('es-CO')}</td>
+                <td style="color:var(--success); font-weight:bold;">$${neto.toLocaleString('es-CO')}</td>
+                <td><span class="${badgeCls}">${badgeTxt}</span></td>
+                <td>${actionHtml}</td>
+            </tr>`;
+        }).join('');
+
+    } catch (e) {
+        console.error('Error al cargar recaudos Sistecredito:', e);
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--danger);">Error al cargar las transacciones.</td></tr>';
+    }
+}
+window.cargarRecaudosSistecredito = cargarRecaudosSistecredito;
+
+async function marcarRecibidoSistecredito(id) {
+    if (!confirm('¿Estás seguro de marcar esta liquidación como RECIBIDA en banco?')) return;
+    try {
+        const { error } = await supabaseClient.from('recaudo_sistecredito')
+            .update({ estado: 'recibido', updated_at: new Date().toISOString() })
+            .eq('id', id);
+
+        if (error) throw error;
+        
+        if (typeof showToast === 'function') {
+            showToast('Liquidación marcada como recibida ✅', 'success');
+        } else {
+            alert('Liquidación marcada como recibida ✅');
+        }
+        cargarRecaudosSistecredito();
+    } catch (e) {
+        console.error('Error al actualizar sistecredito:', e);
+        alert('Error: ' + e.message);
+    }
+}
+window.marcarRecibidoSistecredito = marcarRecibidoSistecredito;
+
+async function cargarDevolucionesAdmin() {
+    const tbody = document.getElementById('listaDevolucionesAdmin');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">⏳ Cargando registro de devoluciones...</td></tr>';
+
+    try {
+        const { data, error } = await supabaseClient.from('devoluciones').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--gray);">No hay devoluciones registradas.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(item => {
+            const fecha = new Date(item.created_at).toLocaleString('es-CO');
+            const diff = item.diferencia_dinero || 0;
+            
+            let diffHtml = '';
+            if (diff > 0) {
+                diffHtml = `<span style="color:var(--success); font-weight:bold;">+$${diff.toLocaleString('es-CO')}</span>`;
+            } else if (diff < 0) {
+                diffHtml = `<span style="color:var(--danger); font-weight:bold;">-$${Math.abs(diff).toLocaleString('es-CO')}</span>`;
+            } else {
+                diffHtml = `<span style="color:var(--gray);">$0</span>`;
+            }
+
+            let fotosHtml = '<span style="color:var(--gray); font-style:italic; font-size:0.85rem;">Ninguna</span>';
+            if (item.fotos_evidencia && item.fotos_evidencia.length > 0) {
+                fotosHtml = `<div style="display:flex; gap:5px; flex-wrap:wrap;">` +
+                    item.fotos_evidencia.map((url, i) => `
+                        <a href="${url}" target="_blank" style="display:inline-block; line-height:0;">
+                            <img src="${url}" style="width:35px; height:35px; object-fit:cover; border-radius:4px; border:1px solid #cbd5e1;" title="Foto evidencia ${i+1}"/>
+                        </a>`).join('') + `</div>`;
+            }
+
+            const estadoBadge = item.estado_producto_devuelto === 'bueno' ? 'badge badge-success' : 'badge badge-danger';
+            const estadoTxt = item.estado_producto_devuelto === 'bueno' ? 'Re-ingresó' : 'Avería';
+
+            return `
+            <tr>
+                <td>${fecha}</td>
+                <td><b>${item.local || 'POS'}</b></td>
+                <td><code>${item.id_venta_original}</code></td>
+                <td><b>${item.producto_devuelto_id}</b></td>
+                <td>${item.cantidad_devuelta || 1}</td>
+                <td>${item.producto_entregado_id ? `<b>${item.producto_entregado_id}</b> (x${item.cantidad_entregada || 1})` : '<span style="color:var(--gray); font-style:italic;">Solo Devolución</span>'}</td>
+                <td>${diffHtml}</td>
+                <td><span class="${estadoBadge}">${estadoTxt}</span></td>
+                <td>${item.registrado_por || ''}</td>
+                <td>${fotosHtml}</td>
+            </tr>`;
+        }).join('');
+
+    } catch (e) {
+        console.error('Error al cargar devoluciones:', e);
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--danger);">Error al cargar las devoluciones.</td></tr>';
+    }
+}
+window.cargarDevolucionesAdmin = cargarDevolucionesAdmin;

@@ -93,9 +93,13 @@
                 style="font-size: 1.1rem; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: bold; background: #2563eb; border-color: #1d4ed8; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">
                 🏍️ Abonos Deuda
             </button>
-            <button class="btn btn-warning" onclick="abrirModalGestionBodegas()" title="Gestión de Bodegas Externas"
+            <button class="btn btn-warning" onclick="abrirModalGestionDeudores()" title="Gestión de Clientes Deudores"
                 style="background:#2563eb; border-color:#1d4ed8; color:white; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">
-                📦 Bodegas
+                👥 Deudores
+            </button>
+            <button class="btn btn-danger" onclick="abrirModalDevoluciones()" title="Gestionar Devoluciones"
+                style="background:#dc2626; border-color:#b91c1c; color:white; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem; box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);">
+                🔄 Devoluciones
             </button>
             <button id="btnAbrirCaja" class="btn btn-success" onclick="abrirModalCaja()"
                 style="font-size: 1.1rem; padding: 0.8rem 1.5rem; border-radius: 8px;">🔓 Abrir</button>
@@ -170,7 +174,8 @@
                                 <option value="Tarjeta">💳 Tarjeta</option>
                                 <option value="Daviplata">📱 Daviplata</option>
                                 <option value="Nequi">📱 Nequi</option>
-                            </select>
+                                                            <option value="Sistecredito">📋 Sistecrédito</option>
+</select>
                         </div>
                         <div>
                             <label
@@ -456,23 +461,23 @@
     </div>
 
 
-    <!-- ====== MODAL GESTIÓN DE BODEGAS EXTERNAS ====== -->
-    <div id="modalGestionBodegas" class="modal-overlay" style="display:none;">
+    <!-- ====== MODAL GESTIÓN DE DEUDORES ====== -->
+    <div id="modalGestionDeudores" class="modal-overlay" style="display:none;">
         <div class="modal" style="max-width:98%; width:98%; max-height:95vh; overflow-y:auto; padding:0;">
             <div class="modal-header"
                 style="padding: 1.5rem; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:white; z-index:10;">
-                <h3 style="margin:0; color:var(--dark);">📦 Gestión de Bodegas Externas</h3>
-                <button onclick="cerrarModalGestionBodegas()" class="btn-cerrar"
+                <h3 style="margin:0; color:var(--dark);">👥 Gestión de Clientes Deudores</h3>
+                <button onclick="cerrarModalGestionDeudores()" class="btn-cerrar"
                     style="font-size:1.5rem; background:none; border:none; cursor:pointer;">❌</button>
             </div>
 
             <div class="modal-body" style="padding: 1.5rem;">
                 <div class="form-group"
                     style="margin-bottom: 1.5rem; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0;">
-                    <label style="font-weight:bold; color:var(--dark);">Seleccionar Bodega *</label>
-                    <select id="bodegaSeleccionadaPOS" class="form-control" onchange="cargarDatosBodegaPOS()"
+                    <label style="font-weight:bold; color:var(--dark);">Seleccionar Cliente Deudor *</label>
+                    <select id="deudorSeleccionadoPOS" class="form-control" onchange="cargarDatosDeudorPOS()"
                         style="font-size:1.1rem; padding:0.8rem;">
-                        <option value="">⏳ Cargando bodegas...</option>
+                        <option value="">⏳ Cargando deudores...</option>
                     </select>
                 </div>
 
@@ -480,7 +485,7 @@
                     style="margin-bottom: 1.5rem; background:white; padding:1rem; border-radius:8px; border:1px solid #e2e8f0;">
                     <label style="font-weight:bold; color:var(--dark);">Responsable del Registro (Trazabilidad)
                         *</label>
-                    <input type="text" id="responsableBodegaPOS" class="form-control"
+                    <input type="text" id="responsableDeudorPOS" class="form-control"
                         placeholder="Nombre de quien autoriza o realiza el registro"
                         style="font-size:1rem; padding:0.8rem;">
                     <small style="color:var(--gray);">Este campo es obligatorio para el control de inventario.</small>
@@ -490,7 +495,7 @@
                 <div style="display:flex; border-bottom:2px solid #e2e8f0; margin-bottom:1.5rem; gap:1rem;">
                     <button id="tabDespachoBodega" class="tab-btn active" onclick="cambiarTabBodegas('despacho')"
                         style="padding:0.8rem 1.5rem; border:none; background:none; font-weight:bold; color:var(--primary); border-bottom:3px solid var(--primary); cursor:pointer; font-size:1.1rem;">🚛
-                        Despachar</button>
+                        Despachar Mercancía</button>
                     <button id="tabAbonoBodega" class="tab-btn" onclick="cambiarTabBodegas('abono')"
                         style="padding:0.8rem 1.5rem; border:none; background:none; font-weight:bold; color:var(--gray); border-bottom:3px solid transparent; cursor:pointer; font-size:1.1rem;">💰
                         Recibir Abono</button>
@@ -503,7 +508,7 @@
                         <div class="alert alert-info"
                             style="margin-bottom:1rem; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; padding:1rem; border-radius:8px;">
                             Seleccionando productos aquí se descontarán del inventario local seleccionado y se sumarán a
-                            la deuda de la bodega. NO suman al total de ventas del día.
+                            la deuda del cliente deudor. NO suman al total de ventas del día.
                         </div>
                         <div class="form-group">
                             <label>Sede de Origen (De dónde sale la mercancía) *</label>
@@ -544,8 +549,7 @@
 
                         <div style="margin-top:2rem; text-align:right;">
                             <button class="btn btn-danger btn-large" onclick="confirmarDespachoBodega()"
-                                style="width:100%; font-size:1.1rem; padding:1rem;">🚛 Registrar Despacho a
-                                Bodega</button>
+                                style="width:100%; font-size:1.1rem; padding:1rem;">🚛 Registrar Despacho a Deudor</button>
                         </div>
                     </div>
 
@@ -554,8 +558,8 @@
                         <div
                             style="background:#fff7ed; border:1px solid #fed7aa; padding:1.5rem; border-radius:12px; margin-bottom:1.5rem;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="color:#9a3412; font-weight:bold;">Deuda Total de la Bodega:</span>
-                                <span id="deudaTotalBodegaDisplay"
+                                <span style="color:#9a3412; font-weight:bold;">Deuda Total del Cliente:</span>
+                                <span id="deudaTotalDeudorDisplay"
                                     style="font-size:1.5rem; font-weight:900; color:#9a3412;">$0</span>
                             </div>
                         </div>
@@ -568,49 +572,172 @@
                                 style="display:flex; gap:1rem; align-items:flex-end; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0;">
                                 <div class="form-group" style="flex:1; margin:0;">
                                     <label style="font-size:0.85rem; color:var(--gray);">Método</label>
-                                    <select id="metodoAbonoBodega" class="form-control"
-                                        style="font-size:1rem; padding:0.6rem;" onchange="toggleCuentaBodegaPOS()">
+                                    <select id="metodoAbonoDeudor" class="form-control"
+                                        style="font-size:1rem; padding:0.6rem;" onchange="toggleCuentaDeudorPOS()">
                                         <option value="Efectivo">💵 Efectivo (Suma a Caja Física)</option>
                                         <option value="Transferencia">🏦 Transferencia Bancaria</option>
+                                        <option value="Nequi">📱 Nequi</option>
+                                        <option value="Daviplata">📱 Daviplata</option>
+                                        <option value="Tarjeta">💳 Tarjeta</option>
+                                        <option value="Sistecredito">📋 Sistecrédito</option>
                                     </select>
                                 </div>
-                                <div class="form-group" id="contenedorCuentaBodega"
+                                <div class="form-group" id="contenedorCuentaDeudor"
                                     style="flex:1; margin:0; display:none;">
                                     <label style="font-size:0.85rem; color:var(--gray);">Cuenta Destino</label>
-                                    <select id="cuentaDestinoBodega" class="form-control"
+                                    <select id="cuentaDestinoDeudor" class="form-control"
                                         style="font-size:1rem; padding:0.6rem;">
                                         <option value="">Cargando cuentas...</option>
                                     </select>
                                 </div>
                                 <div class="form-group" style="flex:1; margin:0;">
                                     <label style="font-size:0.85rem; color:var(--gray);">Monto ($)</label>
-                                    <input type="number" id="montoAbonoBodega" class="form-control"
+                                    <input type="number" id="montoAbonoDeudor" class="form-control"
                                         style="font-size:1.1rem; font-weight:bold; color:var(--success); text-align:center; padding:0.6rem;"
                                         placeholder="0">
                                 </div>
-                                <button class="btn btn-primary" onclick="agregarLineaAbonoBodega()"
+                                <button class="btn btn-primary" onclick="agregarLineaAbonoDeudor()"
                                     style="padding:0.6rem 1rem; height:42px;">➕ Añadir</button>
                             </div>
                         </div>
 
                         <div style="margin-bottom:1.5rem;">
                             <h4 style="margin-bottom:0.5rem; font-size:1rem; color:var(--dark);">Pagos a Registrar:</h4>
-                            <div id="listaAbonosBodegaMultiples"
+                            <div id="listaAbonosDeudorMultiples"
                                 style="border:1px solid #e2e8f0; border-radius:8px; min-height:60px; background:white;">
                                 <div class="carrito-vacio" style="padding:1rem; font-size:0.9rem;">No has añadido pagos
                                     aún.</div>
                             </div>
                             <div style="text-align:right; margin-top:0.5rem; font-weight:bold; color:var(--success);">
-                                Total a Abonar: <span id="totalAbonosBodegaDisplay">$0</span>
+                                Total a Abonar: <span id="totalAbonosDeudorDisplay">$0</span>
                             </div>
                         </div>
 
                         <div style="margin-top:2rem; text-align:right;">
-                            <button class="btn btn-success btn-large" onclick="confirmarAbonoBodegaPOS()"
-                                style="width:100%; font-size:1.1rem; padding:1rem;">💰 Registrar Abono a la
-                                Deuda</button>
+                            <button class="btn btn-success btn-large" onclick="confirmarAbonoDeudorPOS()"
+                                style="width:100%; font-size:1.1rem; padding:1rem;">💰 Registrar Abono a la Deuda</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: DEVOLUCIONES DESDE EL POS ===== -->
+    <div id="modalDevoluciones" class="modal-overlay" style="display:none;">
+        <div class="modal" style="max-width:800px; width:95%; max-height:95vh; overflow-y:auto;">
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:1rem; margin-bottom:1rem;">
+                <h3 style="margin:0; color:var(--dark); display:flex; align-items:center; gap:0.5rem;">
+                    <span>🔄</span> Cambios y Devoluciones
+                </h3>
+                <button onclick="cerrarModalDevoluciones()" style="font-size:1.5rem; background:none; border:none; cursor:pointer;">❌</button>
+            </div>
+            <div class="modal-body">
+                <!-- Paso 1: Buscar la venta original -->
+                <div id="devolucionPasoBuscar" style="margin-bottom:1.5rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:700; color:var(--gray); font-size:0.85rem;">BUSCAR VENTA ORIGINAL (TICKET ID O CLIENTE)</label>
+                    <div class="search-box" style="margin-bottom:0; display:flex; gap:10px; position:relative;">
+                        <input type="text" id="buscarVentaOriginalQuery" class="search-input" placeholder="Ej: V172056... o Nombre del cliente" style="padding-left:1rem; flex:1;">
+                        <button onclick="buscarVentaOriginalDevolucion()" class="btn btn-primary" style="padding: 0 1.5rem; border-radius:8px;">Buscar</button>
+                    </div>
+                    <div id="resultadosBusquedaVenta" style="margin-top:1rem; border:1px solid #e2e8f0; border-radius:12px; max-height:200px; overflow-y:auto; display:none; background:#f8fafc; padding:0.5rem;"></div>
+                </div>
+
+                <!-- Paso 2: Detalles de la venta y selección de items a devolver -->
+                <div id="devolucionPasoFormulario" style="display:none;">
+                    <div style="background:#eff6ff; border:1px solid #dbeafe; padding:1rem; border-radius:12px; margin-bottom:1rem;">
+                        <p style="margin:0 0 0.5rem; font-size:0.9rem;"><strong>Ticket original:</strong> <span id="devTicketOriginalLabel"></span></p>
+                        <p style="margin:0; font-size:0.9rem;"><strong>Cliente:</strong> <span id="devClienteOriginalLabel"></span></p>
+                    </div>
+
+                    <!-- Items de la venta -->
+                    <div style="margin-bottom:1rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">PRODUCTO A DEVOLVER</label>
+                        <select id="devSelectProductoVenta" class="form-control" onchange="seleccionarProductoADevolver()" style="padding:0.75rem; width:100%; border-radius:8px; border:2px solid #e2e8f0;">
+                            <option value="">Selecciona un producto de la venta...</option>
+                        </select>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+                        <div>
+                            <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">CANTIDAD A DEVOLVER</label>
+                            <input type="number" id="devCantidadDevolver" class="form-control" min="1" value="1" oninput="calcularDiferenciaDevolucion()" style="padding:0.75rem; width:100%; box-sizing:border-box; border-radius:8px; border:2px solid #e2e8f0;">
+                        </div>
+                        <div>
+                            <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">ESTADO DEL PRODUCTO DEVUELTO</label>
+                            <select id="devEstadoProducto" class="form-control" style="padding:0.75rem; width:100%; border-radius:8px; border:2px solid #e2e8f0;">
+                                <option value="bueno">✅ Bueno (Vuelve a Stock de Tienda)</option>
+                                <option value="defectuoso">❌ Defectuoso (Se da de baja / scrap)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Producto de cambio (opcional) -->
+                    <div style="margin-bottom:1rem; border-top:1px dashed #cbd5e1; padding-top:1rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">¿SE CAMBIA POR OTRO PRODUCTO? (OPCIONAL)</label>
+                        <div class="search-box" style="margin-bottom:0.5rem; display:flex; gap:10px; position:relative;">
+                            <input type="text" id="devBuscarProductoReemplazo" class="search-input" placeholder="Buscar producto de reemplazo..." oninput="buscarProductoReemplazoDevolucion()" style="padding-left:1rem; flex:1;">
+                        </div>
+                        <div id="resultadosReemplazoDev" style="border:1px solid #e2e8f0; border-radius:12px; max-height:150px; overflow-y:auto; display:none; background:#f8fafc; padding:0.5rem; margin-bottom:1rem;"></div>
+                        
+                        <div id="devProductoReemplazoSeleccionado" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0; padding:1rem; border-radius:12px; margin-top:0.5rem;">
+                            <input type="hidden" id="devReemplazoProductoId">
+                            <p style="margin:0 0 0.5rem; font-size:0.9rem;"><strong>Producto de Reemplazo:</strong> <span id="devReemplazoNombre"></span></p>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; color:var(--gray);">TALLA</label>
+                                    <select id="devReemplazoTalla" class="form-control" onchange="calcularDiferenciaDevolucion()" style="padding:0.5rem; width:100%; border-radius:8px; border:2px solid #e2e8f0;"></select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; color:var(--gray);">CANTIDAD</label>
+                                    <input type="number" id="devReemplazoCantidad" class="form-control" min="1" value="1" oninput="calcularDiferenciaDevolucion()" style="padding:0.5rem; width:100%; box-sizing:border-box; border-radius:8px; border:2px solid #e2e8f0;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos adicionales y evidencia -->
+                    <div style="margin-bottom:1rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">MOTIVO DEL CAMBIO / DETALLES</label>
+                        <textarea id="devMotivo" class="form-control" rows="2" placeholder="Ej: Cambio de talla, costura deshilachada..." style="padding:0.75rem; font-family:sans-serif; width:100%; border:2px solid #e2e8f0; border-radius:8px; box-sizing:border-box;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom:1.5rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">EVIDENCIA FOTOGRÁFICA</label>
+                        <input type="file" id="devFotoEvidencia" class="form-control" multiple accept="image/*" onchange="previewFotosDevolucion()" style="padding:0.5rem; width:100%; box-sizing:border-box; border-radius:8px; border:2px solid #e2e8f0;">
+                        <div id="devFotoPreview" style="display:flex; gap:10px; margin-top:0.5rem;"></div>
+                    </div>
+
+                    <!-- Resumen financiero -->
+                    <div style="background:#f1f5f9; padding:1.2rem; border-radius:12px; margin-bottom:1.5rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <span style="font-size:0.85rem; color:#475569; font-weight:600;">VALOR DEVUELTO:</span>
+                            <span id="devValorDevueltoLabel" style="font-weight:700; color:var(--danger);">$0</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                            <span style="font-size:0.85rem; color:#475569; font-weight:600;">VALOR NUEVO:</span>
+                            <span id="devValorNuevoLabel" style="font-weight:700; color:var(--success);">$0</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #cbd5e1; padding-top:0.5rem;">
+                            <span style="font-weight:bold; color:var(--dark);">DIFERENCIA:</span>
+                            <span id="devDiferenciaDisplay" style="font-size:1.2rem; font-weight:900;">$0</span>
+                        </div>
+                        <p id="devDiferenciaNota" style="margin:0.5rem 0 0; font-size:0.8rem; color:#64748b; font-style:italic;"></p>
+                    </div>
+
+                    <!-- Métodos para saldo a favor o pago adicional -->
+                    <div id="devSeccionMetodoPagoDiferencia" style="display:none; margin-bottom:1.5rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">MÉTODO DE PAGO PARA LA DIFERENCIA</label>
+                        <select id="devMetodoPagoDiferencia" class="form-control" style="padding:0.75rem; width:100%; border-radius:8px; border:2px solid #e2e8f0;">
+                            <option value="Efectivo">💵 Efectivo</option>
+                            <option value="Transferencia">🏦 Transferencia</option>
+                            <option value="Nequi">📱 Nequi</option>
+                            <option value="Daviplata">📱 Daviplata</option>
+                            <option value="Tarjeta">💳 Tarjeta</option>
+                        </select>
+                    </div>
+
+                    <button onclick="confirmarDevolucionPOS()" class="btn btn-success btn-large" style="width:100%; font-size:1.1rem; padding:1rem;">💾 Confirmar Cambio / Devolución</button>
                 </div>
             </div>
         </div>

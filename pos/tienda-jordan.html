@@ -24,6 +24,56 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="manifest" href="../manifest.json">
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <style>
+        .panel-fullscreen {
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 0; right: 0; bottom: 0;
+            background: #f8fafc;
+            z-index: 500;
+            overflow-y: auto;
+        }
+        .panel-fullscreen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .producto-traslado-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .producto-traslado-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 16px rgba(59,130,246,0.15);
+            transform: translateY(-2px);
+        }
+        .producto-traslado-card.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        .sc-estado-pendiente { background: #fef3c7; color: #92400e; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .sc-estado-recibido { background: #d1fae5; color: #065f46; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .servicio-card-hoy {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1rem;
+            border-left: 4px solid var(--primary);
+        }
+        .btn-info { background: #6366f1; color: white; border: none; }
+    </style>
 </head>
 
 <body>
@@ -60,9 +110,9 @@
         <div class="header-info">
             <span id="vendedorBadge" class="badge badge-vendedor hidden">👤 Vendedor</span>
             <span id="cajaBadge" class="badge badge-cerrada">🔒 Cerrada</span>
-            <button class="btn btn-warning" onclick="abrirModalServicios()" title="Servicios (Lavados, Arreglos)">🛠️
+            <button class="btn btn-warning" onclick="abrirPanelServicios()" title="Servicios (Lavados, Arreglos)">🛠️
                 Servicios</button>
-            <button class="btn btn-secondary" onclick="abrirModalTraslado()" title="Trasladar Mercancía">🚚
+            <button class="btn btn-secondary" onclick="abrirPanelTraslados()" title="Trasladar Mercancía">🚚
                 Traslados</button>
             <button class="btn btn-primary" onclick="abrirModalAbonoCredito()" title="Abonos Crédito Motero">🏍️ Pago
                 Crédito</button>
@@ -72,6 +122,8 @@
                 Bodegas</button>
             <button class="btn btn-danger" onclick="abrirModalGastos()" title="Gastos del Día">🧾
                 Gastos</button>
+            <button class="btn btn-info" onclick="abrirPanelSistecredito()" title="Ver Recaudo Sistecrédito" style="background:linear-gradient(135deg,#6366f1,#4f46e5); color:white; border:none;">📋
+                Sistecrédito</button>
             <button id="btnAbrirCaja" class="btn btn-success" onclick="abrirModalCaja()">🔓 Abrir</button>
             <button class="btn btn-primary" onclick="window.location.href='../gestor-productos.html'" title="Gestor de Productos">📦 Gestor</button>
             <button id="btnCerrarCaja" class="btn btn-danger hidden" onclick="mostrarModalCerrarCaja()">🔒 Cerrar
@@ -587,44 +639,8 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: TRASLADOS ===== -->
-    <div id="modalTraslado" class="modal-overlay">
-        <div class="modal" style="max-width: 450px;">
-            <h3>🚚 Trasladar Mercancía</h3>
-            <p style="margin-bottom:1rem; font-size:0.9rem; color:var(--gray);">Mueve productos de esta sede a otra
-                sucursal de forma inmediata.</p>
-
-            <div class="form-group">
-                <label>Producto a trasladar *</label>
-                <select id="trasladoProducto" class="form-control" style="width: 100%;">
-                    <option value="">Selecciona un producto...</option>
-                </select>
-            </div>
-
-            <div class="form-row" style="display:flex; gap:1rem; margin-top:1rem;">
-                <div class="form-group" style="flex:1;">
-                    <label>Sede Destino *</label>
-                    <select id="trasladoDestino" class="form-control">
-                        <option value="">Seleccionar...</option>
-                        <option value="Alcalá">Alcalá</option>
-                        <option value="01">Local 01</option>
-                        <option value="Jordán">Jordán</option>
-                        <option value="Digital">Digital</option>
-                        <option value="Evento">🎪 Evento</option>
-                    </select>
-                </div>
-                <div class="form-group" style="width:100px;">
-                    <label>Cantidad *</label>
-                    <input type="number" id="trasladoCantidad" min="1" value="1" class="form-control">
-                </div>
-            </div>
-
-            <div class="modal-botones" style="margin-top:1.5rem;">
-                <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="procesarTraslado()">🚚 Confirmar Traslado</button>
-            </div>
-        </div>
-    </div>
+    
+    
 
     <!-- ====== MODAL: PROVEEDORES Y PAGOS ====== -->
     <div id="modalProveedoresPOS" class="modal-overlay">
@@ -849,90 +865,8 @@
         </div>
     </div>
 
-    <!-- MODAL SERVICIOS MOTERO -->
-    <div id="modalServicios" class="modal-overlay">
-        <div class="modal" style="max-width:600px;">
-            <div
-                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:1rem; margin-bottom:1.5rem;">
-                <h3 style="margin:0; color:var(--dark); display:flex; align-items:center; gap:0.5rem;">
-                    <span style="font-size:1.5rem;">🛠️</span> Nuevo Servicio / Lavado
-                </h3>
-                <button onclick="cerrarModalServicios()"
-                    style="background:none; border:none; font-size:1.5rem; color:var(--gray); cursor:pointer;">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
-                    <div>
-                        <label
-                            style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">TIPO
-                            DE SERVICIO</label>
-                        <select id="servTipo" class="search-input" style="height:auto; padding:0.75rem;">
-                            <option value="Lavado">🧼 Lavado Premium</option>
-                            <option value="Tapizado">💺 Tapizado / Forro</option>
-                            <option value="Polichado">✨ Polichado / Brillo</option>
-                            <option value="Tallas">📏 Ajuste de Tallas</option>
-                            <option value="Otros">🛠️ Otros Arreglos</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label
-                            style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">REALIZADO
-                            POR (PARA COMISIÓN)</label>
-                        <select id="servEmpleado" class="search-input" style="height:auto; padding:0.75rem;">
-                            <option value="">Seleccionar Empleado...</option>
-                            <!-- Se llena dinámicamente -->
-                        </select>
-                    </div>
-                </div>
-
-                <div
-                    style="margin-bottom:1.5rem; background:#f8fafc; padding:1.2rem; border-radius:12px; border:1px solid #e2e8f0;">
-                    <label
-                        style="display:block; margin-bottom:0.8rem; font-weight:700; color:var(--dark); font-size:0.9rem;">DATOS
-                        DEL CLIENTE</label>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
-                        <input type="text" id="servClienteNombre" class="search-input" placeholder="Nombre completo"
-                            style="height:auto; padding:0.75rem;">
-                        <input type="text" id="servClienteTelefono" class="search-input"
-                            placeholder="WhatsApp (Enviar nota)" style="height:auto; padding:0.75rem;">
-                    </div>
-                    <input type="text" id="servCascoInfo" class="search-input"
-                        placeholder="Descripción del Casco Prestado (Si aplica)" style="height:auto; padding:0.75rem;">
-                </div>
-
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                    <div>
-                        <label
-                            style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">PRECIO
-                            TOTAL</label>
-                        <input type="number" id="servPrecioTotal" class="search-input" placeholder="0"
-                            style="height:auto; padding:0.8rem; font-weight:800; color:var(--primary); font-size:1.2rem; text-align:center;">
-                    </div>
-                    <div>
-                        <label
-                            style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">ABONO
-                            INICIAL</label>
-                        <input type="number" id="servAbono" class="search-input" placeholder="0"
-                            style="height:auto; padding:0.8rem; font-weight:800; color:var(--success); font-size:1.2rem; text-align:center;">
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-botones" style="margin-top:2rem;">
-                <button onclick="registrarServicio()" class="btn btn-success"
-                    style="flex:2; padding:1rem; font-size:1rem;">✅ Guardar y Usar</button>
-                <button onclick="cerrarModalServicios()" class="btn btn-outline"
-                    style="flex:1; padding:1rem;">Cancelar</button>
-            </div>
-
-            <div style="margin-top:1.5rem; border-top:1px solid #eee; padding-top:1rem; text-align:center;">
-                <a href="#" onclick="abrirBuscadorServicios(); return false;"
-                    style="color:var(--primary); font-weight:600; text-decoration:none; font-size:0.9rem;">🔍 Buscar /
-                    Entregar Servicio Existente</a>
-            </div>
-        </div>
-    </div>
+    
+    
 
     <!-- MODAL BUSCADOR SERVICIOS -->
     <div id="modalBuscarServicios" class="modal-overlay">
@@ -1067,7 +1001,394 @@
         </div>
     </div>
 
-    <!-- ====== SCRIPTS ====== -->
+    
+    <!-- ===== PANEL FULLSCREEN: TRASLADOS ===== -->
+    <div id="panelTraslados" class="panel-fullscreen" style="display:none;">
+        <div class="panel-fullscreen-header">
+            <div style="display:flex; align-items:center; gap:1rem;">
+                <button onclick="cerrarPanelTraslados()" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.9rem;">&#8592; Volver al POS</button>
+                <h2 style="margin:0; color:var(--dark);">🚚 Traslado de Mercancía</h2>
+                <span id="trasladoTiendaLabel" style="background:#f1f5f9; padding:0.3rem 0.8rem; border-radius:20px; font-size:0.85rem; color:#64748b;"></span>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 380px; gap:1.5rem; padding:1.5rem; max-width:1500px; margin:0 auto;">
+            <div>
+                <div style="background:white; border-radius:12px; padding:1.2rem; margin-bottom:1rem; border:1px solid #e2e8f0; display:flex; gap:1rem; align-items:center;">
+                    <div class="search-box" style="flex:1; margin:0;">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="trasladoBusqueda" placeholder="Buscar producto por nombre o marca..." oninput="filtrarProductosTraslado()">
+                    </div>
+                    <span id="trasladoStockTotal" style="background:#eff6ff; color:#1d4ed8; padding:0.4rem 0.8rem; border-radius:8px; font-weight:700; font-size:0.9rem; white-space:nowrap;"></span>
+                </div>
+                <div id="listaProductosTraslado" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:0.8rem; max-height:calc(100vh - 225px); overflow-y:auto; padding-right:0.5rem;">
+                    <div style="grid-column:1/-1; text-align:center; padding:3rem; color:#94a3b8;">Cargando productos...</div>
+                </div>
+            </div>
+
+            <div style="position:sticky; top:1.5rem; align-self:start;">
+                <div style="background:white; border-radius:12px; padding:1.5rem; border:1px solid #e2e8f0; box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+                    <h3 style="margin:0 0 1.2rem; color:var(--dark); font-size:1.1rem; border-bottom:1px solid #f1f5f9; padding-bottom:0.8rem;">📋 Configurar Traslado</h3>
+
+                    <div id="trasladoProductoSeleccionado" style="display:none; background:#eff6ff; border:1px solid #bfdbfe; padding:0.8rem; border-radius:8px; margin-bottom:1rem;">
+                        <p style="margin:0; font-weight:700; color:#1e40af; font-size:0.9rem;" id="trasladoProdNombreLabel"></p>
+                        <p style="margin:0.3rem 0 0; font-size:0.85rem; color:#3b82f6;" id="trasladoProdTallaLabel"></p>
+                        <p style="margin:0.3rem 0 0; font-size:0.85rem; color:#64748b;">Stock disponible: <strong id="trasladoStockDisponible"></strong></p>
+                        <input type="hidden" id="trasladoProducto">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:1rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; margin-bottom:0.5rem; display:block;">SEDE DESTINO *</label>
+                        <select id="trasladoDestino" class="form-control" style="padding:0.8rem; font-size:1rem;">
+                            <option value="">Seleccionar destino...</option>
+                            <option value="Alcalá">📍 Alcalá</option>
+                            <option value="01">📍 Local 01</option>
+                            <option value="Jordán">📍 Jordán</option>
+                            <option value="Digital">💻 Digital</option>
+                            <option value="Evento">🎪 Evento (Actual)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:1rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; margin-bottom:0.5rem; display:block;">CANTIDAD A TRASLADAR *</label>
+                        <input type="number" id="trasladoCantidad" class="form-control" min="1" value="1" style="padding:0.8rem; font-size:1.2rem; font-weight:800; text-align:center; color:var(--primary);">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:1.5rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; margin-bottom:0.5rem; display:block;">MOTIVO (OPCIONAL)</label>
+                        <textarea id="trasladoMotivo" class="form-control" rows="2" placeholder="Ej: Reposición de stock..." style="padding:0.8rem; border-radius:8px; font-family:sans-serif; width:100%; box-sizing:border-box;"></textarea>
+                    </div>
+
+                    <button onclick="procesarTraslado()" class="btn btn-primary" style="width:100%; padding:1rem; font-size:1rem; margin-bottom:0.5rem;">🚚 Confirmar Traslado</button>
+                    <button onclick="cerrarPanelTraslados()" class="btn btn-outline" style="width:100%; padding:0.7rem; font-size:0.9rem;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PANEL FULLSCREEN: DEVOLUCIONES ===== -->
+    <div id="panelDevoluciones" class="panel-fullscreen" style="display:none;">
+        <div class="panel-fullscreen-header">
+            <div style="display:flex; align-items:center; gap:1rem;">
+                <button onclick="cerrarPanelDevoluciones()" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.9rem;">&#8592; Volver al POS</button>
+                <h2 style="margin:0; color:var(--dark);">🔄 Cambios y Devoluciones</h2>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; padding:1.5rem; max-width:1400px; margin:0 auto;">
+            <div>
+                <div style="background:white; border-radius:12px; padding:1.5rem; border:1px solid #e2e8f0; margin-bottom:1rem;">
+                    <h3 style="margin:0 0 1rem; font-size:1rem; color:var(--dark);">🔍 Buscar Venta Original</h3>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1rem;">
+                        <div>
+                            <label style="font-weight:700; color:var(--gray); font-size:0.8rem; display:block; margin-bottom:0.4rem;">TICKET / CLIENTE</label>
+                            <input type="text" id="buscarVentaOriginalQuery" class="form-control" placeholder="ID venta o nombre cliente..." style="padding:0.7rem;" onkeyup="if(event.key === 'Enter') buscarVentaOriginalDevolucion()">
+                        </div>
+                        <div>
+                            <label style="font-weight:700; color:var(--gray); font-size:0.8rem; display:block; margin-bottom:0.4rem;">NOMBRE PRODUCTO</label>
+                            <input type="text" id="devBuscarPorProducto" class="form-control" placeholder="Ej: Casco Bless..." style="padding:0.7rem;" onkeyup="if(event.key === 'Enter') buscarVentaOriginalDevolucion()">
+                        </div>
+                        <div>
+                            <label style="font-weight:700; color:var(--gray); font-size:0.8rem; display:block; margin-bottom:0.4rem;">FECHA DESDE</label>
+                            <input type="date" id="devFechaDesde" class="form-control" style="padding:0.7rem;">
+                        </div>
+                        <div>
+                            <label style="font-weight:700; color:var(--gray); font-size:0.8rem; display:block; margin-bottom:0.4rem;">FECHA HASTA</label>
+                            <input type="date" id="devFechaHasta" class="form-control" style="padding:0.7rem;">
+                        </div>
+                    </div>
+                    <button onclick="buscarVentaOriginalDevolucion()" class="btn btn-primary" style="width:100%; padding:0.8rem;">🔍 Buscar Ventas</button>
+                </div>
+                <div id="resultadosBusquedaVenta" style="background:white; border-radius:12px; padding:1rem; border:1px solid #e2e8f0; min-height:80px; display:none; max-height:calc(100vh - 350px); overflow-y:auto;"></div>
+            </div>
+
+            <div id="devolucionPasoFormulario" style="display:none;">
+                <div style="background:white; border-radius:12px; padding:1.5rem; border:1px solid #e2e8f0; max-height:calc(100vh - 130px); overflow-y:auto;">
+                    <div style="background:#eff6ff; border:1px solid #dbeafe; padding:1rem; border-radius:8px; margin-bottom:1.2rem;">
+                        <p style="margin:0 0 0.3rem; font-size:0.9rem;"><strong>Ticket original:</strong> <span id="devTicketOriginalLabel"></span></p>
+                        <p style="margin:0; font-size:0.9rem;"><strong>Cliente:</strong> <span id="devClienteOriginalLabel"></span></p>
+                    </div>
+
+                    <div style="margin-bottom:1rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">PRODUCTO A DEVOLVER</label>
+                        <select id="devSelectProductoVenta" class="form-control" onchange="seleccionarProductoADevolver()" style="padding:0.75rem; width:100%; border-radius:8px; border:2px solid #e2e8f0;">
+                            <option value="">Selecciona un producto de la venta...</option>
+                        </select>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+                        <div>
+                            <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">CANTIDAD A DEVOLVER</label>
+                            <input type="number" id="devCantidadDevolver" class="form-control" min="1" value="1" oninput="calcularDiferenciaDevolucion()" style="padding:0.75rem; border-radius:8px; border:2px solid #e2e8f0;">
+                        </div>
+                        <div>
+                            <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">ESTADO PRODUCTO</label>
+                            <select id="devEstadoProducto" class="form-control" style="padding:0.75rem; border-radius:8px; border:2px solid #e2e8f0;">
+                                <option value="bueno">✅ Bueno (Vuelve a Stock)</option>
+                                <option value="defectuoso">❌ Defectuoso (Scrap)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:1rem; border-top:1px dashed #cbd5e1; padding-top:1rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">¿SE CAMBIA POR OTRO PRODUCTO? (OPCIONAL)</label>
+                        <div class="search-box" style="margin-bottom:0.5rem; display:flex; gap:10px; position:relative;">
+                            <input type="text" id="devBuscarProductoReemplazo" class="search-input" placeholder="Buscar producto de reemplazo..." oninput="buscarProductoReemplazoDevolucion()" style="padding-left:1rem; flex:1;">
+                        </div>
+                        <div id="resultadosReemplazoDev" style="border:1px solid #e2e8f0; border-radius:12px; max-height:150px; overflow-y:auto; display:none; background:#f8fafc; padding:0.5rem; margin-bottom:1rem;"></div>
+                        <div id="devProductoReemplazoSeleccionado" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0; padding:1rem; border-radius:12px;">
+                            <input type="hidden" id="devReemplazoProductoId">
+                            <p style="margin:0 0 0.5rem; font-size:0.9rem;"><strong>Reemplazo:</strong> <span id="devReemplazoNombre"></span></p>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; color:var(--gray);">TALLA</label>
+                                    <select id="devReemplazoTalla" class="form-control" onchange="calcularDiferenciaDevolucion()" style="padding:0.5rem; border-radius:8px; border:2px solid #e2e8f0;"></select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:600; color:var(--gray);">CANTIDAD</label>
+                                    <input type="number" id="devReemplazoCantidad" class="form-control" min="1" value="1" oninput="calcularDiferenciaDevolucion()" style="padding:0.5rem; border-radius:8px; border:2px solid #e2e8f0;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:1rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">MOTIVO / DETALLES</label>
+                        <textarea id="devMotivo" class="form-control" rows="2" placeholder="Ej: Cambio de talla, costura deshilachada..." style="padding:0.75rem; font-family:sans-serif; width:100%; border:2px solid #e2e8f0; border-radius:8px; box-sizing:border-box;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom:1.5rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">EVIDENCIA FOTOGRÁFICA</label>
+                        <input type="file" id="devFotoEvidencia" class="form-control" multiple accept="image/*" onchange="previewFotosDevolucion()" style="padding:0.5rem; width:100%; box-sizing:border-box; border-radius:8px; border:2px solid #e2e8f0;">
+                        <div id="devFotoPreview" style="display:flex; gap:10px; margin-top:0.5rem;"></div>
+                    </div>
+
+                    <div style="background:#f1f5f9; padding:1.2rem; border-radius:12px; margin-bottom:1.5rem;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                            <span style="font-size:0.85rem; color:#475569; font-weight:600;">VALOR DEVUELTO:</span>
+                            <span id="devValorDevueltoLabel" style="font-weight:700; color:var(--danger);">$0</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                            <span style="font-size:0.85rem; color:#475569; font-weight:600;">VALOR NUEVO:</span>
+                            <span id="devValorNuevoLabel" style="font-weight:700; color:var(--success);">$0</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; border-top:1px solid #cbd5e1; padding-top:0.5rem;">
+                            <span style="font-weight:bold; color:var(--dark);">DIFERENCIA:</span>
+                            <span id="devDiferenciaDisplay" style="font-size:1.2rem; font-weight:900;">$0</span>
+                        </div>
+                        <p id="devDiferenciaNota" style="margin:0.5rem 0 0; font-size:0.8rem; color:#64748b; font-style:italic;"></p>
+                    </div>
+
+                    <div id="devSeccionMetodoPagoDiferencia" style="display:none; margin-bottom:1.5rem;">
+                        <label style="font-weight:700; color:var(--gray); font-size:0.85rem; display:block; margin-bottom:0.5rem;">MÉTODO PAGO DIFERENCIA</label>
+                        <select id="devMetodoPagoDiferencia" class="form-control" style="padding:0.75rem; border-radius:8px; border:2px solid #e2e8f0;">
+                            <option value="Efectivo">💵 Efectivo</option>
+                            <option value="Transferencia">🏦 Transferencia</option>
+                            <option value="Nequi">📱 Nequi</option>
+                            <option value="Daviplata">📱 Daviplata</option>
+                            <option value="Tarjeta">💳 Tarjeta</option>
+                        </select>
+                    </div>
+
+                    <button onclick="confirmarDevolucionPOS()" class="btn btn-success btn-large" style="width:100%; font-size:1.1rem; padding:1rem;">💾 Confirmar Cambio / Devolución</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PANEL FULLSCREEN: SISTECRÉDITO ===== -->
+    <div id="panelSistecredito" class="panel-fullscreen" style="display:none;">
+        <div class="panel-fullscreen-header">
+            <div style="display:flex; align-items:center; gap:1rem;">
+                <button onclick="cerrarPanelSistecredito()" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.9rem;">&#8592; Volver al POS</button>
+                <h2 style="margin:0; color:var(--dark);">📋 Recibir Recaudo Sistecrédito</h2>
+                <span id="scTiendaLabel" style="background:#f1f5f9; padding:0.3rem 0.8rem; border-radius:20px; font-size:0.85rem; color:#64748b;"></span>
+            </div>
+            <button onclick="cargarSistecreditoLocal()" class="btn btn-secondary" style="padding:0.5rem 1rem; font-size:0.9rem;">🔄 Actualizar lista</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:1.5rem; padding:1.5rem; max-width:1400px; margin:0 auto;">
+            <!-- Formulario Recibir Recaudo -->
+            <div>
+                <div style="background:white; border-radius:12px; padding:1.5rem; border:1px solid #e2e8f0;">
+                    <h3 style="margin:0 0 1.2rem; color:var(--dark); font-size:1rem; border-bottom:1px solid #f1f5f9; padding-bottom:0.8rem;">📥 Registrar Pago Recibido</h3>
+                    
+                    <div style="display:grid; gap:1rem;">
+                        <!-- Buscador para autocompletado inteligente -->
+                        <div style="background: #f8fafc; padding: 0.8rem; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 0.2rem;">
+                            <label style="display:block; margin-bottom:0.4rem; font-weight:700; color:var(--dark); font-size:0.8rem; letter-spacing:0.05em;">🔍 AUTOCOMPLETAR DESDE TICKET O CLIENTE</label>
+                            <div style="display:flex; gap:0.5rem; position:relative;">
+                                <input type="text" id="scBuscarVentaQuery" class="form-control" placeholder="Buscar por ticket, cédula o nombre..." style="padding:0.6rem; flex:1; border-radius:6px; font-size:0.9rem;" onkeyup="if(event.key === 'Enter') buscarVentaSistecredito()">
+                                <button onclick="buscarVentaSistecredito()" class="btn btn-primary" style="padding:0.6rem 1.2rem; border-radius:6px; font-size:0.9rem; font-weight:700;">Buscar</button>
+                            </div>
+                            <div id="scResultadosBusqueda" style="margin-top:0.5rem; background:white; border:1px solid #e2e8f0; border-radius:6px; max-height:150px; overflow-y:auto; display:none; padding:0.2rem; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);"></div>
+                        </div>
+
+                        <div>
+                            <label style="display:block; margin-bottom:0.4rem; font-weight:600; color:var(--gray); font-size:0.85rem;">NOMBRE COMPLETO DEL CLIENTE *</label>
+                            <input type="text" id="scClienteNombre" class="form-control" placeholder="Ej: Carlos Mario Gomez..." style="padding:0.7rem; width:100%; border-radius:8px;">
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div>
+                                <label style="display:block; margin-bottom:0.4rem; font-weight:600; color:var(--gray); font-size:0.85rem;">CÉDULA / IDENTIFICACIÓN *</label>
+                                <input type="text" id="scClienteCedula" class="form-control" placeholder="Ej: 102345..." style="padding:0.7rem; width:100%; border-radius:8px;">
+                            </div>
+                            <div>
+                                <label style="display:block; margin-bottom:0.4rem; font-weight:600; color:var(--gray); font-size:0.85rem;">CRÉDITO / APROBACIÓN ID *</label>
+                                <input type="text" id="scReferenciaId" class="form-control" placeholder="Nro de crédito o aprobación..." style="padding:0.7rem; width:100%; border-radius:8px;">
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div>
+                                <label style="display:block; margin-bottom:0.4rem; font-weight:600; color:var(--gray); font-size:0.85rem;">VALOR EN EFECTIVO / PAGO *</label>
+                                <input type="number" id="scMontoTotal" class="form-control" placeholder="Monto a recibir in tienda..." style="padding:0.7rem; width:100%; border-radius:8px; font-weight:700; color:var(--success);">
+                            </div>
+                            <div>
+                                <label style="display:block; margin-bottom:0.4rem; font-weight:600; color:var(--gray); font-size:0.85rem;">MÉTODO DE PAGO RECIBIDO *</label>
+                                <select id="scMetodoPago" class="form-control" style="padding:0.7rem; width:100%; border-radius:8px; height:auto;">
+                                    <option value="Efectivo">💵 Efectivo</option>
+                                    <option value="Nequi">📱 Transferencia Nequi</option>
+                                    <option value="Daviplata">📱 Transferencia Daviplata</option>
+                                    <option value="Bancolombia">🏦 Transferencia Bancolombia</option>
+                                    <option value="Tarjeta">💳 Tarjeta / Datafono</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:0.5rem;">
+                            <button onclick="confirmarRecaudoSistecredito()" class="btn btn-success" style="width:100%; padding:0.9rem; font-weight:700; font-size:1rem; border-radius:10px;">
+                                📥 Registrar Recaudo y Sumar a Caja
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bitácora Recaudos del Día -->
+            <div>
+                <div style="background:white; border-radius:12px; padding:1.5rem; border:1px solid #e2e8f0; height:100%; max-height:calc(100vh - 140px); display:flex; flex-direction:column;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:0.8rem; margin-bottom:0.8rem;">
+                        <h3 style="margin:0; color:var(--dark); font-size:1rem;">📋 Recaudos de Hoy en esta Sede</h3>
+                        <span id="scConteoRegistros" style="background:#eff6ff; color:#1d4ed8; font-weight:700; font-size:0.8rem; padding:0.2rem 0.6rem; border-radius:12px;">0 recaudos</span>
+                    </div>
+
+                    <div style="overflow-y:auto; flex:1;">
+                        <table style="width:100%; border-collapse:collapse;">
+                            <thead style="background:#f8fafc; position:sticky; top:0; z-index:5;">
+                                <tr>
+                                    <th style="padding:0.6rem; text-align:left; font-size:0.75rem; font-weight:700; color:#64748b; border-bottom:1px solid #e2e8f0;">HORA</th>
+                                    <th style="padding:0.6rem; text-align:left; font-size:0.75rem; font-weight:700; color:#64748b; border-bottom:1px solid #e2e8f0;">CLIENTE / CÉDULA</th>
+                                    <th style="padding:0.6rem; text-align:left; font-size:0.75rem; font-weight:700; color:#64748b; border-bottom:1px solid #e2e8f0;">MÉTODO</th>
+                                    <th style="padding:0.6rem; text-align:right; font-size:0.75rem; font-weight:700; color:#64748b; border-bottom:1px solid #e2e8f0;">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaSistecreditoBody">
+                                <tr><td colspan="4" style="text-align:center; padding:2rem; color:#94a3b8;">No hay recaudos registrados hoy.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PANEL FULLSCREEN: SERVICIOS ===== -->
+    <div id="panelServicios" class="panel-fullscreen" style="display:none;">
+        <div class="panel-fullscreen-header">
+            <div style="display:flex; align-items:center; gap:1rem;">
+                <button onclick="cerrarPanelServicios()" class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.9rem;">&#8592; Volver al POS</button>
+                <h2 style="margin:0; color:var(--dark);">🛠️ Servicios / Lavados</h2>
+            </div>
+            <button onclick="abrirBuscadorServicios()" class="btn btn-secondary" style="padding:0.5rem 1rem; font-size:0.9rem;">🔍 Buscar / Entregar Servicio</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; padding:1.5rem; max-width:1400px; margin:0 auto;">
+            <div>
+                <div style="background:white; border-radius:12px; padding:1.5rem; border:1px solid #e2e8f0; max-height:calc(100vh - 130px); overflow-y:auto;">
+                    <h3 style="margin:0 0 1.2rem; color:var(--dark); font-size:1rem; border-bottom:1px solid #f1f5f9; padding-bottom:0.8rem;">➕ Registrar Nuevo Servicio</h3>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-bottom:1.2rem;">
+                        <div>
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">TIPO DE SERVICIO</label>
+                            <select id="servTipo" class="search-input" style="height:auto; padding:0.75rem; width:100%;">
+                                <option value="Lavado">🧼 Lavado Premium</option>
+                                <option value="Arreglo">🔧 Arreglo / Costura</option>
+                                <option value="Otro">🛠️ Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">EJECUTOR</label>
+                            <select id="servEjecutorTipo" class="search-input" style="height:auto; padding:0.75rem; width:100%;" onchange="toggleServEjecutor()">
+                                <option value="empleado">👤 Empleado</option>
+                                <option value="proveedor">🏭 Proveedor Externo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">MÉTODO PAGO</label>
+                            <select id="servMetodoPago" class="search-input" style="height:auto; padding:0.75rem; width:100%;">
+                                <option value="Efectivo">💵 Efectivo</option>
+                                <option value="Transferencia">🏦 Transferencia</option>
+                                <option value="Nequi">📱 Nequi</option>
+                                <option value="Daviplata">📱 Daviplata</option>
+                                <option value="Tarjeta">💳 Tarjeta</option>
+                                <option value="Crédito">⏳ Crédito</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="colServEmpleado" style="margin-bottom:1rem;">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">EMPLEADO ASIGNADO</label>
+                        <select id="servEmpleado" class="search-input" style="height:auto; padding:0.75rem; width:100%;"></select>
+                    </div>
+                    <div id="colServProveedor" style="display:none; margin-bottom:1rem;">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">PROVEEDOR EXTERNO</label>
+                        <select id="servProveedor" class="search-input" style="height:auto; padding:0.75rem; width:100%;"></select>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+                        <div>
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">NOMBRE CLIENTE</label>
+                            <input type="text" id="servClienteNombre" class="search-input" placeholder="Nombre del cliente" style="height:auto; padding:0.75rem; width:100%; box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">TELÉFONO</label>
+                            <input type="text" id="servClienteTelefono" class="search-input" placeholder="WhatsApp" style="height:auto; padding:0.75rem; width:100%; box-sizing:border-box;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom:1rem;">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">DESCRIPCIÓN CASCO PRESTADO</label>
+                        <input type="text" id="servCascoInfo" class="search-input" placeholder="Descripción del casco prestado (si aplica)" style="height:auto; padding:0.75rem; width:100%; box-sizing:border-box;">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                        <div>
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">PRECIO TOTAL</label>
+                            <input type="number" id="servPrecioTotal" class="search-input" placeholder="0" style="height:auto; padding:0.8rem; font-weight:800; color:var(--primary); font-size:1.2rem; text-align:center; width:100%; box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--gray); font-size:0.85rem;">ABONO INICIAL</label>
+                            <input type="number" id="servAbono" class="search-input" placeholder="0" style="height:auto; padding:0.8rem; font-weight:800; color:var(--success); font-size:1.2rem; text-align:center; width:100%; box-sizing:border-box;">
+                        </div>
+                    </div>
+                    <button onclick="registrarServicio()" class="btn btn-success" style="width:100%; padding:1rem; font-size:1rem;">✅ Registrar Servicio</button>
+                </div>
+            </div>
+
+            <div>
+                <div style="background:white; border-radius:12px; padding:1.5rem; border:1px solid #e2e8f0; max-height:calc(100vh - 130px); overflow-y:auto;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 style="margin:0; font-size:1rem; color:var(--dark);">📋 Servicios del Día</h3>
+                        <span id="serviciosHoyCount" style="background:#eff6ff; color:#1d4ed8; padding:0.3rem 0.7rem; border-radius:20px; font-size:0.8rem; font-weight:700;">0 servicios</span>
+                    </div>
+                    <div id="listaServiciosHoy" style="display:flex; flex-direction:column; gap:0.8rem;">
+                        <div style="text-align:center; padding:2rem; color:#94a3b8;">Cargando servicios del día...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+\n    <!-- ====== SCRIPTS ====== -->
 
     <script src="../js/config.js"></script>
     <script src="../js/security.js"></script>

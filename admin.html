@@ -584,7 +584,8 @@
                         <a href="#" data-section="proveedores">🏭 Proveedores</a>
                         <a href="#" data-section="compras">🛒 Compras</a>
                         <a href="#" data-section="deudas">📋 Deudas Negocio</a>
-                        <a href="#" data-section="cartera-bodegas">📦 Cartera Bodegas</a>
+                        <a href="#" data-section="sistecredito">📋 Sistecrédito</a>
+                        <a href="#" data-section="devoluciones">🔄 Devoluciones</a>
                         <a href="#" data-section="creditos">🏍️ Crédito Motero</a>
                         <a href="#" data-section="servicios-vendidos">🛠️ Servicios Vendidos</a>
                     </div>
@@ -3052,6 +3053,7 @@
                     <input type="text" id="proveedoresBuscar" class="form-control" placeholder="🔍 Buscar proveedor..."
                         style="max-width:250px;" oninput="buscarProveedores()">
                     <button onclick="cargarProveedores()" class="btn btn-secondary">🔄 Actualizar</button>
+                    <button onclick="mostrarFormProveedor()" class="btn btn-primary">➕ Nuevo Proveedor</button>
                 </div>
 
                 <div id="formProveedor" class="form-modal" style="display:none; z-index: 10001;">
@@ -3869,6 +3871,95 @@
                         <div class="modal-footer">
                             <button onclick="cerrarModalDetalles()" class="btn btn-secondary">Cerrar</button>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ═══════════════════ SISTECRÉDITO (FINANZAS) ═══════════════════ -->
+            <section id="sistecreditoSection" class="section">
+                <div class="page-header">
+                    <h1>📋 Control de Recaudos Sistecrédito</h1>
+                    <p>Monitoreo y liquidación de dinero cobrado a través de Sistecrédito</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">💰</div>
+                        <div class="stat-info">
+                            <h3 id="kpiSistecreditoTotal">$0</h3>
+                            <p>Total Financiado</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">💸</div>
+                        <div class="stat-info">
+                            <h3 id="kpiSistecreditoRetencion">$0</h3>
+                            <p>Retención / Comisión</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">🏦</div>
+                        <div class="stat-info">
+                            <h3 id="kpiSistecreditoNeto">$0</h3>
+                            <p>Monto Neto</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">💵</div>
+                        <div class="stat-info">
+                            <h3 id="kpiSistecreditoRecibido">$0</h3>
+                            <p>Total Liquidado / Recibido</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">⏳</div>
+                        <div class="stat-info">
+                            <h3 id="kpiSistecreditoPendiente">$0</h3>
+                            <p>Total Pendiente</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar" style="display:flex; gap:1rem; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <label style="font-size:0.9rem; font-weight:700; color:var(--gray);">Estado:</label>
+                        <select id="filtroSistecreditoEstado" class="form-control" style="width:150px;" onchange="cargarRecaudosSistecredito()">
+                            <option value="todos">Todos</option>
+                            <option value="pendiente">⏳ Pendiente</option>
+                            <option value="recibido">✅ Recibido / Liquidado</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <label style="font-size:0.9rem; font-weight:700; color:var(--gray);">Local:</label>
+                        <input type="text" id="filtroSistecreditoLocal" class="form-control" placeholder="Buscar por local..." style="width:180px;" oninput="cargarRecaudosSistecredito()">
+                    </div>
+                    <button onclick="cargarRecaudosSistecredito()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Sede</th>
+                                    <th>Cliente</th>
+                                    <th>Tipo Operación</th>
+                                    <th>Referencia / Aprobación</th>
+                                    <th>Monto Total</th>
+                                    <th>Retención</th>
+                                    <th>Monto Neto</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaSistecreditoRecaudo">
+                                <tr>
+                                    <td colspan="10" class="text-center">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
