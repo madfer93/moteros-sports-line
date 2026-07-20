@@ -3,15 +3,35 @@
 
 User-agent: *
 Allow: /
+Allow: /img/
+Allow: /css/
+Allow: /catalogo.html
+Allow: /nosotros.html
+Allow: /blog.html
+Allow: /contacto.html
+Allow: /terminos.html
+Allow: /privacidad.html
+Allow: /habeas-data.html
+Allow: /politicas-domicilios.html
 
-# Sitemap
+# Bloquear paneles de gestión internos, POS, Bodega y scripts
+Disallow: /admin.html
+Disallow: /admin-administrativa.html
+Disallow: /bodega.html
+Disallow: /gestor-productos.html
+Disallow: /acceso.html
+Disallow: /branding-studio.html
+Disallow: /recovery.html
+Disallow: /pos/
+Disallow: /js/
+Disallow: /database/
+Disallow: /branding_tmp/
+Disallow: /*.json$
+
+# Sitemap Oficial
 Sitemap: https://moterossportline.store/sitemap.xml
 
-# Bloquear archivos innecesarios
-Disallow: /js/config.js
-Disallow: /admin.html
-Disallow: /gestor-productos.html
-
-# Permitir rastreo de imagenes
+# Permitir rastreo de imágenes públicas
 User-agent: Googlebot-Image
+Allow: /img/
 Allow: /

@@ -70,9 +70,16 @@ out/
 # js/config.js
 DEV_REPORT.md
 
-# HERRAMIENTAS LOCALES DE BRANDING
+# HERRAMIENTAS LOCALES Y SCRIPTS TEMPORALES
 branding-studio.html
 branding_tmp/
+.gemini/
+scratch/
+database/
+*.sql
+*.sql.bak
+*.pem
+*.key
 
 # PRUEBAS (PLAYWRIGHT)
 playwright-report/

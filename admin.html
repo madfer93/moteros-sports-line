@@ -567,6 +567,7 @@
                         <a href="#" data-section="categorias">📁 Categorías</a>
                         <a href="#" data-section="destacados">⭐ Destacados</a>
                         <a href="#" data-section="inventario">📋 Inventario</a>
+                        <a href="#" data-section="auditoria-inventario">🔍 Auditoría de Inventario</a>
                         <a href="#" data-section="traslados">🔄 Traslados</a>
                         <a href="#" data-section="contenido">📄 Contenido del Sitio</a>
                     </div>
@@ -596,6 +597,8 @@
                     <button class="nav-dropdown-btn">👥 RRHH <span class="arrow">▼</span></button>
                     <div class="nav-dropdown-content">
                         <a href="#" data-section="rrhh">👥 Empleados</a>
+                        <a href="#" data-section="control-acceso">⏰ Control de Acceso y Novedades</a>
+                        <a href="acceso.html" target="_blank">📲 Fichaje / Reloj Empleados</a>
                         <a href="#" data-section="nomina">💰 Nómina</a>
                         <a href="#" data-section="comisiones">📊 Comisiones</a>
                         <a href="#" data-section="eventos">🎉 Eventos</a>
@@ -683,6 +686,7 @@
                     <a href="#" data-section="categorias" onclick="toggleMobileMenu()">📁 Categorías</a>
                     <a href="#" data-section="destacados" onclick="toggleMobileMenu()">⭐ Destacados</a>
                     <a href="#" data-section="inventario" onclick="toggleMobileMenu()">📋 Inventario</a>
+                    <a href="#" data-section="auditoria-inventario" onclick="toggleMobileMenu()">🔍 Auditoría de Inventario</a>
                     <a href="#" data-section="traslados" onclick="toggleMobileMenu()">🔄 Traslados</a>
                     <a href="#" data-section="contenido" onclick="toggleMobileMenu()">📄 Contenido del Sitio</a>
                 </div>
@@ -715,6 +719,8 @@
                 <div class="mobile-nav-group">
                     <div class="mobile-nav-title">👥 RRHH</div>
                     <a href="#" data-section="rrhh" onclick="toggleMobileMenu()">👥 Empleados</a>
+                    <a href="#" data-section="control-acceso" onclick="toggleMobileMenu()">⏰ Control de Acceso y Novedades</a>
+                    <a href="acceso.html" target="_blank">📲 Fichaje / Reloj Empleados</a>
                     <a href="#" data-section="nomina" onclick="toggleMobileMenu()">💰 Nómina</a>
                     <a href="#" data-section="comisiones" onclick="toggleMobileMenu()">📊 Comisiones</a>
                     <a href="#" data-section="eventos" onclick="toggleMobileMenu()">🎉 Eventos Admin</a>
@@ -851,6 +857,266 @@
                         </div>
                         <div class="card-body"><canvas id="chartVentas7Dias"></canvas></div>
                     </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ AUDITORÍA DE INVENTARIO ═══════════════════ -->
+            <section id="auditoria-inventarioSection" class="section">
+                <div class="page-header">
+                    <h1>🔍 Auditoría de Inventario y Modificaciones</h1>
+                    <p>Registro histórico de cambios de stock, precios y productos realizados por empleados</p>
+                </div>
+
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📝</div>
+                        <div class="stat-info">
+                            <h3 id="auditoriaMetricaHoy">0</h3>
+                            <p>Modificaciones Hoy</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">👥</div>
+                        <div class="stat-info">
+                            <h3 id="auditoriaMetricaTop" style="font-size:1.1rem; word-break:break-all;">-</h3>
+                            <p>Empleado Más Activo</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">📉</div>
+                        <div class="stat-info">
+                            <h3 id="auditoriaMetricaReducciones">0 unid</h3>
+                            <p>Reducciones de Stock</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">📈</div>
+                        <div class="stat-info">
+                            <h3 id="auditoriaMetricaAumentos">0 unid</h3>
+                            <p>Aumentos de Stock</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:center; background:#ffffff; padding:1.25rem; border-radius:1rem; box-shadow:0 4px 15px rgba(0,0,0,0.05); margin-bottom:1.5rem;">
+                    <input type="text" id="buscarAuditoriaInput" class="form-control" placeholder="🔍 Buscar producto, código o empleado..." style="min-width:240px; flex:1;" oninput="filtrarAuditoriaInventario()">
+                    
+                    <select id="filtroAuditoriaLocal" class="form-control" style="width:auto;" onchange="filtrarAuditoriaInventario()">
+                        <option value="">🏢 Todos los Locales</option>
+                        <option value="Alcalá">Alcalá</option>
+                        <option value="Local 01">Local 01</option>
+                        <option value="Jordán">Jordán</option>
+                        <option value="Bodega">Bodega Central</option>
+                        <option value="General">General</option>
+                    </select>
+
+                    <select id="filtroAuditoriaEmpleado" class="form-control" style="width:auto;" onchange="filtrarAuditoriaInventario()">
+                        <option value="">👥 Todos los Empleados</option>
+                    </select>
+
+                    <select id="filtroAuditoriaAccion" class="form-control" style="width:auto;" onchange="filtrarAuditoriaInventario()">
+                        <option value="">⚡ Todas las Acciones</option>
+                        <option value="Ajuste Stock">Ajuste Stock</option>
+                        <option value="Cambio Precio">Cambio Precio</option>
+                        <option value="Creación Producto">Creación Producto</option>
+                        <option value="Edición Producto">Edición Producto</option>
+                        <option value="Eliminación">Eliminación</option>
+                    </select>
+
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <span style="font-size:0.85rem; color:#64748b; font-weight:600;">Desde:</span>
+                        <input type="date" id="filtroAuditoriaDesde" class="form-control" style="width:auto;" onchange="filtrarAuditoriaInventario()">
+                        <span style="font-size:0.85rem; color:#64748b; font-weight:600;">Hasta:</span>
+                        <input type="date" id="filtroAuditoriaHasta" class="form-control" style="width:auto;" onchange="filtrarAuditoriaInventario()">
+                    </div>
+
+                    <button onclick="inicializarPanelAuditoriaInventario()" class="btn btn-secondary" style="margin-left:auto;">
+                        🔄 Recargar Auditoría
+                    </button>
+                </div>
+
+                <div class="table-container" style="background:white; border-radius:1rem; box-shadow:0 4px 20px rgba(0,0,0,0.06); padding:1rem;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha / Hora</th>
+                                <th>Empleado</th>
+                                <th>Local</th>
+                                <th>Producto / Código</th>
+                                <th>Acción Realizada</th>
+                                <th>Valor Previo ➔ Nuevo</th>
+                                <th>Detalles / Observación</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyAuditoriaInventario">
+                            <tr>
+                                <td colspan="7" class="text-center">Cargando datos de auditoría...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ═══════════════════ CONTROL DE ACCESO Y NOVEDADES (RRHH) ═══════════════════ -->
+            <section id="control-accesoSection" class="section">
+                <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <h1>⏰ Control de Acceso, Asistencia y Novedades</h1>
+                        <p>Monitoreo de jornada laboral de empleados (Entrada, Almuerzo, Salida y justificación de Novedades)</p>
+                    </div>
+                    <a href="acceso.html" target="_blank" class="btn btn-primary" style="background:#ff6b00; border:none; padding:0.75rem 1.25rem; font-weight:700; border-radius:0.75rem; text-decoration:none;">
+                        📲 Abrir Pantalla de Fichaje (Reloj)
+                    </a>
+                </div>
+
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon green">🟢</div>
+                        <div class="stat-info">
+                            <h3 id="accesoMetricaEnTurno">0</h3>
+                            <p>En Turno Ahora</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">🍕</div>
+                        <div class="stat-info">
+                            <h3 id="accesoMetricaEnAlmuerzo">0</h3>
+                            <p>En Almuerzo</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🏁</div>
+                        <div class="stat-info">
+                            <h3 id="accesoMetricaFinalizados">0</h3>
+                            <p>Turnos Finalizados</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">⚠️</div>
+                        <div class="stat-info">
+                            <h3 id="accesoMetricaSinRegistrar">0</h3>
+                            <p>Sin Fichar Hoy</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">⏰</div>
+                        <div class="stat-info">
+                            <h3 id="accesoMetricaNovedades">0</h3>
+                            <p>Novedades Día</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario Integrado para Registrar / Ajustar Novedades (CERO MODALES) -->
+                <div id="panelFormularioNovedades" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:1rem; padding:1.5rem; margin-bottom:1.5rem;">
+                    <h3 style="margin-bottom:1rem; font-size:1.1rem; color:#0f172a; display:flex; align-items:center; gap:0.5rem;">
+                        <span>📝</span> Registrar Novedad o Ajuste Manual de Horario
+                    </h3>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; align-items:end;">
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:700; color:#334155; display:block; margin-bottom:0.3rem;">Empleado *</label>
+                            <select id="novedadEmpleadoId" class="form-control">
+                                <option value="">-- Seleccionar Empleado --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:700; color:#334155; display:block; margin-bottom:0.3rem;">Fecha *</label>
+                            <input type="date" id="novedadFecha" class="form-control">
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:700; color:#334155; display:block; margin-bottom:0.3rem;">Local / Sucursal *</label>
+                            <select id="novedadLocal" class="form-control">
+                                <option value="Alcalá">Alcalá</option>
+                                <option value="Local 01">Local 01</option>
+                                <option value="Jordán">Jordán</option>
+                                <option value="Bodega">Bodega Central</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:700; color:#334155; display:block; margin-bottom:0.3rem;">Tipo de Novedad *</label>
+                            <select id="novedadTipo" class="form-control">
+                                <option value="normal">Normal (Sin novedad)</option>
+                                <option value="llegada_tarde">⏰ Llegada Tarde</option>
+                                <option value="inasistencia">❌ Inasistencia / Sin presentar</option>
+                                <option value="incapacidad">🏥 Incapacidad Médica</option>
+                                <option value="permiso">📄 Permiso Aprobado</option>
+                                <option value="salida_temprana">🚪 Salida Temprana</option>
+                                <option value="ajuste_manual">🔧 Ajuste Manual de Horario</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:700; color:#334155; display:block; margin-bottom:0.3rem;">Hora Entrada (Opcional)</label>
+                            <input type="time" id="novedadHoraEntrada" class="form-control">
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:700; color:#334155; display:block; margin-bottom:0.3rem;">Hora Salida (Opcional)</label>
+                            <input type="time" id="novedadHoraSalida" class="form-control">
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label style="font-size:0.85rem; font-weight:700; color:#334155; display:block; margin-bottom:0.3rem;">Observación / Justificación</label>
+                            <input type="text" id="novedadObservacion" class="form-control" placeholder="Ej: Presentó excusa médica de EPS, o se le olvidó marcar salida">
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:1.25rem;">
+                        <button type="button" onclick="limpiarFormularioNovedad()" class="btn btn-secondary">Limpiar</button>
+                        <button type="button" onclick="guardarNovedadAdmin()" class="btn btn-success" style="background:#16a34a; border:none; font-weight:700;">💾 Guardar Novedad / Ajuste</button>
+                    </div>
+                </div>
+
+                <div class="actions-bar" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:center; background:#ffffff; padding:1.25rem; border-radius:1rem; box-shadow:0 4px 15px rgba(0,0,0,0.05); margin-bottom:1.5rem;">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <span style="font-size:0.85rem; color:#64748b; font-weight:600;">Fecha:</span>
+                        <input type="date" id="filtroAccesoFecha" class="form-control" style="width:auto;" onchange="filtrarAccesoAdmin()">
+                    </div>
+
+                    <select id="filtroAccesoLocal" class="form-control" style="width:auto;" onchange="filtrarAccesoAdmin()">
+                        <option value="">🏢 Todos los Locales</option>
+                        <option value="Alcalá">Alcalá</option>
+                        <option value="Local 01">Local 01</option>
+                        <option value="Jordán">Jordán</option>
+                        <option value="Bodega">Bodega Central</option>
+                    </select>
+
+                    <select id="filtroAccesoEmpleado" class="form-control" style="width:auto;" onchange="filtrarAccesoAdmin()">
+                        <option value="">👥 Todos los Empleados</option>
+                    </select>
+
+                    <select id="filtroAccesoNovedad" class="form-control" style="width:auto;" onchange="filtrarAccesoAdmin()">
+                        <option value="">⚡ Estado / Novedades</option>
+                        <option value="normal">Normal</option>
+                        <option value="llegada_tarde">Llegada Tarde</option>
+                        <option value="inasistencia">Inasistencia</option>
+                        <option value="incapacidad">Incapacidad</option>
+                        <option value="permiso">Permiso</option>
+                        <option value="ajuste_manual">Ajuste Admin</option>
+                    </select>
+
+                    <button onclick="inicializarPanelControlAccesoAdmin()" class="btn btn-secondary" style="margin-left:auto;">
+                        🔄 Actualizar Registros
+                    </button>
+                </div>
+
+                <div class="table-container" style="background:white; border-radius:1rem; box-shadow:0 4px 20px rgba(0,0,0,0.06); padding:1rem;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Empleado</th>
+                                <th>Local</th>
+                                <th>Estado</th>
+                                <th>Entrada / Salida</th>
+                                <th>Almuerzo (Duración)</th>
+                                <th>Novedad</th>
+                                <th>Observaciones / Admin</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyControlAccesoAdmin">
+                            <tr>
+                                <td colspan="9" class="text-center">Cargando registros de turnos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </section>
 
@@ -1899,6 +2165,11 @@
                                 <div class="form-group">
                                     <label>🏢 Jordán</label>
                                     <input type="number" id="stockJordan" class="form-control" placeholder="0" min="0"
+                                        value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>📦 Bodega Central</label>
+                                    <input type="number" id="stockBodega" class="form-control" placeholder="0" min="0"
                                         value="0">
                                 </div>
                                 <div class="form-group">
@@ -6424,6 +6695,7 @@
                                     <option value="Administrador">Administrador</option>
                                     <option value="Jefe de Tienda">Jefe de Tienda</option>
                                     <option value="Gestor de Productos">Gestor de Productos</option>
+                                    <option value="Bodega">📦 Encargado de Bodega</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -7525,6 +7797,8 @@
     <script src="js/reportes-rentabilidad.js"></script>
     <script src="js/reportes-ejecutivos.js"></script>
     <script src="js/admin-comisiones.js"></script>
+    <script src="js/auditoria-inventario.js"></script>
+    <script src="js/control-acceso.js"></script>
     <div id="modalEditarLocal" class="modal-overlay" style="display:none; z-index: 10001;">
         <div class="modal-content"
             style="max-width:1100px; max-height:95vh; width:95%; padding:2.5rem; border-radius:1.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">

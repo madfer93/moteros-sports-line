@@ -593,15 +593,22 @@
         </section>
     </div>
 
-    <!-- MODAL PRODUCTO (IGUAL QUE ADMIN.HTML) -->
-    <div id="formProducto" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="formTituloProducto">➕ Nuevo Producto</h2>
-                <button onclick="cancelarFormProducto()" style="background:none; border:none; font-size:1.5rem; color:#64748b; cursor:pointer;">✖</button>
+    <!-- SECCIÓN FORMULARIO DE PRODUCTO (CERO MODALES - PANEL COMPLETO) -->
+    <div id="formProducto" style="display:none; width: 100%; min-height: 80vh; background: white; border-radius: 1.25rem; padding: 2rem; border: 1px solid #e2e8f0; margin-top: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1.5rem; margin-bottom: 2rem; border-bottom: 2px solid #f1f5f9; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="cancelarFormProducto()" style="padding: 0.65rem 1.25rem; font-size: 0.9rem;">
+                    ← Volver a Productos
+                </button>
+                <h2 id="formTituloProducto" style="margin: 0; font-size: 1.5rem; font-weight: 800; color: #0f172a;">➕ Nuevo Producto</h2>
             </div>
-            <div class="modal-body">
-                <input type="hidden" id="productoId">
+            <button type="button" class="btn btn-primary" onclick="guardarProducto()" style="padding: 0.75rem 2rem; font-size: 1rem;">
+                💾 Guardar Producto
+            </button>
+        </div>
+
+        <div>
+            <input type="hidden" id="productoId">
                 
                 <div class="dropzone" id="dropzoneProducto" onclick="document.getElementById('fileInputProducto').click()">
                     <div class="dropzone-icon">📸</div>
@@ -677,6 +684,7 @@
                                     <th>Alcalá</th>
                                     <th>Local 01</th>
                                     <th>Jordán</th>
+                                    <th>Bodega</th>
                                     <th>Acción</th>
                                 </tr>
                             </thead>
@@ -763,6 +771,10 @@
                             <input type="number" id="stockJordan" class="form-control" readonly value="0">
                         </div>
                         <div class="form-group">
+                            <label>📦 Bodega Central</label>
+                            <input type="number" id="stockBodega" class="form-control" readonly value="0">
+                        </div>
+                        <div class="form-group">
                             <label>🌐 Digital</label>
                             <input type="number" id="stockDigital" class="form-control" value="0">
                         </div>
@@ -771,16 +783,19 @@
 
                 <div class="form-group">
                     <label>Descripción corta</label>
-                    <textarea id="productoDescCorta" class="form-control" rows="2" placeholder="Breve resumen"></textarea>
+                    <textarea id="productoDescCorta" class="form-control" rows="2" placeholder="Breve resumen del producto"></textarea>
                 </div>
                 <div class="form-group">
                     <label>Descripción técnica</label>
-                    <textarea id="productoDescTecnica" class="form-control" rows="3" placeholder="Características técnicas"></textarea>
+                    <textarea id="productoDescTecnica" class="form-control" rows="4" placeholder="Especificaciones y características técnicas del producto..."></textarea>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="cancelarFormProducto()">Cancelar</button>
-                <button class="btn btn-primary" onclick="guardarProducto()">💾 Guardar Producto</button>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid #f1f5f9;">
+                <button type="button" class="btn btn-secondary" onclick="cancelarFormProducto()" style="padding: 0.8rem 1.5rem;">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="guardarProducto()" style="padding: 0.86rem 2.5rem; font-size: 1.05rem;">
+                    💾 Guardar Producto
+                </button>
             </div>
         </div>
     </div>
@@ -789,6 +804,7 @@
 
     <!-- SCRIPTS -->
     <script src="js/config.js"></script>
+    <script src="js/auditoria-inventario.js"></script>
     <script src="js/gestor-productos.js"></script>
 
 </body>

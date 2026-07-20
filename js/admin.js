@@ -440,6 +440,8 @@ async function cargarSeccion(section) {
         case 'comisiones': await cargarComisiones(); break;
         case 'rrhh':
         case 'empleados': await cargarEmpleados(); break;
+        case 'control-acceso': if (typeof inicializarPanelControlAccesoAdmin === 'function') await inicializarPanelControlAccesoAdmin(); break;
+        case 'auditoria-inventario': if (typeof inicializarPanelAuditoriaInventario === 'function') await inicializarPanelAuditoriaInventario(); break;
         case 'traslados': await cargarTraslados(); break;
         case 'feedback': await cargarFeedback(); break;
         case 'metas':
@@ -10287,7 +10289,7 @@ async function cargarEmpleados() {
 
 function mostrarModalEmpleado() {
     document.getElementById('formEmpleado').style.display = 'block';
-    document.getElementById('formTituloEmpleado').textContent = '? Nuevo Empleado';
+    document.getElementById('formTituloEmpleado').textContent = '➕ Nuevo Empleado';
     limpiarFormEmpleado();
 }
 

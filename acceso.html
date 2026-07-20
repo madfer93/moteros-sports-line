@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Acceso y Turnos | Moteros Sports Line</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/png" href="img/favicon-32x32.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="js/security-shield.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/control-acceso.js"></script>
+    <style>
+        :root {
+            --primary: #ff6b00;
+            --primary-dark: #e05d00;
+            --dark-bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .acceso-card {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 540px;
+            padding: 2.5rem 2rem;
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .brand-logo {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary);
+            box-shadow: 0 0 20px rgba(255, 107, 0, 0.4);
+            margin-bottom: 0.75rem;
+        }
+
+        .brand-header h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+        }
+
+        .brand-header p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            color: #ffffff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.2);
+        }
+
+        select.form-control option {
+            background: #0f172a;
+            color: #ffffff;
+        }
+
+        .grid-acciones {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.75rem;
+        }
+
+        .btn-accion {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem 1rem;
+            border: none;
+            border-radius: 1rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #ffffff;
+            gap: 0.5rem;
+        }
+
+        .btn-accion i {
+            font-size: 1.75rem;
+        }
+
+        .btn-entrada {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-almuerzo-ini {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-almuerzo-fin {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-salida {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-accion:hover:not(:disabled) {
+            transform: translateY(-3px);
+            filter: brightness(1.1);
+        }
+
+        .btn-accion:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+            box-shadow: none;
+        }
+
+        .alerta-msg {
+            margin-top: 1.25rem;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: none;
+            text-align: center;
+        }
+
+        .alerta-exito {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid var(--success);
+            color: #6ee7b7;
+        }
+
+        .alerta-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--danger);
+            color: #fca5a5;
+        }
+
+        .reloj-envivo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .footer-nav {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .footer-nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s;
+        }
+
+        .footer-nav a:hover {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="acceso-card">
+        <div class="brand-header">
+            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Logo" class="brand-logo">
+            <h1>Control de Acceso y Turnos</h1>
+            <p>Moteros Sports Line - Registro Oficial de Jornada</p>
+        </div>
+
+        <div class="reloj-envivo" id="relojVivo">00:00:00 AM</div>
+
+        <form id="formAccesoEmpleado" onsubmit="event.preventDefault();">
+            <div class="form-group">
+                <label for="selectLocalAcceso"><i class="fas fa-store"></i> Local / Sucursal</label>
+                <select id="selectLocalAcceso" class="form-control">
+                    <option value="Alcalá">🏪 Alcalá</option>
+                    <option value="Local 01">🏬 Local 01</option>
+                    <option value="Jordán">🏢 Jordán</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="selectEmpleadoAcceso"><i class="fas fa-user-clock"></i> Empleado</label>
+                <select id="selectEmpleadoAcceso" class="form-control" onchange="actualizarBotoneriaEmpleado()">
+                    <option value="">-- Cargar Empleados... --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="pinEmpleadoAcceso"><i class="fas fa-key"></i> PIN / Contraseña de Seguridad</label>
+                <input type="password" id="pinEmpleadoAcceso" class="form-control" placeholder="Ingresa tu clave o cédula" autocomplete="current-password">
+            </div>
+
+            <div class="form-group">
+                <label for="obsEmpleadoAcceso"><i class="fas fa-comment"></i> Observación (Opcional)</label>
+                <input type="text" id="obsEmpleadoAcceso" class="form-control" placeholder="Ej: Tráfico, novedad en ruta, etc.">
+            </div>
+
+            <div class="grid-acciones">
+                <button type="button" class="btn-accion btn-entrada" id="btnEntradaTurno" onclick="ejecutarMarcacion('entrada')">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>ENTRADA</span>
+                </button>
+
+                <button type="button" class="btn-accion btn-almuerzo-ini" id="btnIniAlmuerzo" onclick="ejecutarMarcacion('inicio_almuerzo')">
+                    <i class="fas fa-utensils"></i>
+                    <span>ALMUERZO (SALIDA)</span>
+                </button>
+
+                <button type="button" class="btn-accion btn-almuerzo-fin" id="btnFinAlmuerzo" onclick="ejecutarMarcacion('fin_almuerzo')">
+                    <i class="fas fa-coffee"></i>
+                    <span>ALMUERZO (REGRESO)</span>
+                </button>
+
+                <button type="button" class="btn-accion btn-salida" id="btnSalidaTurno" onclick="ejecutarMarcacion('salida')">
+                    <i class="fas fa-door-open"></i>
+                    <span>SALIDA DE TURNO</span>
+                </button>
+            </div>
+
+            <div id="alertaRespuestaAcceso" class="alerta-msg"></div>
+        </form>
+
+        <div class="footer-nav">
+            <a href="index.html"><i class="fas fa-arrow-left"></i> Volver al Inicio</a> | 
+            <a href="admin.html"><i class="fas fa-user-shield"></i> Admin Panel</a>
+        </div>
+    </div>
+
+    <script>
+        // Actualizar reloj en vivo
+        function actualizarReloj() {
+            const ahora = new Date();
+            const str = ahora.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('relojVivo').textContent = str;
+        }
+        setInterval(actualizarReloj, 1000);
+        actualizarReloj();
+
+        // Cargar empleados al iniciar
+        document.addEventListener('DOMContentLoaded', async () => {
+            await cargarListaEmpleados();
+        });
+
+        async function cargarListaEmpleados() {
+            const select = document.getElementById('selectEmpleadoAcceso');
+            try {
+                if (!window.supabaseClient) return;
+                const { data, error } = await window.supabaseClient
+                    .from('empleados_tienda')
+                    .select('id, nombre, cargo')
+                    .eq('activo', true)
+                    .order('nombre');
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    select.innerHTML = '<option value="">-- Selecciona tu Nombre --</option>' +
+                        data.map(e => `<option value="${e.id}">${e.nombre} (${e.cargo || 'Empleado'})</option>`).join('');
+                } else {
+                    select.innerHTML = '<option value="">No hay empleados activos</option>';
+                }
+            } catch (e) {
+                console.error('Error cargando empleados:', e);
+                select.innerHTML = '<option value="">Error al cargar empleados</option>';
+            }
+        }
+
+        function actualizarBotoneriaEmpleado() {
+            // Limpiar alertas al cambiar de empleado
+            const alerta = document.getElementById('alertaRespuestaAcceso');
+            alerta.style.display = 'none';
+        }
+
+        async function ejecutarMarcacion(accion) {
+            const empId = document.getElementById('selectEmpleadoAcceso').value;
+            const pin = document.getElementById('pinEmpleadoAcceso').value;
+            const local = document.getElementById('selectLocalAcceso').value;
+            const obs = document.getElementById('obsEmpleadoAcceso').value;
+            const alerta = document.getElementById('alertaRespuestaAcceso');
+
+            alerta.style.display = 'none';
+
+            try {
+                const res = await procesarRegistroTurnoEmpleado(accion, {
+                    empleadoId: empId,
+                    pin: pin,
+                    local: local,
+                    observaciones: obs
+                });
+
+                alerta.className = 'alerta-msg alerta-exito';
+                alerta.innerHTML = `<i class="fas fa-check-circle"></i> ${res.mensaje}`;
+                alerta.style.display = 'block';
+
+                document.getElementById('pinEmpleadoAcceso').value = '';
+                document.getElementById('obsEmpleadoAcceso').value = '';
+
+            } catch (err) {
+                alerta.className = 'alerta-msg alerta-error';
+                alerta.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${err.message || 'Error al procesar marcación.'}`;
+                alerta.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

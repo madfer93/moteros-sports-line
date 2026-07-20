@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bodega Central | Moteros Sports Line</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+    <script src="js/security-shield.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --accent-orange: #ff6b00;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255,255,255,0.1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg-dark); color: var(--text-light); min-height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Header */
+        header.bodega-header {
+            background: rgba(30, 41, 59, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        .header-brand { display: flex; align-items: center; gap: 1rem; }
+        .header-brand img { height: 42px; border-radius: 8px; }
+        .header-brand h1 { font-size: 1.35rem; font-weight: 800; color: white; display: flex; align-items: center; gap: 0.5rem; }
+        .header-brand span { color: var(--accent-orange); }
+
+        .header-actions { display: flex; align-items: center; gap: 0.75rem; }
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.6rem;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-primary { background: var(--accent-orange); color: white; }
+        .btn-primary:hover { background: #e05d00; transform: translateY(-1px); }
+        .btn-blue { background: var(--accent-blue); color: white; }
+        .btn-blue:hover { background: #2563eb; }
+        .btn-green { background: var(--accent-green); color: white; }
+        .btn-green:hover { background: #059669; }
+        .btn-secondary { background: #334155; color: var(--text-light); }
+        .btn-secondary:hover { background: #475569; }
+
+        /* Main Container */
+        main.bodega-container {
+            padding: 2rem;
+            flex: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Metric Cards */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+        }
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+        }
+        .metric-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .icon-orange { background: rgba(255,107,0,0.15); color: var(--accent-orange); }
+        .icon-blue { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+        .icon-green { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+        .icon-purple { background: rgba(168,85,247,0.15); color: #a855f7; }
+
+        .metric-data h3 { font-size: 1.6rem; font-weight: 800; color: white; }
+        .metric-data p { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+
+        /* Sections Flow (No Modals) */
+        .panel-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1.25rem;
+            padding: 1.75rem;
+            box-shadow: 0 15px 35px -5px rgba(0,0,0,0.4);
+        }
+        .panel-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .panel-title-left { display: flex; align-items: center; gap: 0.6rem; }
+
+        /* Form Row Embed */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+        .form-group label { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
+        .form-control {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 0.6rem;
+            padding: 0.75rem 1rem;
+            color: white;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+        .form-control:focus { outline: none; border-color: var(--accent-orange); }
+
+        /* Table Styling */
+        .table-responsive { overflow-x: auto; border-radius: 0.75rem; border: 1px solid var(--border-color); }
+        table.custom-table { width: 100%; border-collapse: collapse; text-align: left; }
+        table.custom-table th { background: #0f172a; padding: 0.9rem 1rem; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color); }
+        table.custom-table td { padding: 0.9rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; vertical-align: middle; }
+        table.custom-table tr:hover { background: rgba(255,255,255,0.02); }
+
+        /* Login Overlay */
+        .login-overlay {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 100px);
+            padding: 2rem;
+        }
+        .login-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1.25rem;
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .login-card img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--accent-orange);
+            margin-bottom: 1rem;
+        }
+        .login-card h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+        .login-card p {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .badge-status { padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+        .badge-pending { background: rgba(245,158,11,0.2); color: #f59e0b; }
+        .badge-completed { background: rgba(16,185,129,0.2); color: #10b981; }
+
+        .toast-msg { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; background: var(--card-bg); border-left: 4px solid var(--accent-orange); color: white; border-radius: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 999; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <!-- ====== HEADER BODEGA ====== -->
+    <header class="bodega-header">
+        <div class="header-brand">
+            <img src="img/logo-moteros.jpeg" alt="Logo Moteros">
+            <h1>📦 <span>Bodega Central</span> | Despacho y Traslados</h1>
+        </div>
+        <div class="header-actions">
+            <span id="userBodegaBadge" style="display:none; background: rgba(255,107,0,0.15); border:1px solid rgba(255,107,0,0.3); color:#ff6b00; padding:0.4rem 0.9rem; border-radius:8px; font-size:0.88rem; font-weight:700;"></span>
+            <button id="btnLogoutBodega" style="display:none;" onclick="cerrarSesionBodega()" class="btn btn-secondary">🚪 Cerrar Sesión</button>
+            <a href="acceso.html" target="_blank" class="btn btn-secondary">⏰ Turno / Fichaje</a>
+        </div>
+    </header>
+
+    <!-- ====== SECCIÓN DE LOGIN (CERO MODALES) ====== -->
+    <div id="bodegaLoginSection" class="login-overlay" style="display: none;">
+        <div class="login-card">
+            <img src="img/logo-moteros.jpeg" alt="Moteros Sports Line">
+            <h2>Acceso a Bodega Central</h2>
+            <p>Ingresa tus credenciales de empleado para acceder al panel de despachos.</p>
+            <form onsubmit="iniciarSesionBodega(event)">
+                <div class="form-group" style="text-align: left; margin-bottom: 1rem;">
+                    <label><i class="fas fa-user"></i> Usuario o Cédula *</label>
+                    <input type="text" id="loginBodegaUsuario" class="form-control" placeholder="Ej: usuario.pos o cédula" required>
+                </div>
+                <div class="form-group" style="text-align: left; margin-bottom: 1.5rem;">
+                    <label><i class="fas fa-lock"></i> Contraseña / PIN *</label>
+                    <input type="password" id="loginBodegaPassword" class="form-control" placeholder="******" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-weight: 700; font-size: 1rem;">
+                    🔑 Ingresar a Bodega Central
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ====== CONTENIDO PRINCIPAL ====== -->
+    <main id="bodegaMainContent" class="bodega-container" style="display: none;">
+
+        <!-- METRICAS -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon icon-orange"><i class="fas fa-boxes"></i></div>
+                <div class="metric-data">
+                    <h3 id="mBodegaTotalProds">0</h3>
+                    <p>Productos en Bodega</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon icon-blue"><i class="fas fa-cubes"></i></div>
+                <div class="metric-data">
+                    <h3 id="mBodegaTotalStock">0</h3>
+                    <p>Unidades Disponibles</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon icon-green"><i class="fas fa-truck-loading"></i></div>
+                <div class="metric-data">
+                    <h3 id="mBodegaTrasladosHoy">0</h3>
+                    <p>Traslados Despachados Hoy</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon icon-purple"><i class="fas fa-exchange-alt"></i></div>
+                <div class="metric-data">
+                    <h3 id="mBodegaUnidadesEnviadas">0</h3>
+                    <p>Unidades Enviadas Hoy</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORMULARIO DE TRASLADO DESDE BODEGA (CERO MODALES - PANEL COMPLETO) -->
+        <section class="panel-section">
+            <div class="panel-title">
+                <div class="panel-title-left">
+                    <i class="fas fa-paper-plane" style="color: var(--accent-orange);"></i>
+                    <span>Registrar Nuevo Traslado desde Bodega Central</span>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group" style="grid-column: span 2;">
+                    <label><i class="fas fa-search"></i> Buscar Producto en Bodega *</label>
+                    <select id="selectBodegaProducto" class="form-control" onchange="alSeleccionarProductoBodega()">
+                        <option value="">-- Cargar Productos de Bodega... --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-store"></i> Tienda / Sucursal Destino *</label>
+                    <select id="selectBodegaDestino" class="form-control">
+                        <option value="Alcalá">🏪 Alcalá</option>
+                        <option value="Local 01">🏬 Local 01</option>
+                        <option value="Jordán">🏢 Jordán</option>
+                        <option value="Evento">🎪 Evento / Feria</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-palette"></i> Color / Variante *</label>
+                    <select id="selectBodegaColor" class="form-control" onchange="alSeleccionarColorBodega()">
+                        <option value="">-- Seleccionar Color --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-ruler-combined"></i> Talla *</label>
+                    <select id="selectBodegaTalla" class="form-control" onchange="actualizarStockMaximoBodega()">
+                        <option value="">-- Seleccionar Talla --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-calculator"></i> Cantidad a Trasladar * (Disp: <span id="lblStockDisponibleBodega" style="color: var(--accent-orange); font-weight:800;">0</span>)</label>
+                    <input type="number" id="inputBodegaCantidad" class="form-control" placeholder="Ej: 5" min="1" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-user-check"></i> Empleado / Despachador *</label>
+                    <select id="selectBodegaEmpleado" class="form-control">
+                        <option value="">-- Cargando Empleados... --</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="grid-column: span 2;">
+                    <label><i class="fas fa-sticky-note"></i> Notas / Observaciones del Traslado</label>
+                    <input type="text" id="inputBodegaNotas" class="form-control" placeholder="Ej: Envío de reposición por stock bajo o solicitud urgente">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                <button type="button" onclick="limpiarFormularioBodega()" class="btn btn-secondary">Limpiar Formulario</button>
+                <button type="button" onclick="procesarTrasladoBodega()" class="btn btn-primary" style="padding: 0.85rem 2rem; font-size: 1rem;">
+                    🚀 Despachar Traslado a Tienda
+                </button>
+            </div>
+        </section>
+
+        <!-- STOCK ACTUAL EN BODEGA CENTRAL -->
+        <section class="panel-section">
+            <div class="panel-title">
+                <div class="panel-title-left">
+                    <i class="fas fa-warehouse" style="color: var(--accent-blue);"></i>
+                    <span>Inventario Actual Disponible en Bodega Central</span>
+                </div>
+                <input type="text" id="inputBuscarBodegaInventario" class="form-control" placeholder="🔍 Filtrar producto, talla o color..." style="width: 280px;" oninput="filtrarInventarioBodega()">
+            </div>
+
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Foto</th>
+                            <th>Producto / Referencia</th>
+                            <th>Código</th>
+                            <th>Color</th>
+                            <th>Talla</th>
+                            <th>Stock Disponible</th>
+                            <th>Última Actualización</th>
+                            <th>Acción Rápida</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyInventarioBodega">
+                        <tr><td colspan="8" style="text-align:center; padding: 2rem;">Cargando inventario de Bodega...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- HISTÓRICO DE TRASLADOS DESPACHADOS -->
+        <section class="panel-section">
+            <div class="panel-title">
+                <div class="panel-title-left">
+                    <i class="fas fa-history" style="color: var(--accent-green);"></i>
+                    <span>Histórico de Traslados Despachados desde Bodega</span>
+                </div>
+                <button onclick="cargarPanelBodega()" class="btn btn-secondary">🔄 Recargar Lista</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha / Hora</th>
+                            <th style="width: 60px;">Foto</th>
+                            <th>Producto</th>
+                            <th>Origen ➔ Destino</th>
+                            <th>Variante</th>
+                            <th>Cantidad</th>
+                            <th>Despachado Por</th>
+                            <th>Notas</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyHistoricoTrasladosBodega">
+                        <tr><td colspan="9" style="text-align:center; padding: 2rem;">Cargando historial de traslados...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="js/auditoria-inventario.js"></script>
+    <script src="js/bodega.js"></script>
+</body>
+</html>

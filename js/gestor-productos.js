@@ -234,7 +234,12 @@ function filtrarProductosAdmin() {
 // ═══════════════════════════════════════════════════════════════
 
 async function mostrarFormProducto() {
-    document.getElementById('formProducto').style.display = 'flex';
+    const secProds = document.getElementById('productosSection');
+    if (secProds) secProds.style.display = 'none';
+    const form = document.getElementById('formProducto');
+    form.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     document.getElementById('formTituloProducto').textContent = '➕ Nuevo Producto';
     document.getElementById('productoId').value = '';
     
@@ -280,6 +285,9 @@ async function mostrarFormProducto() {
 
 function cancelarFormProducto() {
     document.getElementById('formProducto').style.display = 'none';
+    const secProds = document.getElementById('productosSection');
+    if (secProds) secProds.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function editarProducto(id) {
@@ -456,7 +464,7 @@ async function subirImagenColor(index) {
     input.click();
 }
 
-function agregarFilaTalla(talla = '', color = '', a = 0, l = 0, j = 0) {
+function agregarFilaTalla(talla = '', color = '', a = 0, l = 0, j = 0, b = 0) {
     const tbody = document.getElementById('tbodyTallasStock');
     const tr = document.createElement('tr');
     
@@ -476,6 +484,7 @@ function agregarFilaTalla(talla = '', color = '', a = 0, l = 0, j = 0) {
         <td><input type="number" class="form-control form-control-sm stock-a" value="${a}" oninput="sumarStocks()"></td>
         <td><input type="number" class="form-control form-control-sm stock-l" value="${l}" oninput="sumarStocks()"></td>
         <td><input type="number" class="form-control form-control-sm stock-j" value="${j}" oninput="sumarStocks()"></td>
+        <td><input type="number" class="form-control form-control-sm stock-b" value="${b}" oninput="sumarStocks()"></td>
         <td><button type="button" class="btn btn-sm" onclick="this.closest('tr').remove(); sumarStocks()">🗑️</button></td>
     `;
     tbody.appendChild(tr);
@@ -483,15 +492,18 @@ function agregarFilaTalla(talla = '', color = '', a = 0, l = 0, j = 0) {
 }
 
 function sumarStocks() {
-    let totalA = 0, totalL = 0, totalJ = 0;
+    let totalA = 0, totalL = 0, totalJ = 0, totalB = 0;
     document.querySelectorAll('#tbodyTallasStock tr').forEach(tr => {
         totalA += parseInt(tr.querySelector('.stock-a').value) || 0;
         totalL += parseInt(tr.querySelector('.stock-l').value) || 0;
         totalJ += parseInt(tr.querySelector('.stock-j').value) || 0;
+        totalB += parseInt(tr.querySelector('.stock-b')?.value) || 0;
     });
     document.getElementById('stockAlcala').value = totalA;
     document.getElementById('stockLocal01').value = totalL;
     document.getElementById('stockJordan').value = totalJ;
+    const elBodega = document.getElementById('stockBodega');
+    if (elBodega) elBodega.value = totalB;
 }
 
 function actualizarFormularioPorCategoria() {
@@ -594,8 +606,25 @@ async function guardarProducto() {
         // El ID para inventarios debe ser id_producto (slug) si existe, sino el UUID/ID
         const finalId = res.data.id_producto || res.data.id;
         
-        // Guardar Tallas / Stock (Esto es más complejo porque implica múltiples tablas)
-        await guardarInventarios(finalId);
+        // Guardar Tallas / Stock
+        await guardarInventarios(finalId, res.data);
+
+        // Registrar auditoría de producto
+        const empNombre = usuarioLogueado ? usuarioLogueado.nombre : 'Gestor de Productos';
+        const empId = usuarioLogueado ? usuarioLogueado.id : null;
+        if (typeof window.registrarAuditoriaInventario === 'function') {
+            await window.registrarAuditoriaInventario({
+                producto_id: finalId,
+                producto_nombre: datos.nombre,
+                producto_codigo: datos.codigo_barras || datos.referencia || '',
+                empleado_id: empId,
+                empleado_nombre: empNombre,
+                tipo_accion: id ? 'Edición Producto' : 'Creación Producto',
+                local: 'General',
+                precio_nuevo: datos.precio,
+                detalles: { observacion: id ? 'Producto actualizado desde Gestor' : 'Nuevo producto creado desde Gestor' }
+            });
+        }
 
         showToast('Producto guardado correctamente');
         cancelarFormProducto();
@@ -617,16 +646,13 @@ async function guardarProducto() {
     }
 }
 
-async function guardarInventarios(id_producto) {
+async function guardarInventarios(id_producto, prodData = {}) {
     const rows = document.querySelectorAll('#tbodyTallasStock tr');
-    
-    // El sistema actual requiere limpiar y volver a insertar o hacer upsert
-    // Por simplicidad en esta versión, haremos lo que hace el admin real si es posible
-    
     const promesas = [];
     
     // Agrupar por tienda para optimizar
-    const dataA = [], data01 = [], dataJ = [];
+    const dataA = [], data01 = [], dataJ = [], dataB = [];
+    let totA = 0, tot01 = 0, totJ = 0, totB = 0;
     
     rows.forEach(tr => {
         const color = tr.querySelector('.talla-color').value;
@@ -634,19 +660,29 @@ async function guardarInventarios(id_producto) {
         const sa = parseInt(tr.querySelector('.stock-a').value) || 0;
         const sl = parseInt(tr.querySelector('.stock-l').value) || 0;
         const sj = parseInt(tr.querySelector('.stock-j').value) || 0;
+        const sb = parseInt(tr.querySelector('.stock-b')?.value) || 0;
         
+        totA += sa;
+        tot01 += sl;
+        totJ += sj;
+        totB += sb;
+
         dataA.push({ id_producto, color, talla, cantidad: sa });
         data01.push({ id_producto, color, talla, cantidad: sl });
         dataJ.push({ id_producto, color, talla, cantidad: sj });
+        dataB.push({ id_producto, color, talla, cantidad: sb });
     });
 
-    // Limpiar anteriores (OJO: Esto puede ser peligroso si hay ventas asociadas a esas filas específicas, 
-    // pero el sistema de Moteros parece manejarlo por id_producto)
-    await Promise.all([
+    // Limpiar anteriores
+    const opsDelete = [
         supabaseClient.from('inventario_alcala').delete().eq('id_producto', id_producto),
         supabaseClient.from('inventario_01').delete().eq('id_producto', id_producto),
         supabaseClient.from('inventario_jordan').delete().eq('id_producto', id_producto)
-    ]);
+    ];
+    try {
+        opsDelete.push(supabaseClient.from('inventario_bodega').delete().eq('id_producto', id_producto));
+    } catch(e){}
+    await Promise.all(opsDelete);
 
     if (dataA.length > 0) promesas.push(supabaseClient.from('inventario_alcala').insert(dataA));
     if (data01.length > 0) promesas.push(supabaseClient.from('inventario_01').insert(data01));
@@ -654,22 +690,93 @@ async function guardarInventarios(id_producto) {
 
     await Promise.all(promesas);
 
-    // 3. Sincronizar Tabla Unificada 'inventario'
+    if (dataB.length > 0) {
+        try {
+            await supabaseClient.from('inventario_bodega').insert(dataB);
+        } catch (eBod) {
+            console.warn('[Gestor] Omitido inventario_bodega especifico, usando inventario unificado:', eBod);
+        }
+    }
+
+    // Sincronizar Tabla Unificada 'inventario'
     await supabaseClient.from('inventario').delete().eq('producto_id', id_producto);
     const opsUnified = [];
     dataA.forEach(i => opsUnified.push({ producto_id: id_producto, local_id: 'Alcalá', talla: i.talla, color: i.color, cantidad: i.cantidad, ultima_actualizacion: new Date().toISOString() }));
     data01.forEach(i => opsUnified.push({ producto_id: id_producto, local_id: 'Local 01', talla: i.talla, color: i.color, cantidad: i.cantidad, ultima_actualizacion: new Date().toISOString() }));
     dataJ.forEach(i => opsUnified.push({ producto_id: id_producto, local_id: 'Jordán', talla: i.talla, color: i.color, cantidad: i.cantidad, ultima_actualizacion: new Date().toISOString() }));
+    dataB.forEach(i => opsUnified.push({ producto_id: id_producto, local_id: 'Bodega', talla: i.talla, color: i.color, cantidad: i.cantidad, ultima_actualizacion: new Date().toISOString() }));
 
     if (opsUnified.length > 0) {
         await supabaseClient.from('inventario').insert(opsUnified);
     }
+
+    // Auditoría de ajuste de stock por tienda y bodega
+    const empNombre = usuarioLogueado ? usuarioLogueado.nombre : 'Gestor de Productos';
+    const empId = usuarioLogueado ? usuarioLogueado.id : null;
+    const prodNombre = prodData.nombre || 'Producto';
+    const prodCodigo = prodData.codigo_barras || prodData.referencia || '';
+
+    if (typeof window.registrarAuditoriaInventario === 'function') {
+        if (totA > 0) {
+            await window.registrarAuditoriaInventario({
+                producto_id: id_producto,
+                producto_nombre: prodNombre,
+                producto_codigo: prodCodigo,
+                empleado_id: empId,
+                empleado_nombre: empNombre,
+                tipo_accion: 'Ajuste Stock',
+                local: 'Alcalá',
+                cantidad_nueva: totA,
+                detalles: { observacion: `Stock en Alcalá: ${totA} unid` }
+            });
+        }
+        if (tot01 > 0) {
+            await window.registrarAuditoriaInventario({
+                producto_id: id_producto,
+                producto_nombre: prodNombre,
+                producto_codigo: prodCodigo,
+                empleado_id: empId,
+                empleado_nombre: empNombre,
+                tipo_accion: 'Ajuste Stock',
+                local: 'Local 01',
+                cantidad_nueva: tot01,
+                detalles: { observacion: `Stock en Local 01: ${tot01} unid` }
+            });
+        }
+        if (totJ > 0) {
+            await window.registrarAuditoriaInventario({
+                producto_id: id_producto,
+                producto_nombre: prodNombre,
+                producto_codigo: prodCodigo,
+                empleado_id: empId,
+                empleado_nombre: empNombre,
+                tipo_accion: 'Ajuste Stock',
+                local: 'Jordán',
+                cantidad_nueva: totJ,
+                detalles: { observacion: `Stock en Jordán: ${totJ} unid` }
+            });
+        }
+        if (totB > 0) {
+            await window.registrarAuditoriaInventario({
+                producto_id: id_producto,
+                producto_nombre: prodNombre,
+                producto_codigo: prodCodigo,
+                empleado_id: empId,
+                empleado_nombre: empNombre,
+                tipo_accion: 'Ajuste Stock',
+                local: 'Bodega',
+                cantidad_nueva: totB,
+                detalles: { observacion: `Ingreso a Bodega Central: ${totB} unid` }
+            });
+        }
+    }
 }
+
 async function eliminarProducto(id) {
     if (!confirm('¿Seguro que deseas eliminar este producto?')) return;
     try {
         // 1. Obtener el slug (id_producto) para limpiar inventarios
-        const { data: prod } = await supabaseClient.from('productos').select('id_producto').eq('id', id).single();
+        const { data: prod } = await supabaseClient.from('productos').select('*').eq('id', id).single();
         
         if (prod && prod.id_producto) {
             // 2. Limpiar inventarios asociados
@@ -685,6 +792,21 @@ async function eliminarProducto(id) {
         const { error } = await supabaseClient.from('productos').delete().eq('id', id);
         if (error) throw error;
         
+        const empNombre = usuarioLogueado ? usuarioLogueado.nombre : 'Gestor de Productos';
+        const empId = usuarioLogueado ? usuarioLogueado.id : null;
+        if (typeof window.registrarAuditoriaInventario === 'function' && prod) {
+            await window.registrarAuditoriaInventario({
+                producto_id: prod.id_producto || prod.id,
+                producto_nombre: prod.nombre || 'Producto eliminado',
+                producto_codigo: prod.codigo_barras || '',
+                empleado_id: empId,
+                empleado_nombre: empNombre,
+                tipo_accion: 'Eliminación',
+                local: 'General',
+                detalles: { observacion: 'Producto eliminado del catálogo' }
+            });
+        }
+
         showToast('Producto eliminado exitosamente');
         cargarProductos();
     } catch (e) {
