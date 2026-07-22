@@ -36,16 +36,21 @@ class MoterosIA {
                 .select('*');
 
             if (data && !error) {
+                const basePrompt = this.generarSystemPromptBase();
                 data.forEach(item => {
                     if (window.CONFIG && window.CONFIG.AI_KEYS) {
                         window.CONFIG.AI_KEYS[item.modulo] = item.api_key;
                     }
                     if (item.modulo === this.contexto) {
-                        this.systemPromptBase = item.system_prompt || this.generarSystemPromptBase();
+                        // 🔒 BLINDAJE DE SEGURIDAD: El prompt base con sedes y reglas de seguridad JAMÁS se borra.
+                        if (item.system_prompt && item.system_prompt.trim() !== '') {
+                            this.systemPromptBase = `${basePrompt}\n\nINST. COMPLEMENTARIAS ADMIN (VERIFICADAS):\n${item.system_prompt.slice(0, 500)}`;
+                        } else {
+                            this.systemPromptBase = basePrompt;
+                        }
                     }
                 });
                 this.apiKey = this.obtenerKey();
-                // IA Lista
             }
         } catch (e) {
             console.error("Error cargando config_ia:", e);
