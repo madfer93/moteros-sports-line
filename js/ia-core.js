@@ -69,28 +69,51 @@ class MoterosIA {
                 memoriaTxt += "\nAVISOS Y NOVEDADES RECIENTES:\n- " + memoria.map(d => d.descripcion).join('\n- ');
             }
 
-            // 2. Catálogo Real (Solo para INDEX para evitar alucinaciones en ventas)
-            if (this.contexto === 'INDEX') {
-                const { data: productos } = await window.supabaseClient
-                    .from('productos')
-                    .select('nombre, precio, categoria')
-                    .eq('estado', 'Activo')
-                    .limit(50); // Ajustar según tamaño del catálogo
+            // 2. Catálogo Real e Inventario en Tiempo Real desde Supabase
+            const { data: productos } = await window.supabaseClient
+                .from('productos')
+                .select('id, id_producto, nombre, precio, categoria, marca, tallas')
+                .eq('estado', 'Activo')
+                .limit(100);
 
-                const { data: promos } = await window.supabaseClient
-                    .from('promociones')
-                    .select('nombre, descuento')
-                    .eq('estado', 'Activa');
+            const { data: inventario } = await window.supabaseClient
+                .from('inventario')
+                .select('producto_id, local_id, talla, color, cantidad');
 
-                if (productos) {
-                    memoriaTxt += "\n\nCATÁLOGO REAL DISPONIBLE (SOLO PUEDES RECOMIENDAR ESTO):\n";
-                    memoriaTxt += productos.map(p => `- ${p.nombre} ($${p.precio}) - Cat: ${p.categoria}`).join('\n');
+            const { data: promos } = await window.supabaseClient
+                .from('promociones')
+                .select('nombre, descuento')
+                .eq('estado', 'Activa');
+
+            if (productos && productos.length > 0) {
+                const invMapa = {};
+                if (inventario) {
+                    inventario.forEach(item => {
+                        const pid = item.producto_id;
+                        if (!pid) return;
+                        if (!invMapa[pid]) invMapa[pid] = { total: 0, sedes: {} };
+                        const cant = parseInt(item.cantidad) || 0;
+                        invMapa[pid].total += cant;
+                        const sede = item.local_id || 'General';
+                        invMapa[pid].sedes[sede] = (invMapa[pid].sedes[sede] || 0) + cant;
+                    });
                 }
 
-                if (promos && promos.length > 0) {
-                    memoriaTxt += "\n\nPROMOCIONES VIGENTES:\n";
-                    memoriaTxt += promos.map(pr => `- ${pr.nombre} (Dcto: ${pr.descuento}%)`).join('\n');
-                }
+                memoriaTxt += "\n\nCATÁLOGO E INVENTARIO EN TIEMPO REAL (BASE DE DATOS SUPABASE):\n";
+                memoriaTxt += productos.map(p => {
+                    const keyId = p.id_producto || p.id;
+                    const inv = invMapa[keyId] || invMapa[p.id] || { total: 0, sedes: {} };
+                    const sedesTxt = Object.keys(inv.sedes).length > 0
+                        ? Object.entries(inv.sedes).map(([s, c]) => `${s}: ${c}`).join(', ')
+                        : 'Sin stock asignado';
+                    const tallasTxt = Array.isArray(p.tallas) && p.tallas.length > 0 ? ` [Tallas: ${p.tallas.join(', ')}]` : '';
+                    return `- ${p.nombre} ($${p.precio}) | Cat: ${p.categoria} | Marca: ${p.marca || 'N/A'}${tallasTxt} | Stock Total: ${inv.total} (${sedesTxt})`;
+                }).join('\n');
+            }
+
+            if (promos && promos.length > 0) {
+                memoriaTxt += "\n\nPROMOCIONES VIGENTES:\n";
+                memoriaTxt += promos.map(pr => `- ${pr.nombre} (Dcto: ${pr.descuento}%)`).join('\n');
             }
         } catch (e) {
             console.error("Error obteniendo memoria/catálogo:", e);

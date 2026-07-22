@@ -474,17 +474,17 @@ function agregarFilaTalla(talla = '', color = '', a = 0, l = 0, j = 0, b = 0) {
 
     tr.innerHTML = `
         <td>
-            <select class="form-control form-control-sm talla-color">
+            <select class="form-control form-control-sm talla-color select-color-stock">
                 <option value="">Color...</option>
                 ${optionsColor}
                 ${color && !colores.includes(color) ? `<option value="${color}" selected>${color}</option>` : ''}
             </select>
         </td>
-        <td><input type="text" class="form-control form-control-sm talla-name" value="${talla}" placeholder="Talla"></td>
-        <td><input type="number" class="form-control form-control-sm stock-a" value="${a}" oninput="sumarStocks()"></td>
-        <td><input type="number" class="form-control form-control-sm stock-l" value="${l}" oninput="sumarStocks()"></td>
-        <td><input type="number" class="form-control form-control-sm stock-j" value="${j}" oninput="sumarStocks()"></td>
-        <td><input type="number" class="form-control form-control-sm stock-b" value="${b}" oninput="sumarStocks()"></td>
+        <td><input type="text" class="form-control form-control-sm talla-name input-talla" value="${talla}" placeholder="Talla"></td>
+        <td><input type="number" class="form-control form-control-sm stock-a input-stock-alcala" value="${a}" oninput="sumarStocks()"></td>
+        <td><input type="number" class="form-control form-control-sm stock-l input-stock-local01" value="${l}" oninput="sumarStocks()"></td>
+        <td><input type="number" class="form-control form-control-sm stock-j input-stock-jordan" value="${j}" oninput="sumarStocks()"></td>
+        <td><input type="number" class="form-control form-control-sm stock-b input-stock-bodega" value="${b}" oninput="sumarStocks()"></td>
         <td><button type="button" class="btn btn-sm" onclick="this.closest('tr').remove(); sumarStocks()">🗑️</button></td>
     `;
     tbody.appendChild(tr);
@@ -494,10 +494,10 @@ function agregarFilaTalla(talla = '', color = '', a = 0, l = 0, j = 0, b = 0) {
 function sumarStocks() {
     let totalA = 0, totalL = 0, totalJ = 0, totalB = 0;
     document.querySelectorAll('#tbodyTallasStock tr').forEach(tr => {
-        totalA += parseInt(tr.querySelector('.stock-a').value) || 0;
-        totalL += parseInt(tr.querySelector('.stock-l').value) || 0;
-        totalJ += parseInt(tr.querySelector('.stock-j').value) || 0;
-        totalB += parseInt(tr.querySelector('.stock-b')?.value) || 0;
+        totalA += parseInt(tr.querySelector('.stock-a, .input-stock-alcala')?.value) || 0;
+        totalL += parseInt(tr.querySelector('.stock-l, .input-stock-local01')?.value) || 0;
+        totalJ += parseInt(tr.querySelector('.stock-j, .input-stock-jordan')?.value) || 0;
+        totalB += parseInt(tr.querySelector('.stock-b, .input-stock-bodega')?.value) || 0;
     });
     document.getElementById('stockAlcala').value = totalA;
     document.getElementById('stockLocal01').value = totalL;
@@ -655,12 +655,12 @@ async function guardarInventarios(id_producto, prodData = {}) {
     let totA = 0, tot01 = 0, totJ = 0, totB = 0;
     
     rows.forEach(tr => {
-        const color = tr.querySelector('.talla-color').value;
-        const talla = tr.querySelector('.talla-name').value;
-        const sa = parseInt(tr.querySelector('.stock-a').value) || 0;
-        const sl = parseInt(tr.querySelector('.stock-l').value) || 0;
-        const sj = parseInt(tr.querySelector('.stock-j').value) || 0;
-        const sb = parseInt(tr.querySelector('.stock-b')?.value) || 0;
+        const color = (tr.querySelector('.talla-color, .select-color-stock')?.value || '').trim();
+        const talla = (tr.querySelector('.talla-name, .input-talla')?.value || '').trim();
+        const sa = parseInt(tr.querySelector('.stock-a, .input-stock-alcala')?.value) || 0;
+        const sl = parseInt(tr.querySelector('.stock-l, .input-stock-local01')?.value) || 0;
+        const sj = parseInt(tr.querySelector('.stock-j, .input-stock-jordan')?.value) || 0;
+        const sb = parseInt(tr.querySelector('.stock-b, .input-stock-bodega')?.value) || 0;
         
         totA += sa;
         tot01 += sl;

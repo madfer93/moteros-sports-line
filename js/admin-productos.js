@@ -762,13 +762,13 @@ window.subirImagenColor = async function (index) {
     input.click();
 };
 
-window.agregarFilaTalla = function (talla = '', color = '', stockA = 0, stockL = 0, stockJ = 0) {
+window.agregarFilaTalla = function (talla = '', color = '', stockA = 0, stockL = 0, stockJ = 0, stockB = 0) {
     const tbody = document.getElementById('tbodyTallasStock');
     if (!tbody) return;
     const tr = document.createElement('tr');
 
     // Obtener nombres de colores actuales
-    const nombresColores = Array.from(document.querySelectorAll('.input-color-nombre'))
+    const nombresColores = Array.from(document.querySelectorAll('.input-color-nombre, .color-name'))
         .map(i => i.value.trim())
         .filter(v => v !== '');
 
@@ -778,15 +778,16 @@ window.agregarFilaTalla = function (talla = '', color = '', stockA = 0, stockL =
 
     tr.innerHTML = `
         <td style="padding: 4px;">
-            <select class="form-control form-control-sm select-color-stock" style="padding: 2px 4px; height: 30px;">
+            <select class="form-control form-control-sm select-color-stock talla-color" style="padding: 2px 4px; height: 30px;">
                 <option value="">Color...</option>
                 ${nombresColores.map(n => `<option value="${n}" ${n === color ? 'selected' : ''}>${n}</option>`).join('')}
             </select>
         </td>
-        <td style="padding: 4px;"><input type="text" class="form-control form-control-sm input-talla" value="${talla}" placeholder="${place}" style="padding: 2px 4px; height: 30px;"></td>
-        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-alcala" value="${stockA}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
-        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-local01" value="${stockL}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
-        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-jordan" value="${stockJ}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
+        <td style="padding: 4px;"><input type="text" class="form-control form-control-sm input-talla talla-name" value="${talla}" placeholder="${place}" style="padding: 2px 4px; height: 30px;"></td>
+        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-alcala stock-a" value="${stockA}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
+        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-local01 stock-l" value="${stockL}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
+        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-jordan stock-j" value="${stockJ}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
+        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-bodega stock-b" value="${stockB}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
         <td style="padding: 4px; text-align: center;"><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); sumarStocksGenerales();" title="Eliminar Variantes" style="padding: 0 6px;">🗑️</button></td>
     `;
     tbody.appendChild(tr);
@@ -848,11 +849,14 @@ async function guardarProducto() {
         const filasStock = document.querySelectorAll('#tbodyTallasStock tr');
         const inventarioData = [];
         filasStock.forEach(row => {
-            const color = row.querySelector('.select-color-stock').value;
-            const talla = row.querySelector('.input-talla').value.trim();
-            const sA = parseInt(row.querySelector('.input-stock-alcala').value) || 0;
-            const sL = parseInt(row.querySelector('.input-stock-local01').value) || 0;
-            const sJ = parseInt(row.querySelector('.input-stock-jordan').value) || 0;
+            const colorEl = row.querySelector('.select-color-stock, .talla-color');
+            const tallaEl = row.querySelector('.input-talla, .talla-name');
+            const color = colorEl ? colorEl.value.trim() : '';
+            const talla = tallaEl ? tallaEl.value.trim() : '';
+            const sA = parseInt(row.querySelector('.input-stock-alcala, .stock-a')?.value) || 0;
+            const sL = parseInt(row.querySelector('.input-stock-local01, .stock-l')?.value) || 0;
+            const sJ = parseInt(row.querySelector('.input-stock-jordan, .stock-j')?.value) || 0;
+            const sB = parseInt(row.querySelector('.input-stock-bodega, .stock-b')?.value) || 0;
 
             if (talla || color) {
                 inventarioData.push({
@@ -860,7 +864,8 @@ async function guardarProducto() {
                     talla: talla || 'Única',
                     alcala: sA,
                     local01: sL,
-                    jordan: sJ
+                    jordan: sJ,
+                    bodega: sB
                 });
             }
         });
@@ -931,7 +936,8 @@ async function guardarProducto() {
         const sedes = [
             { id: 'Alcalá', tabla: 'inventario_alcala', key: 'alcala' },
             { id: 'Local 01', tabla: 'inventario_01', key: 'local01' },
-            { id: 'Jordán', tabla: 'inventario_jordan', key: 'jordan' }
+            { id: 'Jordán', tabla: 'inventario_jordan', key: 'jordan' },
+            { id: 'Bodega', tabla: 'inventario_bodega', key: 'bodega' }
         ];
 
         for (const sede of sedes) {
