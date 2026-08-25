@@ -120,6 +120,17 @@ class MoterosIA {
                 memoriaTxt += "\n\nPROMOCIONES VIGENTES:\n";
                 memoriaTxt += promos.map(pr => `- ${pr.nombre} (Dcto: ${pr.descuento}%)`).join('\n');
             }
+
+            // 5. Información Corporativa y Políticas desde contenido_sitio (Supabase)
+            const { data: infoSitio } = await window.supabaseClient
+                .from('contenido_sitio')
+                .select('tipo, titulo, contenido')
+                .limit(20);
+
+            if (infoSitio && infoSitio.length > 0) {
+                memoriaTxt += "\n\nINFORMACIÓN DE LA EMPRESA Y POLÍTICAS (SUPABASE):\n";
+                memoriaTxt += infoSitio.map(info => `- ${info.titulo || info.tipo.toUpperCase()}: ${info.contenido}`).join('\n');
+            }
         } catch (e) {
             console.error("Error obteniendo memoria/catálogo:", e);
         }
@@ -294,6 +305,30 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
         return datosContexto;
     }
 
+    async llamarEdgeFunction(messages, model) {
+        const temperature = window.CONFIG.AI_TEMPERATURE !== undefined ? window.CONFIG.AI_TEMPERATURE : 0.4;
+        const response = await fetch(`${window.CONFIG.SUPABASE_URL}/functions/v1/groq-chat`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${window.CONFIG.SUPABASE_KEY}`
+            },
+            body: JSON.stringify({
+                messages: messages,
+                model: model,
+                temperature: temperature,
+                contexto: this.contexto
+            })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `HTTP ${response.status} - ${response.statusText}`);
+        }
+
+        return await response.json();
+    }
+
     async enviarMensaje(mensajeUsuario) {
         if (this.bloqueado) return "🚫 Sesión suspendida por seguridad. Refresca la página para intentar de nuevo con consultas sobre productos.";
 
@@ -322,31 +357,31 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
 
         const systemMessage = this.systemPromptBase + "\n" + datosTiempoReal + "\n" + memoriaExtra;
 
+        // Ventana deslizante para optimizar latencia y consumo de tokens
+        const maxHist = window.CONFIG.AI_MAX_HISTORY || 8;
+        const historialReciente = this.historial.slice(-maxHist);
+
         const messages = [
             { role: "system", content: systemMessage },
-            ...this.historial,
+            ...historialReciente,
             { role: "user", content: mensajeUsuario }
         ];
 
         this.historial.push({ role: "user", content: mensajeUsuario });
 
-        try {
-            // Se llama a la Edge Function 'groq-chat' en lugar de la API de Groq directo
-            const response = await fetch(`${window.CONFIG.SUPABASE_URL}/functions/v1/groq-chat`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${window.CONFIG.SUPABASE_KEY}`
-                },
-                body: JSON.stringify({
-                    messages: messages,
-                    model: window.CONFIG.AI_MODEL || "llama-3.3-70b-versatile",
-                    temperature: 0.7,
-                    contexto: this.contexto
-                })
-            });
+        const modeloPrincipal = window.CONFIG.AI_MODEL || "llama-3.1-8b-instant";
+        const modeloFallback = window.CONFIG.AI_FALLBACK_MODEL || "gemma2-9b-it";
 
-            const data = await response.json();
+        try {
+            let data;
+            try {
+                // Intento 1: Modelo Principal (70B)
+                data = await this.llamarEdgeFunction(messages, modeloPrincipal);
+            } catch (errPrimary) {
+                console.warn(`[MoterosIA] Fallo modelo principal (${modeloPrincipal}), ejecutando fallback (${modeloFallback}):`, errPrimary.message);
+                // Intento 2: Modelo Fallback Ultrarrápido (8B)
+                data = await this.llamarEdgeFunction(messages, modeloFallback);
+            }
 
             if (data.error) {
                 if (window.registrarLogSistema) window.registrarLogSistema('error_ia', 'Error de Groq API', JSON.stringify(data.error));
@@ -354,19 +389,19 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
             }
 
             if (data.choices && data.choices[0]) {
-                const respuestaIA = data.choices[0].message.content;
+                let respuestaIA = data.choices[0].message.content;
                 this.historial.push({ role: "assistant", content: respuestaIA });
                 this.guardarHistorial();
 
                 // Telemetría: Registrar uso
                 if (data.usage) {
-                    this.registrarUso(data.usage, data.model);
+                    this.registrarUso(data.usage, data.model || modeloPrincipal);
                 }
 
                 return respuestaIA;
             } else {
                 if (window.registrarLogSistema) window.registrarLogSistema('error_ia', 'Groq respondió sin choices', JSON.stringify(data));
-                return "Lo siento, hubo un problema con la respuesta de la IA.";
+                return "Lo siento, hubo un problema con la respuesta de la IA. Por favor intenta nuevamente.";
             }
         } catch (error) {
             console.error("MoterosIA Fetch Error:", error);

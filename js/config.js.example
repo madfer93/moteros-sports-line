@@ -107,7 +107,8 @@ const CONFIG = {
     ADMIN: '__GROQ_KEY__',
     POS: '__GROQ_KEY__'
   },
-  AI_MODEL: 'llama-3.3-70b-versatile'
+  AI_MODEL: (typeof process !== 'undefined' && process.env?.AI_MODEL) || 'llama-3.1-8b-instant',
+  AI_FALLBACK_MODEL: 'gemma2-9b-it'
 };
 
 // ═══════════════════════════════════════════════════════════════

@@ -57,7 +57,7 @@ GROQ_API_KEY_TIENDA=gsk_tu_key_tienda
 GROQ_API_KEY_POS=gsk_tu_key_pos
 
 # AI MODEL
-AI_MODEL=llama-3.3-70b-versatile
+AI_MODEL=llama-3.1-8b-instant
 ```
 
 ⚠️ **IMPORTANTE:** El archivo `.env` NUNCA debe subirse a Git. Ya está en `.gitignore`.

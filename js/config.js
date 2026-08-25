@@ -72,14 +72,18 @@ const CONFIG = {
   AUTO_REFRESH_INTERVAL: 30000,
 
   // ═══════════════════════════════════════════════════════════════
-  // CONFIGURACIÓN INTELIGENCIA ARTIFICIAL (GROQ)
+  // CONFIGURACIÓN INTELIGENCIA ARTIFICIAL (GROQ / MULTI-MODELO)
   // ═══════════════════════════════════════════════════════════════
   AI_KEYS: {
     // Las llaves ya no se guardan en el frontend por seguridad.
     // Todas las peticiones de IA pasan por Supabase Edge Functions.
   },
-  AI_MODEL: (typeof process !== 'undefined' && process.env?.AI_MODEL) || 'llama-3.3-70b-versatile',
-  VERSION: '2026-02-18-17-15'
+  // Nota: llama-3.3-70b-versatile fue dado de baja el 16 de agosto de 2026 por Groq.
+  AI_MODEL: (typeof process !== 'undefined' && process.env?.AI_MODEL) || 'llama-3.1-8b-instant',
+  AI_FALLBACK_MODEL: 'gemma2-9b-it',
+  AI_TEMPERATURE: 0.4,
+  AI_MAX_HISTORY: 8,
+  VERSION: '2026-08-25-13-00'
 };
 
 // ═══════════════════════════════════════════════════════════════
