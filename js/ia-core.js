@@ -96,18 +96,18 @@ class MoterosIA {
             }
 
             // 2. Catálogo Real e Inventario en Tiempo Real desde Supabase
+            // Límite reducido a 40 para no superar el límite de tokens del modelo
             let { data: productos } = await window.supabaseClient
                 .from('productos')
-                .select('id, id_producto, nombre, precio, categoria, subcategoria, marca, tallas, variantes, estado')
+                .select('nombre, precio, categoria, marca, tallas')
                 .or('estado.eq.Activo,estado.is.null')
-                .limit(100);
+                .limit(40);
 
-            // Fallback si la columna estado tiene otros valores o viene vacía
             if (!productos || productos.length === 0) {
                 const { data: prodsFallback } = await window.supabaseClient
                     .from('productos')
-                    .select('id, id_producto, nombre, precio, categoria, subcategoria, marca, tallas, variantes')
-                    .limit(100);
+                    .select('nombre, precio, categoria, marca, tallas')
+                    .limit(40);
                 productos = prodsFallback;
             }
 
@@ -121,58 +121,17 @@ class MoterosIA {
                 .eq('estado', 'Activa');
 
             if (productos && productos.length > 0) {
-                const invMapa = {};
-                if (inventario && inventario.length > 0) {
-                    inventario.forEach(item => {
-                        const pid = item.producto_id;
-                        if (!pid) return;
-                        if (!invMapa[pid]) invMapa[pid] = { total: 0, sedes: {} };
-                        const cant = parseInt(item.cantidad) || 0;
-                        invMapa[pid].total += cant;
-                        const sede = item.local_id || 'General';
-                        invMapa[pid].sedes[sede] = (invMapa[pid].sedes[sede] || 0) + cant;
-                    });
-                }
-
-                memoriaTxt += "\n\nCATÁLOGO E INVENTARIO EN TIEMPO REAL (BASE DE DATOS SUPABASE):\n";
+                memoriaTxt += "\n\nCATÁLOGO (TIEMPO REAL):\n";
                 memoriaTxt += productos.map(p => {
-                    const keyId = p.id_producto || p.id;
-                    let inv = invMapa[keyId] || invMapa[p.id] || { total: 0, sedes: {} };
-
-                    // Fallback: Si la tabla 'inventario' no tiene filas para este producto, extraer del JSON 'variantes'
-                    if (inv.total === 0 && p.variantes) {
+                    const precio = Number(p.precio || 0).toLocaleString('es-CO');
+                    let tallas = '';
+                    if (p.tallas) {
                         try {
-                            const vars = typeof p.variantes === 'string' ? JSON.parse(p.variantes) : p.variantes;
-                            if (typeof vars === 'object' && vars !== null) {
-                                Object.entries(vars).forEach(([sede, datosSede]) => {
-                                    if (typeof datosSede === 'number') {
-                                        inv.total += datosSede;
-                                        inv.sedes[sede] = datosSede;
-                                    } else if (typeof datosSede === 'object' && datosSede !== null) {
-                                        Object.values(datosSede).forEach(cant => {
-                                            const c = parseInt(cant) || 0;
-                                            inv.total += c;
-                                            inv.sedes[sede] = (inv.sedes[sede] || 0) + c;
-                                        });
-                                    }
-                                });
-                            }
-                        } catch (e) { /* ignore parse error */ }
+                            const t = typeof p.tallas === 'string' ? JSON.parse(p.tallas) : p.tallas;
+                            if (Array.isArray(t) && t.length > 0) tallas = ` [${t.join(',')}]`;
+                        } catch(e) { tallas = ` [${p.tallas}]`; }
                     }
-
-                    const sedesTxt = Object.keys(inv.sedes).length > 0
-                        ? Object.entries(inv.sedes).map(([s, c]) => `${s}: ${c}`).join(', ')
-                        : 'Stock bajo consulta';
-
-                    let tallasArray = p.tallas;
-                    if (typeof tallasArray === 'string') {
-                        try { tallasArray = JSON.parse(tallasArray); } catch(e) { tallasArray = p.tallas.split(',').map(t => t.trim()); }
-                    }
-                    const tallasTxt = Array.isArray(tallasArray) && tallasArray.length > 0 ? ` [Tallas: ${tallasArray.join(', ')}]` : '';
-                    const precioFormateado = Number(p.precio || 0).toLocaleString('es-CO');
-                    const subcatTxt = p.subcategoria ? ` (${p.subcategoria})` : '';
-
-                    return `- ${p.nombre} ($${precioFormateado}) | Cat: ${p.categoria}${subcatTxt} | Marca: ${p.marca || 'N/A'}${tallasTxt} | Stock Total: ${inv.total} (${sedesTxt})`;
+                    return `- ${p.nombre} $${precio} | ${p.categoria} | ${p.marca || ''}${tallas}`;
                 }).join('\n');
             }
 
@@ -182,14 +141,9 @@ class MoterosIA {
             }
 
             // 5. Información Corporativa y Políticas desde contenido_sitio (Supabase)
-            const { data: infoSitio } = await window.supabaseClient
-                .from('contenido_sitio')
-                .select('tipo, titulo, contenido')
-                .limit(20);
-
             if (infoSitio && infoSitio.length > 0) {
-                memoriaTxt += "\n\nINFORMACIÓN DE LA EMPRESA Y POLÍTICAS (SUPABASE):\n";
-                memoriaTxt += infoSitio.map(info => `- ${info.titulo || info.tipo.toUpperCase()}: ${info.contenido}`).join('\n');
+                memoriaTxt += "\n\nINFO EMPRESA:\n";
+                memoriaTxt += infoSitio.slice(0, 5).map(info => `- ${info.titulo || info.tipo}: ${(info.contenido || '').slice(0, 100)}`).join('\n');
             }
         } catch (e) {
             console.error("Error obteniendo memoria/catálogo:", e);
