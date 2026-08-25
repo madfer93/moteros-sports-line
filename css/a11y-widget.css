@@ -210,3 +210,9 @@ body { top: 0 !important; }
         left: 0;
     }
 }
+
+/* Ocultar el flotante de accesibilidad cuando el chat de IA esté abierto */
+body.ai-chat-open #a11y-widget-container,
+body.ai-chat-open .a11y-toggle-btn {
+    display: none !important;
+}

@@ -145,7 +145,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function toggleChat() {
         chatWindow.classList.toggle('hidden');
-        if (!chatWindow.classList.contains('hidden')) {
+        const isOpen = !chatWindow.classList.contains('hidden');
+        document.body.classList.toggle('ai-chat-open', isOpen);
+
+        // Ocultar flotante de accesibilidad mientras el chat de IA esté abierto
+        const a11yContainer = document.getElementById('a11y-widget-container');
+        if (a11yContainer) {
+            a11yContainer.style.display = isOpen ? 'none' : '';
+        }
+
+        if (isOpen) {
             input.focus();
             scrollToBottom();
         }
