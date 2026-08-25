@@ -446,3 +446,100 @@
         padding-bottom: env(safe-area-inset-bottom, 0.8rem);
     }
 }
+
+/* 🚀 Quick Replies / Chips de Preguntas Rápidas */
+.ai-quick-replies {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    scrollbar-width: none;
+}
+.ai-quick-replies::-webkit-scrollbar {
+    display: none;
+}
+.ai-chip-btn {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    border-radius: 16px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.ai-chip-btn:hover {
+    background: #ff6b00;
+    color: #ffffff;
+    border-color: #ff6b00;
+    transform: translateY(-1px);
+}
+
+/* 🛒 Tarjetas de Productos en Respuestas de la IA */
+.ai-product-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.ai-product-img {
+    width: 54px;
+    height: 54px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #f1f5f9;
+}
+.ai-product-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.ai-product-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.2;
+}
+.ai-product-price {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ff6b00;
+}
+.ai-product-badge {
+    font-size: 0.7rem;
+    color: #16a34a;
+    font-weight: 500;
+}
+.ai-product-btn {
+    background: #25d366;
+    color: #ffffff !important;
+    text-decoration: none !important;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.2s ease;
+    white-space: nowrap;
+}
+.ai-product-btn:hover {
+    background: #128c7e;
+}

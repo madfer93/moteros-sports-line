@@ -69,6 +69,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <button id="aiSubmitLead" class="ai-submit-lead-btn" disabled>🚀 Enviar mis datos de contacto</button>
         </div>
+        <div id="aiQuickReplies" class="ai-quick-replies">
+            <button class="ai-chip-btn" data-query="🪖 ¿Qué cascos tienen disponibles en catálogo?">🪖 Cascos</button>
+            <button class="ai-chip-btn" data-query="💳 ¿Cómo puedo financiar con Addi o Sistecrédito?">💳 Financiar con Addi</button>
+            <button class="ai-chip-btn" data-query="📍 ¿Dónde quedan ubicadas las sedes y qué horarios tienen?">📍 Sedes y Horarios</button>
+            <button class="ai-chip-btn" data-query="📐 ¿Cómo sé cuál es mi talla de casco?">📐 Guía de Tallas</button>
+            <button class="ai-chip-btn" data-query="🚚 ¿Cómo funcionan los envíos a domicilio y nacionales?">🚚 Envíos</button>
+        </div>
         <div class="ai-input-area">
             <input type="text" id="aiInput" class="ai-input" placeholder="Escribe tu consulta..." autocomplete="off">
             <button id="aiSendBtn" class="ai-send-btn">➤</button>
@@ -225,14 +232,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    document.querySelectorAll('.ai-chip-btn').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const query = chip.getAttribute('data-query');
+            if (query) {
+                input.value = query;
+                sendMessage();
+            }
+        });
+    });
+
     function formatResponse(text) {
-        // Simple Markdown formatter
-        let html = text
+        if (!text) return '';
+
+        // 1. Detectar productos formateados o menciones de catálogo para generar Tarjetas de Producto
+        let cardsHtml = '';
+        const lines = text.split('\n');
+        const cleanLines = [];
+
+        lines.forEach(line => {
+            // Patrón de producto: - Nombre ($Precio) | Cat: ... | Stock ...
+            const prodMatch = line.match(/^[-•*]\s*([^($]+)\s*\(\$([\d.,]+)\)\s*\|\s*Cat:\s*([^|]+)\|.*Stock Total:\s*(\d+)/i);
+            if (prodMatch) {
+                const nombre = prodMatch[1].trim();
+                const precio = prodMatch[2].trim();
+                const categoria = prodMatch[3].trim();
+                const stock = parseInt(prodMatch[4]) || 0;
+                const stockTxt = stock > 0 ? `🟢 Disponible (${stock} unds)` : `🔴 Agotado en bodega`;
+                const msgWa = encodeURIComponent(`Hola Moteros Sport Line, me interesa consultar/comprar el producto: ${nombre} ($${precio})`);
+
+                cardsHtml += `
+                    <div class="ai-product-card">
+                        <div class="ai-product-info">
+                            <h5 class="ai-product-title">${nombre}</h5>
+                            <span class="ai-product-price">$${precio} COP</span>
+                            <span class="ai-product-badge">${stockTxt}</span>
+                        </div>
+                        <a href="https://wa.me/573113408416?text=${msgWa}" target="_blank" class="ai-product-btn">
+                            💬 Comprar
+                        </a>
+                    </div>
+                `;
+            } else {
+                cleanLines.push(line);
+            }
+        });
+
+        const textToFormat = cleanLines.length > 0 ? cleanLines.join('\n') : text;
+
+        // 2. Formateador Markdown
+        let html = textToFormat
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
             .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" style="color: #ff6b00; font-weight: 600;">$1</a>')
             .replace(/\n/g, '<br>');
+
+        // 3. Convertir números de WhatsApp aislados en botones interactivos de WhatsApp
+        html = html.replace(/\+?57\s*3\d{2}\s*\d{3}\s*\d{4}|\b3\d{2}\s*\d{3}\s*\d{4}\b/g, (num) => {
+            const cleanNum = num.replace(/\D/g, '');
+            const fullNum = cleanNum.length === 10 ? `57${cleanNum}` : cleanNum;
+            return `<a href="https://wa.me/${fullNum}" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; background: #25d366; color: white; padding: 2px 8px; border-radius: 12px; text-decoration: none; font-size: 0.8rem; font-weight: 600;">💬 WhatsApp (${num.trim()})</a>`;
+        });
+
+        // 4. Adjuntar tarjetas de productos si se detectaron
+        if (cardsHtml) {
+            html += `<div style="margin-top: 10px;"><strong>🛍️ Productos sugeridos:</strong>${cardsHtml}</div>`;
+        }
+
         return html;
     }
 });
