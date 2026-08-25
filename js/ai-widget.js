@@ -232,10 +232,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Respuestas estáticas para botones rápidos (sin llamar a la IA)
+    const RESPUESTAS_ESTATICAS = {
+        'cascos': `🪖 <strong>Cascos en Moteros Sport Line</strong><br><br>
+Tenemos una gran variedad de cascos para todos los estilos y presupuestos. 🏍️<br><br>
+🛍️ <a href="catalogo.html" target="_blank">Ver catálogo completo de cascos</a><br><br>
+¿Tienes dudas sobre talla o modelo específico? Pregúntame aquí ⬇️`,
+
+        'financiar': `💳 <strong>Opciones de Financiación</strong><br><br>
+Manejamos alternativas de pago en cuotas para que te lleves tu equipo hoy. 🙌<br><br>
+Una asesora te explicará las condiciones, requisitos y montos disponibles según tu caso.<br><br>
+📲 <a href="https://wa.me/573144163601?text=Hola%21+Quiero+informaci%C3%B3n+sobre+las+opciones+de+financiaci%C3%B3n+disponibles" target="_blank">Contáctanos por WhatsApp</a> para que te asesoremos sin compromiso.`,
+
+        'sedes': `📍 <strong>Nuestras Sedes — Villavicencio</strong><br><br>
+Estamos en dos puntos de la ciudad, listos para atenderte. 🙌<br><br>
+📞 <a href="contacto.html" target="_blank">Ver dirección, horarios y mapa</a>`,
+
+        'tallas': `📐 <strong>¿Cómo saber tu talla de casco?</strong><br><br>
+Mide el perímetro de tu cabeza con una cinta métrica a la altura de la frente (1 cm sobre las cejas).<br><br>
+✅ Si no tienes cinta, usa una cuerda y mídela con una regla.<br><br>
+Cuéntame tu medida y te ayudo a encontrar la talla correcta. O una asesora en tienda te lo mide en segundos 🎯`,
+
+        'envios': `🚚 <strong>Envíos a Domicilio</strong><br><br>
+Realizamos envíos dentro de Villavicencio y a nivel nacional. 📦<br><br>
+Para conocer el costo exacto y el tiempo de entrega a tu ciudad, una asesora te confirma todos los detalles.<br><br>
+📲 <a href="https://wa.me/573144163601?text=Hola%21+Quiero+cotizar+un+env%C3%ADo.+Mi+ciudad+es%3A+" target="_blank">Escríbenos al WhatsApp</a> con tu ciudad y te cotizamos.`
+    };
+
     document.querySelectorAll('.ai-chip-btn').forEach(chip => {
         chip.addEventListener('click', () => {
-            const query = chip.getAttribute('data-query');
-            if (query) {
+            const query = chip.getAttribute('data-query') || '';
+            const queryLower = query.toLowerCase();
+
+            // Determinar respuesta estática según el botón
+            let respuestaEstatica = null;
+            if (queryLower.includes('casco')) respuestaEstatica = RESPUESTAS_ESTATICAS['cascos'];
+            else if (queryLower.includes('financiar') || queryLower.includes('addi')) respuestaEstatica = RESPUESTAS_ESTATICAS['financiar'];
+            else if (queryLower.includes('sede') || queryLower.includes('horario') || queryLower.includes('ubicad')) respuestaEstatica = RESPUESTAS_ESTATICAS['sedes'];
+            else if (queryLower.includes('talla')) respuestaEstatica = RESPUESTAS_ESTATICAS['tallas'];
+            else if (queryLower.includes('envio') || queryLower.includes('domicilio') || queryLower.includes('envío')) respuestaEstatica = RESPUESTAS_ESTATICAS['envios'];
+
+            if (respuestaEstatica) {
+                // Mostrar texto del botón como mensaje del usuario (sin enviarlo a la IA)
+                const labelTexto = chip.textContent.trim();
+                appendMessage('user', labelTexto);
+                appendMessage('assistant', respuestaEstatica);
+                scrollToBottom();
+            } else {
+                // Si no hay respuesta estática, usar la IA
                 input.value = query;
                 sendMessage();
             }
