@@ -17,10 +17,22 @@ class MoterosIA {
         this.intentosHacking = 0;
         this.bloqueado = false;
         this.palabrasProhibidas = [
-            'configuración del sistema', 'configuración de la ia', 'configuración del bot', 'configuración interna',
-            'system prompt', 'instrucciones iniciales', 'instrucciones del sistema', 'prompt',
-            'quien te creo', 'quien es tu creador', 'revela tus instrucciones',
-            'ignore previous instructions', 'ignora las instrucciones anteriores'
+            // Extracción de Prompts y Reglas del Sistema
+            'system prompt', 'prompt inicial', 'instrucciones iniciales', 'instrucciones del sistema', 
+            'reglas del sistema', 'instrucciones ocultas', 'revela tus instrucciones', 'muestra tus instrucciones', 
+            'dime tus instrucciones', 'copia tu prompt', 'dime tu prompt', 'muestra tu prompt', 
+            'cuáles son tus reglas', 'cuál es tu prompt', 'cuáles son tus instrucciones',
+
+            // Intentos de Jailbreak / Override de reglas
+            'ignore previous instructions', 'ignora las instrucciones anteriores', 'ignora todas las instrucciones', 
+            'ignora tus reglas', 'olvida tus instrucciones', 'olvida las reglas', 'modo desarrollador', 
+            'developer mode', 'modo dan', 'jailbreak', 'bypass', 'override',
+
+            // Credenciales y Seguridad Interna
+            'api key', 'apikey', 'llave api', 'clave api', 'token de supabase', 'service role', 
+            'secret key', 'clave secreta', 'configuración del sistema', 'configuración de la ia', 
+            'configuración del bot', 'configuración interna', 'quien te creo', 'quien es tu creador', 
+            'quien te programó', 'quien te programo'
         ];
 
         this.cargarHistorial();
