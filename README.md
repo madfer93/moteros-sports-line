@@ -142,47 +142,12 @@ moteros-sports-line/
 
 ---
 
-## 🗄️ Base de Datos (Supabase)
+## 🗄️ Arquitectura de Datos & Seguridad (Supabase)
 
-### Tablas Principales
-
-**Productos y Catálogo:**
-- `productos` - Catálogo de productos
-- `categorias` - Categorías de productos
-- `producto_resenas` - Reseñas y calificaciones
-
-**Inventario (Multi-Local):**
-- `inventario_alcala`, `inventario_01`, `inventario_jordan`
-- `inventario_digital`, `inventario_evento`, `inventario_bodega`
-
-**Ventas y Finanzas:**
-- `ventas`, `facturas`, `factura_items`, `factura_pagos`
-- `cierres_caja`, `metodos_pago`
-
-**Compras:**
-- `compras`, `compra_items`, `proveedores`
-- `pagos_proveedor`, `alertas_compras`
-
-**Créditos y Deudas:**
-- `creditos_motero`, `clientes_credito`, `pagos_credito`
-- `deudores`, `pagos_deudor`, `deudas_negocio`
-
-**Empleados:**
-- `empleados_tienda`, `sesiones_empleados`
-- `nomina_pagos`, `adelantos_nomina`, `empleado_ausencias`
-
-**Marketing:**
-- `leads_ia` - Leads capturados por la IA
-- `posts` - Blog posts
-- `blog_comentarios` - Comentarios del blog
-- `promociones` - Promociones activas
-
-**Configuración:**
-- `configuracion_sistema` - Configuración global
-- `locales` - Información de locales
-- `metas_locales`, `metas_proveedores` - Metas de ventas
-
-🔒 **Todas las tablas están protegidas con Row Level Security (RLS)**
+La plataforma utiliza una arquitectura relacional en **PostgreSQL (Supabase)** blindada con:
+- 🔒 **Row Level Security (RLS)**: Aislamiento y control estricto de accesos a nivel de filas y roles.
+- 🛡️ **Edge Functions**: Todas las operaciones críticas de IA y lógica sensible se ejecutan del lado del servidor.
+- 📦 **Storage Seguro**: Buckets con políticas restrictivas para multimedia y assets.
 
 ---
 
