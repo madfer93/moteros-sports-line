@@ -187,7 +187,7 @@ button {
 /* HERO */
 .hero {
     /* Reducimnos la opacidad del gradiente para que se vea más la imagen */
-    background: linear-gradient(to right, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.6) 50%, rgba(15, 23, 42, 0.2) 100%), url('../img/hero-bg.jpg');
+    background: linear-gradient(to right, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.6) 50%, rgba(15, 23, 42, 0.2) 100%), url('../img/hero-bg.webp');
     background-size: cover;
     /* Center top prioriza la parte superior de la imagen */
     background-position: center top;
