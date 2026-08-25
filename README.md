@@ -233,24 +233,36 @@ npm run build
 
 ---
 
-## 📞 Contacto
+## 📞 Contacto & Desarrollo
 
-**Desarrollador:** Manuel Fernando Madrid 
-**Email:** [EMAIL_ADDRESS]  
-**Portfolio:** [Perfil Comercial](https://madfer93.github.io/Perfil-Comercial/)  
-**WhatsApp:** [+57 304 578 8873](https://wa.me/573045788873)
+**Agencia:** [J&M Tech Solutions](https://www.jymtechsolutions.online/es)  
+**Líder Técnico:** Manuel Fernando Madrid (CEO & Consultor de IA B2B)  
+**Web:** [jymtechsolutions.online](https://www.jymtechsolutions.online/es)  
+**Email:** admin@jymtechsolutions.online  
+**WhatsApp:** [+57 304 578 8873](https://wa.me/573045788873)  
 
 ---
 
-## 📄 Licencia
+## 📄 Licencia & Autoría
 
-© 2026 Moteros Sports Line - Todos los derechos reservados | Desarrollado por JyM Tech Solutions
+© 2026 Moteros Sports Line - Todos los derechos reservados | Desarrollado por [J&M Tech Solutions](https://www.jymtechsolutions.online/es)
 
 Proyecto privado desarrollado para uso exclusivo de Moteros Sports Line.
 
 ---
 
 ## 🆕 Changelog
+
+### v2.6 (Agosto 2026) - SEO Enterprise, IA Edge & Estandarización de Marca
+- ✅ **Schema SEO Multi-Entidad (`@graph`)**: Grafo estructurado empresarial con `Store`, `AutoPartsStore`, `LocalBusiness` multi-sede (Alcalá, 01, Jordán), `Organization` (J&M Tech Solutions), `WebSite` con `SearchAction`, `SoftwareApplication` (Moteros IA) y `FAQPage` para Rich Snippets en Google.
+- ✅ **Estandarización de Backlinks & Autoría**: Footer y Schemas JSON-LD unificados en las 9 páginas del sitio enlazando a `https://www.jymtechsolutions.online/es`.
+- ✅ **Indexación para Modelos de Lenguaje (`llms.txt`)**: Creación de archivo de indexación según estándar `llmstxt.org` para crawlers de IA (ChatGPT, Perplexity, Gemini, Claude).
+- ✅ **Optimización de IA Conversacional (Moteros IA)**:
+  - Enrutamiento 100% serverless mediante Edge Function `groq-chat` de Supabase para blindaje de API keys.
+  - Depuración de payload de catálogo a 40 ítems para evitar errores de token (`request_too_large`).
+  - Forzado estricto de idioma español y filtro de *chain-of-thought* para eliminar razonamiento interno en inglés.
+  - Respuestas estáticas instantáneas para botones rápidos (Cascos → Catálogo, Sedes → Contacto, Financiación/Envíos → WhatsApp con mensaje contextual).
+- ✅ **UI Móvil Responsiva**: Pastillas visuales para selección y guía de tallas de cascos en pantallas pequeñas y reseteo automático del formulario de leads.
 
 ### v2.5 (Enero 2025)
 - ✅ Sistema de seguridad completo con variables de entorno
