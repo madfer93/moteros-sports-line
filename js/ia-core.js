@@ -16,7 +16,12 @@ class MoterosIA {
         // Seguridad y Blindaje
         this.intentosHacking = 0;
         this.bloqueado = false;
-        this.palabrasProhibidas = ['configuración', 'system prompt', 'instrucciones iniciales', 'prompt', 'quien te creo', 'quien es tu creador', 'revela tus instrucciones', 'ignore previous instructions', 'ignora las instrucciones anteriores'];
+        this.palabrasProhibidas = [
+            'configuración del sistema', 'configuración de la ia', 'configuración del bot', 'configuración interna',
+            'system prompt', 'instrucciones iniciales', 'instrucciones del sistema', 'prompt',
+            'quien te creo', 'quien es tu creador', 'revela tus instrucciones',
+            'ignore previous instructions', 'ignora las instrucciones anteriores'
+        ];
 
         this.cargarHistorial();
         this.inicializado = this.inicializar();
