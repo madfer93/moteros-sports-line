@@ -377,12 +377,38 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
             })
         });
 
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error?.message || `HTTP ${response.status} - ${response.statusText}`);
+        const resData = await response.json().catch(() => ({}));
+
+        if (!response.ok || resData.error) {
+            const msg = resData.error?.message || resData.message || `HTTP ${response.status} - ${response.statusText}`;
+            throw new Error(msg);
         }
 
-        return await response.json();
+        return resData;
+    }
+
+    async llamarGroqDirecto(messages, model) {
+        if (!this.apiKey) throw new Error("Sin API Key local");
+        const temperature = window.CONFIG.AI_TEMPERATURE !== undefined ? window.CONFIG.AI_TEMPERATURE : 0.4;
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${this.apiKey}`
+            },
+            body: JSON.stringify({
+                messages: messages,
+                model: model,
+                temperature: temperature
+            })
+        });
+
+        const resData = await response.json().catch(() => ({}));
+        if (!response.ok || resData.error) {
+            const msg = resData.error?.message || resData.message || `HTTP ${response.status}`;
+            throw new Error(msg);
+        }
+        return resData;
     }
 
     async enviarMensaje(mensajeUsuario) {
@@ -393,12 +419,6 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
 
         // Asegurar inicialización antes de enviar
         if (this.inicializado) await this.inicializado;
-
-        if (!this.apiKey) {
-            // Re-intento rápido de sincronizar por si cargó después Supabase
-            await this.sincronizarKeys();
-            if (!this.apiKey) return "⚠️ AI Key no configurada. Por favor verifica el Panel Admin.";
-        }
 
         const datosTiempoReal = await this.obtenerDatosTiempoReal();
         const memoriaExtra = await this.obtenerMemoriaContexto();
@@ -425,47 +445,52 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
 
         this.historial.push({ role: "user", content: mensajeUsuario });
 
-        const modeloPrincipal = window.CONFIG.AI_MODEL || "llama-3.1-8b-instant";
-        const modeloFallback = window.CONFIG.AI_FALLBACK_MODEL || "gemma2-9b-it";
+        const modelos = [
+            window.CONFIG.AI_MODEL || "llama-3.1-8b-instant",
+            window.CONFIG.AI_FALLBACK_MODEL || "gemma2-9b-it",
+            "llama-3.3-70b-versatile"
+        ];
 
-        try {
-            let data;
+        let data = null;
+        let ultimoError = null;
+
+        // Probar modelos a través de Edge Function primero, y llamadas directas si hay apiKey local
+        for (const m of modelos) {
             try {
-                // Intento 1: Modelo Principal (70B)
-                data = await this.llamarEdgeFunction(messages, modeloPrincipal);
-            } catch (errPrimary) {
-                console.warn(`[MoterosIA] Fallo modelo principal (${modeloPrincipal}), ejecutando fallback (${modeloFallback}):`, errPrimary.message);
-                // Intento 2: Modelo Fallback Ultrarrápido (8B)
-                data = await this.llamarEdgeFunction(messages, modeloFallback);
-            }
-
-            if (data.error) {
-                if (window.registrarLogSistema) window.registrarLogSistema('error_ia', 'Error de Groq API', JSON.stringify(data.error));
-                return `❌ Error de la IA: ${data.error.message || "Error desconocido"}`;
-            }
-
-            if (data.choices && data.choices[0]) {
-                let respuestaIA = data.choices[0].message.content;
-                this.historial.push({ role: "assistant", content: respuestaIA });
-                this.guardarHistorial();
-
-                // Telemetría: Registrar uso
-                if (data.usage) {
-                    this.registrarUso(data.usage, data.model || modeloPrincipal);
+                data = await this.llamarEdgeFunction(messages, m);
+                if (data && data.choices && data.choices[0]) break;
+            } catch (eEdge) {
+                ultimoError = eEdge.message;
+                console.warn(`[MoterosIA] Edge Function falló con modelo ${m}:`, eEdge.message);
+                if (this.apiKey) {
+                    try {
+                        data = await this.llamarGroqDirecto(messages, m);
+                        if (data && data.choices && data.choices[0]) break;
+                    } catch (eDir) {
+                        ultimoError = eDir.message;
+                        console.warn(`[MoterosIA] Llamada directa falló con modelo ${m}:`, eDir.message);
+                    }
                 }
-
-                return respuestaIA;
-            } else {
-                if (window.registrarLogSistema) window.registrarLogSistema('error_ia', 'Groq respondió sin choices', JSON.stringify(data));
-                return "Lo siento, hubo un problema con la respuesta de la IA. Por favor intenta nuevamente.";
             }
-        } catch (error) {
-            console.error("MoterosIA Fetch Error:", error);
-            if (window.registrarLogSistema) {
-                window.registrarLogSistema('error_ia', 'Fallo en enviarMensaje (Conexión)', `${error.message} | State: ${this.apiKey ? 'Key exists' : 'No Key'}`);
-            }
-            return `❌ Error de conexión con la IA: ${error.message}. Por favor verifica tu internet o la configuración de la llave API en el Panel Admin.`;
         }
+
+        if (data && data.choices && data.choices[0]) {
+            let respuestaIA = data.choices[0].message.content;
+            this.historial.push({ role: "assistant", content: respuestaIA });
+            this.guardarHistorial();
+
+            if (data.usage) {
+                this.registrarUso(data.usage, data.model || modelos[0]);
+            }
+
+            return respuestaIA;
+        }
+
+        console.error("MoterosIA Error:", ultimoError);
+        if (window.registrarLogSistema) {
+            window.registrarLogSistema('error_ia', 'Fallo general en enviarMensaje', ultimoError);
+        }
+        return `⚠️ El servicio de IA está en mantenimiento o la clave API requiere actualización. Por favor escríbenos al WhatsApp para atención inmediata. 📲`;
     }
     async registrarUso(usage, model) {
         if (!window.supabaseClient) return;

@@ -1441,8 +1441,59 @@ function removerPreview(tipo) {
     if (fileInput) fileInput.value = '';
 }
 
+/**
+ * Convierte cualquier archivo de imagen subido (PNG, JPG, HEIC, etc.) a formato WebP optimizado en el navegador.
+ */
+async function convertirImagenAWebP(file, maxAncho = 1200, calidad = 0.82) {
+    if (!file || !file.type || !file.type.startsWith('image/')) return file;
+    if (file.type === 'image/webp' && file.size < 200 * 1024) return file;
+
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxAncho) {
+                        height = Math.round((height * maxAncho) / width);
+                        width = maxAncho;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        if (!blob) { resolve(file); return; }
+                        const nombreLimpio = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                        const nuevoArchivo = new File([blob], `${nombreLimpio}.webp`, {
+                            type: 'image/webp',
+                            lastModified: Date.now()
+                        });
+                        resolve(nuevoArchivo);
+                    }, 'image/webp', calidad);
+                } catch (err) {
+                    console.warn('Error durante conversión WebP:', err);
+                    resolve(file);
+                }
+            };
+            img.onerror = () => resolve(file);
+            img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+    });
+}
+
 async function subirImagen(file, carpeta = 'productos-imagenes') {
     try {
+        file = await convertirImagenAWebP(file);
         const timestamp = Date.now();
         const extension = file.name.split('.').pop().toLowerCase();
         const nombreArchivo = `${timestamp}-${Math.random().toString(36).substring(2, 9)}.${extension}`;
