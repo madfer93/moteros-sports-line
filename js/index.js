@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
   MOTEROS SPORTS LINE - INDEX.JS v2.0
   Catálogo con Carrito, Promociones y Destacados
   ═══════════════════════════════════════════════════════════════ */
@@ -21,39 +21,39 @@ let posicionCarruselPromo = 0;
 
 // Mapa de Iconos Premium (SVGs Lineales)
 const ICONOS_MOTO = {
-    // ── Tipos de Cascos (iconos PNG profesionales) ──
-    'CASCOS': '<img src="img/icons/integral.png" alt="Cascos" style="width:100%;height:100%;object-fit:contain">',
-    'INTEGRALES': '<img src="img/icons/integral.png" alt="Integral" style="width:100%;height:100%;object-fit:contain">',
-    'ABATIBLES': '<img src="img/icons/abatible.png" alt="Abatible" style="width:100%;height:100%;object-fit:contain">',
-    'ABIERTOS': '<img src="img/icons/abierto.png" alt="Abierto" style="width:100%;height:100%;object-fit:contain">',
-    'MULTIPROPOSITO': '<img src="img/icons/multiproposito.png" alt="Multipropósito" style="width:100%;height:100%;object-fit:contain">',
-    'CROSS': '<img src="img/icons/multiproposito.png" alt="Cross" style="width:100%;height:100%;object-fit:contain">',
-    'NIÑ@S': '<img src="img/icons/niños.png" alt="Niñ@s" style="width:100%;height:100%;object-fit:contain">',
-    'MODULARES': '<img src="img/icons/modular.png" alt="Modular" style="width:100%;height:100%;object-fit:contain">',
+    // ── Tipos de Cascos (iconos WebP optimizados) ──
+    'CASCOS': '<img src="img/icons/integral.webp" alt="Cascos" style="width:100%;height:100%;object-fit:contain">',
+    'INTEGRALES': '<img src="img/icons/integral.webp" alt="Integral" style="width:100%;height:100%;object-fit:contain">',
+    'ABATIBLES': '<img src="img/icons/abatible.webp" alt="Abatible" style="width:100%;height:100%;object-fit:contain">',
+    'ABIERTOS': '<img src="img/icons/abierto.webp" alt="Abierto" style="width:100%;height:100%;object-fit:contain">',
+    'MULTIPROPOSITO': '<img src="img/icons/multiproposito.webp" alt="Multipropósito" style="width:100%;height:100%;object-fit:contain">',
+    'CROSS': '<img src="img/icons/multiproposito.webp" alt="Cross" style="width:100%;height:100%;object-fit:contain">',
+    'NIÑ@S': '<img src="img/icons/niños.webp" alt="Niñ@s" style="width:100%;height:100%;object-fit:contain">',
+    'MODULARES': '<img src="img/icons/modular.webp" alt="Modular" style="width:100%;height:100%;object-fit:contain">',
 
-    // ── Otras Categorías (iconos PNG profesionales) ──
-    'GUANTES': '<img src="img/icons/guantes.png" alt="Guantes" style="width:100%;height:100%;object-fit:contain">',
-    'CHAQUETAS': '<img src="img/icons/chaqueta.png" alt="Chaquetas" style="width:100%;height:100%;object-fit:contain">',
-    'TRAJES DE PROTECCION': '<img src="img/icons/chaqueta.png" alt="Trajes" style="width:100%;height:100%;object-fit:contain">',
-    'BOTAS': '<img src="img/icons/botas.png" alt="Botas" style="width:100%;height:100%;object-fit:contain">',
-    'IMPERMEABLES': '<img src="img/icons/impermeable.png" alt="Impermeables" style="width:100%;height:100%;object-fit:contain">',
-    'IMPERMEABLES Y BOTAS': '<img src="img/icons/impermeable.png" alt="Impermeables y Botas" style="width:100%;height:100%;object-fit:contain">',
-    'MALETEROS': '<img src="img/icons/maletero.png" alt="Maleteros" style="width:100%;height:100%;object-fit:contain">',
-    'ACCESORIOS': '<img src="img/icons/accesorios.png" alt="Accesorios" style="width:100%;height:100%;object-fit:contain">',
-    'CANDADOS': '<img src="img/icons/candado.png" alt="Candados" style="width:100%;height:100%;object-fit:contain">',
-    'VISORES': '<img src="img/icons/visor.png" alt="Visores" style="width:100%;height:100%;object-fit:contain">',
-    'INTERCOMUNICADORES': '<img src="img/icons/intercomunicador.png" alt="Intercomunicadores" style="width:100%;height:100%;object-fit:contain">',
-    'PANTALONES': '<img src="img/icons/pantalones.png" alt="Pantalones" style="width:100%;height:100%;object-fit:contain">',
-    'RODILLERAS': '<img src="img/icons/rodilleras.png" alt="Rodilleras" style="width:100%;height:100%;object-fit:contain">',
-    'TANK BAGS': '<img src="img/icons/tank-bag.png" alt="Tank Bags" style="width:100%;height:100%;object-fit:contain">',
-    'CORTAVIENTOS': '<img src="img/icons/cortaviento.png" alt="Cortavientos" style="width:100%;height:100%;object-fit:contain">',
-    'ARNES': '<img src="img/icons/arnes-nino.png" alt="Arnés" style="width:100%;height:100%;object-fit:contain">',
-    'PIJAMA CON BAUL': '<img src="img/icons/pijama con baul.png" alt="Pijama con Baúl" style="width:100%;height:100%;object-fit:contain">',
-    'PIJAMA SIN BAUL': '<img src="img/icons/pijama sin baul.png" alt="Pijama sin Baúl" style="width:100%;height:100%;object-fit:contain">',
-    'TIRAS REFLECTIVAS': '<img src="img/icons/tiras reflectivas.png" alt="Tiras Reflectivas" style="width:100%;height:100%;object-fit:contain">',
-    'CAMPANAS': '<img src="img/icons/campana motera.png" alt="Campanas" style="width:100%;height:100%;object-fit:contain">',
-    'GAFAS CROSS': '<img src="img/icons/gafas cross.PNG" alt="Gafas Cross" style="width:100%;height:100%;object-fit:contain">',
-    'PROTECTOR ZAPATO': '<img src="img/icons/protector-zapato.png" alt="Protector Zapato" style="width:100%;height:100%;object-fit:contain">',
+    // ── Otras Categorías (iconos WebP optimizados) ──
+    'GUANTES': '<img src="img/icons/guantes.webp" alt="Guantes" style="width:100%;height:100%;object-fit:contain">',
+    'CHAQUETAS': '<img src="img/icons/chaqueta.webp" alt="Chaquetas" style="width:100%;height:100%;object-fit:contain">',
+    'TRAJES DE PROTECCION': '<img src="img/icons/chaqueta.webp" alt="Trajes" style="width:100%;height:100%;object-fit:contain">',
+    'BOTAS': '<img src="img/icons/botas.webp" alt="Botas" style="width:100%;height:100%;object-fit:contain">',
+    'IMPERMEABLES': '<img src="img/icons/impermeable.webp" alt="Impermeables" style="width:100%;height:100%;object-fit:contain">',
+    'IMPERMEABLES Y BOTAS': '<img src="img/icons/impermeable.webp" alt="Impermeables y Botas" style="width:100%;height:100%;object-fit:contain">',
+    'MALETEROS': '<img src="img/icons/maletero.webp" alt="Maleteros" style="width:100%;height:100%;object-fit:contain">',
+    'ACCESORIOS': '<img src="img/icons/accesorios.webp" alt="Accesorios" style="width:100%;height:100%;object-fit:contain">',
+    'CANDADOS': '<img src="img/icons/candado.webp" alt="Candados" style="width:100%;height:100%;object-fit:contain">',
+    'VISORES': '<img src="img/icons/visor.webp" alt="Visores" style="width:100%;height:100%;object-fit:contain">',
+    'INTERCOMUNICADORES': '<img src="img/icons/intercomunicador.webp" alt="Intercomunicadores" style="width:100%;height:100%;object-fit:contain">',
+    'PANTALONES': '<img src="img/icons/pantalones.webp" alt="Pantalones" style="width:100%;height:100%;object-fit:contain">',
+    'RODILLERAS': '<img src="img/icons/rodilleras.webp" alt="Rodilleras" style="width:100%;height:100%;object-fit:contain">',
+    'TANK BAGS': '<img src="img/icons/tank-bag.webp" alt="Tank Bags" style="width:100%;height:100%;object-fit:contain">',
+    'CORTAVIENTOS': '<img src="img/icons/cortaviento.webp" alt="Cortavientos" style="width:100%;height:100%;object-fit:contain">',
+    'ARNES': '<img src="img/icons/arnes-nino.webp" alt="Arnés" style="width:100%;height:100%;object-fit:contain">',
+    'PIJAMA CON BAUL': '<img src="img/icons/pijama con baul.webp" alt="Pijama con Baúl" style="width:100%;height:100%;object-fit:contain">',
+    'PIJAMA SIN BAUL': '<img src="img/icons/pijama sin baul.webp" alt="Pijama sin Baúl" style="width:100%;height:100%;object-fit:contain">',
+    'TIRAS REFLECTIVAS': '<img src="img/icons/tiras reflectivas.webp" alt="Tiras Reflectivas" style="width:100%;height:100%;object-fit:contain">',
+    'CAMPANAS': '<img src="img/icons/campana motera.webp" alt="Campanas" style="width:100%;height:100%;object-fit:contain">',
+    'GAFAS CROSS': '<img src="img/icons/gafas cross.webp" alt="Gafas Cross" style="width:100%;height:100%;object-fit:contain">',
+    'PROTECTOR ZAPATO': '<img src="img/icons/protector-zapato.webp" alt="Protector Zapato" style="width:100%;height:100%;object-fit:contain">',
     'VER TODO': '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="20" height="20" rx="3"/><rect x="36" y="8" width="20" height="20" rx="3"/><rect x="8" y="36" width="20" height="20" rx="3"/><rect x="36" y="36" width="20" height="20" rx="3"/></svg>'
 };
 
@@ -75,8 +75,8 @@ ICONOS_MOTO['INTERCOMUNICADOR'] = ICONOS_MOTO['INTERCOMUNICADORES'];
 ICONOS_MOTO['TANK BAG'] = ICONOS_MOTO['TANK BAGS'];
 ICONOS_MOTO['CORTAVIENTO'] = ICONOS_MOTO['CORTAVIENTOS'];
 ICONOS_MOTO['ARNES'] = ICONOS_MOTO['ARNES'];
-ICONOS_MOTO['PIERNERA'] = '<img src="img/icons/piernera.png" alt="Piernera" style="width:100%;height:100%;object-fit:contain">';
-ICONOS_MOTO['PORTA CELULAR'] = '<img src="img/icons/porta-celular.png" alt="Porta Celular" style="width:100%;height:100%;object-fit:contain">';
+ICONOS_MOTO['PIERNERA'] = '<img src="img/icons/piernera.webp" alt="Piernera" style="width:100%;height:100%;object-fit:contain">';
+ICONOS_MOTO['PORTA CELULAR'] = '<img src="img/icons/porta-celular.webp" alt="Porta Celular" style="width:100%;height:100%;object-fit:contain">';
 ICONOS_MOTO['TIRA REFLECTIVA'] = ICONOS_MOTO['TIRAS REFLECTIVAS'];
 ICONOS_MOTO['TIRA'] = ICONOS_MOTO['TIRAS REFLECTIVAS'];
 ICONOS_MOTO['CAMPANA'] = ICONOS_MOTO['CAMPANAS'];
@@ -94,7 +94,7 @@ ICONOS_MOTO['NINO'] = ICONOS_MOTO['NIÑ@S'];
 ICONOS_MOTO['PIJAMA SIN BAUL'] = ICONOS_MOTO['PIJAMA SIN BAUL'];
 ICONOS_MOTO['PIJAMA CON BAUL'] = ICONOS_MOTO['PIJAMA CON BAUL'];
 ICONOS_MOTO['PIJAMA'] = ICONOS_MOTO['PIJAMA SIN BAUL']; // Alias genérico
-ICONOS_MOTO['CACHOS'] = '<img src="img/icons/cachos.png" alt="Cachos" style="width:100%;height:100%;object-fit:contain">';
+ICONOS_MOTO['CACHOS'] = '<img src="img/icons/cachos.webp" alt="Cachos" style="width:100%;height:100%;object-fit:contain">';
 
 ICONOS_MOTO['PIERNERAS'] = ICONOS_MOTO['PIERNERA'];
 ICONOS_MOTO['PORTA CELULARES'] = ICONOS_MOTO['PORTA CELULAR'];

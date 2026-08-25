@@ -96,60 +96,60 @@ function obtenerEstiloColor(nombreColor) {
 
 const SUBCATEGORIAS_VISUALES = {
     'Cascos': [
-        { nombre: 'INTEGRALES', icono: 'img/icons/integral.png' },
-        { nombre: 'ABATIBLES', icono: 'img/icons/abatible.png' },
-        { nombre: 'ABIERTOS', icono: 'img/icons/abierto.png' },
-        { nombre: 'MULTIPROPOSITO', icono: 'img/icons/multiproposito.png' },
-        { nombre: 'CROSS', icono: 'img/icons/multiproposito.png' },
-        { nombre: 'MODULARES', icono: 'img/icons/modular.png' }
+        { nombre: 'INTEGRALES', icono: 'img/icons/integral.webp' },
+        { nombre: 'ABATIBLES', icono: 'img/icons/abatible.webp' },
+        { nombre: 'ABIERTOS', icono: 'img/icons/abierto.webp' },
+        { nombre: 'MULTIPROPOSITO', icono: 'img/icons/multiproposito.webp' },
+        { nombre: 'CROSS', icono: 'img/icons/multiproposito.webp' },
+        { nombre: 'MODULARES', icono: 'img/icons/modular.webp' }
     ],
     'Accesorios': [
-        { nombre: 'MALETEROS', icono: 'img/icons/maletero.png' },
-        { nombre: 'INTERCOMUNICADORES', icono: 'img/icons/intercomunicador.png' },
-        { nombre: 'CANDADOS', icono: 'img/icons/candado.png' },
-        { nombre: 'VISORES', icono: 'img/icons/visor.png' },
-        { nombre: 'RODILLERAS', icono: 'img/icons/rodilleras.png' },
-        { nombre: 'PIJAMA CON BAUL', icono: 'img/icons/pijama con baul.png' },
-        { nombre: 'PIJAMA SIN BAUL', icono: 'img/icons/pijama sin baul.png' },
-        { nombre: 'CAMPANAS', icono: 'img/icons/campana motera.png' },
-        { nombre: 'GAFAS CROSS', icono: 'img/icons/gafas cross.PNG' },
-        { nombre: 'PROTECTOR ZAPATO', icono: 'img/icons/protector-zapato.png' },
-        { nombre: 'CACHOS', icono: 'img/icons/cachos.png' }
+        { nombre: 'MALETEROS', icono: 'img/icons/maletero.webp' },
+        { nombre: 'INTERCOMUNICADORES', icono: 'img/icons/intercomunicador.webp' },
+        { nombre: 'CANDADOS', icono: 'img/icons/candado.webp' },
+        { nombre: 'VISORES', icono: 'img/icons/visor.webp' },
+        { nombre: 'RODILLERAS', icono: 'img/icons/rodilleras.webp' },
+        { nombre: 'PIJAMA CON BAUL', icono: 'img/icons/pijama con baul.webp' },
+        { nombre: 'PIJAMA SIN BAUL', icono: 'img/icons/pijama sin baul.webp' },
+        { nombre: 'CAMPANAS', icono: 'img/icons/campana motera.webp' },
+        { nombre: 'GAFAS CROSS', icono: 'img/icons/gafas cross.webp' },
+        { nombre: 'PROTECTOR ZAPATO', icono: 'img/icons/protector-zapato.webp' },
+        { nombre: 'CACHOS', icono: 'img/icons/cachos.webp' }
     ],
     'Chaquetas': [
-        { nombre: 'CHAQUETAS', icono: 'img/icons/chaqueta.png' },
-        { nombre: 'IMPERMEABLES', icono: 'img/icons/impermeable.png' } // Ojo: Impermeables se repite en accesorios
+        { nombre: 'CHAQUETAS', icono: 'img/icons/chaqueta.webp' },
+        { nombre: 'IMPERMEABLES', icono: 'img/icons/impermeable.webp' } // Ojo: Impermeables se repite en accesorios
     ],
     'Guantes': [
-        { nombre: 'GUANTES', icono: 'img/icons/guantes.png' }
+        { nombre: 'GUANTES', icono: 'img/icons/guantes.webp' }
     ],
     'Botas': [
-        { nombre: 'BOTAS', icono: 'img/icons/botas.png' }
+        { nombre: 'BOTAS', icono: 'img/icons/botas.webp' }
     ],
     'Tank Bags': [
-        { nombre: 'TANK BAG', icono: 'img/icons/tank-bag.png' }
+        { nombre: 'TANK BAG', icono: 'img/icons/tank-bag.webp' }
     ],
     'Cortavientos': [
-        { nombre: 'CORTAVIENTO', icono: 'img/icons/cortaviento.png' }
+        { nombre: 'CORTAVIENTO', icono: 'img/icons/cortaviento.webp' }
     ],
     'NIÑ@S': [
-        { nombre: 'ARNES', icono: 'img/icons/arnes-nino.png' },
-        { nombre: 'NIÑ@S', icono: 'img/icons/niños.png' }
+        { nombre: 'ARNES', icono: 'img/icons/arnes-nino.webp' },
+        { nombre: 'NIÑ@S', icono: 'img/icons/niños.webp' }
     ],
     'Pierneras': [
-        { nombre: 'PIERNERA', icono: 'img/icons/piernera.png' }
+        { nombre: 'PIERNERA', icono: 'img/icons/piernera.webp' }
     ],
     'Multiclavas': [
-        { nombre: 'MULTICLAVA', icono: 'img/icons/multiclava.png' }
+        { nombre: 'MULTICLAVA', icono: 'img/icons/multiclava.webp' }
     ],
     'Porta Celulares': [
-        { nombre: 'PORTA CELULAR', icono: 'img/icons/porta-celular.png' }
+        { nombre: 'PORTA CELULAR', icono: 'img/icons/porta-celular.webp' }
     ],
     'Trajes de Protección': [
-        { nombre: 'CHAQUETAS', icono: 'img/icons/chaqueta.png' },
-        { nombre: 'IMPERMEABLES', icono: 'img/icons/impermeable.png' },
-        { nombre: 'PANTALONES', icono: 'img/icons/pantalones.png' },
-        { nombre: 'TIRAS REFLECTIVAS', icono: 'img/icons/tiras reflectivas.png' }
+        { nombre: 'CHAQUETAS', icono: 'img/icons/chaqueta.webp' },
+        { nombre: 'IMPERMEABLES', icono: 'img/icons/impermeable.webp' },
+        { nombre: 'PANTALONES', icono: 'img/icons/pantalones.webp' },
+        { nombre: 'TIRAS REFLECTIVAS', icono: 'img/icons/tiras reflectivas.webp' }
     ]
 };
 
