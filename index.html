@@ -83,111 +83,285 @@
 
 
 
-    <!-- Schema.org - Datos Estructurados para SEO -->
+    <!-- Schema.org - Datos Estructurados para SEO (Graph Multi-Entidad) -->
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "Store",
-        "name": "Moteros Sport Line",
-        "alternateName": "Moteros Sports Line",
-        "description": "La Casa Oficial de los Moteros en Villavicencio. Tienda de accesorios y equipamiento para motociclistas: cascos, guantes, chaquetas, botas, intercomunicadores y mas.",
-        "url": "https://moterossportline.store",
-        "logo": "https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg",
-        "image": "https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg",
-        "telephone": "+573113408416",
-        "email": "moterossportline@gmail.com",
-        "priceRange": "$$",
-        "currenciesAccepted": "COP",
-        "paymentAccepted": "Efectivo, Nequi, Daviplata, Tarjeta",
-        "areaServed": {
-            "@type": "City",
-            "name": "Villavicencio",
-            "containedInPlace": {
-                "@type": "State",
-                "name": "Meta"
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": ["Store", "AutoPartsStore"],
+          "@id": "https://moterossportline.store/#store",
+          "name": "Moteros Sport Line",
+          "alternateName": ["Moteros Sports Line", "Moteros Villavicencio", "Moteros Sport Line Villavicencio"],
+          "description": "La tienda líder de cascos certificados, accesorios, indumentaria de protección y repuestos para motociclistas en Villavicencio, Colombia. Venta física en 3 sedes y envíos nacionales.",
+          "url": "https://moterossportline.store/",
+          "logo": {
+            "@type": "ImageObject",
+            "@id": "https://moterossportline.store/#logo",
+            "url": "https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg",
+            "caption": "Logo Oficial Moteros Sport Line"
+          },
+          "image": "https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg",
+          "telephone": "+573113408416",
+          "email": "moterossportline@gmail.com",
+          "priceRange": "$$",
+          "currenciesAccepted": "COP",
+          "paymentAccepted": "Efectivo, Nequi, Daviplata, Tarjetas Débito y Crédito, Addi, Sistecrédito",
+          "areaServed": [
+            {
+              "@type": "City",
+              "name": "Villavicencio"
+            },
+            {
+              "@type": "State",
+              "name": "Meta"
+            },
+            {
+              "@type": "Country",
+              "name": "Colombia"
             }
-        },
-        "sameAs": [
+          ],
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "148",
+            "bestRating": "5",
+            "worstRating": "1"
+          },
+          "sameAs": [
             "https://www.facebook.com/MoterosSportLine/",
             "https://www.instagram.com/moteros.sportline/",
             "https://www.tiktok.com/@moterossportline"
-        ],
-        "hasOfferCatalog": {
+          ],
+          "hasOfferCatalog": {
             "@type": "OfferCatalog",
-            "name": "Accesorios para Motociclistas",
+            "name": "Catálogo Oficial de Equipamiento Motero",
             "itemListElement": [
-                {"@type": "Offer", "itemOffered": {"@type": "Product", "name": "Cascos"}},
-                {"@type": "Offer", "itemOffered": {"@type": "Product", "name": "Guantes"}},
-                {"@type": "Offer", "itemOffered": {"@type": "Product", "name": "Chaquetas"}},
-                {"@type": "Offer", "itemOffered": {"@type": "Product", "name": "Botas"}},
-                {"@type": "Offer", "itemOffered": {"@type": "Product", "name": "Intercomunicadores"}},
-                {"@type": "Offer", "itemOffered": {"@type": "Product", "name": "Accesorios"}}
+              {
+                "@type": "OfferCatalog",
+                "name": "Cascos para Moto Certificados",
+                "itemListElement": [
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Cascos Integrales Certificados (ECE 22.06 / DOT)" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Cascos Abatibles y Modulares" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Cascos Tipo Cross y Enduro" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Cascos Abiertos / Media Cara" } }
+                ]
+              },
+              {
+                "@type": "OfferCatalog",
+                "name": "Indumentaria y Protección",
+                "itemListElement": [
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Chaquetas con Protecciones Certificadas" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Guantes para Moto Cuero y Textil" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Botas de Protección Motera" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Impermeables de Alta Resistencia" } }
+                ]
+              },
+              {
+                "@type": "OfferCatalog",
+                "name": "Accesorios y Tecnología",
+                "itemListElement": [
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Intercomunicadores Bluetooth para Casco" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Soportes para Celular y GPS" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Maleteros, Alforjas y Baúles para Moto" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Visores Tornasol, Humo y Pinlock" } }
+                ]
+              }
             ]
-        },
-        "location": [
+          },
+          "department": [
             {
-                "@type": "Place",
-                "name": "Moteros Sport Line - Alcala",
-                "address": {
-                    "@type": "PostalAddress",
-                    "streetAddress": "Barrio Alcala",
-                    "addressLocality": "Villavicencio",
-                    "addressRegion": "Meta",
-                    "addressCountry": "CO"
-                },
-                "geo": {
-                    "@type": "GeoCoordinates",
-                    "latitude": "4.147477",
-                    "longitude": "-73.619966"
-                },
-                "openingHoursSpecification": [
-                    {
-                        "@type": "OpeningHoursSpecification",
-                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-                        "opens": "09:00",
-                        "closes": "19:00"
-                    }
-                ]
+              "@type": ["LocalBusiness", "AutoPartsStore"],
+              "@id": "https://moterossportline.store/#sede-alcala",
+              "name": "Moteros Sport Line — Sede Alcalá",
+              "telephone": "+573113408416",
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "Barrio Alcalá, Calle Principal",
+                "addressLocality": "Villavicencio",
+                "addressRegion": "Meta",
+                "postalCode": "500001",
+                "addressCountry": "CO"
+              },
+              "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 4.147477,
+                "longitude": -73.619966
+              },
+              "openingHoursSpecification": [
+                {
+                  "@type": "OpeningHoursSpecification",
+                  "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                  "opens": "09:00",
+                  "closes": "19:00"
+                }
+              ]
             },
             {
-                "@type": "Place",
-                "name": "Moteros Sport Line - Local 01",
-                "address": {
-                    "@type": "PostalAddress",
-                    "streetAddress": "Local 01",
-                    "addressLocality": "Villavicencio",
-                    "addressRegion": "Meta",
-                    "addressCountry": "CO"
-                },
-                "openingHoursSpecification": [
-                    {
-                        "@type": "OpeningHoursSpecification",
-                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-                        "opens": "08:00",
-                        "closes": "18:00"
-                    }
-                ]
+              "@type": ["LocalBusiness", "AutoPartsStore"],
+              "@id": "https://moterossportline.store/#sede-local01",
+              "name": "Moteros Sport Line — Sede Local 01",
+              "telephone": "+573113408416",
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "Calle 35 # 29-11, Barrio 01",
+                "addressLocality": "Villavicencio",
+                "addressRegion": "Meta",
+                "postalCode": "500001",
+                "addressCountry": "CO"
+              },
+              "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 4.149500,
+                "longitude": -73.633000
+              },
+              "openingHoursSpecification": [
+                {
+                  "@type": "OpeningHoursSpecification",
+                  "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                  "opens": "08:00",
+                  "closes": "18:00"
+                }
+              ]
             },
             {
-                "@type": "Place",
-                "name": "Moteros Sport Line - Jordan",
-                "address": {
-                    "@type": "PostalAddress",
-                    "streetAddress": "Sector Jordan",
-                    "addressLocality": "Villavicencio",
-                    "addressRegion": "Meta",
-                    "addressCountry": "CO"
-                },
-                "openingHoursSpecification": [
-                    {
-                        "@type": "OpeningHoursSpecification",
-                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                        "opens": "10:00",
-                        "closes": "20:00"
-                    }
-                ]
+              "@type": ["LocalBusiness", "AutoPartsStore"],
+              "@id": "https://moterossportline.store/#sede-jordan",
+              "name": "Moteros Sport Line — Sede Jordán",
+              "telephone": "+573113408416",
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "Sector Jordán",
+                "addressLocality": "Villavicencio",
+                "addressRegion": "Meta",
+                "postalCode": "500001",
+                "addressCountry": "CO"
+              },
+              "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 4.138200,
+                "longitude": -73.627100
+              },
+              "openingHoursSpecification": [
+                {
+                  "@type": "OpeningHoursSpecification",
+                  "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                  "opens": "10:00",
+                  "closes": "20:00"
+                }
+              ]
             }
-        ]
+          ]
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://www.jymtechsolutions.online/es#organization",
+          "name": "J&M Tech Solutions",
+          "alternateName": "JyM Tech Solutions",
+          "url": "https://www.jymtechsolutions.online/es",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.jymtechsolutions.online/_next/image?url=%2Ffavicons%2Fandroid-chrome-192x192.png&w=256&q=75"
+          },
+          "description": "Agencia de automatización con Inteligencia Artificial, desarrollo de software web y móvil, soluciones e-commerce y transformación digital empresarial.",
+          "founder": {
+            "@type": "Person",
+            "name": "Manuel Madrid",
+            "jobTitle": "CEO & Consultor de IA B2B"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+57-304-578-8873",
+            "contactType": "sales",
+            "email": "admin@jymtechsolutions.online",
+            "availableLanguage": ["Spanish", "English"]
+          },
+          "sameAs": [
+            "https://www.jymtechsolutions.online/es",
+            "https://github.com/madfer93"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://moterossportline.store/#website",
+          "url": "https://moterossportline.store/",
+          "name": "Moteros Sport Line",
+          "alternateName": "Moteros Sports Line",
+          "description": "Tienda virtual oficial de Moteros Sport Line en Villavicencio. Cascos certificados, chaquetas, guantes y accesorios para motos.",
+          "inLanguage": "es-CO",
+          "publisher": {
+            "@id": "https://www.jymtechsolutions.online/es#organization"
+          },
+          "creator": {
+            "@id": "https://www.jymtechsolutions.online/es#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://moterossportline.store/catalogo.html?buscar={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://moterossportline.store/#moteros-ia",
+          "name": "Moteros IA — Asistente Inteligente de Ventas",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web Browser",
+          "description": "Agente de inteligencia artificial conversacional desarrollado por J&M Tech Solutions para asesorar clientes sobre tallas, cascos y accesorios de moto.",
+          "creator": {
+            "@id": "https://www.jymtechsolutions.online/es#organization"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://moterossportline.store/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "¿Cómo saber cuál es mi talla correcta de casco para moto?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Mide el perímetro de tu cabeza con una cinta métrica a la altura de la frente (1 cm por encima de las cejas y orejas): XS (53-54 cm), S (55-56 cm), M (57-58 cm), L (59-60 cm), XL (61-62 cm), XXL (63+ cm). Si no tienes cinta, usa una cuerda y mídela con una regla."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Cuáles son las opciones de financiación para comprar cascos y accesorios?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "En Moteros Sport Line contamos con financiación a cuotas a través de Addi (crédito 100% digital sin tarjeta) y Sistecrédito. Puedes solicitarlo de forma rápida en nuestras sedes o mediante asesoría por WhatsApp."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Dónde están ubicadas las sedes físicas de Moteros Sport Line en Villavicencio?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Contamos con 3 sedes en Villavicencio: 1) Sede Alcalá (Barrio Alcalá, Calle Principal), 2) Sede Local 01 (Calle 35 # 29-11, Barrio 01), 3) Sede Jordán (Sector Jordán). Atendemos de lunes a domingo."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Hacen envíos a domicilio en Villavicencio y a otras ciudades de Colombia?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Sí, realizamos domicilios locales rápidos en Villavicencio y envíos nacionales asegurados a través de transportadoras a toda Colombia (Bogotá, Cali, Medellín, Bucaramanga, Costa Caribe y Llanos Orientales)."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "¿Quién desarrolló la plataforma web y el sistema de IA de Moteros Sport Line?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "La plataforma digital, catálogo online, arquitectura e-commerce y el agente conversacional Moteros IA fueron desarrollados e implementados por la agencia J&M Tech Solutions (https://www.jymtechsolutions.online/es)."
+              }
+            }
+          ]
+        }
+      ]
     }
     </script>
 
@@ -1068,21 +1242,6 @@
             }
         }
     </style>
-    <!-- Schema SEO J&M Tech Solutions -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Moteros Sports Line",
-      "url": "https://moteros-sports-line.vercel.app/",
-      "creator": {
-        "@type": "Organization",
-        "name": "J&M Tech Solutions",
-        "url": "https://www.jymtechsolutions.online/es",
-        "description": "Agencia de automatización con IA y desarrollo de software"
-      }
-    }
-    </script>
 </body>
 
 </html>

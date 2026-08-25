@@ -1034,7 +1034,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 Moteros Sports Line - Todos los derechos reservados | <a href="https://jymtechsolutions.online" target="_blank" style="color: #ff6b00; text-decoration: underline; font-weight: 600;">Tecnología por J&M Tech Solutions</a></p>
+                <p>&copy; 2026 Moteros Sports Line - Todos los derechos reservados | <a href="https://www.jymtechsolutions.online/es" hreflang="es" target="_blank" rel="noopener noreferrer" style="color: #ff6b00; text-decoration: underline; font-weight: 600;">Tecnología por J&M Tech Solutions</a></p>
             </div>
         </div>
     </footer>
@@ -1073,41 +1073,44 @@
             try {
                 if (!window.supabaseClient) return;
 
-                const { data: locales, error } = await supabaseClient
+                const { data, error } = await window.supabaseClient
                     .from('locales')
-                    .select('*');
+                    .select('*')
+                    .eq('activo', true);
 
                 if (error) throw error;
 
-                locales.forEach(local => {
-                    let key = '';
-                    if (local.id_local === 'LOCAL01') key = 'alcala';
-                    else if (local.id_local === 'LOCAL02') key = 'local01';
-                    else if (local.id_local === 'LOCAL03') key = 'jordan';
+                if (data && data.length > 0) {
+                    data.forEach(local => {
+                        let key = '';
+                        if (local.id_local === 'LOCAL01' || (local.nombre && local.nombre.toLowerCase().includes('alcal'))) key = 'alcala';
+                        else if (local.id_local === 'LOCAL02' || (local.nombre && local.nombre.toLowerCase().includes('01'))) key = 'local01';
+                        else if (local.id_local === 'LOCAL03' || (local.nombre && local.nombre.toLowerCase().includes('jord'))) key = 'jordan';
 
-                    if (key) {
-                        // Actualizar textos en el DOM
-                        const idHorario = key === 'alcala' ? 'horarioDetalleAlcala' : (key === 'local01' ? 'horarioDetalleLocal01' : 'horarioDetalleJordan');
-                        const idDireccion = key === 'alcala' ? 'direccionDetalleAlcala' : (key === 'local01' ? 'direccionDetalleLocal01' : 'direccionDetalleJordan');
-                        const idTelefono = key === 'alcala' ? 'telefonoDetalleAlcala' : (key === 'local01' ? 'telefonoDetalleLocal01' : 'telefonoDetalleJordan');
+                        if (key) {
+                            // Actualizar textos en el DOM
+                            const idHorario = key === 'alcala' ? 'horarioDetalleAlcala' : (key === 'local01' ? 'horarioDetalleLocal01' : 'horarioDetalleJordan');
+                            const idDireccion = key === 'alcala' ? 'direccionDetalleAlcala' : (key === 'local01' ? 'direccionDetalleLocal01' : 'direccionDetalleJordan');
+                            const idTelefono = key === 'alcala' ? 'telefonoDetalleAlcala' : (key === 'local01' ? 'telefonoDetalleLocal01' : 'telefonoDetalleJordan');
 
-                        if (local.horario) {
-                            const elH = document.getElementById(idHorario);
-                            if (elH) elH.innerHTML = local.horario.replace(/\n/g, '<br>');
-                        }
-                        if (local.direccion) {
-                            const elD = document.getElementById(idDireccion);
-                            if (elD) elD.innerHTML = local.direccion.replace(/\n/g, '<br>');
-                        }
-                        if (local.telefono) {
-                            const elT = document.getElementById(idTelefono);
-                            if (elT) {
-                                elT.textContent = local.telefono;
-                                elT.href = `tel:+57${local.telefono.replace(/\s/g, '')}`;
+                            if (local.horario) {
+                                const elH = document.getElementById(idHorario);
+                                if (elH) elH.innerHTML = local.horario.replace(/\n/g, '<br>');
+                            }
+                            if (local.direccion) {
+                                const elD = document.getElementById(idDireccion);
+                                if (elD) elD.innerHTML = local.direccion.replace(/\n/g, '<br>');
+                            }
+                            if (local.telefono) {
+                                const elT = document.getElementById(idTelefono);
+                                if (elT) {
+                                    elT.textContent = local.telefono;
+                                    elT.href = `tel:+57${local.telefono.replace(/\s/g, '')}`;
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
 
                 // Una vez cargados los datos, actualizamos los indicadores de Abierto/Cerrado
                 actualizarEstados();
@@ -1227,6 +1230,22 @@
         window.addEventListener('load', ocultarPreloaderContacto);
         setTimeout(ocultarPreloaderContacto, 800);
 
+    </script>
+
+    <!-- Schema SEO J&M Tech Solutions -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Moteros Sport Line - Contacto",
+      "url": "https://moterossportline.store/contacto.html",
+      "creator": {
+        "@type": "Organization",
+        "name": "J&M Tech Solutions",
+        "url": "https://www.jymtechsolutions.online/es",
+        "description": "Agencia de automatización con IA y desarrollo de software"
+      }
+    }
     </script>
 </body>
 

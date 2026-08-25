@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lastUserMsg = window.moterosIA.historial.filter(m => m.role === 'user').pop()?.content || '';
         const whatsapp = lastUserMsg.match(/\d{7,15}/)?.[0] || 'Manual';
 
-        submitLeadBtn.innerText = '⌛ Enviando...';
+        submitLeadBtn.innerText = '⏳ Enviando...';
         submitLeadBtn.disabled = true;
 
         await window.moterosIA.guardarLead(whatsapp);
@@ -147,6 +147,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         submitLeadBtn.innerText = '✅ Datos Enviados';
         setTimeout(() => {
             captchaContainer.classList.add('hidden');
+            // Resetear estado del formulario para próximas interacciones
+            setTimeout(() => {
+                submitLeadBtn.innerText = '🚀 Enviar mis datos de contacto';
+                submitLeadBtn.disabled = true;
+                habeasCheck.checked = false;
+            }, 400);
         }, 2000);
     });
 
@@ -250,8 +256,16 @@ Estamos en dos puntos de la ciudad, listos para atenderte. 🙌<br><br>
 
         'tallas': `📐 <strong>¿Cómo saber tu talla de casco?</strong><br><br>
 Mide el perímetro de tu cabeza con una cinta métrica a la altura de la frente (1 cm sobre las cejas).<br><br>
-✅ Si no tienes cinta, usa una cuerda y mídela con una regla.<br><br>
-Cuéntame tu medida y te ayudo a encontrar la talla correcta. O una asesora en tienda te lo mide en segundos 🎯`,
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">
+  <span style="background:#1e293b;border:1px solid #f97316;color:#f97316;padding:4px 10px;border-radius:20px;font-size:13px">53-54 cm → XS</span>
+  <span style="background:#1e293b;border:1px solid #f97316;color:#f97316;padding:4px 10px;border-radius:20px;font-size:13px">55-56 cm → S</span>
+  <span style="background:#1e293b;border:1px solid #f97316;color:#f97316;padding:4px 10px;border-radius:20px;font-size:13px">57-58 cm → M</span>
+  <span style="background:#1e293b;border:1px solid #f97316;color:#f97316;padding:4px 10px;border-radius:20px;font-size:13px">59-60 cm → L</span>
+  <span style="background:#1e293b;border:1px solid #f97316;color:#f97316;padding:4px 10px;border-radius:20px;font-size:13px">61-62 cm → XL</span>
+  <span style="background:#1e293b;border:1px solid #f97316;color:#f97316;padding:4px 10px;border-radius:20px;font-size:13px">63+ cm → XXL</span>
+</div>
+✅ Sin cinta métrica: usa una cuerda y mídela con una regla.<br><br>
+Cuéntame tu medida y te ayudo a elegir el casco ideal 🎯`, 
 
         'envios': `🚚 <strong>Envíos a Domicilio</strong><br><br>
 Realizamos envíos dentro de Villavicencio y a nivel nacional. 📦<br><br>
