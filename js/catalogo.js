@@ -1422,13 +1422,16 @@ window.onclick = function (e) {
     }
 };
 
-window.addEventListener('load', function () {
+function ocultarPreloaderCatalogo() {
     const preloader = document.getElementById('preloader');
-    if (preloader) {
+    if (preloader && preloader.style.display !== 'none') {
         preloader.style.opacity = '0';
         setTimeout(() => preloader.style.display = 'none', 300);
     }
-});
+}
+document.addEventListener('DOMContentLoaded', ocultarPreloaderCatalogo);
+window.addEventListener('load', ocultarPreloaderCatalogo);
+setTimeout(ocultarPreloaderCatalogo, 800);
 
 document.addEventListener('selectstart', function (e) {
     // Solo bloquear si no es un input o textarea

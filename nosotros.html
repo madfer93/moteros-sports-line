@@ -472,17 +472,23 @@
             document.getElementById('menuToggle').classList.toggle('active');
         }
 
-        // Ocultar preloader
-        window.addEventListener('load', function () {
-            if (window.sincronizarBrandingGlobal) window.sincronizarBrandingGlobal();
-            if (window.inicializarAIWidget) window.inicializarAIWidget('INDEX');
+        function ocultarPreloaderNosotros() {
             const preloader = document.getElementById('preloader');
-            if (preloader) {
+            if (preloader && preloader.style.display !== 'none') {
                 preloader.style.opacity = '0';
                 setTimeout(() => preloader.style.display = 'none', 300);
             }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
             cargarContenido();
+            ocultarPreloaderNosotros();
         });
+        window.addEventListener('load', function () {
+            if (window.sincronizarBrandingGlobal) window.sincronizarBrandingGlobal();
+            if (window.inicializarAIWidget) window.inicializarAIWidget('INDEX');
+            ocultarPreloaderNosotros();
+        });
+        setTimeout(ocultarPreloaderNosotros, 800);
 
     </script>
 </body>

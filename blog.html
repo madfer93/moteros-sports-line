@@ -345,14 +345,16 @@
             document.getElementById('menuToggle').classList.toggle('active');
         }
 
-        // Ocultar preloader
-        window.addEventListener('load', function () {
+        function ocultarPreloaderBlog() {
             const preloader = document.getElementById('preloader');
-            if (preloader) {
+            if (preloader && preloader.style.display !== 'none') {
                 preloader.style.opacity = '0';
                 setTimeout(() => preloader.style.display = 'none', 300);
             }
-        });
+        }
+        document.addEventListener('DOMContentLoaded', ocultarPreloaderBlog);
+        window.addEventListener('load', ocultarPreloaderBlog);
+        setTimeout(ocultarPreloaderBlog, 800);
 
         // Bloquear selección de texto
         document.addEventListener('selectstart', function (e) {

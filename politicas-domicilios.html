@@ -349,14 +349,19 @@
             document.getElementById('menuToggle').classList.toggle('active');
         }
 
-        window.addEventListener('load', function () {
+        function ocultarPreloaderDomicilios() {
             const preloader = document.getElementById('preloader');
-            if (preloader) {
+            if (preloader && preloader.style.display !== 'none') {
                 preloader.style.opacity = '0';
                 setTimeout(() => preloader.style.display = 'none', 300);
             }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
             cargarContenido();
+            ocultarPreloaderDomicilios();
         });
+        window.addEventListener('load', ocultarPreloaderDomicilios);
+        setTimeout(ocultarPreloaderDomicilios, 800);
 
         document.addEventListener('selectstart', function (e) {
             e.preventDefault();

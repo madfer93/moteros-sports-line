@@ -44,11 +44,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// Preloader hide
-window.addEventListener('load', function () {
+// Preloader hide ultra rápido con fallback de seguridad
+function ocultarPreloaderGlobal() {
     var preloader = document.getElementById('preloader');
-    if (preloader) {
+    if (preloader && preloader.style.display !== 'none') {
+        preloader.classList.add('hidden');
         preloader.style.opacity = '0';
         setTimeout(function () { preloader.style.display = 'none'; }, 300);
     }
-});
+}
+
+document.addEventListener('DOMContentLoaded', ocultarPreloaderGlobal);
+window.addEventListener('load', ocultarPreloaderGlobal);
+setTimeout(ocultarPreloaderGlobal, 800);

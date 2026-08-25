@@ -1006,13 +1006,16 @@
             document.getElementById('menuToggle').classList.toggle('active');
         }
 
-        window.addEventListener('load', function () {
+        function ocultarPreloaderLocal() {
             const preloader = document.getElementById('preloader');
-            if (preloader) {
+            if (preloader && preloader.style.display !== 'none') {
                 preloader.style.opacity = '0';
                 setTimeout(() => preloader.style.display = 'none', 300);
             }
-        });
+        }
+        document.addEventListener('DOMContentLoaded', ocultarPreloaderLocal);
+        window.addEventListener('load', ocultarPreloaderLocal);
+        setTimeout(ocultarPreloaderLocal, 800);
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-MGGG89S8XM"></script>
 

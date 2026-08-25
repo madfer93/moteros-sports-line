@@ -341,14 +341,19 @@
             document.getElementById('menuToggle').classList.toggle('active');
         }
 
-        window.addEventListener('load', function () {
+        function ocultarPreloaderTerminos() {
             const preloader = document.getElementById('preloader');
-            if (preloader) {
+            if (preloader && preloader.style.display !== 'none') {
                 preloader.style.opacity = '0';
                 setTimeout(() => preloader.style.display = 'none', 300);
             }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
             cargarContenido();
+            ocultarPreloaderTerminos();
         });
+        window.addEventListener('load', ocultarPreloaderTerminos);
+        setTimeout(ocultarPreloaderTerminos, 800);
 
         document.addEventListener('selectstart', function (e) {
             e.preventDefault();

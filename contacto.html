@@ -1216,14 +1216,16 @@
             setInterval(actualizarEstados, 60000);
         });
 
-        // Ocultar preloader
-        window.addEventListener('load', function () {
+        function ocultarPreloaderContacto() {
             const preloader = document.getElementById('preloader');
-            if (preloader) {
+            if (preloader && preloader.style.display !== 'none') {
                 preloader.style.opacity = '0';
                 setTimeout(() => preloader.style.display = 'none', 300);
             }
-        });
+        }
+        document.addEventListener('DOMContentLoaded', ocultarPreloaderContacto);
+        window.addEventListener('load', ocultarPreloaderContacto);
+        setTimeout(ocultarPreloaderContacto, 800);
 
     </script>
 </body>
