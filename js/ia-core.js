@@ -45,6 +45,10 @@ class MoterosIA {
         return true;
     }
 
+    obtenerKey() {
+        return (window.CONFIG && window.CONFIG.AI_KEYS && window.CONFIG.AI_KEYS[this.contexto]) || null;
+    }
+
     async sincronizarKeys() {
         if (!window.supabaseClient) return;
         try {
@@ -55,11 +59,12 @@ class MoterosIA {
             if (data && !error) {
                 const basePrompt = this.generarSystemPromptBase();
                 data.forEach(item => {
-                    if (window.CONFIG && window.CONFIG.AI_KEYS) {
-                        window.CONFIG.AI_KEYS[item.modulo] = item.api_key;
+                    if (item.api_key && item.api_key.trim().startsWith('gsk_')) {
+                        if (item.modulo === this.contexto) {
+                            this.apiKey = item.api_key.trim();
+                        }
                     }
                     if (item.modulo === this.contexto) {
-                        // 🔒 BLINDAJE DE SEGURIDAD: El prompt base con sedes y reglas de seguridad JAMÁS se borra.
                         if (item.system_prompt && item.system_prompt.trim() !== '') {
                             this.systemPromptBase = `${basePrompt}\n\nINST. COMPLEMENTARIAS ADMIN (VERIFICADAS):\n${item.system_prompt.slice(0, 500)}`;
                         } else {
@@ -67,7 +72,6 @@ class MoterosIA {
                         }
                     }
                 });
-                this.apiKey = this.obtenerKey();
             }
         } catch (e) {
             console.error("Error cargando config_ia:", e);
@@ -387,29 +391,6 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
         return resData;
     }
 
-    async llamarGroqDirecto(messages, model) {
-        if (!this.apiKey) throw new Error("Sin API Key local");
-        const temperature = window.CONFIG.AI_TEMPERATURE !== undefined ? window.CONFIG.AI_TEMPERATURE : 0.4;
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.apiKey}`
-            },
-            body: JSON.stringify({
-                messages: messages,
-                model: model,
-                temperature: temperature
-            })
-        });
-
-        const resData = await response.json().catch(() => ({}));
-        if (!response.ok || resData.error) {
-            const msg = resData.error?.message || resData.message || `HTTP ${response.status}`;
-            throw new Error(msg);
-        }
-        return resData;
-    }
 
     async enviarMensaje(mensajeUsuario) {
         if (this.bloqueado) return "🚫 Sesión suspendida por seguridad. Refresca la página para intentar de nuevo con consultas sobre productos.";
@@ -455,7 +436,7 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
         let data = null;
         let ultimoError = null;
 
-        // Probar modelos a través de Edge Function primero, y llamadas directas si hay apiKey local
+        // Todas las peticiones pasan por la Edge Function de Supabase (seguro, sin exponer keys)
         for (const m of modelos) {
             try {
                 data = await this.llamarEdgeFunction(messages, m);
@@ -463,15 +444,6 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
             } catch (eEdge) {
                 ultimoError = eEdge.message;
                 console.warn(`[MoterosIA] Edge Function falló con modelo ${m}:`, eEdge.message);
-                if (this.apiKey) {
-                    try {
-                        data = await this.llamarGroqDirecto(messages, m);
-                        if (data && data.choices && data.choices[0]) break;
-                    } catch (eDir) {
-                        ultimoError = eDir.message;
-                        console.warn(`[MoterosIA] Llamada directa falló con modelo ${m}:`, eDir.message);
-                    }
-                }
             }
         }
 
