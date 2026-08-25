@@ -446,9 +446,10 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
         this.historial.push({ role: "user", content: mensajeUsuario });
 
         const modelos = [
-            window.CONFIG.AI_MODEL || "llama-3.1-8b-instant",
-            window.CONFIG.AI_FALLBACK_MODEL || "gemma2-9b-it",
-            "llama-3.3-70b-versatile"
+            window.CONFIG.AI_MODEL || "groq/compound",
+            window.CONFIG.AI_FALLBACK_MODEL || "groq/compound-mini",
+            "qwen/qwen3.6-27b",
+            "openai/gpt-oss-120b"
         ];
 
         let data = null;

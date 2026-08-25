@@ -79,8 +79,8 @@ const CONFIG = {
     // Todas las peticiones de IA pasan por Supabase Edge Functions.
   },
   // Nota: llama-3.3-70b-versatile fue dado de baja el 16 de agosto de 2026 por Groq.
-  AI_MODEL: (typeof process !== 'undefined' && process.env?.AI_MODEL) || 'llama-3.1-8b-instant',
-  AI_FALLBACK_MODEL: 'gemma2-9b-it',
+  AI_MODEL: (typeof process !== 'undefined' && process.env?.AI_MODEL) || 'groq/compound',
+  AI_FALLBACK_MODEL: 'groq/compound-mini',
   AI_TEMPERATURE: 0.4,
   AI_MAX_HISTORY: 8,
   VERSION: '2026-08-25-13-00'
