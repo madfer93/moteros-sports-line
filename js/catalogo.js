@@ -712,6 +712,7 @@ function calcularRelevancia(p, bus) {
 }
 
 function aplicarFiltros() {
+    paginaActual = 1; // Reiniciar siempre a la primera página al cambiar filtros o buscar
     const cat = document.getElementById('filtroCategoria').value;
     const subcat = document.getElementById('filtroSubcategoria') ? document.getElementById('filtroSubcategoria').value : '';
 
@@ -906,13 +907,35 @@ function cargarMarcasFiltro() {
 // PERO checkUrlParams corre DESPUES de cargarCategoriasFiltro.
 // Mejor dejar que cargarMarcasFiltro maneje su preselección ya que es async respecto a categorías.)
 
+// ═══════════════════════════════════════════════════════════════
+// PAGINACIÓN CATÁLOGO (50 productos por página)
+// ═══════════════════════════════════════════════════════════════
+const PRODUCTOS_POR_PAGINA = 50;
+let paginaActual = 1;
+
+function cambiarPagina(nuevaPagina) {
+    const totalPaginas = Math.ceil(productosFiltrados.length / PRODUCTOS_POR_PAGINA) || 1;
+    if (nuevaPagina < 1 || nuevaPagina > totalPaginas) return;
+    paginaActual = nuevaPagina;
+    mostrarProductos();
+
+    // Scroll suave hacia la lista de productos
+    const contenedor = document.querySelector('.productos-main') || document.getElementById('productosGrid');
+    if (contenedor) {
+        contenedor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+window.cambiarPagina = cambiarPagina;
+
 function mostrarProductos() {
     const grid = document.getElementById('productosGrid');
     const contador = document.getElementById('contadorProductos');
+    const paginacion = document.getElementById('paginacionCatalogo');
 
-    contador.textContent = `${productosFiltrados.length} ${productosFiltrados.length === 1 ? 'producto encontrado' : 'productos encontrados'}`;
+    const totalProductos = productosFiltrados.length;
 
-    if (productosFiltrados.length === 0) {
+    if (totalProductos === 0) {
+        contador.textContent = '0 productos encontrados';
         grid.innerHTML = `
             <div class="empty-state" style="grid-column: 1/-1;">
                 <div class="empty-state-icon">🔍</div>
@@ -920,10 +943,25 @@ function mostrarProductos() {
                 <p style="margin-top: 1rem; color: #999;">Intenta con otros filtros de búsqueda</p>
             </div>
         `;
+        if (paginacion) paginacion.innerHTML = '';
         return;
     }
 
-    grid.innerHTML = productosFiltrados.map(p => {
+    const totalPaginas = Math.ceil(totalProductos / PRODUCTOS_POR_PAGINA) || 1;
+    if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+    if (paginaActual < 1) paginaActual = 1;
+
+    const indiceInicio = (paginaActual - 1) * PRODUCTOS_POR_PAGINA;
+    const indiceFin = Math.min(indiceInicio + PRODUCTOS_POR_PAGINA, totalProductos);
+    const productosPagina = productosFiltrados.slice(indiceInicio, indiceFin);
+
+    if (totalPaginas > 1) {
+        contador.textContent = `Mostrando ${indiceInicio + 1} - ${indiceFin} de ${totalProductos} productos encontrados (Página ${paginaActual} de ${totalPaginas})`;
+    } else {
+        contador.textContent = `${totalProductos} ${totalProductos === 1 ? 'producto encontrado' : 'productos encontrados'}`;
+    }
+
+    grid.innerHTML = productosPagina.map(p => {
         // Lógica para mostrar tallas en la tarjeta
         let tallasHTML = '';
         if (p.tallas) {
@@ -1011,7 +1049,56 @@ function mostrarProductos() {
         </div>
     `}).join('');
 
+    // Renderizar Controles de Paginación
+    if (paginacion) {
+        if (totalPaginas <= 1) {
+            paginacion.innerHTML = '';
+        } else {
+            let pagHTML = '';
 
+            // Botón Anterior
+            pagHTML += `
+                <button class="btn-paginacion" onclick="cambiarPagina(${paginaActual - 1})" ${paginaActual === 1 ? 'disabled' : ''} aria-label="Página anterior">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </button>
+            `;
+
+            // Botones de Páginas Numéricas
+            for (let i = 1; i <= totalPaginas; i++) {
+                if (
+                    i === 1 || 
+                    i === totalPaginas || 
+                    (i >= paginaActual - 1 && i <= paginaActual + 1)
+                ) {
+                    pagHTML += `
+                        <button class="btn-paginacion ${i === paginaActual ? 'active' : ''}" onclick="cambiarPagina(${i})" aria-label="Ir a página ${i}">
+                            ${i}
+                        </button>
+                    `;
+                } else if (
+                    (i === paginaActual - 2 && i > 1) || 
+                    (i === paginaActual + 2 && i < totalPaginas)
+                ) {
+                    pagHTML += `<span style="padding: 0 4px; color: #94a3b8; font-weight: bold;">...</span>`;
+                }
+            }
+
+            // Botón Siguiente
+            pagHTML += `
+                <button class="btn-paginacion" onclick="cambiarPagina(${paginaActual + 1})" ${paginaActual === totalPaginas ? 'disabled' : ''} aria-label="Página siguiente">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
+
+            pagHTML += `
+                <div class="paginacion-info">
+                    50 productos por página • Página ${paginaActual} de ${totalPaginas}
+                </div>
+            `;
+
+            paginacion.innerHTML = pagHTML;
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
