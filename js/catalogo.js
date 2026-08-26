@@ -551,38 +551,161 @@ async function cargarProductos() {
 }
 
 /**
+ * Normaliza texto eliminando acentos, diacríticos y caracteres especiales
+ */
+function normalizarTextoBusqueda(str) {
+    if (!str) return '';
+    return str
+        .toString()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // quita tildes
+        .trim();
+}
+
+/**
+ * Divide la consulta del usuario en palabras clave inteligentes, separando letras y números pegados (ej: 'casco501' -> ['casco', '501'])
+ */
+function extraerTokensBusqueda(bus) {
+    if (!bus) return [];
+    
+    // Normalizar primero
+    const limpia = normalizarTextoBusqueda(bus);
+    
+    // Separar letras y números pegados: 'casco501' -> 'casco 501', '501casco' -> '501 casco'
+    const separada = limpia
+        .replace(/([a-z]+)(\d+)/gi, '$1 $2')
+        .replace(/(\d+)([a-z]+)/gi, '$1 $2');
+        
+    // Dividir por espacios y filtrar vacíos
+    const tokens = separada.split(/[\s\-_\/,\.]+/).filter(t => t.length > 0);
+    return tokens;
+}
+
+/**
+ * Verifica si un producto coincide con la búsqueda
+ * Cada token de búsqueda debe coincidir con alguna parte del producto (nombre, marca, categoría, subcategoría, referencia, descripción, tallas, etc.)
+ */
+function coincideProductoConBusqueda(p, bus) {
+    if (!bus || !bus.trim()) return true;
+
+    const busNorm = normalizarTextoBusqueda(bus);
+    const tokens = extraerTokensBusqueda(bus);
+    if (tokens.length === 0) return true;
+
+    // Campos del producto a buscar
+    const campos = [
+        p.nombre,
+        p.marca,
+        p.categoria,
+        p.subcategoria,
+        p.referencia,
+        p.descripcion_corta,
+        p.descripcion,
+        p.sku,
+        p.codigo,
+        Array.isArray(p.tallas) ? p.tallas.join(' ') : p.tallas,
+        Array.isArray(p.colores) ? p.colores.join(' ') : p.colores
+    ];
+
+    const textoProducto = normalizarTextoBusqueda(campos.filter(Boolean).join(' '));
+
+    // 1. Coincidencia exacta de frase completa
+    if (textoProducto.includes(busNorm)) return true;
+
+    // 2. Coincidencia de TODOS los tokens individuales
+    // Ej: 'casco' y '501' deben estar ambos en el producto
+    return tokens.every(token => {
+        // Coincidencia directa del token
+        if (textoProducto.includes(token)) return true;
+
+        // Soporte singular/plural en español:
+        // Si el usuario buscó 'casco' y en el producto dice 'cascos' (o viceversa)
+        if (token.endsWith('s') && token.length > 3) {
+            const singular = token.slice(0, -1);
+            if (textoProducto.includes(singular)) return true;
+        }
+        if (token.endsWith('es') && token.length > 4) {
+            const singularEs = token.slice(0, -2);
+            if (textoProducto.includes(singularEs)) return true;
+        }
+        // Si el usuario buscó singular y el producto tiene plural
+        if (!token.endsWith('s')) {
+            const plural = token + 's';
+            if (textoProducto.includes(plural)) return true;
+        }
+
+        // Sinónimos comunes en motociclismo
+        const SINONIMOS_BUSQUEDA = {
+            'casco': ['integral', 'abatible', 'cross', 'modular', 'jet', 'helmets', 'helmet'],
+            'cascos': ['integral', 'abatible', 'cross', 'modular', 'jet', 'helmets', 'helmet'],
+            'maletero': ['baul', 'baúl', 'cajon', 'cajón', 'top case', 'maleta'],
+            'maleteros': ['baul', 'baúl', 'cajon', 'cajón', 'top case', 'maleta'],
+            'baul': ['maletero', 'maleteros', 'cajon', 'top case'],
+            'intercom': ['intercomunicador', 'intercomunicadores', 'bluetooth', 't-com', 'v6'],
+            'intercomunicador': ['intercom', 'bluetooth', 't-com', 'v6'],
+            'intercomunicadores': ['intercom', 'bluetooth', 't-com', 'v6'],
+            'impermeable': ['traje impermeable', 'gabardina', 'lluvia'],
+            'impermeables': ['traje impermeable', 'gabardina', 'lluvia'],
+            'guante': ['guantes', 'gloves'],
+            'guantes': ['guante', 'gloves'],
+            'chaqueta': ['chaquetas', 'jacket'],
+            'chaquetas': ['chaqueta', 'jacket'],
+            'bota': ['botas', 'boots'],
+            'botas': ['bota', 'boots']
+        };
+
+        const sinonimos = SINONIMOS_BUSQUEDA[token];
+        if (sinonimos && sinonimos.some(s => textoProducto.includes(normalizarTextoBusqueda(s)))) {
+            return true;
+        }
+
+        return false;
+    });
+}
+
+/**
  * Calcula la relevancia de un producto respecto a una búsqueda
  * @param {Object} p Producto
- * @param {string} bus Término de búsqueda (ya en minúsculas)
+ * @param {string} bus Término de búsqueda
  * @returns {number} Puntaje de relevancia
  */
 function calcularRelevancia(p, bus) {
     if (!bus) return 0;
+    const busNorm = normalizarTextoBusqueda(bus);
+    const tokens = extraerTokensBusqueda(bus);
+    
+    const n = normalizarTextoBusqueda(p.nombre || '');
+    const m = normalizarTextoBusqueda(p.marca || '');
+    const c = normalizarTextoBusqueda(p.categoria || '');
+    const sc = normalizarTextoBusqueda(p.subcategoria || '');
+    const ref = normalizarTextoBusqueda(p.referencia || '');
+    const desc = normalizarTextoBusqueda(p.descripcion_corta || '');
+
     let score = 0;
-    const n = (p.nombre || '').toLowerCase();
-    const m = (p.marca || '').toLowerCase();
-    const c = (p.categoria || '').toLowerCase();
-    const sc = (p.subcategoria || '').toLowerCase();
-    const ref = (p.referencia || '').toLowerCase();
 
     // 1. Coincidencia exacta o al inicio (Prioridad máxima)
-    if (n === bus || ref === bus) score += 100;
-    else if (n.startsWith(bus) || ref.startsWith(bus)) score += 80;
+    if (n === busNorm || ref === busNorm) score += 200;
+    else if (n.startsWith(busNorm) || ref.startsWith(busNorm)) score += 150;
+    else if (n.includes(busNorm)) score += 100;
+    else if (ref.includes(busNorm)) score += 80;
 
-    // 2. Contiene el término exactamente
-    if (n.includes(bus)) score += 50;
-    if (ref.includes(bus)) score += 60; // Referencias suelen ser búsquedas precisas
-    if (m.includes(bus)) score += 40;
-    if (c.includes(bus)) score += 20;
-    if (sc.includes(bus)) score += 25;
+    // 2. Coincidencia por tokens individuales
+    tokens.forEach(tok => {
+        if (n === tok || ref === tok) score += 60;
+        else if (n.includes(tok)) score += 40;
+        
+        if (ref.includes(tok)) score += 35;
+        if (m === tok) score += 30;
+        else if (m.includes(tok)) score += 20;
+        
+        if (c.includes(tok) || sc.includes(tok)) score += 15;
+        if (desc.includes(tok)) score += 10;
+    });
 
-    // 3. Bonus por palabras individuales si es búsqueda multi-palabra
-    const palabras = bus.split(' ').filter(w => w.length > 2);
-    if (palabras.length > 1) {
-        palabras.forEach(pal => {
-            if (n.includes(pal)) score += 10;
-            if (m.includes(pal)) score += 5;
-        });
+    // Si tiene todos los tokens en el nombre, gran bonus
+    if (tokens.length > 1 && tokens.every(tok => n.includes(tok))) {
+        score += 80;
     }
 
     return score;
@@ -601,13 +724,12 @@ function aplicarFiltros() {
     const talEl = document.getElementById('filtroTalla');
     const tal = talEl ? talEl.value : '';
     const rate = document.getElementById('filtroCalificacion') ? document.getElementById('filtroCalificacion').value : '';
-    const bus = document.getElementById('buscarProducto').value.toLowerCase();
+    const bus = document.getElementById('buscarProducto').value;
 
     // Obtener marcas seleccionadas
     const marcasSeleccionadas = Array.from(document.querySelectorAll('input[name="filtroMarca"]:checked')).map(cb => cb.value.toLowerCase());
 
     productosFiltrados = todosLosProductos.filter(p => {
-        // ... (mismo filtro) ...
         // Filtro Categoría (Case Insensitive)
         if (cat) {
             const catProd = (p.categoria || '').toLowerCase().trim();
@@ -652,10 +774,12 @@ function aplicarFiltros() {
         if (rate) {
             if (parseFloat(p.rating || 0) < parseInt(rate)) return false;
         }
+        
+        // Filtro de Búsqueda Inteligente Multi-Palabra / Tokens / Sinónimos
         if (bus) {
-            const busqueda = `${p.nombre} ${p.marca} ${p.categoria || ''} ${p.descripcion_corta || ''}`.toLowerCase();
-            if (!busqueda.includes(bus)) return false;
+            if (!coincideProductoConBusqueda(p, bus)) return false;
         }
+
         // Filtro Etiquetas
         const ahora = new Date().toISOString();
         const filtOferta = document.getElementById('filtroOferta');
@@ -1311,16 +1435,21 @@ function checkUrlParams() {
     const catParam = params.get('categoria');
     const subcatParam = params.get('subcategoria');
     const marcaParam = params.get('marca');
-    const buscarParam = params.get('buscar') || params.get('busqueda');
+    const buscarParam = params.get('buscar') || params.get('busqueda') || params.get('q') || params.get('search');
 
     let shouldFilter = false;
 
     // 0. Aplicar Búsqueda desde URL
     if (buscarParam) {
+        const queryLimpia = decodeURIComponent(buscarParam).trim();
         const searchInput = document.getElementById('buscarProducto');
+        const headerSearch = document.getElementById('headerSearch');
         if (searchInput) {
-            searchInput.value = decodeURIComponent(buscarParam);
+            searchInput.value = queryLimpia;
             shouldFilter = true;
+        }
+        if (headerSearch) {
+            headerSearch.value = queryLimpia;
         }
     }
 
@@ -1741,17 +1870,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. Leer parámetro URL 'busqueda' (desde Index)
+    // 3. Leer parámetro URL 'busqueda' o 'buscar' (desde Index u otras páginas)
     const params = new URLSearchParams(window.location.search);
-    const busquedaQuery = params.get('busqueda');
+    const busquedaQuery = params.get('busqueda') || params.get('buscar') || params.get('q') || params.get('search');
     if (busquedaQuery) {
-        if (buscarProducto) buscarProducto.value = busquedaQuery;
-        if (headerSearch) headerSearch.value = busquedaQuery;
+        const queryDecodificada = decodeURIComponent(busquedaQuery).trim();
+        if (buscarProducto) buscarProducto.value = queryDecodificada;
+        if (headerSearch) headerSearch.value = queryDecodificada;
 
-        // El filtro se aplicará cuando carguen los productos (checkUrlParams o similar)
-        // Pero por seguridad:
+        // El filtro se aplicará cuando carguen los productos o con timeout de respaldo
         setTimeout(() => {
             if (typeof aplicarFiltros === 'function') aplicarFiltros();
-        }, 800);
+        }, 500);
     }
 });
