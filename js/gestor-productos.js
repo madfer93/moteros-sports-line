@@ -394,7 +394,9 @@ function removerPreview() {
 function agregarFilaColor(color = '', url = '') {
     const container = document.getElementById('containerColoresFotos');
     if (!container) return;
-    const index = container.children.length;
+    
+    // ID único robusto
+    const rowId = 'color_row_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
 
     const div = document.createElement('div');
     div.className = 'fila-color';
@@ -406,27 +408,48 @@ function agregarFilaColor(color = '', url = '') {
     div.style.borderRadius = '0.75rem';
     div.style.border = '1px solid #e2e8f0';
     div.style.marginBottom = '0.5rem';
-    div.id = `fila-color-${index}`;
+    div.id = rowId;
 
     div.innerHTML = `
         <div style="flex: 1;">
             <input type="text" class="form-control color-name" value="${color}" placeholder="Color (ej: Rojo)" oninput="actualizarSelectsColor()">
         </div>
         <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
-            <input type="text" class="form-control color-url" value="${url}" placeholder="URL o sube una">
-            <button type="button" class="btn btn-sm btn-secondary" onclick="subirImagenColor(${index})">📷</button>
+            <input type="text" class="form-control color-url" value="${url}" placeholder="URL o sube una" oninput="actualizarPreviewColorGestor('${rowId}')">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="subirImagenColor('${rowId}')" title="Subir foto">📷</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFotoColorGestor('${rowId}')" title="Quitar foto">❌</button>
         </div>
-        <div class="color-preview-img" style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0;">
-            <img src="${url || 'img/android-chrome-192x192.png'}" style="width: 100%; height: 100%; object-fit: cover;">
+        <div class="color-preview-img" style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0; flex-shrink: 0;">
+            <img src="${url || 'https://via.placeholder.com/50?text=Sin+Foto'}" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
-        <button type="button" class="btn btn-sm btn-danger" onclick="removerFilaColor(${index})">🗑️</button>
+        <button type="button" class="btn btn-sm btn-danger" onclick="removerFilaColor('${rowId}')" title="Eliminar color">🗑️</button>
     `;
     container.appendChild(div);
     actualizarSelectsColor();
 }
 
-function removerFilaColor(index) {
-    const div = document.getElementById(`fila-color-${index}`);
+function actualizarPreviewColorGestor(rowId) {
+    const fila = document.getElementById(rowId);
+    if (!fila) return;
+    const urlInput = fila.querySelector('.color-url');
+    const imgEl = fila.querySelector('.color-preview-img img');
+    if (imgEl && urlInput) {
+        imgEl.src = urlInput.value.trim() || 'https://via.placeholder.com/50?text=Sin+Foto';
+    }
+}
+
+function limpiarFotoColorGestor(rowId) {
+    const fila = document.getElementById(rowId);
+    if (!fila) return;
+    const urlInput = fila.querySelector('.color-url');
+    const imgEl = fila.querySelector('.color-preview-img img');
+    if (urlInput) urlInput.value = '';
+    if (imgEl) imgEl.src = 'https://via.placeholder.com/50?text=Sin+Foto';
+    showToast('Foto del color eliminada', 'info');
+}
+
+function removerFilaColor(rowId) {
+    const div = document.getElementById(rowId);
     if (div) div.remove();
     actualizarSelectsColor();
 }
@@ -441,7 +464,7 @@ function actualizarSelectsColor() {
     });
 }
 
-async function subirImagenColor(index) {
+async function subirImagenColor(rowId) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -451,12 +474,12 @@ async function subirImagenColor(index) {
         try {
             showToast('Subiendo imagen de color...', 'info');
             const url = await subirImagen(file);
-            const fila = document.getElementById(`fila-color-${index}`);
+            const fila = document.getElementById(rowId);
             if (fila) {
                 fila.querySelector('.color-url').value = url;
                 fila.querySelector('.color-preview-img img').src = url;
             }
-            showToast('Imagen subida');
+            showToast('Imagen subida con éxito');
         } catch (e) {
             showToast('Error al subir imagen', 'error');
         }

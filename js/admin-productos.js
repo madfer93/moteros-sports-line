@@ -528,13 +528,10 @@ async function mostrarFormProducto() {
     const tbodyTallas = document.getElementById('tbodyTallasStock');
     if (tbodyTallas) tbodyTallas.innerHTML = '';
 
-    // Limpiar vista previa de la imagen principal
-    const previewContainer = document.getElementById('previewContainerProducto');
-    if (previewContainer) previewContainer.style.display = 'none';
-    const previewImg = document.getElementById('previewProducto');
-    if (previewImg) previewImg.src = '';
-    const fileInput = document.getElementById('fileInputProducto');
-    if (fileInput) fileInput.value = '';
+    // Limpiar memoria de archivo temporal y vista previa de imagen principal
+    if (window.archivosTemporal) window.archivosTemporal.producto = null;
+    if (typeof archivosTemporal !== 'undefined') archivosTemporal.producto = null;
+    removerPreview('producto');
 
     // Limpiar Checkboxes de etiquetas
     const checkOferta = document.getElementById('productoEnOferta');
@@ -672,6 +669,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function cancelarFormProducto() {
+    if (window.archivosTemporal) window.archivosTemporal.producto = null;
+    if (typeof archivosTemporal !== 'undefined') archivosTemporal.producto = null;
+    removerPreview('producto');
+
     const modal = document.getElementById('formProducto');
     if (modal) modal.style.display = 'none';
     if (modal) modal.classList.remove('active');
@@ -685,7 +686,9 @@ function cancelarFormProducto() {
 window.agregarFilaColor = function (color = '', url = '') {
     const container = document.getElementById('containerColoresFotos');
     if (!container) return;
-    const index = container.children.length;
+    
+    // Generar ID único indestructible para evitar colisiones entre filas
+    const rowId = 'color_row_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
 
     const div = document.createElement('div');
     div.className = 'fila-color';
@@ -696,28 +699,49 @@ window.agregarFilaColor = function (color = '', url = '') {
     div.style.padding = '1rem';
     div.style.borderRadius = '0.75rem';
     div.style.border = '1px solid #e2e8f0';
-    div.id = `fila-color-${index}`;
+    div.id = rowId;
 
     div.innerHTML = `
         <div style="flex: 1;">
             <input type="text" class="form-control input-color-nombre" value="${color}" placeholder="Nombre del Color (ej: Rojo Mate)" oninput="actualizarSelectsColor()">
         </div>
         <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
-            <input type="text" class="form-control input-color-url" value="${url}" placeholder="URL de Imagen o sube una">
-            <button type="button" class="btn btn-sm btn-outline-info" onclick="subirImagenColor(${index})">📷</button>
+            <input type="text" class="form-control input-color-url" value="${url}" placeholder="URL de Imagen o sube una" oninput="actualizarPreviewColorFila('${rowId}')">
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="subirImagenColor('${rowId}')" title="Subir foto para este color">📷</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFotoColor('${rowId}')" title="Quitar solo la foto de este color">❌</button>
         </div>
-        <div class="color-preview-img" style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0;">
-            <img src="${url || 'https://via.placeholder.com/50'}" style="width: 100%; height: 100%; object-fit: cover;">
+        <div class="color-preview-img" style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0; flex-shrink: 0;">
+            <img src="${url || 'https://via.placeholder.com/50?text=Sin+Foto'}" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
-        <button type="button" class="btn btn-sm btn-danger" onclick="removerFilaColor(${index})">🗑️</button>
+        <button type="button" class="btn btn-sm btn-danger" onclick="removerFilaColor('${rowId}')" title="Eliminar este color completo">🗑️</button>
     `;
     container.appendChild(div);
     actualizarSelectsColor();
     actualizarFormularioPorCategoria(); // Asegurar que se muestre la tabla de stock
 };
 
-window.removerFilaColor = function (index) {
-    const div = document.getElementById(`fila-color-${index}`);
+window.actualizarPreviewColorFila = function (rowId) {
+    const fila = document.getElementById(rowId);
+    if (!fila) return;
+    const urlInput = fila.querySelector('.input-color-url');
+    const imgEl = fila.querySelector('.color-preview-img img');
+    if (imgEl && urlInput) {
+        imgEl.src = urlInput.value.trim() || 'https://via.placeholder.com/50?text=Sin+Foto';
+    }
+};
+
+window.limpiarFotoColor = function (rowId) {
+    const fila = document.getElementById(rowId);
+    if (!fila) return;
+    const urlInput = fila.querySelector('.input-color-url');
+    const imgEl = fila.querySelector('.color-preview-img img');
+    if (urlInput) urlInput.value = '';
+    if (imgEl) imgEl.src = 'https://via.placeholder.com/50?text=Sin+Foto';
+    showToast('Foto del color eliminada', 'info');
+};
+
+window.removerFilaColor = function (rowId) {
+    const div = document.getElementById(rowId);
     if (div) div.remove();
     actualizarSelectsColor();
     actualizarFormularioPorCategoria();
@@ -733,7 +757,7 @@ window.actualizarSelectsColor = function () {
     });
 };
 
-window.subirImagenColor = async function (index) {
+window.subirImagenColor = async function (rowId) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -744,11 +768,11 @@ window.subirImagenColor = async function (index) {
         try {
             showToast('Subiendo imagen de color...', 'info');
 
-            // Usar la función global subirImagen (definida en admin.js)
+            // Usar la función global subirImagen (definida en admin.js / global)
             const publicUrl = await window.subirImagen(file, 'productos-imagenes');
             if (!publicUrl) return;
 
-            const fila = document.getElementById(`fila-color-${index}`);
+            const fila = document.getElementById(rowId);
             if (fila) {
                 fila.querySelector('.input-color-url').value = publicUrl;
                 fila.querySelector('.color-preview-img img').src = publicUrl;
@@ -811,7 +835,7 @@ async function guardarProducto() {
     const referencia = document.getElementById('productoReferencia').value;
     const descripcionCorta = document.getElementById('productoDescCorta').value;
     const descripcionTecnica = document.getElementById('productoDescTecnica').value;
-    let urlImagen = document.getElementById('productoImagen').value;
+    let urlImagen = document.getElementById('productoImagen').value.trim();
 
     if (!nombre || parseFloat(precio) <= 0) {
         showToast('Nombre y Precio son obligatorios', 'warning');
@@ -831,6 +855,9 @@ async function guardarProducto() {
                 if (urlSubida) urlImagen = urlSubida;
             } catch (err) {
                 console.error('Error subiendo imagen:', err);
+            } finally {
+                window.archivosTemporal.producto = null;
+                if (typeof archivosTemporal !== 'undefined') archivosTemporal.producto = null;
             }
         }
 
@@ -838,10 +865,10 @@ async function guardarProducto() {
         const filasColores = document.querySelectorAll('#containerColoresFotos .fila-color');
         const variantesData = [];
         filasColores.forEach(fila => {
-            const colorName = fila.querySelector('.input-color-nombre').value.trim();
-            const colorUrl = fila.querySelector('.input-color-url').value.trim();
+            const colorName = fila.querySelector('.input-color-nombre')?.value.trim();
+            const colorUrl = fila.querySelector('.input-color-url')?.value.trim();
             if (colorName) {
-                variantesData.push({ color: colorName, url: colorUrl });
+                variantesData.push({ color: colorName, url: colorUrl || '' });
             }
         });
 
@@ -879,10 +906,6 @@ async function guardarProducto() {
             tallas: Array.from(new Set(inventarioData.map(i => i.talla))),
             precio: parseFloat(precio),
             precio_compra: parseFloat(precioCompra),
-            stock_digital: stockDigital,
-            estado,
-            descripcion_corta: descripcionCorta,
-            descripcion_tecnica: descripcionTecnica,
             stock_digital: stockDigital,
             estado,
             descripcion_corta: descripcionCorta,
@@ -942,7 +965,6 @@ async function guardarProducto() {
 
         for (const sede of sedes) {
             // 1. Borrar TODO el inventario de este producto en la sede
-            // Esto es más seguro que upsert cuando las constraints son dudosas o hay conflictos de PK
             await supabaseClient.from(sede.tabla).delete().eq('id_producto', prodTextId);
 
             // 2. Insertar los nuevos registros
@@ -958,7 +980,6 @@ async function guardarProducto() {
                 const { error: errInsert } = await supabaseClient.from(sede.tabla).insert(opsSede);
                 if (errInsert) {
                     console.error(`Error guardando inventario ${sede.id}:`, errInsert);
-                    // Si falla insert masivo, intentar uno a uno (fallback)
                     for (const op of opsSede) {
                         await supabaseClient.from(sede.tabla).insert(op);
                     }
@@ -967,13 +988,11 @@ async function guardarProducto() {
         }
 
         // 3. Actualizar Tabla Unificada 'inventario'
-        // ESTRATEGIA DELETE-INSERT (Igual que por sedes, para evitar conflictos y asegurar limpieza)
         await supabaseClient.from('inventario').delete().eq('producto_id', prodTextId);
 
         const opsUnified = [];
         for (const i of inventarioData) {
             for (const sede of sedes) {
-                // Solo agregar si la cantidad es válida (aunque sea 0)
                 if (i[sede.key] !== undefined && i[sede.key] !== null) {
                     opsUnified.push({
                         producto_id: prodTextId,
@@ -991,12 +1010,15 @@ async function guardarProducto() {
             const { error: errUni } = await supabaseClient.from('inventario').insert(opsUnified);
             if (errUni) {
                 console.error('Error guardando inventario unificado:', errUni);
-                // Fallback uno a uno si falla lote
                 for (const op of opsUnified) {
                     await supabaseClient.from('inventario').insert(op);
                 }
             }
         }
+
+        // Limpiar memoria residual
+        if (window.archivosTemporal) window.archivosTemporal.producto = null;
+        if (typeof archivosTemporal !== 'undefined') archivosTemporal.producto = null;
 
         showToast('Producto y Stock guardados correctamente');
         cancelarFormProducto();
@@ -1006,6 +1028,8 @@ async function guardarProducto() {
         console.error('Error guardando producto:', err);
         showToast('Error al guardar: ' + err.message, 'error');
     } finally {
+        if (window.archivosTemporal) window.archivosTemporal.producto = null;
+        if (typeof archivosTemporal !== 'undefined') archivosTemporal.producto = null;
         if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerHTML = 'Guardar Producto'; }
     }
 }
@@ -1024,7 +1048,9 @@ async function handleFileSelect(event, tipo) {
         return;
     }
 
-    archivosTemporal[tipo] = file;
+    if (!window.archivosTemporal) window.archivosTemporal = {};
+    window.archivosTemporal[tipo] = file;
+    if (typeof archivosTemporal !== 'undefined') archivosTemporal[tipo] = file;
 
     // Previsualización
     const reader = new FileReader();
@@ -1050,12 +1076,19 @@ async function handleFileSelect(event, tipo) {
 }
 
 function removerPreview(tipo) {
-    archivosTemporal[tipo] = null;
+    if (window.archivosTemporal) window.archivosTemporal[tipo] = null;
+    if (typeof archivosTemporal !== 'undefined') archivosTemporal[tipo] = null;
+
     const input = document.getElementById(`fileInput${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
     if (input) input.value = '';
 
+    const imgUrlInput = document.getElementById(tipo === 'producto' ? 'productoImagen' : `${tipo}Imagen`);
+    if (imgUrlInput) imgUrlInput.value = '';
+
     const container = document.getElementById(`previewContainer${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
     const dropzone = document.getElementById(`dropzone${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
+    const previewImg = document.getElementById(`preview${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
+    if (previewImg) previewImg.src = '';
 
     if (container) container.style.display = 'none';
     if (dropzone) {
@@ -1065,9 +1098,6 @@ function removerPreview(tipo) {
     }
 }
 
-// La función subirImagenSupabase ha sido reemplazada por window.subirImagen (en admin.js)
-// para mantener la consistencia y evitar duplicidad de lógica.
-
 window.handleFileSelect = handleFileSelect;
 window.removerPreview = removerPreview;
 
@@ -1075,7 +1105,7 @@ async function editarProducto(id) {
     const p = productosCache.find(x => x.id === id);
     if (!p) return;
 
-    await mostrarFormProducto(); // This function now also clears the form and sets title
+    await mostrarFormProducto(); // Resetea todo el form y memoria de archivos
     document.getElementById('formTituloProducto').textContent = '✏️ Editar Producto';
     document.getElementById('productoId').value = p.id;
 
@@ -1096,7 +1126,7 @@ async function editarProducto(id) {
             if (typeof v === 'string') {
                 agregarFilaColor(v, '');
             } else {
-                agregarFilaColor(v.color, v.url);
+                agregarFilaColor(v.color, v.url || '');
             }
         });
     }
@@ -1119,14 +1149,28 @@ async function editarProducto(id) {
     if (p.fecha_nuevo_hasta) { const el = document.getElementById('productoNuevoHasta'); if (el) el.value = p.fecha_nuevo_hasta.substring(0, 10); }
     if (p.porcentaje_oferta) { const el = document.getElementById('productoPorcentajeOferta'); if (el) el.value = p.porcentaje_oferta; }
 
-    const preview = document.getElementById('previewImgProducto');
+    const preview = document.getElementById('previewProducto');
     const container = document.getElementById('previewContainerProducto');
+    const dropzone = document.getElementById('dropzoneProducto');
     if (preview && container) {
         if (p.url_imagen) {
             preview.src = p.url_imagen;
             container.style.display = 'block';
+            if (dropzone) {
+                Array.from(dropzone.children).forEach(child => {
+                    if (child.id !== 'previewContainerProducto' && child.type !== 'file') {
+                        child.style.visibility = 'hidden';
+                    }
+                });
+            }
         } else {
+            preview.src = '';
             container.style.display = 'none';
+            if (dropzone) {
+                Array.from(dropzone.children).forEach(child => {
+                    child.style.visibility = 'visible';
+                });
+            }
         }
     }
 
