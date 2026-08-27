@@ -442,6 +442,8 @@ async function cargarSeccion(section) {
         case 'empleados': await cargarEmpleados(); break;
         case 'control-acceso': if (typeof inicializarPanelControlAccesoAdmin === 'function') await inicializarPanelControlAccesoAdmin(); break;
         case 'auditoria-inventario': if (typeof inicializarPanelAuditoriaInventario === 'function') await inicializarPanelAuditoriaInventario(); break;
+        case 'conteo-ciego': if (typeof cargarProductosParaConteo === 'function') await cargarProductosParaConteo(); break;
+        case 'conciliacion-auditoria': if (typeof cargarConciliacionAuditoria === 'function') await cargarConciliacionAuditoria(); break;
         case 'traslados': await cargarTraslados(); break;
         case 'feedback': await cargarFeedback(); break;
         case 'metas':

@@ -2235,3 +2235,21 @@ body {
         font-size: 1rem;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   MÓDULO DE CONTEO FÍSICO CIEGO Y AUDITORÍA
+   ═══════════════════════════════════════════════════════════════ */
+.card-conteo-ciego:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+.item-contado-exito {
+    border-color: #10b981 !important;
+    background: #fcfdfc !important;
+}
+
+.input-conteo-cantidad:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
+}
