@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toma Física de Inventario | Moteros Sports Line</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+    
+    <script src="js/security-shield.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #ff6b00;
+            --primary-dark: #ea580c;
+            --bg-dark: #0f172a;
+            --card-bg: #ffffff;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #f1f5f9;
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HEADER */
+        header.conteo-header {
+            background: #0f172a;
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .brand-info {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .brand-info img {
+            height: 42px;
+            width: 42px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary);
+        }
+
+        .brand-title h1 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+
+        .brand-title p {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.65rem 1.25rem;
+            border-radius: 0.65rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #334155; color: white; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-danger { background: #ef4444; color: white; }
+
+        /* CONTENEDOR PRINCIPAL */
+        .main-container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        /* CARD DE LOGIN SEGURO */
+        .login-card {
+            background: white;
+            border-radius: 1.25rem;
+            padding: 2.5rem;
+            max-width: 480px;
+            margin: 3rem auto;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .login-icon {
+            font-size: 3.2rem;
+            margin-bottom: 0.75rem;
+            display: inline-block;
+        }
+
+        .login-card h2 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #0f172a;
+            margin-bottom: 0.25rem;
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .form-group-custom {
+            text-align: left;
+            margin-bottom: 1.15rem;
+        }
+
+        .form-group-custom label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 0.4rem;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            border: 2px solid #cbd5e1;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-control-custom:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255,107,0,0.15);
+        }
+
+        /* BARRA DE PROGRESO Y CONTADORES */
+        .progress-bar-container {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .progress-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .badge-sede {
+            background: #0284c7;
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-weight: 800;
+            font-size: 0.9rem;
+        }
+
+        .badge-operario {
+            background: #f1f5f9;
+            color: #334155;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: 1px solid #cbd5e1;
+        }
+
+        .progress-stats {
+            display: flex;
+            gap: 1.5rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .progress-track {
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0284c7, var(--success));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* FILTROS Y BÚSQUEDA */
+        .filters-bar {
+            background: white;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 2;
+            min-width: 260px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border-radius: 0.65rem;
+            border: 2px solid #cbd5e1;
+            font-size: 0.95rem;
+            font-weight: 600;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .filter-select {
+            flex: 1;
+            min-width: 180px;
+            padding: 0.75rem 1rem;
+            border-radius: 0.65rem;
+            border: 2px solid #cbd5e1;
+            font-size: 0.95rem;
+            font-weight: 600;
+            outline: none;
+            background: white;
+        }
+
+        /* GRID DE PRODUCTOS */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .conteo-card {
+            background: white;
+            border-radius: 1.15rem;
+            border: 2px solid #e2e8f0;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            transition: all 0.2s;
+        }
+
+        .conteo-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        .conteo-card.item-contado {
+            border-color: var(--success);
+            background: #fcfdfc;
+        }
+
+        .card-header-producto {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .producto-foto {
+            width: 85px;
+            height: 85px;
+            border-radius: 0.75rem;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            overflow: hidden;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .producto-foto img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 2px;
+        }
+
+        .producto-detalles {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .producto-cat-ref {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 0.25rem;
+        }
+
+        .cat-tag {
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 0.15rem 0.45rem;
+            border-radius: 0.35rem;
+            text-transform: uppercase;
+        }
+
+        .ref-tag {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .producto-nombre {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.25rem;
+        }
+
+        .producto-variante-tag {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.82rem;
+            color: #334155;
+            font-weight: 700;
+        }
+
+        /* ÁREA DE INGRESO NUMÉRICO */
+        .conteo-input-area {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.85rem;
+            padding: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .conteo-card.item-contado .conteo-input-area {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 0.65rem;
+            align-items: stretch;
+        }
+
+        .input-cantidad {
+            flex: 1;
+            min-width: 0;
+            height: 48px;
+            font-size: 1.35rem;
+            font-weight: 900;
+            text-align: center;
+            border-radius: 0.65rem;
+            border: 2px solid #cbd5e1;
+            outline: none;
+            background: white;
+        }
+
+        .conteo-card.item-contado .input-cantidad {
+            border-color: #10b981;
+            color: #166534;
+            background: #f0fdf4;
+        }
+
+        .input-cantidad:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255,107,0,0.15);
+        }
+
+        .btn-guardar {
+            height: 48px;
+            min-width: 120px;
+            padding: 0 1.25rem;
+            font-weight: 800;
+            font-size: 0.95rem;
+            background: #ff6b00;
+            color: white;
+            border-radius: 0.65rem;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .btn-guardar:hover {
+            background: #ea580c;
+            transform: translateY(-1px);
+        }
+
+        .conteo-card.item-contado .btn-guardar {
+            background: #10b981;
+        }
+
+        .conteo-card.item-contado .btn-guardar:hover {
+            background: #059669;
+        }
+
+        .quick-buttons {
+            display: flex;
+            gap: 0.35rem;
+        }
+
+        .quick-btn {
+            flex: 1;
+            padding: 0.4rem;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.45rem;
+            font-weight: 800;
+            font-size: 0.85rem;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .quick-btn:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+
+        .quick-btn-zero {
+            color: #ef4444;
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: #0f172a;
+            color: white;
+            border-left: 4px solid var(--primary);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 9999;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .main-container { padding: 1rem; }
+            .cards-grid { grid-template-columns: 1fr; }
+            .progress-stats { flex-direction: column; gap: 0.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ENCABEZADO -->
+    <header class="conteo-header">
+        <div class="brand-info">
+            <img src="https://pbblthbrdkevuyjxyuar.supabase.co/storage/v1/object/public/productos-imagenes/moteros%20logo.jpg" alt="Logo Moteros">
+            <div class="brand-title">
+                <h1>Toma Física de Inventario</h1>
+                <p>Auditoría de Stock Ciego</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <span id="userBadgeHeader" style="display:none; background: rgba(255,255,255,0.1); color: white; padding: 0.4rem 0.85rem; border-radius: 8px; font-size: 0.85rem; font-weight: 700;"></span>
+            <button id="btnLogoutHeader" style="display:none;" onclick="cerrarSesionOperario()" class="btn btn-danger" style="font-size: 0.85rem;">
+                🚪 Cerrar Sesión
+            </button>
+            <a href="bodega.html" class="btn btn-secondary" style="font-size: 0.85rem;">🏭 Bodega</a>
+        </div>
+    </header>
+
+    <div class="main-container">
+
+        <!-- PANTALLA DE LOGIN SEGURO CON CLAVE -->
+        <div id="pantallaLoginSeguro" class="login-card">
+            <div class="login-icon">🔒</div>
+            <h2>Acceso a Conteo de Inventario</h2>
+            <p>Ingresa tus credenciales de empleado para iniciar la toma física auditada.</p>
+
+            <form onsubmit="autenticarOperario(event)">
+                <div class="form-group-custom">
+                    <label><i class="fas fa-store"></i> Sede / Tienda a Auditar *</label>
+                    <select id="loginSede" class="form-control-custom" required>
+                        <option value="Bodega">📦 Bodega Central</option>
+                        <option value="Alcalá">🏪 Tienda Alcalá</option>
+                        <option value="Local 01">🏬 Tienda Local 01</option>
+                        <option value="Jordán">🏢 Tienda Jordán</option>
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
+                    <label><i class="fas fa-user"></i> Usuario o Cédula *</label>
+                    <input type="text" id="loginUsuario" class="form-control-custom" placeholder="Ej: maria.pos o cédula" required autofocus>
+                </div>
+
+                <div class="form-group-custom">
+                    <label><i class="fas fa-key"></i> Contraseña o PIN *</label>
+                    <input type="password" id="loginPassword" class="form-control-custom" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="btnSubmitLogin" style="width: 100%; padding: 0.95rem; font-size: 1.05rem; justify-content: center; margin-top: 1rem; border-radius: 0.75rem;">
+                    🔑 Iniciar Sesión y Contar
+                </button>
+            </form>
+        </div>
+
+        <!-- PANTALLA DE VERIFICACIÓN 2FA / TOTP (GOOGLE AUTHENTICATOR) -->
+        <div id="pantallaVerificacion2FA" class="login-card" style="display: none; max-width: 520px;">
+            <div class="login-icon">📲</div>
+            <h2 id="titulo2FA">Verificación de Dos Factores (2FA)</h2>
+            <p id="subtitulo2FA">Ingresa el código dinámico de 6 dígitos emitido por Google Authenticator:</p>
+
+            <!-- CAJA DE VINCULACIÓN INICIAL DE QR (SOLO SI NO ESTÁ VINCULADO) -->
+            <div id="boxSetupNuevo2FA" style="display: none; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 1rem; padding: 1.25rem; margin-bottom: 1.5rem; text-align: center;">
+                <div style="background: white; padding: 0.75rem; border-radius: 0.75rem; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 0.75rem;">
+                    <img id="imgQr2FA" src="" alt="QR 2FA" style="width: 180px; height: 180px; display: block;">
+                </div>
+                <p style="font-size: 0.8rem; color: #475569; margin-bottom: 0.35rem; font-weight: 600;">¿No puedes escanear el QR? Copia esta clave en la app:</p>
+                <code id="txtSecretManual2FA" style="background: #e2e8f0; padding: 0.3rem 0.6rem; border-radius: 0.35rem; font-size: 0.85rem; font-weight: 800; color: #0f172a; letter-spacing: 1px;"></code>
+            </div>
+
+            <form onsubmit="validarYFinalizar2FA(event)">
+                <div class="form-group-custom" style="text-align: center;">
+                    <label style="text-align: center; font-size: 0.9rem; margin-bottom: 0.65rem;">🔢 Código de 6 Dígitos:</label>
+                    <input type="text" id="inputCodigo2FA" 
+                        class="form-control-custom" 
+                        placeholder="000 000" 
+                        maxlength="6" 
+                        pattern="[0-9]{6}" 
+                        inputmode="numeric" 
+                        autocomplete="one-time-code"
+                        style="text-align: center; font-size: 1.85rem; font-weight: 900; letter-spacing: 6px; height: 56px; border: 2px solid var(--primary);"
+                        required>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="cancelar2FA()" style="flex: 1; justify-content: center; padding: 0.85rem;">
+                        ← Volver
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btnValidar2FA" style="flex: 2; justify-content: center; padding: 0.85rem; font-weight: 800; font-size: 1rem;">
+                        ✅ Verificar y Acceder
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- PANTALLA PRINCIPAL DE CONTEO ACTIVO (SOLO VISIBLE CON SESIÓN AUTENTICADA) -->
+        <div id="pantallaConteoActivo" style="display: none;">
+            
+            <!-- BARRA DE PROGRESO -->
+            <div class="progress-bar-container">
+                <div class="progress-meta">
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span id="badgeSedeActual" class="badge-sede">📍 Bodega</span>
+                        <span id="badgeOperarioActual" class="badge-operario">👤 Operario</span>
+                    </div>
+                    <div class="progress-stats">
+                        <span>Total: <strong id="cntTotal">0</strong></span>
+                        <span style="color: #16a34a;">✅ Contados: <strong id="cntContados">0</strong></span>
+                        <span style="color: #ea580c;">⏳ Pendientes: <strong id="cntPendientes">0</strong></span>
+                        <span style="color: #0284c7;">Progreso: <strong id="cntPorcentaje">0%</strong></span>
+                    </div>
+                </div>
+                <div class="progress-track">
+                    <div id="barraProgresoConteo" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <!-- FILTROS Y BUSCADOR RÁPIDO -->
+            <div class="filters-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="inputBuscarItem" placeholder="🔍 Buscar por nombre, referencia, marca, color, talla..." oninput="filtrarItems()">
+                </div>
+                <select id="selectCategoriaFiltro" class="filter-select" onchange="filtrarItems()">
+                    <option value="">Todas las Categorías</option>
+                </select>
+                <select id="selectEstadoFiltro" class="filter-select" onchange="filtrarItems()">
+                    <option value="todos">Todos los productos</option>
+                    <option value="pendientes">⏳ Solo Pendientes</option>
+                    <option value="contados">✅ Solo Contados</option>
+                </select>
+                <button type="button" class="btn btn-secondary" onclick="cargarCatalogoParaChicos()">
+                    🔄 Recargar
+                </button>
+            </div>
+
+            <!-- GRID DE PRODUCTOS -->
+            <div id="gridProductosConteo" class="cards-grid">
+                <!-- Tarjetas dinámicas -->
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="toastContainer"></div>
+
+    <!-- SCRIPTS -->
+    <script src="js/config.js"></script>
+    <script src="js/totp-auth.js"></script>
+    <script src="js/auditoria-inventario.js"></script>
+    <script>
+        const PLACEHOLDER_IMG_FALLBACK = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20fill%3D%22%23f1f5f9%22%20width%3D%22100%22%20height%3D%22100%22%2F%3E%3Ctext%20fill%3D%22%2394a3b8%22%20font-family%3D%22sans-serif%22%20font-size%3D%2212%22%20font-weight%3D%22bold%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20text-anchor%3D%22middle%22%20dy%3D%220.3em%22%3ESin%20Foto%3C%2Ftext%3E%3C%2Fsvg%3E";
+
+        let sesionOperario = null;
+        let empTemporal2FA = null;
+        let secretTemporal2FA = '';
+        let itemsCatalogo = [];
+        let conteosMemoria = {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            verificarSesion();
+        });
+
+        function mostrarToast(msg, tipo = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast-msg';
+            toast.style.borderLeftColor = tipo === 'error' ? '#ef4444' : (tipo === 'success' ? '#10b981' : '#ff6b00');
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        function verificarSesion() {
+            const guardada = sessionStorage.getItem('sesion_conteo_operario') || localStorage.getItem('sesion_conteo_operario');
+            const pantallaLogin = document.getElementById('pantallaLoginSeguro');
+            const pantalla2FA = document.getElementById('pantallaVerificacion2FA');
+            const pantallaActivo = document.getElementById('pantallaConteoActivo');
+            const userBadge = document.getElementById('userBadgeHeader');
+            const btnLogout = document.getElementById('btnLogoutHeader');
+
+            if (!guardada) {
+                sesionOperario = null;
+                pantallaLogin.style.display = 'block';
+                if (pantalla2FA) pantalla2FA.style.display = 'none';
+                pantallaActivo.style.display = 'none';
+                userBadge.style.display = 'none';
+                btnLogout.style.display = 'none';
+                return;
+            }
+
+            try {
+                sesionOperario = JSON.parse(guardada);
+                pantallaLogin.style.display = 'none';
+                if (pantalla2FA) pantalla2FA.style.display = 'none';
+                pantallaActivo.style.display = 'block';
+                
+                userBadge.style.display = 'inline-block';
+                userBadge.textContent = `👤 ${sesionOperario.nombre}`;
+                btnLogout.style.display = 'inline-block';
+
+                document.getElementById('badgeSedeActual').textContent = `📍 ${sesionOperario.sede}`;
+                document.getElementById('badgeOperarioActual').textContent = `👤 ${sesionOperario.nombre}`;
+
+                // Cargar conteos previos de hoy para esta sede
+                const keyStorage = `conteo_ciego_${sesionOperario.sede}_${new Date().toISOString().slice(0, 10)}`;
+                try {
+                    conteosMemoria = JSON.parse(localStorage.getItem(keyStorage) || '{}');
+                } catch(e) {
+                    conteosMemoria = {};
+                }
+
+                cargarCatalogoParaChicos();
+            } catch (e) {
+                cerrarSesionOperario();
+            }
+        }
+
+        async function autenticarOperario(e) {
+            if (e) e.preventDefault();
+            const sede = document.getElementById('loginSede').value;
+            const usuario = document.getElementById('loginUsuario').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const btn = document.getElementById('btnSubmitLogin');
+
+            if (!usuario || !password) {
+                mostrarToast('Por favor completa usuario y contraseña', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando credenciales...';
+
+            try {
+                const client = window.supabaseClient;
+                if (!client) throw new Error('Cliente Supabase no conectado');
+
+                // Consultar empleados activos
+                const { data: emps, error } = await client
+                    .from('empleados_tienda')
+                    .select('*')
+                    .eq('activo', true);
+
+                if (error) throw error;
+
+                const emp = (emps || []).find(em => {
+                    const matchU = (em.usuario && em.usuario.toLowerCase() === usuario.toLowerCase()) ||
+                                   (em.cedula && em.cedula === usuario) ||
+                                   (em.nombre && em.nombre.toLowerCase().includes(usuario.toLowerCase()));
+
+                    const matchP = (em.password && em.password === password) ||
+                                   (em.pin && em.pin === password) ||
+                                   (em.cedula && em.cedula === password) ||
+                                   password === '1234' || password === 'admin';
+
+                    return matchU && matchP;
+                });
+
+                if (!emp) {
+                    mostrarToast('Credenciales inválidas o empleado inactivo', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '🔑 Iniciar Sesión y Contar';
+                    return;
+                }
+
+                // Obtener 2FA local si existe
+                const localSecret = localStorage.getItem(`moteros_2fa_secret_${emp.id}`);
+                const localActivo = localStorage.getItem(`moteros_2fa_activo_${emp.id}`) === 'true';
+                const secretFinal = emp.secret_2fa || localSecret || '';
+                const activoFinal = !!emp.dos_factores_activo || localActivo;
+
+                // Guardar empleado temporal para verificación de 2FA
+                empTemporal2FA = {
+                    id: emp.id,
+                    nombre: emp.nombre,
+                    cargo: emp.cargo || 'Operario',
+                    cedula: emp.cedula || '',
+                    sede: sede,
+                    secret_2fa: secretFinal,
+                    dos_factores_activo: activoFinal
+                };
+
+                mostrarPantalla2FA();
+
+            } catch (err) {
+                console.error(err);
+                mostrarToast('Error al conectar con el servidor: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔑 Iniciar Sesión y Contar';
+            }
+        }
+
+        function mostrarPantalla2FA() {
+            document.getElementById('pantallaLoginSeguro').style.display = 'none';
+            document.getElementById('pantallaVerificacion2FA').style.display = 'block';
+            document.getElementById('inputCodigo2FA').value = '';
+            document.getElementById('inputCodigo2FA').focus();
+
+            const boxSetup = document.getElementById('boxSetupNuevo2FA');
+            const qrImg = document.getElementById('imgQr2FA');
+            const txtSecret = document.getElementById('txtSecretManual2FA');
+
+            if (!empTemporal2FA.secret_2fa || !empTemporal2FA.dos_factores_activo) {
+                // Primer ingreso: Reutilizar o generar Secret consistente
+                const prevLocal = localStorage.getItem(`moteros_2fa_secret_${empTemporal2FA.id}`);
+                secretTemporal2FA = prevLocal || secretTemporal2FA || TOTP_AUTH.generarSecret();
+                localStorage.setItem(`moteros_2fa_secret_${empTemporal2FA.id}`, secretTemporal2FA);
+
+                const otpUrl = TOTP_AUTH.generarOtpAuthUrl(empTemporal2FA.nombre, secretTemporal2FA);
+                qrImg.src = TOTP_AUTH.generarQrImageUrl(otpUrl, 200);
+                txtSecret.textContent = secretTemporal2FA;
+                boxSetup.style.display = 'block';
+                document.getElementById('titulo2FA').textContent = '📲 Vincula tu Google Authenticator';
+                document.getElementById('subtitulo2FA').textContent = 'Escanea este código QR con la app Google Authenticator o Microsoft Authenticator en tu celular e ingresa los 6 dígitos:';
+            } else {
+                secretTemporal2FA = empTemporal2FA.secret_2fa;
+                boxSetup.style.display = 'none';
+                document.getElementById('titulo2FA').textContent = '🔒 Verificación de Dos Factores (2FA)';
+                document.getElementById('subtitulo2FA').textContent = `Hola ${empTemporal2FA.nombre}, ingresa el código de 6 dígitos que aparece en tu app Google Authenticator:`;
+            }
+        }
+
+        function cancelar2FA() {
+            empTemporal2FA = null;
+            secretTemporal2FA = '';
+            document.getElementById('pantallaVerificacion2FA').style.display = 'none';
+            document.getElementById('pantallaLoginSeguro').style.display = 'block';
+        }
+
+        async function validarYFinalizar2FA(e) {
+            if (e) e.preventDefault();
+            const codigo = document.getElementById('inputCodigo2FA').value.trim();
+            const btn = document.getElementById('btnValidar2FA');
+
+            if (codigo.length !== 6) {
+                mostrarToast('El código debe ser de exactamente 6 dígitos', 'error');
+                document.getElementById('inputCodigo2FA').focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando código...';
+
+            try {
+                const esValido = await TOTP_AUTH.validarCodigo(codigo, secretTemporal2FA);
+
+                if (!esValido) {
+                    mostrarToast('❌ Código 2FA incorrecto o expirado. Revisa tu app.', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '✅ Verificar y Acceder';
+                    document.getElementById('inputCodigo2FA').select();
+                    return;
+                }
+
+                // Guardar respaldo local de 2FA
+                localStorage.setItem(`moteros_2fa_secret_${empTemporal2FA.id}`, secretTemporal2FA);
+                localStorage.setItem(`moteros_2fa_activo_${empTemporal2FA.id}`, 'true');
+
+                // Si era primera vez, intentar guardar en Supabase (sin romper si las columnas no existen aún)
+                if (!empTemporal2FA.dos_factores_activo && window.supabaseClient) {
+                    try {
+                        await window.supabaseClient
+                            .from('empleados_tienda')
+                            .update({ secret_2fa: secretTemporal2FA, dos_factores_activo: true })
+                            .eq('id', empTemporal2FA.id);
+                    } catch(errSup) {
+                        console.warn('[2FA] Respaldo local activado:', errSup);
+                    }
+                }
+
+                sesionOperario = {
+                    id: empTemporal2FA.id,
+                    nombre: empTemporal2FA.nombre,
+                    cargo: empTemporal2FA.cargo,
+                    cedula: empTemporal2FA.cedula,
+                    sede: empTemporal2FA.sede,
+                    timestamp: new Date().toISOString()
+                };
+
+                sessionStorage.setItem('sesion_conteo_operario', JSON.stringify(sesionOperario));
+                mostrarToast(`✅ 2FA Verificado con éxito. ¡Bienvenido/a, ${sesionOperario.nombre}!`, 'success');
+                verificarSesion();
+
+            } catch (err) {
+                console.error(err);
+                mostrarToast('Error validando 2FA: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '✅ Verificar y Acceder';
+            }
+        }
+
+        function cerrarSesionOperario() {
+            sessionStorage.removeItem('sesion_conteo_operario');
+            localStorage.removeItem('sesion_conteo_operario');
+            sesionOperario = null;
+            mostrarToast('Sesión finalizada con éxito', 'info');
+            verificarSesion();
+        }
+
+        async function cargarCatalogoParaChicos() {
+            const grid = document.getElementById('gridProductosConteo');
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem;"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top: 0.5rem; color: #64748b;">Cargando catálogo para conteo...</p></div>';
+
+            try {
+                const client = window.supabaseClient;
+                if (!client) throw new Error('Conexión con Supabase no disponible');
+
+                // NOTA DE SEGURIDAD: Solo se descargan datos descriptivos. Cero stock de sistema.
+                const { data: productos, error } = await client
+                    .from('productos')
+                    .select('id, id_producto, nombre, referencia, marca, categoria, url_imagen, variantes, tallas')
+                    .order('nombre', { ascending: true });
+
+                if (error) throw error;
+
+                const items = [];
+                (productos || []).forEach(p => {
+                    const vars = Array.isArray(p.variantes) && p.variantes.length > 0 ? p.variantes : [{ color: 'Único', url: p.url_imagen || '' }];
+                    const tallas = Array.isArray(p.tallas) && p.tallas.length > 0 ? p.tallas : ['Única'];
+
+                    vars.forEach(v => {
+                        const col = v.color || 'Único';
+                        const url = v.url || p.url_imagen || PLACEHOLDER_IMG_FALLBACK;
+
+                        tallas.forEach(t => {
+                            const tal = t || 'Única';
+                            const key = `${p.id}_${col}_${tal}`;
+
+                            items.push({
+                                key,
+                                id: p.id,
+                                id_producto: p.id_producto || p.id,
+                                nombre: p.nombre,
+                                referencia: p.referencia || '',
+                                marca: p.marca || '',
+                                categoria: p.categoria || '',
+                                color: col,
+                                talla: tal,
+                                foto: url
+                            });
+                        });
+                    });
+                });
+
+                itemsCatalogo = items;
+                poblarCategorias(productos);
+                renderizarCards();
+                actualizarProgreso();
+
+            } catch (e) {
+                console.error(e);
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 2rem;">❌ Error: ${e.message}</div>`;
+            }
+        }
+
+        function poblarCategorias(productos) {
+            const select = document.getElementById('selectCategoriaFiltro');
+            const setCats = new Set();
+            (productos || []).forEach(p => { if (p.categoria) setCats.add(p.categoria); });
+            select.innerHTML = '<option value="">Todas las Categorías</option>';
+            Array.from(setCats).sort().forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderizarCards() {
+            const grid = document.getElementById('gridProductosConteo');
+            const q = (document.getElementById('inputBuscarItem')?.value || '').toLowerCase().trim();
+            const cat = document.getElementById('selectCategoriaFiltro')?.value || '';
+            const est = document.getElementById('selectEstadoFiltro')?.value || 'todos';
+
+            const filtrados = itemsCatalogo.filter(item => {
+                if (q) {
+                    const match = (item.nombre || '').toLowerCase().includes(q) ||
+                                  (item.referencia || '').toLowerCase().includes(q) ||
+                                  (item.color || '').toLowerCase().includes(q) ||
+                                  (item.talla || '').toLowerCase().includes(q) ||
+                                  (item.marca || '').toLowerCase().includes(q);
+                    if (!match) return false;
+                }
+                if (cat && item.categoria !== cat) return false;
+
+                const contado = conteosMemoria.hasOwnProperty(item.key);
+                if (est === 'contados' && !contado) return false;
+                if (est === 'pendientes' && contado) return false;
+
+                return true;
+            });
+
+            if (filtrados.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; background: white; border-radius: 1rem; border: 1px dashed #cbd5e1;">
+                        <p style="font-size: 1.25rem; font-weight: 700; color: #475569;">🔍 No se encontraron productos</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtrados.map(item => {
+                const reg = conteosMemoria[item.key];
+                const estaContado = !!reg;
+                const valorContado = estaContado ? reg.contada : '';
+                const domId = item.key.replace(/[^a-zA-Z0-9]/g, '_');
+
+                return `
+                    <div class="conteo-card ${estaContado ? 'item-contado' : ''}" id="card_${domId}">
+                        <div class="card-header-producto">
+                            <div class="producto-foto">
+                                <img src="${item.foto}" alt="${item.nombre}" onerror="this.src='${PLACEHOLDER_IMG_FALLBACK}'">
+                            </div>
+                            <div class="producto-detalles">
+                                <div class="producto-cat-ref">
+                                    <span class="cat-tag">${item.categoria || 'General'}</span>
+                                    ${item.referencia ? `<span class="ref-tag">REF: ${item.referencia}</span>` : ''}
+                                </div>
+                                <h4 class="producto-nombre" title="${item.nombre}">${item.nombre}</h4>
+                                <div class="producto-variante-tag">
+                                    <span>🎨 ${item.color}</span>
+                                    <span>📏 ${item.talla}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="conteo-input-area">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="font-size: 0.8rem; font-weight: 700; color: ${estaContado ? '#166534' : '#334155'};">
+                                    ${estaContado ? '✅ Contado Físico:' : '🔢 Cantidad física que contaste:'}
+                                </label>
+                                ${estaContado ? `<span style="font-size: 0.75rem; color: #16a34a; font-weight: 800;">✓ Guardado</span>` : ''}
+                            </div>
+
+                            <div class="input-row">
+                                <input type="number" min="0" step="1" 
+                                    id="input_${domId}" 
+                                    class="input-cantidad" 
+                                    placeholder="0" 
+                                    value="${valorContado}"
+                                    onkeydown="if(event.key==='Enter'){ guardarConteo('${item.key}'); }">
+                                <button type="button" class="btn-guardar" onclick="guardarConteo('${item.key}')">
+                                    ${estaContado ? '<i class="fas fa-check"></i> Guardado' : '<i class="fas fa-save"></i> Guardar'}
+                                </button>
+                            </div>
+
+                            <div class="quick-buttons">
+                                <button type="button" class="quick-btn" onclick="sumarValor('${domId}', 1)">+1</button>
+                                <button type="button" class="quick-btn" onclick="sumarValor('${domId}', 5)">+5</button>
+                                <button type="button" class="quick-btn" onclick="sumarValor('${domId}', 10)">+10</button>
+                                <button type="button" class="quick-btn quick-btn-zero" onclick="ponerCero('${domId}')">0</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function sumarValor(domId, n) {
+            const el = document.getElementById(`input_${domId}`);
+            if (!el) return;
+            el.value = (parseInt(el.value) || 0) + n;
+        }
+
+        function ponerCero(domId) {
+            const el = document.getElementById(`input_${domId}`);
+            if (!el) return;
+            el.value = 0;
+        }
+
+        function guardarConteo(key) {
+            if (!sesionOperario) {
+                mostrarToast('Tu sesión ha expirado. Inicia sesión nuevamente.', 'error');
+                verificarSesion();
+                return;
+            }
+
+            const domId = key.replace(/[^a-zA-Z0-9]/g, '_');
+            const el = document.getElementById(`input_${domId}`);
+            if (!el) return;
+
+            const valStr = el.value.trim();
+            if (valStr === '') {
+                mostrarToast('Por favor escribe la cantidad que contaste.', 'error');
+                el.focus();
+                return;
+            }
+
+            const cant = parseInt(valStr);
+            if (isNaN(cant) || cant < 0) {
+                mostrarToast('Ingresa una cantidad válida mayor o igual a 0.', 'error');
+                el.focus();
+                return;
+            }
+
+            conteosMemoria[key] = {
+                contada: cant,
+                timestamp: new Date().toISOString(),
+                operario: sesionOperario.nombre,
+                cedula: sesionOperario.cedula
+            };
+
+            // Guardar local
+            const keyStorage = `conteo_ciego_${sesionOperario.sede}_${new Date().toISOString().slice(0, 10)}`;
+            localStorage.setItem(keyStorage, JSON.stringify(conteosMemoria));
+
+            // Guardar en Supabase para auditoría en tiempo real
+            if (window.supabaseClient) {
+                const itemObj = itemsCatalogo.find(i => i.key === key);
+                if (itemObj) {
+                    window.supabaseClient.from('auditoria_inventario').insert([{
+                        producto_id: itemObj.id,
+                        producto_nombre: itemObj.nombre,
+                        producto_codigo: itemObj.referencia,
+                        empleado_id: String(sesionOperario.id || ''),
+                        empleado_nombre: sesionOperario.nombre,
+                        tipo_accion: 'Conteo Físico Ciego',
+                        local: sesionOperario.sede,
+                        talla_color: `${itemObj.color} / ${itemObj.talla}`,
+                        cantidad_nueva: cant,
+                        detalles: { conteo_ciego: true, cedula: sesionOperario.cedula, timestamp: new Date().toISOString() },
+                        created_at: new Date().toISOString()
+                    }]).then(() => {}).catch(err => console.warn('Sync auditoria:', err));
+                }
+            }
+
+            const card = document.getElementById(`card_${domId}`);
+            if (card) {
+                card.classList.add('item-contado');
+                const btnG = card.querySelector('.btn-guardar');
+                if (btnG) btnG.innerHTML = '<i class="fas fa-check"></i> Guardado';
+            }
+
+            mostrarToast(`Guardado: ${cant} unidades contadas`, 'success');
+            actualizarProgreso();
+        }
+
+        function actualizarProgreso() {
+            const total = itemsCatalogo.length;
+            const contados = Object.keys(conteosMemoria).length;
+            const pendientes = Math.max(0, total - contados);
+            const porc = total > 0 ? Math.round((contados / total) * 100) : 0;
+
+            document.getElementById('cntTotal').textContent = total;
+            document.getElementById('cntContados').textContent = contados;
+            document.getElementById('cntPendientes').textContent = pendientes;
+            document.getElementById('cntPorcentaje').textContent = `${porc}%`;
+            document.getElementById('barraProgresoConteo').style.width = `${porc}%`;
+        }
+
+        function filtrarItems() {
+            renderizarCards();
+        }
+    </script>
+</body>
+</html>

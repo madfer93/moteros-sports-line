@@ -10,6 +10,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
     <script src="js/security-shield.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/totp-auth.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -213,6 +214,7 @@
         </div>
         <div class="header-actions">
             <span id="userBodegaBadge" style="display:none; background: rgba(255,107,0,0.15); border:1px solid rgba(255,107,0,0.3); color:#ff6b00; padding:0.4rem 0.9rem; border-radius:8px; font-size:0.88rem; font-weight:700;"></span>
+            <a href="conteo.html" target="_blank" class="btn" style="background: #0284c7; color: white; font-weight: 700;">🔢 Conteo Físico Ciego</a>
             <button id="btnLogoutBodega" style="display:none;" onclick="cerrarSesionBodega()" class="btn btn-secondary">🚪 Cerrar Sesión</button>
             <a href="acceso.html" target="_blank" class="btn btn-secondary">⏰ Turno / Fichaje</a>
         </div>
@@ -236,6 +238,37 @@
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-weight: 700; font-size: 1rem;">
                     🔑 Ingresar a Bodega Central
                 </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ====== SECCIÓN DE VERIFICACIÓN 2FA BODEGA ====== -->
+    <div id="bodega2FASection" class="login-overlay" style="display: none;">
+        <div class="login-card" style="max-width: 480px;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">📲</div>
+            <h2 id="titulo2FABodega">Verificación 2FA</h2>
+            <p id="subtitulo2FABodega" style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Ingresa el código dinámico de 6 dígitos de tu Google Authenticator:</p>
+
+            <div id="boxSetupNuevo2FABodega" style="display: none; background: rgba(255,255,255,0.05); border: 2px dashed rgba(255,255,255,0.2); border-radius: 1rem; padding: 1.25rem; margin-bottom: 1.5rem; text-align: center;">
+                <div style="background: white; padding: 0.75rem; border-radius: 0.75rem; display: inline-block; margin-bottom: 0.75rem;">
+                    <img id="imgQr2FABodega" src="" alt="QR 2FA" style="width: 180px; height: 180px; display: block;">
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem;">O copia esta clave en la app:</p>
+                <code id="txtSecretManual2FABodega" style="background: #0f172a; padding: 0.3rem 0.6rem; border-radius: 0.35rem; font-size: 0.85rem; font-weight: 800; color: #ff6b00; letter-spacing: 1px;"></code>
+            </div>
+
+            <form onsubmit="validar2FABodega(event)">
+                <div class="form-group" style="text-align: center; margin-bottom: 1.5rem;">
+                    <input type="text" id="inputCodigo2FABodega" class="form-control" placeholder="000 000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" style="text-align: center; font-size: 1.85rem; font-weight: 900; letter-spacing: 6px; height: 56px; border: 2px solid var(--accent-orange); color: white;" required>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="btn btn-secondary" onclick="cancelar2FABodega()" style="flex: 1; justify-content: center;">
+                        ← Volver
+                    </button>
+                    <button type="submit" id="btnValidar2FABodega" class="btn btn-primary" style="flex: 2; justify-content: center; font-weight: 800;">
+                        ✅ Verificar
+                    </button>
+                </div>
             </form>
         </div>
     </div>

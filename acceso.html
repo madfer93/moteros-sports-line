@@ -11,6 +11,7 @@
     <script src="js/security-shield.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
+    <script src="js/totp-auth.js"></script>
     <script src="js/control-acceso.js"></script>
     <style>
         :root {
@@ -265,6 +266,12 @@
                 <input type="password" id="pinEmpleadoAcceso" class="form-control" placeholder="Ingresa tu clave o cédula" autocomplete="current-password">
             </div>
 
+            <!-- Campo 2FA Google Authenticator (visible si el empleado tiene 2FA) -->
+            <div class="form-group" id="grupo2FAAcceso">
+                <label for="codigo2FAAcceso" style="color: #ff6b00;"><i class="fas fa-mobile-alt"></i> Código 2FA Google Authenticator (6 Dígitos)</label>
+                <input type="text" id="codigo2FAAcceso" class="form-control" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing: 4px; font-weight: 700;">
+            </div>
+
             <div class="form-group">
                 <label for="obsEmpleadoAcceso"><i class="fas fa-comment"></i> Observación (Opcional)</label>
                 <input type="text" id="obsEmpleadoAcceso" class="form-control" placeholder="Ej: Tráfico, novedad en ruta, etc.">
@@ -356,11 +363,13 @@
             alerta.style.display = 'none';
 
             try {
+                const cod2FA = document.getElementById('codigo2FAAcceso')?.value || '';
                 const res = await procesarRegistroTurnoEmpleado(accion, {
                     empleadoId: empId,
                     pin: pin,
                     local: local,
-                    observaciones: obs
+                    observaciones: obs,
+                    codigo2FA: cod2FA
                 });
 
                 alerta.className = 'alerta-msg alerta-exito';
@@ -369,6 +378,7 @@
 
                 document.getElementById('pinEmpleadoAcceso').value = '';
                 document.getElementById('obsEmpleadoAcceso').value = '';
+                if (document.getElementById('codigo2FAAcceso')) document.getElementById('codigo2FAAcceso').value = '';
 
             } catch (err) {
                 alerta.className = 'alerta-msg alerta-error';

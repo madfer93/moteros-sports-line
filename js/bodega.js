@@ -90,20 +90,119 @@ async function iniciarSesionBodega(e) {
             return mostrarToast('Credenciales incorrectas o usuario inactivo', 'error');
         }
 
-        empleadoBodegaSesion = {
+        // Preparar datos temporales para 2FA
+        window.empBodegaTemporal2FA = {
             id: empEncontrado.id,
             nombre: empEncontrado.nombre,
             cargo: empEncontrado.cargo || 'Encargado de Bodega',
-            cedula: empEncontrado.cedula
+            cedula: empEncontrado.cedula,
+            secret_2fa: empEncontrado.secret_2fa || '',
+            dos_factores_activo: !!empEncontrado.dos_factores_activo
         };
 
-        localStorage.setItem('empleado_bodega_sesion', JSON.stringify(empleadoBodegaSesion));
-        mostrarToast(`¡Bienvenido/a, ${empEncontrado.nombre}!`, 'success');
-        verificarSesionBodega();
+        mostrarPantalla2FABodega();
 
     } catch(err) {
         console.error('Error en login de Bodega:', err);
         mostrarToast('Error al iniciar sesión: ' + (err.message || 'Error desconocido'), 'error');
+    }
+}
+
+function mostrarPantalla2FABodega() {
+    const emp = window.empBodegaTemporal2FA;
+    if (!emp) return;
+
+    const secLogin = document.getElementById('bodegaLoginSection');
+    const sec2FA = document.getElementById('bodega2FASection');
+    const boxSetup = document.getElementById('boxSetupNuevo2FABodega');
+    const qrImg = document.getElementById('imgQr2FABodega');
+    const txtSecret = document.getElementById('txtSecretManual2FABodega');
+    const inpCod = document.getElementById('inputCodigo2FABodega');
+
+    if (secLogin) secLogin.style.display = 'none';
+    if (sec2FA) sec2FA.style.display = 'flex';
+    if (inpCod) { inpCod.value = ''; inpCod.focus(); }
+
+    if (!emp.secret_2fa || !emp.dos_factores_activo) {
+        window.secretBodegaTemporal = TOTP_AUTH.generarSecret();
+        const otpUrl = TOTP_AUTH.generarOtpAuthUrl(emp.nombre, window.secretBodegaTemporal);
+        if (qrImg) qrImg.src = TOTP_AUTH.generarQrImageUrl(otpUrl, 180);
+        if (txtSecret) txtSecret.textContent = window.secretBodegaTemporal;
+        if (boxSetup) boxSetup.style.display = 'block';
+        const tit = document.getElementById('titulo2FABodega');
+        if (tit) tit.textContent = '📲 Vincula tu Google Authenticator';
+    } else {
+        window.secretBodegaTemporal = emp.secret_2fa;
+        if (boxSetup) boxSetup.style.display = 'none';
+        const tit = document.getElementById('titulo2FABodega');
+        if (tit) tit.textContent = '🔒 Verificación 2FA';
+    }
+}
+
+function cancelar2FABodega() {
+    window.empBodegaTemporal2FA = null;
+    window.secretBodegaTemporal = '';
+    const sec2FA = document.getElementById('bodega2FASection');
+    const secLogin = document.getElementById('bodegaLoginSection');
+    if (sec2FA) sec2FA.style.display = 'none';
+    if (secLogin) secLogin.style.display = 'flex';
+}
+
+async function validar2FABodega(e) {
+    if (e) e.preventDefault();
+    const codigo = (document.getElementById('inputCodigo2FABodega')?.value || '').trim();
+    const btn = document.getElementById('btnValidar2FABodega');
+    const emp = window.empBodegaTemporal2FA;
+
+    if (!emp || !window.secretBodegaTemporal) {
+        return mostrarToast('Sesión temporal inválida', 'error');
+    }
+
+    if (codigo.length !== 6) {
+        return mostrarToast('Ingresa los 6 dígitos del autenticador', 'error');
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando...';
+    }
+
+    try {
+        const esValido = await TOTP_AUTH.validarCodigo(codigo, window.secretBodegaTemporal);
+        if (!esValido) {
+            mostrarToast('❌ Código 2FA incorrecto o expirado. Revisa tu app.', 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = '✅ Verificar'; }
+            document.getElementById('inputCodigo2FABodega')?.select();
+            return;
+        }
+
+        // Si era primera vez, guardar en Supabase
+        if (!emp.dos_factores_activo && window.supabaseClient) {
+            await window.supabaseClient
+                .from('empleados_tienda')
+                .update({ secret_2fa: window.secretBodegaTemporal, dos_factores_activo: true })
+                .eq('id', emp.id);
+        }
+
+        empleadoBodegaSesion = {
+            id: emp.id,
+            nombre: emp.nombre,
+            cargo: emp.cargo || 'Encargado de Bodega',
+            cedula: emp.cedula
+        };
+
+        localStorage.setItem('empleado_bodega_sesion', JSON.stringify(empleadoBodegaSesion));
+        const sec2FA = document.getElementById('bodega2FASection');
+        if (sec2FA) sec2FA.style.display = 'none';
+
+        mostrarToast(`¡Bienvenido/a, ${emp.nombre}!`, 'success');
+        verificarSesionBodega();
+
+    } catch(err) {
+        console.error(err);
+        mostrarToast('Error validando 2FA: ' + err.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '✅ Verificar'; }
     }
 }
 
