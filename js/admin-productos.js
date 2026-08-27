@@ -663,24 +663,27 @@ window.agregarTarjetaColor = function (color = '', url = '', tallas = []) {
 
     card.innerHTML = `
         <!-- CABECERA DEL COLOR: NOMBRE + FOTO + ACCIONES -->
-        <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; background: #f8fafc; padding: 0.85rem 1rem; border-radius: 0.65rem; border: 1px solid #e2e8f0;">
+        <div style="display: flex; gap: 1.25rem; align-items: center; justify-content: space-between; flex-wrap: wrap; background: #f8fafc; padding: 1rem 1.25rem; border-radius: 0.75rem; border: 1px solid #e2e8f0;">
             <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 260px;">
-                <span style="font-size: 1.25rem;">🎨</span>
-                <input type="text" class="form-control form-control-sm input-color-nombre" value="${color}" placeholder="Nombre del Color (ej: Negro - Gris - Rosado)" style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">
+                <span style="font-size: 1.35rem;">🎨</span>
+                <input type="text" class="form-control form-control-sm input-color-nombre" value="${color}" placeholder="Nombre del Color (ej: Negro - Gris - Rosado)" style="font-weight: 700; font-size: 1rem; color: #1e293b; height: 38px;">
             </div>
             
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <div style="display: flex; align-items: center; gap: 0.85rem;">
                 <input type="hidden" class="input-color-url" value="${url}">
-                <div class="color-preview-img" style="width: 46px; height: 46px; background: #f1f5f9; border-radius: 6px; overflow: hidden; border: 1px solid #cbd5e1; flex-shrink: 0;">
-                    <img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+                <!-- Miniatura de Imagen Agrandada para Claridad Visual -->
+                <div class="color-preview-img" style="width: 85px; height: 85px; background: #ffffff; border-radius: 10px; overflow: hidden; border: 2px solid #cbd5e1; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; position: relative;">
+                    <img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: contain; padding: 2px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-primary" onclick="subirImagenColorTarjeta('${cardId}')" title="Subir foto para este color" style="display: flex; align-items: center; gap: 0.35rem; font-weight: 600;">
-                    📷 Foto
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFotoColorTarjeta('${cardId}')" title="Quitar foto de este color">
-                    ❌
-                </button>
-                <button type="button" class="btn btn-sm btn-danger" onclick="removerTarjetaColor('${cardId}')" title="Eliminar este color completo con su inventario" style="margin-left: 0.5rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="subirImagenColorTarjeta('${cardId}')" title="Subir foto para este color" style="display: flex; align-items: center; justify-content: center; gap: 0.35rem; font-weight: 600; padding: 0.4rem 0.85rem;">
+                        📷 Foto
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFotoColorTarjeta('${cardId}')" title="Quitar foto de este color" style="padding: 0.25rem 0.6rem;">
+                        ❌ Quitar
+                    </button>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removerTarjetaColor('${cardId}')" title="Eliminar este color completo con su inventario" style="margin-left: 0.5rem; height: 38px; font-weight: 600; padding: 0.4rem 1rem;">
                     🗑️ Quitar Color
                 </button>
             </div>
