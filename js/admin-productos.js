@@ -770,6 +770,7 @@ window.removerTarjetaColor = function (cardId) {
 window.limpiarFotoColorTarjeta = function (cardId) {
     const card = document.getElementById(cardId);
     if (!card) return;
+    delete card.dataset.useMainImage;
     const urlInput = card.querySelector('.input-color-url');
     const imgEl = card.querySelector('.color-preview-img img');
     if (urlInput) urlInput.value = '';
@@ -792,9 +793,31 @@ window.subirImagenColorTarjeta = async function (cardId) {
 
             const card = document.getElementById(cardId);
             if (card) {
+                delete card.dataset.useMainImage;
                 card.querySelector('.input-color-url').value = publicUrl;
                 card.querySelector('.color-preview-img img').src = publicUrl;
             }
+
+            // Si la imagen principal arriba no tiene foto, sincronizarla automáticamente
+            const mainImgInput = document.getElementById('productoImagen');
+            const previewMain = document.getElementById('previewProducto');
+            const containerMain = document.getElementById('previewContainerProducto');
+            const dropzoneMain = document.getElementById('dropzoneProducto');
+            if (mainImgInput && (!mainImgInput.value || !previewMain.src)) {
+                mainImgInput.value = publicUrl;
+                if (previewMain && containerMain) {
+                    previewMain.src = publicUrl;
+                    containerMain.style.display = 'block';
+                    if (dropzoneMain) {
+                        Array.from(dropzoneMain.children).forEach(child => {
+                            if (child.id !== 'previewContainerProducto' && child.type !== 'file') {
+                                child.style.visibility = 'hidden';
+                            }
+                        });
+                    }
+                }
+            }
+
             showToast('Imagen subida con éxito');
         } catch (err) {
             console.error('Error subiendo imagen de color:', err);
@@ -868,9 +891,19 @@ async function guardarProducto() {
         const variantesData = [];
         const inventarioData = [];
 
-        tarjetasColores.forEach(card => {
+        tarjetasColores.forEach((card, idx) => {
             const colorName = card.querySelector('.input-color-nombre')?.value.trim() || '';
-            const colorUrl = card.querySelector('.input-color-url')?.value.trim() || '';
+            let colorUrl = card.querySelector('.input-color-url')?.value.trim() || '';
+
+            // Si la tarjeta no tiene URL pero se subió la imagen principal arriba, asignarla
+            if (!colorUrl && (card.dataset.useMainImage === 'true' || (idx === 0 && urlImagen))) {
+                colorUrl = urlImagen;
+            }
+
+            // Si la imagen principal arriba estaba vacía pero esta variante tiene foto, usarla como principal
+            if (!urlImagen && colorUrl) {
+                urlImagen = colorUrl;
+            }
 
             if (colorName || colorUrl) {
                 variantesData.push({ color: colorName || 'Único', url: colorUrl });
@@ -1089,6 +1122,21 @@ function handleFileSelect(event, tipo) {
                         child.style.visibility = 'hidden';
                     }
                 });
+            }
+        }
+
+        // SI ES PRODUCTO: Asignar automáticamente esta imagen a la primera tarjeta de color si no tiene foto
+        if (tipo === 'producto') {
+            const firstCard = document.querySelector('#containerMatrizColores .card-color-variante');
+            if (firstCard) {
+                const cardUrl = firstCard.querySelector('.input-color-url')?.value.trim();
+                if (!cardUrl) {
+                    const cardImg = firstCard.querySelector('.color-preview-img img');
+                    if (cardImg) {
+                        cardImg.src = e.target.result;
+                        firstCard.dataset.useMainImage = 'true';
+                    }
+                }
             }
         }
     };

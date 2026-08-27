@@ -541,8 +541,10 @@ function limpiarFotoColorTarjeta(cardId) {
     const imgEl = card.querySelector('.color-preview-img img');
     if (urlInput) urlInput.value = '';
     if (imgEl) imgEl.src = PLACEHOLDER_IMG_FALLBACK;
+    delete card.dataset.useMainImage;
     showToast('Foto eliminada', 'info');
 }
+
 async function subirImagenColorTarjeta(cardId) {
     const input = document.createElement('input');
     input.type = 'file';
@@ -555,9 +557,21 @@ async function subirImagenColorTarjeta(cardId) {
             const url = await subirImagen(file);
             const card = document.getElementById(cardId);
             if (card) {
+                delete card.dataset.useMainImage;
                 card.querySelector('.input-color-url').value = url;
                 card.querySelector('.color-preview-img img').src = url;
             }
+
+            // Sincronizar con la foto principal arriba si está vacía
+            const mainInp = document.getElementById('productoImagen');
+            const prevImg = document.getElementById('previewProducto');
+            const contPrev = document.getElementById('previewContainerProducto');
+            if (mainInp && !mainInp.value) {
+                mainInp.value = url;
+                if (prevImg) prevImg.src = url;
+                if (contPrev) contPrev.style.display = 'block';
+            }
+
             showToast('Imagen subida con éxito');
         } catch (e) {
             showToast('Error al subir imagen', 'error');
@@ -577,12 +591,25 @@ function actualizarFormularioPorCategoria() {
 async function manejarImagenPrincipal(input) {
     if (!input.files || !input.files[0]) return;
     try {
-        showToast('Subiendo imagen...', 'info');
+        showToast('Subiendo imagen principal...', 'info');
         const url = await subirImagen(input.files[0]);
         document.getElementById('productoImagen').value = url;
         document.getElementById('previewProducto').src = url;
         document.getElementById('previewContainerProducto').style.display = 'block';
-        showToast('Imagen subida');
+
+        // Sincronizar automáticamente con la primera tarjeta de color si no tiene foto
+        const firstCard = document.querySelector('#containerMatrizColores .card-color-variante');
+        if (firstCard) {
+            const cardUrl = firstCard.querySelector('.input-color-url')?.value.trim();
+            if (!cardUrl) {
+                const cardImg = firstCard.querySelector('.color-preview-img img');
+                const cardUrlInp = firstCard.querySelector('.input-color-url');
+                if (cardImg) cardImg.src = url;
+                if (cardUrlInp) cardUrlInp.value = url;
+            }
+        }
+
+        showToast('Imagen subida y sincronizada');
     } catch (e) {
         showToast('Error al subir imagen', 'error');
     }
@@ -674,9 +701,20 @@ async function guardarProducto() {
     const variantesData = [];
     const tallasSet = new Set();
 
-    tarjetasColores.forEach(card => {
+    let urlImagen = document.getElementById('productoImagen')?.value?.trim() || '';
+
+    tarjetasColores.forEach((card, idx) => {
         const colorName = card.querySelector('.input-color-nombre')?.value.trim() || '';
-        const colorUrl = card.querySelector('.input-color-url')?.value.trim() || '';
+        let colorUrl = card.querySelector('.input-color-url')?.value.trim() || '';
+
+        if (!colorUrl && (idx === 0 && urlImagen)) {
+            colorUrl = urlImagen;
+        }
+
+        if (!urlImagen && colorUrl) {
+            urlImagen = colorUrl;
+        }
+
         if (colorName || colorUrl) {
             variantesData.push({ color: colorName || 'Único', url: colorUrl });
         }
