@@ -1197,6 +1197,53 @@ async function editarProducto(id) {
             supabaseClient.from('inventario').select('talla, color, cantidad').eq('producto_id', idProd).eq('local_id', 'Bodega')
         ]);
 
+        const rawA = invA.data || [];
+        const rawL = invL.data || [];
+        const rawJ = invJ.data || [];
+        const rawB = invBod.data || [];
+
+        const coloresMap = {};
+
+        if (p.variantes && Array.isArray(p.variantes)) {
+            p.variantes.forEach(v => {
+                const cName = (typeof v === 'string' ? v : v.color || '').trim();
+                const cUrl = (typeof v === 'string' ? '' : v.url || '').trim();
+                if (cName || cUrl) {
+                    coloresMap[cName] = { url: cUrl, tallas: [] };
+                }
+            });
+        }
+
+        const todasCombinaciones = [];
+        [rawA, rawL, rawJ, rawB].forEach(list => {
+            list.forEach(i => {
+                const c = (i.color || '').trim();
+                const t = (i.talla || 'Única').trim();
+                if (!coloresMap[c]) {
+                    coloresMap[c] = { url: '', tallas: [] };
+                }
+                const existe = todasCombinaciones.some(x => x.color === c && x.talla === t);
+                if (!existe) todasCombinaciones.push({ color: c, talla: t });
+            });
+        });
+
+        todasCombinaciones.forEach(comb => {
+            const sA = rawA.find(i => (i.color || '').trim() === comb.color && (i.talla || 'Única').trim() === comb.talla)?.cantidad || 0;
+            const sL = rawL.find(i => (i.color || '').trim() === comb.color && (i.talla || 'Única').trim() === comb.talla)?.cantidad || 0;
+            const sJ = rawJ.find(i => (i.color || '').trim() === comb.color && (i.talla || 'Única').trim() === comb.talla)?.cantidad || 0;
+            const sB = rawB.find(i => (i.color || '').trim() === comb.color && (i.talla || 'Única').trim() === comb.talla)?.cantidad || 0;
+
+            if (coloresMap[comb.color]) {
+                coloresMap[comb.color].tallas.push({
+                    talla: comb.talla,
+                    alcala: sA,
+                    local01: sL,
+                    jordan: sJ,
+                    bodega: sB
+                });
+            }
+        });
+
         if (containerMatriz) containerMatriz.innerHTML = '';
 
         const keysColores = Object.keys(coloresMap);
