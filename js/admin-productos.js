@@ -940,6 +940,37 @@ async function guardarProducto() {
             });
         }
 
+        // 3. SELECCIÓN INTELIGENTE DE FOTO DE PORTADA POR STOCK EN BODEGA/TIENDAS
+        const variantesConFoto = variantesData.filter(v => v.url && v.url.trim() !== '');
+        if (variantesConFoto.length > 0) {
+            const stockPorVariante = variantesConFoto.map(v => {
+                const filasV = inventarioData.filter(i => (i.color || '').trim().toLowerCase() === (v.color || '').trim().toLowerCase());
+                const stockBodega = filasV.reduce((acc, curr) => acc + (curr.bodega || 0), 0);
+                const stockTiendas = filasV.reduce((acc, curr) => acc + (curr.alcala || 0) + (curr.local01 || 0) + (curr.jordan || 0), 0);
+                const stockTotal = stockBodega + stockTiendas;
+                return {
+                    url: v.url,
+                    color: v.color,
+                    stockBodega,
+                    stockTotal
+                };
+            });
+
+            const varianteActual = stockPorVariante.find(v => v.url === urlImagen);
+            const stockActual = varianteActual ? varianteActual.stockTotal : 0;
+
+            // Si la foto actual se agotó (stock 0) o no hay urlImagen previa, rotar a la variante con mayor stock en bodega/tiendas
+            if (stockActual === 0 || !urlImagen) {
+                stockPorVariante.sort((a, b) => {
+                    if (b.stockBodega !== a.stockBodega) return b.stockBodega - a.stockBodega;
+                    return b.stockTotal - a.stockTotal;
+                });
+                if (stockPorVariante[0]?.url) {
+                    urlImagen = stockPorVariante[0].url;
+                }
+            }
+        }
+
         const stockDigital = parseInt(document.getElementById('stockDigital').value) || 0;
 
         const productoData = {

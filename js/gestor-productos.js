@@ -724,6 +724,39 @@ async function guardarProducto() {
         });
     });
 
+    // SELECCIÓN INTELIGENTE DE FOTO DE PORTADA POR STOCK EN BODEGA/TIENDAS
+    const variantesConFoto = variantesData.filter(v => v.url && v.url.trim() !== '');
+    if (variantesConFoto.length > 0) {
+        const stockPorVariante = [];
+        tarjetasColores.forEach(card => {
+            const cName = card.querySelector('.input-color-nombre')?.value.trim() || '';
+            const cUrl = card.querySelector('.input-color-url')?.value.trim() || '';
+            if (!cUrl) return;
+            let stockBod = 0, stockTot = 0;
+            card.querySelectorAll('.fila-talla').forEach(tr => {
+                const sb = parseInt(tr.querySelector('.input-stock-bodega')?.value) || 0;
+                const sa = parseInt(tr.querySelector('.input-stock-alcala')?.value) || 0;
+                const sl = parseInt(tr.querySelector('.input-stock-local01')?.value) || 0;
+                const sj = parseInt(tr.querySelector('.input-stock-jordan')?.value) || 0;
+                stockBod += sb;
+                stockTot += (sb + sa + sl + sj);
+            });
+            stockPorVariante.push({ url: cUrl, color: cName, stockBodega: stockBod, stockTotal: stockTot });
+        });
+
+        const actual = stockPorVariante.find(v => v.url === urlImagen);
+        const stockAct = actual ? actual.stockTotal : 0;
+        if (stockAct === 0 || !urlImagen) {
+            stockPorVariante.sort((a, b) => {
+                if (b.stockBodega !== a.stockBodega) return b.stockBodega - a.stockBodega;
+                return b.stockTotal - a.stockTotal;
+            });
+            if (stockPorVariante[0]?.url) {
+                urlImagen = stockPorVariante[0].url;
+            }
+        }
+    }
+
     const datos = {
         nombre: document.getElementById('productoNombre').value.trim(),
         referencia: document.getElementById('productoReferencia').value.trim(),
@@ -735,7 +768,7 @@ async function guardarProducto() {
         precio: parseFloat(document.getElementById('productoPrecio').value) || 0,
         stock_digital: parseInt(document.getElementById('stockDigital').value) || 0,
         estado: document.getElementById('productoEstado').value,
-        url_imagen: document.getElementById('productoImagen').value,
+        url_imagen: urlImagen,
         descripcion_corta: document.getElementById('productoDescCorta').value.trim(),
         descripcion_tecnica: document.getElementById('productoDescTecnica').value.trim(),
         en_oferta: document.getElementById('productoEnOferta').checked,

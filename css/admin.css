@@ -2111,6 +2111,10 @@ body {
         display: none;
     }
 
+    .form-bloque-superior-producto {
+        grid-template-columns: 1fr !important;
+    }
+
     .mobile-menu-toggle {
         display: block;
     }
