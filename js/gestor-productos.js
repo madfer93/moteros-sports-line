@@ -420,7 +420,7 @@ function agregarFilaColor(color = '', url = '') {
             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFotoColorGestor('${rowId}')" title="Quitar foto">❌</button>
         </div>
         <div class="color-preview-img" style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0; flex-shrink: 0;">
-            <img src="${url || 'https://via.placeholder.com/50?text=Sin+Foto'}" style="width: 100%; height: 100%; object-fit: cover;">
+            <img src="${url || 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22><rect fill=%22%23f1f5f9%22 width=%22100%22 height=%22100%22/><text fill=%22%2394a3b8%22 font-family=%22sans-serif%22 font-size=%2211%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%220.3em%22>Sin Foto</text></svg>'}" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
         <button type="button" class="btn btn-sm btn-danger" onclick="removerFilaColor('${rowId}')" title="Eliminar color">🗑️</button>
     `;
@@ -434,7 +434,7 @@ function actualizarPreviewColorGestor(rowId) {
     const urlInput = fila.querySelector('.color-url');
     const imgEl = fila.querySelector('.color-preview-img img');
     if (imgEl && urlInput) {
-        imgEl.src = urlInput.value.trim() || 'https://via.placeholder.com/50?text=Sin+Foto';
+        imgEl.src = urlInput.value.trim() || 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22><rect fill=%22%23f1f5f9%22 width=%22100%22 height=%22100%22/><text fill=%22%2394a3b8%22 font-family=%22sans-serif%22 font-size=%2211%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%220.3em%22>Sin Foto</text></svg>';
     }
 }
 
@@ -444,7 +444,7 @@ function limpiarFotoColorGestor(rowId) {
     const urlInput = fila.querySelector('.color-url');
     const imgEl = fila.querySelector('.color-preview-img img');
     if (urlInput) urlInput.value = '';
-    if (imgEl) imgEl.src = 'https://via.placeholder.com/50?text=Sin+Foto';
+    if (imgEl) imgEl.src = 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22><rect fill=%22%23f1f5f9%22 width=%22100%22 height=%22100%22/><text fill=%22%2394a3b8%22 font-family=%22sans-serif%22 font-size=%2211%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%220.3em%22>Sin Foto</text></svg>';
     showToast('Foto del color eliminada', 'info');
 }
 

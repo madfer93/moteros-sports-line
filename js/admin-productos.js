@@ -86,6 +86,8 @@ async function cargarProductos() {
     }
 }
 
+const PLACEHOLDER_IMG_FALLBACK = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23f1f5f9" width="100" height="100"/><text fill="%2394a3b8" font-family="sans-serif" font-size="11" x="50%" y="50%" text-anchor="middle" dy="0.3em">Sin Foto</text></svg>';
+
 function renderizarProductos(lista) {
     const grid = document.getElementById('listaProductos');
     if (!grid) return;
@@ -106,7 +108,7 @@ function renderizarProductos(lista) {
 
         stockTotal = sAlcala + sLocal01 + sJordan + sDigital;
 
-        const imagen = p.url_imagen || 'https://via.placeholder.com/150?text=Sin+Imagen';
+        const imagen = p.url_imagen || PLACEHOLDER_IMG_FALLBACK;
         // Usar cache proveedores
         const provName = proveedoresCache[p.proveedor_id] || 'Sin Proveedor';
 
@@ -711,7 +713,7 @@ window.agregarFilaColor = function (color = '', url = '') {
             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFotoColor('${rowId}')" title="Quitar solo la foto de este color">❌</button>
         </div>
         <div class="color-preview-img" style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0; flex-shrink: 0;">
-            <img src="${url || 'https://via.placeholder.com/50?text=Sin+Foto'}" style="width: 100%; height: 100%; object-fit: cover;">
+            <img src="${url || PLACEHOLDER_IMG_FALLBACK}" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
         <button type="button" class="btn btn-sm btn-danger" onclick="removerFilaColor('${rowId}')" title="Eliminar este color completo">🗑️</button>
     `;
@@ -726,7 +728,7 @@ window.actualizarPreviewColorFila = function (rowId) {
     const urlInput = fila.querySelector('.input-color-url');
     const imgEl = fila.querySelector('.color-preview-img img');
     if (imgEl && urlInput) {
-        imgEl.src = urlInput.value.trim() || 'https://via.placeholder.com/50?text=Sin+Foto';
+        imgEl.src = urlInput.value.trim() || PLACEHOLDER_IMG_FALLBACK;
     }
 };
 
@@ -736,7 +738,7 @@ window.limpiarFotoColor = function (rowId) {
     const urlInput = fila.querySelector('.input-color-url');
     const imgEl = fila.querySelector('.color-preview-img img');
     if (urlInput) urlInput.value = '';
-    if (imgEl) imgEl.src = 'https://via.placeholder.com/50?text=Sin+Foto';
+    if (imgEl) imgEl.src = PLACEHOLDER_IMG_FALLBACK;
     showToast('Foto del color eliminada', 'info');
 };
 
@@ -956,18 +958,18 @@ async function guardarProducto() {
         }
 
         // GUARDAR INVENTARIO (ESTRATEGIA DELETE-INSERT PARA EVITAR 409)
-        const sedes = [
+        // 1. Sedes físicas con tablas dedicadas por variante (talla/color)
+        const sedesTiendas = [
             { id: 'Alcalá', tabla: 'inventario_alcala', key: 'alcala' },
             { id: 'Local 01', tabla: 'inventario_01', key: 'local01' },
-            { id: 'Jordán', tabla: 'inventario_jordan', key: 'jordan' },
-            { id: 'Bodega', tabla: 'inventario_bodega', key: 'bodega' }
+            { id: 'Jordán', tabla: 'inventario_jordan', key: 'jordan' }
         ];
 
-        for (const sede of sedes) {
-            // 1. Borrar TODO el inventario de este producto en la sede
+        for (const sede of sedesTiendas) {
+            // 1. Borrar inventario anterior de este producto en la sede
             await supabaseClient.from(sede.tabla).delete().eq('id_producto', prodTextId);
 
-            // 2. Insertar los nuevos registros
+            // 2. Insertar los nuevos registros con talla y color
             const opsSede = inventarioData.map(i => ({
                 id_producto: prodTextId,
                 talla: i.talla,
@@ -987,12 +989,34 @@ async function guardarProducto() {
             }
         }
 
-        // 3. Actualizar Tabla Unificada 'inventario'
+        // 2. Sincronización segura de Bodega (tabla legacy sin columnas de talla/color)
+        try {
+            const totalBodega = inventarioData.reduce((acc, i) => acc + (parseInt(i.bodega) || 0), 0);
+            await supabaseClient.from('inventario_bodega').delete().eq('id_producto', prodTextId);
+            if (totalBodega > 0) {
+                await supabaseClient.from('inventario_bodega').insert({
+                    id_producto: prodTextId,
+                    cantidad: totalBodega,
+                    updated_at: new Date().toISOString()
+                });
+            }
+        } catch (eBod) {
+            console.warn('[Bodega] Sincronización opcional legacy omitida:', eBod);
+        }
+
+        // 3. Actualizar Tabla Unificada 'inventario' (con soporte completo de variantes para todas las sedes, incluyendo Bodega)
         await supabaseClient.from('inventario').delete().eq('producto_id', prodTextId);
+
+        const todasSedes = [
+            { id: 'Alcalá', key: 'alcala' },
+            { id: 'Local 01', key: 'local01' },
+            { id: 'Jordán', key: 'jordan' },
+            { id: 'Bodega', key: 'bodega' }
+        ];
 
         const opsUnified = [];
         for (const i of inventarioData) {
-            for (const sede of sedes) {
+            for (const sede of todasSedes) {
                 if (i[sede.key] !== undefined && i[sede.key] !== null) {
                     opsUnified.push({
                         producto_id: prodTextId,
