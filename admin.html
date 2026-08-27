@@ -1951,260 +1951,233 @@
                     <p>Administra el catálogo de productos</p>
                 </div>
 
-                <div class="actions-bar">
-                    <button onclick="mostrarFormProducto()" class="btn btn-primary">➕ Nuevo Producto</button>
-                    <button onclick="cargarProductos()" class="btn btn-secondary">🔄 Recargar</button>
-                    <div class="btn-group" style="display:inline-flex; gap:0.25rem;">
-                        <button onclick="exportarProductosExcel()" class="btn btn-success" title="Exportar a Excel">📊
-                            Excel</button>
-                        <button onclick="exportarProductosPDF()" class="btn btn-danger" title="Exportar a PDF">📄
-                            PDF</button>
+                <div id="vistaListaProductos">
+                    <div class="actions-bar">
+                        <button onclick="mostrarFormProducto()" class="btn btn-primary">➕ Nuevo Producto</button>
+                        <button onclick="cargarProductos()" class="btn btn-secondary">🔄 Recargar</button>
+                        <div class="btn-group" style="display:inline-flex; gap:0.25rem;">
+                            <button onclick="exportarProductosExcel()" class="btn btn-success" title="Exportar a Excel">📊
+                                Excel</button>
+                            <button onclick="exportarProductosPDF()" class="btn btn-danger" title="Exportar a PDF">📄
+                                PDF</button>
+                        </div>
+                        <div class="search-input">
+                            <input type="text" id="buscarProductoAdmin" placeholder="Buscar producto..."
+                                oninput="filtrarProductosAdmin()">
+                        </div>
                     </div>
-                    <div class="search-input">
-                        <input type="text" id="buscarProductoAdmin" placeholder="Buscar producto..."
-                            oninput="filtrarProductosAdmin()">
+
+                    <div id="listaProductos" class="productos-admin-grid">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>Cargando productos...</p>
+                        </div>
                     </div>
                 </div>
 
-                <div id="formProducto" class="form-modal">
-                    <div class="modal-content-wrapper"
-                        style="max-width: 1000px; margin: 0 auto; background: white; padding: 2rem; border-radius: 1rem; height: 90vh; overflow-y: auto;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; position: sticky; top: -2rem; background: white; z-index: 100; margin: -2rem -2rem 2rem -2rem; padding: 1.5rem 2rem; border-bottom: 1px solid #e2e8f0; border-radius: 1rem 1rem 0 0;">
-                            <h3 id="formTituloProducto" style="margin:0;">➕ Nuevo Producto</h3>
-                            <button type="button" onclick="cancelarFormProducto()" style="background:none; border:none; font-size:1.5rem; color:#64748b; cursor:pointer;" title="Cerrar modal">✖</button>
+                <!-- SECCIÓN FORMULARIO DE PRODUCTO (CERO MODALES - PANTALLA COMPLETA) -->
+                <div id="formProducto" style="display:none; width: 100%; background: white; padding: 2rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-top: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 1rem 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; border: 1px solid #e2e8f0; flex-wrap: wrap; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <button type="button" onclick="cancelarFormProducto()" class="btn btn-secondary" style="font-weight: 600;">
+                                ← Volver al Catálogo
+                            </button>
+                            <h3 id="formTituloProducto" style="margin: 0; font-size: 1.35rem; color: #0f172a; font-weight: 800;">➕ Nuevo Producto</h3>
                         </div>
-                        <input type="hidden" id="productoId">
-                        <input type="hidden" id="productoIdProducto">
+                        <button type="button" onclick="guardarProducto()" class="btn btn-success" style="padding: 0.65rem 1.75rem; font-size: 1rem; font-weight: 700;">
+                            💾 Guardar Producto
+                        </button>
+                    </div>
 
-                        <div class="dropzone" id="dropzoneProducto"
-                            onclick="document.getElementById('fileInputProducto').click()">
-                            <div class="dropzone-icon">📸</div>
-                            <div class="dropzone-text">Arrastra una imagen aquí</div>
-                            <div class="dropzone-subtext">o haz clic para seleccionar (JPG, PNG, WebP - Max 5MB)</div>
-                            <input type="file" id="fileInputProducto" accept="image/*" style="display:none;"
-                                onchange="handleFileSelect(event, 'producto')">
-                            <div class="preview-container" id="previewContainerProducto" style="display:none;">
-                                <img id="previewProducto" class="preview-image">
-                                <button class="remove-preview"
-                                    onclick="event.stopPropagation(); removerPreview('producto')">×</button>
-                            </div>
-                        </div>
-                        <div class="upload-progress" id="uploadProgressProducto">
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="progressFillProducto" style="width:0%"></div>
-                            </div>
-                            <div class="progress-text">Subiendo imagen...</div>
-                        </div>
+                    <input type="hidden" id="productoId">
+                    <input type="hidden" id="productoIdProducto">
 
-                        <div class="form-row">
-                            <div class="form-group"><label>Nombre <span class="required">*</span></label><input
-                                    type="text" id="productoNombre" class="form-control"
-                                    placeholder="Nombre del producto"></div>
-                            <div class="form-group"><label>Referencia</label><input type="text" id="productoReferencia"
-                                    class="form-control" placeholder="REF-001"></div>
+                    <!-- FOTO PRINCIPAL -->
+                    <div class="dropzone" id="dropzoneProducto"
+                        onclick="document.getElementById('fileInputProducto').click()">
+                        <div class="dropzone-icon">📸</div>
+                        <div class="dropzone-text">Arrastra la Imagen Principal aquí</div>
+                        <div class="dropzone-subtext">o haz clic para seleccionar (JPG, PNG, WebP - Max 5MB)</div>
+                        <input type="file" id="fileInputProducto" accept="image/*" style="display:none;"
+                            onchange="handleFileSelect(event, 'producto')">
+                        <div class="preview-container" id="previewContainerProducto" style="display:none;">
+                            <img id="previewProducto" class="preview-image">
+                            <button class="remove-preview"
+                                onclick="event.stopPropagation(); removerPreview('producto')">×</button>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Categoría <span class="required">*</span></label>
-                                <select id="productoCategoria" class="form-control">
-                                    <option value="">Seleccionar...</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Subcategoría</label>
-                                <input type="text" id="productoSubcategoria" class="form-control"
-                                    placeholder="Ej: Modular, Integral, Abierto">
-                            </div>
-                            <div class="form-group"><label>Marca <span class="required">*</span></label><input
-                                    type="text" id="productoMarca" class="form-control" placeholder="Marca"></div>
-                            <div class="form-group">
-                                <label>Proveedor</label>
-                                <select id="productoProveedor" class="form-control">
-                                    <option value="">Seleccionar...</option>
-                                    <!-- Se llena con JS -->
-                                </select>
-                            </div>
+                    </div>
+                    <div class="upload-progress" id="uploadProgressProducto">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFillProducto" style="width:0%"></div>
                         </div>
-                        <div class="form-section"
-                            style="background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-bottom: 2rem;">
-                            <h4
-                                style="margin-bottom: 1rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
-                                <span>🎨</span> Colores y Fotos
-                            </h4>
-                            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;">
-                                Agregue los colores disponibles y asigne una imagen específica a cada uno.
-                            </p>
+                        <div class="progress-text">Subiendo imagen...</div>
+                    </div>
 
-                            <div id="containerColoresFotos"
-                                style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem;">
-                                <!-- Filas de colores dinámicas se insertan aquí con JS -->
+                    <div class="form-row">
+                        <div class="form-group"><label>Nombre <span class="required">*</span></label><input
+                                type="text" id="productoNombre" class="form-control"
+                                placeholder="Nombre del producto"></div>
+                        <div class="form-group"><label>Referencia</label><input type="text" id="productoReferencia"
+                                class="form-control" placeholder="REF-001"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Categoría <span class="required">*</span></label>
+                            <select id="productoCategoria" class="form-control">
+                                <option value="">Seleccionar...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Subcategoría</label>
+                            <input type="text" id="productoSubcategoria" class="form-control"
+                                placeholder="Ej: Modular, Integral, Abierto">
+                        </div>
+                        <div class="form-group"><label>Marca <span class="required">*</span></label><input
+                                type="text" id="productoMarca" class="form-control" placeholder="Marca"></div>
+                        <div class="form-group">
+                            <label>Proveedor</label>
+                            <select id="productoProveedor" class="form-control">
+                                <option value="">Seleccionar...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- MATRIZ UNIFICADA: VARIANTES DE COLOR + FOTO + TALLAS Y STOCK (CERO DOBLE TRABAJO) -->
+                    <div class="form-section"
+                        style="background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                            <div>
+                                <h4 style="margin: 0; color: #1e293b; display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem;">
+                                    <span>🎨</span> Variantes por Color, Fotos y Stock por Tienda
+                                </h4>
+                                <p style="font-size: 0.85rem; color: #64748b; margin: 0.35rem 0 0 0;">
+                                    Asigna la foto de cada color y sus tallas/cantidades directamente en el mismo bloque sin repetir información.
+                                </p>
                             </div>
-
-                            <button type="button" class="btn btn-outline-primary" onclick="agregarFilaColor()"
-                                style="width: 100%; padding: 0.75rem;">
-                                + Agregar Color
+                            <button type="button" class="btn btn-primary" onclick="agregarTarjetaColor()" style="font-weight: 600;">
+                                ➕ Agregar Color / Variante
                             </button>
                         </div>
 
-                        <div class="form-group" id="containerTallasStock"
-                            style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
-                            <label style="font-weight: 600; color: #2c3e50;">📏 Gestión de Tallas y Stock</label>
-                            <p style="font-size: 0.85rem; color: #6c757d; margin-bottom: 10px;">Agregue las tallas
-                                disponibles y asigne el inventario para cada sede.</p>
+                        <!-- Contenedor dinámico de tarjetas de colores -->
+                        <div id="containerMatrizColores" style="display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 1rem;">
+                            <!-- Insertado por JS -->
+                        </div>
+                    </div>
 
-                            <div class="table-responsive"
-                                style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px;">
-                                <table class="table table-bordered table-sm" id="tablaTallasStock"
-                                    style="background: white; margin-bottom: 0;">
-                                    <thead class="thead-light" style="position: sticky; top: 0; z-index: 10;">
-                                        <tr>
-                                            <th style="width: 20%; background: #f8f9fa;">Color</th>
-                                            <th style="width: 15%; background: #f8f9fa;">Talla</th>
-                                            <th style="width: 13%; background: #f8f9fa;">Alcalá</th>
-                                            <th style="width: 13%; background: #f8f9fa;">Local 01</th>
-                                            <th style="width: 13%; background: #f8f9fa;">Jordán</th>
-                                            <th style="width: 13%; background: #f8f9fa;">Bodega</th>
-                                            <th style="width: 13%; background: #f8f9fa;">Acción</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyTallasStock">
-                                        <!-- Filas dinámicas -->
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="text-right mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary"
-                                    onclick="agregarFilaTalla()">
-                                    + Agregar Talla
-                                </button>
-                            </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Precio Compra</label>
+                            <input type="number" id="productoPrecioCompra" class="form-control" placeholder="0"
+                                min="0">
+                            <p class="form-hint">Costo de adquisición</p>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Precio Compra</label>
-                                <input type="number" id="productoPrecioCompra" class="form-control" placeholder="0"
-                                    min="0">
-                                <p class="form-hint">Costo de adquisición</p>
-                            </div>
-                            <div class="form-group">
-                                <label>Precio Venta <span class="required">*</span></label>
-                                <input type="number" id="productoPrecio" class="form-control" placeholder="0" min="0">
-                            </div>
-                            <div class="form-group">
-                                <label>Margen</label>
-                                <input type="text" id="productoMargen" class="form-control" readonly placeholder="0%">
-                            </div>
+                        <div class="form-group">
+                            <label>Precio Venta <span class="required">*</span></label>
+                            <input type="number" id="productoPrecio" class="form-control" placeholder="0" min="0">
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Estado</label>
-                                <select id="productoEstado" class="form-control">
-                                    <option value="Activo">Activo</option>
-                                    <option value="Inactivo">Inactivo</option>
-                                </select>
-                            </div>
+                        <div class="form-group">
+                            <label>Margen</label>
+                            <input type="text" id="productoMargen" class="form-control" readonly placeholder="0%">
                         </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select id="productoEstado" class="form-control">
+                                <option value="Activo">Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
 
-                        <!-- ETIQUETAS: OFERTA Y NUEVO -->
-                        <div class="form-section"
-                            style="background: #fef3c7; padding: 1.5rem; border-radius: 1rem; border: 1px solid #fcd34d; margin-bottom: 1.5rem;">
-                            <h4
-                                style="margin-bottom: 1rem; color: #92400e; display: flex; align-items: center; gap: 0.5rem;">
-                                <span>🏷️</span> Etiquetas del Producto
-                            </h4>
-                            <div class="form-row" style="align-items: flex-start;">
-                                <!-- EN OFERTA -->
-                                <div class="form-group">
-                                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                                        <input type="checkbox" id="productoEnOferta" onchange="toggleFechaOferta()">
-                                        <span style="font-weight: 700; color: #dc2626;">🏷️ En Oferta</span>
-                                    </label>
-                                    <div id="grupoFechaOferta" style="display: none; margin-top: 0.5rem;">
-                                        <div style="display: flex; gap: 0.75rem; align-items: flex-end;">
-                                            <div style="flex:1;">
-                                                <label style="font-size: 0.85rem;">% Descuento visual:</label>
-                                                <input type="number" id="productoPorcentajeOferta" class="form-control"
-                                                    placeholder="30" min="1" max="99"
-                                                    style="font-weight:700; color:#dc2626; font-size:1.1rem;">
-                                            </div>
-                                            <div style="flex:1;">
-                                                <label style="font-size: 0.85rem;">Válida hasta:</label>
-                                                <input type="date" id="productoOfertaHasta" class="form-control">
-                                            </div>
+                    <!-- ETIQUETAS: OFERTA Y NUEVO -->
+                    <div class="form-section"
+                        style="background: #fef3c7; padding: 1.5rem; border-radius: 1rem; border: 1px solid #fcd34d; margin-bottom: 1.5rem;">
+                        <h4
+                            style="margin-bottom: 1rem; color: #92400e; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>🏷️</span> Etiquetas del Producto
+                        </h4>
+                        <div class="form-row" style="align-items: flex-start;">
+                            <!-- EN OFERTA -->
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="productoEnOferta" onchange="toggleFechaOferta()">
+                                    <span style="font-weight: 700; color: #dc2626;">🏷️ En Oferta</span>
+                                </label>
+                                <div id="grupoFechaOferta" style="display: none; margin-top: 0.5rem;">
+                                    <div style="display: flex; gap: 0.75rem; align-items: flex-end;">
+                                        <div style="flex:1;">
+                                            <label style="font-size: 0.85rem;">% Descuento visual:</label>
+                                            <input type="number" id="productoPorcentajeOferta" class="form-control"
+                                                placeholder="30" min="1" max="99"
+                                                style="font-weight:700; color:#dc2626; font-size:1.1rem;">
                                         </div>
-                                        <p class="form-hint" style="margin-top:0.25rem;">Ej: 30 → se muestra "-30%" en
-                                            la tarjeta</p>
+                                        <div style="flex:1;">
+                                            <label style="font-size: 0.85rem;">Válida hasta:</label>
+                                            <input type="date" id="productoOfertaHasta" class="form-control">
+                                        </div>
                                     </div>
-                                </div>
-                                <!-- ES NUEVO -->
-                                <div class="form-group">
-                                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                                        <input type="checkbox" id="productoEsNuevo" onchange="toggleFechaNuevo()">
-                                        <span style="font-weight: 700; color: #059669;">✨ Es Nuevo</span>
-                                    </label>
-                                    <div id="grupoFechaNuevo" style="display: none; margin-top: 0.5rem;">
-                                        <label style="font-size: 0.85rem;">Nuevo válido hasta:</label>
-                                        <input type="date" id="productoNuevoHasta" class="form-control">
-                                    </div>
+                                    <p class="form-hint" style="margin-top:0.25rem;">Ej: 30 → se muestra "-30%" en
+                                        la tarjeta</p>
                                 </div>
                             </div>
-                            <p class="form-hint" style="color: #92400e;">💡 Estos badges se quitan automáticamente al
-                                llegar la fecha límite</p>
-                        </div>
-
-                        <!-- ASIGNAR STOCK A TIENDAS -->
-                        <div class="form-section"
-                            style="background: #f0fdf4; padding: 1rem; border-radius: 0.75rem; margin: 1rem 0; border: 1px solid #bbf7d0;">
-                            <h4 style="margin-bottom: 1rem; color: #166534;">📦 Stock por Tienda</h4>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>🏪 Alcalá</label>
-                                    <input type="number" id="stockAlcala" class="form-control" placeholder="0" min="0"
-                                        value="0">
-                                </div>
-                                <div class="form-group">
-                                    <label>🏬 Local 01</label>
-                                    <input type="number" id="stockLocal01" class="form-control" placeholder="0" min="0"
-                                        value="0">
-                                </div>
-                                <div class="form-group">
-                                    <label>🏢 Jordán</label>
-                                    <input type="number" id="stockJordan" class="form-control" placeholder="0" min="0"
-                                        value="0">
-                                </div>
-                                <div class="form-group">
-                                    <label>📦 Bodega Central</label>
-                                    <input type="number" id="stockBodega" class="form-control" placeholder="0" min="0"
-                                        value="0">
-                                </div>
-                                <div class="form-group">
-                                    <label>🌐 Digital</label>
-                                    <input type="number" id="stockDigital" class="form-control" placeholder="0" min="0"
-                                        value="0">
+                            <!-- ES NUEVO -->
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="productoEsNuevo" onchange="toggleFechaNuevo()">
+                                    <span style="font-weight: 700; color: #059669;">✨ Es Nuevo</span>
+                                </label>
+                                <div id="grupoFechaNuevo" style="display: none; margin-top: 0.5rem;">
+                                    <label style="font-size: 0.85rem;">Nuevo válido hasta:</label>
+                                    <input type="date" id="productoNuevoHasta" class="form-control">
                                 </div>
                             </div>
-                            <p class="form-hint">💡 Ingresa la cantidad inicial de stock en cada tienda</p>
                         </div>
+                        <p class="form-hint" style="color: #92400e;">💡 Estos badges se quitan automáticamente al
+                            llegar la fecha límite</p>
+                    </div>
 
-                        <div class="form-group"><label>Descripción corta</label><textarea id="productoDescCorta"
-                                class="form-control" rows="2" placeholder="Descripción breve"></textarea></div>
-                        <div class="form-group"><label>Descripción técnica</label><textarea id="productoDescTecnica"
-                                class="form-control" rows="3" placeholder="Características técnicas"></textarea></div>
-                        <div class="form-group"><label>URL Imagen (alternativa)</label><input type="url"
-                                id="productoImagen" class="form-control" placeholder="https://...">
-                            <p class="form-hint">Si no subes imagen, puedes pegar una URL directa</p>
+                    <!-- TOTALES DE STOCK CALCULADOS -->
+                    <div class="form-section"
+                        style="background: #f0fdf4; padding: 1rem; border-radius: 0.75rem; margin: 1rem 0; border: 1px solid #bbf7d0;">
+                        <h4 style="margin-bottom: 0.5rem; color: #166534; font-size: 1rem;">📦 Resumen Total de Stock Calculado</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>🏪 Alcalá</label>
+                                <input type="number" id="stockAlcala" class="form-control" readonly placeholder="0" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>🏬 Local 01</label>
+                                <input type="number" id="stockLocal01" class="form-control" readonly placeholder="0" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>🏢 Jordán</label>
+                                <input type="number" id="stockJordan" class="form-control" readonly placeholder="0" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>📦 Bodega Central</label>
+                                <input type="number" id="stockBodega" class="form-control" readonly placeholder="0" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>🌐 Digital</label>
+                                <input type="number" id="stockDigital" class="form-control" placeholder="0" min="0" value="0">
+                            </div>
                         </div>
-                        <div style="display:flex; gap:1rem; margin-top:1.5rem; justify-content: flex-end;">
-                            <button onclick="cancelarFormProducto()" class="btn btn-secondary">Cancelar</button>
-                            <button onclick="guardarProducto()" class="btn btn-success">💾 Guardar</button>
-                        </div>
-                    </div> <!-- Cierre Wrapper -->
-                </div> <!-- Cierre formProducto -->
+                    </div>
 
-                <div id="listaProductos" class="productos-admin-grid">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Cargando productos...</p>
+                    <div class="form-group"><label>Descripción corta</label><textarea id="productoDescCorta"
+                            class="form-control" rows="2" placeholder="Descripción breve"></textarea></div>
+                    <div class="form-group"><label>Descripción técnica</label><textarea id="productoDescTecnica"
+                            class="form-control" rows="3" placeholder="Características técnicas"></textarea></div>
+                    <div class="form-group"><label>URL Imagen Principal (alternativa)</label><input type="url"
+                            id="productoImagen" class="form-control" placeholder="https://...">
+                        <p class="form-hint">Si no subes imagen, puedes pegar una URL directa</p>
+                    </div>
+
+                    <div style="display:flex; gap:1rem; margin-top:2rem; justify-content: flex-end; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
+                        <button type="button" onclick="cancelarFormProducto()" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">Cancelar</button>
+                        <button type="button" onclick="guardarProducto()" class="btn btn-success" style="padding: 0.75rem 2rem; font-weight: 700; font-size: 1rem;">💾 Guardar Producto</button>
                     </div>
                 </div>
             </section>

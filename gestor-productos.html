@@ -656,45 +656,25 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN COLORES Y FOTOS -->
-                <div class="form-section" style="background: #f8fafc;">
-                    <h4 style="margin-bottom: 1rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>🎨</span> Colores y Fotos
-                    </h4>
-                    <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;">
-                        Agregue los colores disponibles y asigne una imagen específica a cada uno.
-                    </p>
-                    <div id="containerColoresFotos" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem;"></div>
-                    <button type="button" class="btn btn-secondary" onclick="agregarFilaColor()" style="width: 100%;">
-                        + Agregar Color
-                    </button>
-                </div>
-
-                <!-- SECCIÓN TALLAS Y STOCK -->
-                <div id="containerTallasStock" class="form-section" style="background: #f8f9fa;">
-                    <h4 style="margin-bottom: 1rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>📏</span> Gestión de Tallas y Stock
-                    </h4>
-                    <div class="table-container" style="max-height: 400px; overflow-y: auto;">
-                        <table class="data-table" id="tablaTallasStock">
-                            <thead>
-                                <tr>
-                                    <th>Color</th>
-                                    <th>Talla</th>
-                                    <th>Alcalá</th>
-                                    <th>Local 01</th>
-                                    <th>Jordán</th>
-                                    <th>Bodega</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbodyTallasStock"></tbody>
-                        </table>
-                    </div>
-                    <div style="text-align: right; margin-top: 1rem;">
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="agregarFilaTalla()">
-                            + Agregar Talla
+                <!-- MATRIZ UNIFICADA: VARIANTES DE COLOR + FOTO + TALLAS Y STOCK (CERO DOBLE TRABAJO) -->
+                <div class="form-section" style="background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                        <div>
+                            <h4 style="margin: 0; color: #1e293b; display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem;">
+                                <span>🎨</span> Variantes por Color, Fotos y Stock por Tienda
+                            </h4>
+                            <p style="font-size: 0.85rem; color: #64748b; margin: 0.35rem 0 0 0;">
+                                Asigna la foto de cada color y sus tallas/cantidades directamente en el mismo bloque sin repetir información.
+                            </p>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="agregarTarjetaColor()" style="font-weight: 600;">
+                            ➕ Agregar Color / Variante
                         </button>
+                    </div>
+
+                    <!-- Contenedor dinámico de tarjetas de colores -->
+                    <div id="containerMatrizColores" style="display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 1rem;">
+                        <!-- Insertado por JS -->
                     </div>
                 </div>
 

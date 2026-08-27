@@ -489,59 +489,47 @@ function renderizarGraficoCategorias(dataMap) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FORMULARIO PRODUCTO
+// FORMULARIO PRODUCTO (CERO MODALES - PANTALLA COMPLETA)
 // ═══════════════════════════════════════════════════════════════
 
 async function mostrarFormProducto() {
-    const modal = document.getElementById('formProducto');
-    if (modal) {
-        modal.classList.add('active');
-        if (modal.style) modal.style.display = 'flex';
+    const listaView = document.getElementById('vistaListaProductos');
+    if (listaView) listaView.style.display = 'none';
+
+    const form = document.getElementById('formProducto');
+    if (form) {
+        form.style.display = 'block';
+        window.scrollTo({ top: form.offsetTop - 30, behavior: 'smooth' });
     }
 
     document.getElementById('formTituloProducto').textContent = '➕ Nuevo Producto';
     document.getElementById('productoId').value = '';
+    const hiddenProdId = document.getElementById('productoIdProducto');
+    if (hiddenProdId) hiddenProdId.value = '';
 
     // Reset inputs
     const ids = ['productoNombre', 'productoReferencia', 'productoCategoria', 'productoSubcategoria',
-        'productoMarca', 'productoProveedor', 'productoVariantes',
-        'productoPrecioCompra', 'productoPrecio', 'productoMargen',
-        'productoEstado', 'stockAlcala', 'stockLocal01', 'stockJordan', 'stockDigital',
+        'productoMarca', 'productoProveedor', 'productoPrecioCompra', 'productoPrecio', 'productoMargen',
+        'productoEstado', 'stockAlcala', 'stockLocal01', 'stockJordan', 'stockBodega', 'stockDigital',
         'productoDescCorta', 'productoDescTecnica', 'productoImagen'];
-
-    // Hacer readonly los inputs de totales para evitar edición manual (se calculan de la tabla)
-    ['stockAlcala', 'stockLocal01', 'stockJordan'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.setAttribute('readonly', true);
-            el.style.backgroundColor = '#f3f4f6';
-            el.title = "Calculado automáticamente desde la tabla de tallas";
-        }
-    });
 
     ids.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.value = (id === 'productoEstado') ? 'Activo' : '';
+        if (el) el.value = (id === 'productoEstado') ? 'Activo' : (id.startsWith('stock') ? '0' : '');
     });
 
-    // Limpiar listas dinámicas (Colores, Fotos y Tallas)
-    const containerColores = document.getElementById('containerColoresFotos');
-    if (containerColores) containerColores.innerHTML = '';
-    const tbodyTallas = document.getElementById('tbodyTallasStock');
-    if (tbodyTallas) tbodyTallas.innerHTML = '';
+    // Limpiar y preparar Matriz Unificada de Colores y Stock
+    const containerMatriz = document.getElementById('containerMatrizColores');
+    if (containerMatriz) {
+        containerMatriz.innerHTML = '';
+        // Tarjeta inicial por defecto
+        agregarTarjetaColor('', '', [{ talla: 'Única', alcala: 0, local01: 0, jordan: 0, bodega: 0 }]);
+    }
 
     // Limpiar memoria de archivo temporal y vista previa de imagen principal
     if (window.archivosTemporal) window.archivosTemporal.producto = null;
     if (typeof archivosTemporal !== 'undefined') archivosTemporal.producto = null;
     removerPreview('producto');
-
-    // Limpiar Checkboxes de etiquetas
-    const checkOferta = document.getElementById('productoEnOferta');
-    if (checkOferta) { checkOferta.checked = false; if (typeof toggleFechaOferta === 'function') toggleFechaOferta(); }
-    
-    const checkNuevo = document.getElementById('productoEsNuevo');
-    if (checkNuevo) { checkNuevo.checked = false; if (typeof toggleFechaNuevo === 'function') toggleFechaNuevo(); }
-
     await cargarProveedoresEnSelectProducto();
     await cargarCategoriasSelect();
 }
@@ -578,14 +566,13 @@ function agregarOption(select, value, text, selectedVal) {
     select.appendChild(opt);
 }
 
-// NUEVO: Cargar Categorías Dinámicas
+// Cargar Categorías Dinámicas
 const categoriasCache = [];
 
 async function cargarCategoriasSelect(seleccionado = null) {
     const select = document.getElementById('productoCategoria');
     if (!select) return;
 
-    // Guardar selección actual si no se pasa explícitamente y el select ya tiene valor
     if (!seleccionado && select.value) seleccionado = select.value;
 
     select.innerHTML = '<option value="">Seleccionar...</option>';
@@ -599,13 +586,14 @@ async function cargarCategoriasSelect(seleccionado = null) {
 
             if (error) throw error;
 
-            if (data) {
-                data.forEach(c => categoriasCache.push(c.nombre));
+            if (data && data.length > 0) {
+                categoriasCache.push(...data.map(c => c.nombre));
+            } else {
+                categoriasCache.push('CASCOS', 'INDUMENTARIA', 'IMPERMEABLES', 'ACCESORIOS', 'MALETEROS', 'REPUESTOS');
             }
-        } catch (err) {
-            console.error('Error cargando categorías:', err);
-            // Fallback a las básicas si falla la DB
-            ['Cascos', 'Guantes', 'Protecciones', 'Accesorios'].forEach(c => categoriasCache.push(c));
+        } catch (e) {
+            console.error('Error cargando categorias:', e);
+            categoriasCache.push('CASCOS', 'INDUMENTARIA', 'IMPERMEABLES', 'ACCESORIOS', 'MALETEROS', 'REPUESTOS');
         }
     }
 
@@ -616,50 +604,16 @@ async function cargarCategoriasSelect(seleccionado = null) {
         if (cat === seleccionado) opt.selected = true;
         select.appendChild(opt);
     });
-
-    // Trigger para actualizar UI
-    actualizarFormularioPorCategoria();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// LOGICA CATEGORIAS (UI DINAMICA)
-// ═══════════════════════════════════════════════════════════════
-const CATEGORIAS_CON_TALLA = [
-    'CASCOS', 'GUANTES', 'TRAJES DE PROTECCION', 'TRAJES DE PROTECCIÓN',
-    'IMPERMEABLES Y BOTAS', 'MALETEROS', 'IMPERMEABLES', 'BOTAS'
-];
-const CATEGORIAS_MALETEROS = ['MALETEROS'];
-
 function actualizarFormularioPorCategoria() {
-    const catInput = document.getElementById('productoCategoria');
-    const container = document.getElementById('containerTallasStock');
+    const cat = document.getElementById('productoCategoria')?.value?.toUpperCase() || '';
+    const esMaletero = window.CATEGORIAS_MALETEROS?.includes(cat) || false;
+    const place = esMaletero ? 'Ej: 30L, 45L' : 'Ej: S, M, 40...';
 
-    if (!catInput || !container) return;
-
-    const cat = catInput.value.trim().toUpperCase();
-    const tieneColores = document.querySelectorAll('.input-color-nombre').length > 0;
-
-    // 1. Mostrar/Ocultar Tabla de Tallas/Stock
-    // Se muestra si la categoría usa tallas O si el usuario ha definido colores
-    const usaTalla = CATEGORIAS_CON_TALLA.includes(cat);
-
-    if (usaTalla || tieneColores) {
-        container.style.display = 'block';
-
-        // 2. Personalizar Header (Talla vs Capacidad)
-        const thTalla = document.querySelector('#tablaTallasStock th:nth-child(2)'); // Segunda columna es Talla
-        const placeholders = document.querySelectorAll('.input-talla');
-
-        if (CATEGORIAS_MALETEROS.includes(cat)) {
-            if (thTalla) thTalla.textContent = 'Capacidad (Litros)';
-            placeholders.forEach(i => i.placeholder = 'Ej: 30L, 45L...');
-        } else {
-            if (thTalla) thTalla.textContent = 'Talla';
-            placeholders.forEach(i => i.placeholder = 'Ej: S, M, 40...');
-        }
-    } else {
-        container.style.display = 'none';
-    }
+    document.querySelectorAll('.input-talla').forEach(inp => {
+        inp.placeholder = place;
+    });
 }
 
 // Listener para cambios
@@ -675,91 +629,155 @@ function cancelarFormProducto() {
     if (typeof archivosTemporal !== 'undefined') archivosTemporal.producto = null;
     removerPreview('producto');
 
-    const modal = document.getElementById('formProducto');
-    if (modal) modal.style.display = 'none';
-    if (modal) modal.classList.remove('active');
+    const form = document.getElementById('formProducto');
+    if (form) form.style.display = 'none';
+
+    const listaView = document.getElementById('vistaListaProductos');
+    if (listaView) listaView.style.display = 'block';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GESTIÓN DE TALLAS Y STOCK (NUEVO)
+// MATRIZ UNIFICADA DE VARIANTES: COLOR + FOTO + TALLAS Y STOCK
 // ═══════════════════════════════════════════════════════════════
 
-// --- GESTIÓN DE COLORES CON FOTOS ---
-window.agregarFilaColor = function (color = '', url = '') {
-    const container = document.getElementById('containerColoresFotos');
+window.agregarTarjetaColor = function (color = '', url = '', tallas = []) {
+    const container = document.getElementById('containerMatrizColores');
     if (!container) return;
-    
-    // Generar ID único indestructible para evitar colisiones entre filas
-    const rowId = 'color_row_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
 
-    const div = document.createElement('div');
-    div.className = 'fila-color';
-    div.style.display = 'flex';
-    div.style.gap = '1rem';
-    div.style.alignItems = 'center';
-    div.style.background = 'white';
-    div.style.padding = '1rem';
-    div.style.borderRadius = '0.75rem';
-    div.style.border = '1px solid #e2e8f0';
-    div.id = rowId;
+    const cardId = 'color_card_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+    const card = document.createElement('div');
+    card.className = 'card-color-variante';
+    card.id = cardId;
+    card.style.background = '#ffffff';
+    card.style.border = '1px solid #cbd5e1';
+    card.style.borderRadius = '0.85rem';
+    card.style.padding = '1.25rem';
+    card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.gap = '1rem';
 
-    div.innerHTML = `
-        <div style="flex: 1;">
-            <input type="text" class="form-control input-color-nombre" value="${color}" placeholder="Nombre del Color (ej: Rojo Mate)" oninput="actualizarSelectsColor()">
+    const imgUrl = url || PLACEHOLDER_IMG_FALLBACK;
+
+    card.innerHTML = `
+        <!-- CABECERA DEL COLOR: NOMBRE + FOTO + ACCIONES -->
+        <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; background: #f8fafc; padding: 0.85rem 1rem; border-radius: 0.65rem; border: 1px solid #e2e8f0;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 260px;">
+                <span style="font-size: 1.25rem;">🎨</span>
+                <input type="text" class="form-control form-control-sm input-color-nombre" value="${color}" placeholder="Nombre del Color (ej: Negro - Gris - Rosado)" style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <input type="hidden" class="input-color-url" value="${url}">
+                <div class="color-preview-img" style="width: 46px; height: 46px; background: #f1f5f9; border-radius: 6px; overflow: hidden; border: 1px solid #cbd5e1; flex-shrink: 0;">
+                    <img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="subirImagenColorTarjeta('${cardId}')" title="Subir foto para este color" style="display: flex; align-items: center; gap: 0.35rem; font-weight: 600;">
+                    📷 Foto
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFotoColorTarjeta('${cardId}')" title="Quitar foto de este color">
+                    ❌
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removerTarjetaColor('${cardId}')" title="Eliminar este color completo con su inventario" style="margin-left: 0.5rem;">
+                    🗑️ Quitar Color
+                </button>
+            </div>
         </div>
-        <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
-            <input type="text" class="form-control input-color-url" value="${url}" placeholder="URL de Imagen o sube una" oninput="actualizarPreviewColorFila('${rowId}')">
-            <button type="button" class="btn btn-sm btn-outline-info" onclick="subirImagenColor('${rowId}')" title="Subir foto para este color">📷</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFotoColor('${rowId}')" title="Quitar solo la foto de este color">❌</button>
+
+        <!-- TABLA DE TALLAS Y STOCK PARA ESTE COLOR -->
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem; overflow: hidden;">
+            <table class="table table-sm table-bordered" style="margin-bottom: 0; width: 100%; font-size: 0.88rem;">
+                <thead style="background: #f1f5f9; color: #334155; font-weight: 600;">
+                    <tr>
+                        <th style="width: 25%; padding: 0.5rem 0.75rem;">📏 Talla</th>
+                        <th style="width: 15%; padding: 0.5rem 0.75rem;">🏪 Alcalá</th>
+                        <th style="width: 15%; padding: 0.5rem 0.75rem;">🏬 Local 01</th>
+                        <th style="width: 15%; padding: 0.5rem 0.75rem;">🏢 Jordán</th>
+                        <th style="width: 15%; padding: 0.5rem 0.75rem;">📦 Bodega</th>
+                        <th style="width: 15%; text-align: center; padding: 0.5rem 0.75rem;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="tbody-tallas-color" id="tbody_${cardId}">
+                    <!-- Filas de tallas de este color -->
+                </tbody>
+            </table>
         </div>
-        <div class="color-preview-img" style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0; flex-shrink: 0;">
-            <img src="${url || PLACEHOLDER_IMG_FALLBACK}" style="width: 100%; height: 100%; object-fit: cover;">
+
+        <div style="display: flex; justify-content: flex-start;">
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="agregarFilaTallaAColor('${cardId}')" style="font-weight: 600;">
+                + Agregar Talla a este Color
+            </button>
         </div>
-        <button type="button" class="btn btn-sm btn-danger" onclick="removerFilaColor('${rowId}')" title="Eliminar este color completo">🗑️</button>
     `;
-    container.appendChild(div);
-    actualizarSelectsColor();
-    actualizarFormularioPorCategoria(); // Asegurar que se muestre la tabla de stock
+
+    container.appendChild(card);
+
+    // Precargar tallas o agregar fila inicial
+    const listaTallas = Array.isArray(tallas) && tallas.length > 0 ? tallas : [{ talla: 'Única', alcala: 0, local01: 0, jordan: 0, bodega: 0 }];
+    listaTallas.forEach(t => {
+        agregarFilaTallaAColor(cardId, t.talla || 'Única', t.alcala || 0, t.local01 || 0, t.jordan || 0, t.bodega || 0);
+    });
+
+    sumarStocksGenerales();
 };
 
-window.actualizarPreviewColorFila = function (rowId) {
-    const fila = document.getElementById(rowId);
-    if (!fila) return;
-    const urlInput = fila.querySelector('.input-color-url');
-    const imgEl = fila.querySelector('.color-preview-img img');
-    if (imgEl && urlInput) {
-        imgEl.src = urlInput.value.trim() || PLACEHOLDER_IMG_FALLBACK;
-    }
+window.agregarFilaTallaAColor = function (cardId, talla = '', a = 0, l = 0, j = 0, b = 0) {
+    const tbody = document.getElementById(`tbody_${cardId}`);
+    if (!tbody) return;
+
+    const tr = document.createElement('tr');
+    tr.className = 'fila-talla';
+
+    const cat = document.getElementById('productoCategoria')?.value?.toUpperCase() || '';
+    const esMaletero = window.CATEGORIAS_MALETEROS?.includes(cat) || false;
+    const place = esMaletero ? 'Ej: 30L, 45L' : 'Ej: S, M, 40...';
+
+    tr.innerHTML = `
+        <td style="padding: 4px 8px;">
+            <input type="text" class="form-control form-control-sm input-talla" value="${talla}" placeholder="${place}" style="height: 32px; font-weight: 600;">
+        </td>
+        <td style="padding: 4px 8px;">
+            <input type="number" class="form-control form-control-sm input-stock-alcala" value="${a}" min="0" style="height: 32px;" oninput="sumarStocksGenerales()">
+        </td>
+        <td style="padding: 4px 8px;">
+            <input type="number" class="form-control form-control-sm input-stock-local01" value="${l}" min="0" style="height: 32px;" oninput="sumarStocksGenerales()">
+        </td>
+        <td style="padding: 4px 8px;">
+            <input type="number" class="form-control form-control-sm input-stock-jordan" value="${j}" min="0" style="height: 32px;" oninput="sumarStocksGenerales()">
+        </td>
+        <td style="padding: 4px 8px;">
+            <input type="number" class="form-control form-control-sm input-stock-bodega" value="${b}" min="0" style="height: 32px;" oninput="sumarStocksGenerales()">
+        </td>
+        <td style="padding: 4px 8px; text-align: center;">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); sumarStocksGenerales();" title="Quitar talla" style="padding: 2px 8px;">
+                🗑️
+            </button>
+        </td>
+    `;
+
+    tbody.appendChild(tr);
+    sumarStocksGenerales();
 };
 
-window.limpiarFotoColor = function (rowId) {
-    const fila = document.getElementById(rowId);
-    if (!fila) return;
-    const urlInput = fila.querySelector('.input-color-url');
-    const imgEl = fila.querySelector('.color-preview-img img');
+window.removerTarjetaColor = function (cardId) {
+    const card = document.getElementById(cardId);
+    if (card) card.remove();
+    sumarStocksGenerales();
+};
+
+window.limpiarFotoColorTarjeta = function (cardId) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    const urlInput = card.querySelector('.input-color-url');
+    const imgEl = card.querySelector('.color-preview-img img');
     if (urlInput) urlInput.value = '';
     if (imgEl) imgEl.src = PLACEHOLDER_IMG_FALLBACK;
     showToast('Foto del color eliminada', 'info');
 };
 
-window.removerFilaColor = function (rowId) {
-    const div = document.getElementById(rowId);
-    if (div) div.remove();
-    actualizarSelectsColor();
-    actualizarFormularioPorCategoria();
-};
-
-window.actualizarSelectsColor = function () {
-    const nombres = Array.from(document.querySelectorAll('.input-color-nombre')).map(i => i.value.trim()).filter(v => v !== '');
-    const selects = document.querySelectorAll('.select-color-stock');
-
-    selects.forEach(select => {
-        const valActual = select.value;
-        select.innerHTML = '<option value="">Color...</option>' + nombres.map(n => `<option value="${n}" ${n === valActual ? 'selected' : ''}>${n}</option>`).join('');
-    });
-};
-
-window.subirImagenColor = async function (rowId) {
+window.subirImagenColorTarjeta = async function (cardId) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -769,15 +787,13 @@ window.subirImagenColor = async function (rowId) {
 
         try {
             showToast('Subiendo imagen de color...', 'info');
-
-            // Usar la función global subirImagen (definida en admin.js / global)
             const publicUrl = await window.subirImagen(file, 'productos-imagenes');
             if (!publicUrl) return;
 
-            const fila = document.getElementById(rowId);
-            if (fila) {
-                fila.querySelector('.input-color-url').value = publicUrl;
-                fila.querySelector('.color-preview-img img').src = publicUrl;
+            const card = document.getElementById(cardId);
+            if (card) {
+                card.querySelector('.input-color-url').value = publicUrl;
+                card.querySelector('.color-preview-img img').src = publicUrl;
             }
             showToast('Imagen subida con éxito');
         } catch (err) {
@@ -788,36 +804,21 @@ window.subirImagenColor = async function (rowId) {
     input.click();
 };
 
-window.agregarFilaTalla = function (talla = '', color = '', stockA = 0, stockL = 0, stockJ = 0, stockB = 0) {
-    const tbody = document.getElementById('tbodyTallasStock');
-    if (!tbody) return;
-    const tr = document.createElement('tr');
+window.sumarStocksGenerales = function () {
+    let totalA = 0, totalL = 0, totalJ = 0, totalB = 0;
+    document.querySelectorAll('.card-color-variante').forEach(card => {
+        card.querySelectorAll('.fila-talla').forEach(tr => {
+            totalA += parseInt(tr.querySelector('.input-stock-alcala')?.value) || 0;
+            totalL += parseInt(tr.querySelector('.input-stock-local01')?.value) || 0;
+            totalJ += parseInt(tr.querySelector('.input-stock-jordan')?.value) || 0;
+            totalB += parseInt(tr.querySelector('.input-stock-bodega')?.value) || 0;
+        });
+    });
 
-    // Obtener nombres de colores actuales
-    const nombresColores = Array.from(document.querySelectorAll('.input-color-nombre, .color-name'))
-        .map(i => i.value.trim())
-        .filter(v => v !== '');
-
-    const cat = document.getElementById('productoCategoria')?.value?.toUpperCase() || '';
-    const esMaletero = window.CATEGORIAS_MALETEROS?.includes(cat) || false;
-    const place = esMaletero ? 'Ej: 30L' : 'Ej: S, 40...';
-
-    tr.innerHTML = `
-        <td style="padding: 4px;">
-            <select class="form-control form-control-sm select-color-stock talla-color" style="padding: 2px 4px; height: 30px;">
-                <option value="">Color...</option>
-                ${nombresColores.map(n => `<option value="${n}" ${n === color ? 'selected' : ''}>${n}</option>`).join('')}
-            </select>
-        </td>
-        <td style="padding: 4px;"><input type="text" class="form-control form-control-sm input-talla talla-name" value="${talla}" placeholder="${place}" style="padding: 2px 4px; height: 30px;"></td>
-        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-alcala stock-a" value="${stockA}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
-        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-local01 stock-l" value="${stockL}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
-        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-jordan stock-j" value="${stockJ}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
-        <td style="padding: 4px;"><input type="number" class="form-control form-control-sm input-stock-bodega stock-b" value="${stockB}" min="0" style="padding: 2px 4px; height: 30px;" oninput="sumarStocksGenerales()"></td>
-        <td style="padding: 4px; text-align: center;"><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); sumarStocksGenerales();" title="Eliminar Variantes" style="padding: 0 6px;">🗑️</button></td>
-    `;
-    tbody.appendChild(tr);
-    sumarStocksGenerales(); // Actualizar al agregar fila (si viene con datos)
+    if (document.getElementById('stockAlcala')) document.getElementById('stockAlcala').value = totalA;
+    if (document.getElementById('stockLocal01')) document.getElementById('stockLocal01').value = totalL;
+    if (document.getElementById('stockJordan')) document.getElementById('stockJordan').value = totalJ;
+    if (document.getElementById('stockBodega')) document.getElementById('stockBodega').value = totalB;
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -852,7 +853,6 @@ async function guardarProducto() {
         if (window.archivosTemporal?.producto) {
             try {
                 showToast('Subiendo imagen principal...', 'info');
-                // Usar la función global subirImagen
                 const urlSubida = await window.subirImagen(window.archivosTemporal.producto, 'productos-imagenes');
                 if (urlSubida) urlImagen = urlSubida;
             } catch (err) {
@@ -863,48 +863,56 @@ async function guardarProducto() {
             }
         }
 
-        // 2. Colores e Imágenes (Variantes modernas)
-        const filasColores = document.querySelectorAll('#containerColoresFotos .fila-color');
+        // 2. Extraer Variantes de Color e Inventario de la Matriz Unificada
+        const tarjetasColores = document.querySelectorAll('#containerMatrizColores .card-color-variante');
         const variantesData = [];
-        filasColores.forEach(fila => {
-            const colorName = fila.querySelector('.input-color-nombre')?.value.trim();
-            const colorUrl = fila.querySelector('.input-color-url')?.value.trim();
-            if (colorName) {
-                variantesData.push({ color: colorName, url: colorUrl || '' });
-            }
-        });
-
-        // 3. Matriz de Stock (Color + Talla)
-        const filasStock = document.querySelectorAll('#tbodyTallasStock tr');
         const inventarioData = [];
-        filasStock.forEach(row => {
-            const colorEl = row.querySelector('.select-color-stock, .talla-color');
-            const tallaEl = row.querySelector('.input-talla, .talla-name');
-            const color = colorEl ? colorEl.value.trim() : '';
-            const talla = tallaEl ? tallaEl.value.trim() : '';
-            const sA = parseInt(row.querySelector('.input-stock-alcala, .stock-a')?.value) || 0;
-            const sL = parseInt(row.querySelector('.input-stock-local01, .stock-l')?.value) || 0;
-            const sJ = parseInt(row.querySelector('.input-stock-jordan, .stock-j')?.value) || 0;
-            const sB = parseInt(row.querySelector('.input-stock-bodega, .stock-b')?.value) || 0;
 
-            if (talla || color) {
+        tarjetasColores.forEach(card => {
+            const colorName = card.querySelector('.input-color-nombre')?.value.trim() || '';
+            const colorUrl = card.querySelector('.input-color-url')?.value.trim() || '';
+
+            if (colorName || colorUrl) {
+                variantesData.push({ color: colorName || 'Único', url: colorUrl });
+            }
+
+            const filasTalla = card.querySelectorAll('.fila-talla');
+            filasTalla.forEach(tr => {
+                const tallaName = tr.querySelector('.input-talla')?.value.trim() || 'Única';
+                const sA = parseInt(tr.querySelector('.input-stock-alcala')?.value) || 0;
+                const sL = parseInt(tr.querySelector('.input-stock-local01')?.value) || 0;
+                const sJ = parseInt(tr.querySelector('.input-stock-jordan')?.value) || 0;
+                const sB = parseInt(tr.querySelector('.input-stock-bodega')?.value) || 0;
+
                 inventarioData.push({
-                    color: color || '',
-                    talla: talla || 'Única',
+                    color: colorName || '',
+                    talla: tallaName,
                     alcala: sA,
                     local01: sL,
                     jordan: sJ,
                     bodega: sB
                 });
-            }
+            });
         });
+
+        // Si no se agregaron filas, crear una por defecto
+        if (inventarioData.length === 0) {
+            inventarioData.push({
+                color: '',
+                talla: 'Única',
+                alcala: 0,
+                local01: 0,
+                jordan: 0,
+                bodega: 0
+            });
+        }
 
         const stockDigital = parseInt(document.getElementById('stockDigital').value) || 0;
 
         const productoData = {
             nombre, referencia, categoria, subcategoria, marca,
             proveedor: proveedorId,
-            variantes: variantesData, // Array de objetos {color, url}
+            variantes: variantesData,
             tallas: Array.from(new Set(inventarioData.map(i => i.talla))),
             precio: parseFloat(precio),
             precio_compra: parseFloat(precioCompra),
@@ -913,7 +921,6 @@ async function guardarProducto() {
             descripcion_corta: descripcionCorta,
             descripcion_tecnica: descripcionTecnica,
             url_imagen: urlImagen,
-            // Etiquetas Promocionales
             en_oferta: document.getElementById('productoEnOferta')?.checked || false,
             es_nuevo: document.getElementById('productoEsNuevo')?.checked || false,
             fecha_oferta_hasta: document.getElementById('productoOfertaHasta')?.value || null,
@@ -925,12 +932,10 @@ async function guardarProducto() {
         if (id) {
             const { data, error } = await supabaseClient.from('productos').update(productoData).eq('id', id).select();
             if (error) throw error;
-            prodTextId = data[0].id_producto || data[0].id; // Use existing if updated
+            prodTextId = data[0].id_producto || data[0].id;
         } else {
             // INSERTAR NUEVO con ID ROBUSTO
             let slugBase = 'producto';
-
-            // Intentar normalizar nombre
             try {
                 if (typeof window.normalizarTexto === 'function') {
                     slugBase = window.normalizarTexto(nombre);
@@ -944,13 +949,10 @@ async function guardarProducto() {
             }
 
             slugBase = (slugBase || 'nuevo').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
             const randomSuffix = Math.floor(Math.random() * 100000);
             const newIdProducto = `${slugBase}-${randomSuffix}`;
 
             productoData.id_producto = newIdProducto;
-
-            console.log('Insertando producto:', productoData);
 
             const { data, error } = await supabaseClient.from('productos').insert(productoData).select();
             if (error) throw error;
@@ -966,10 +968,8 @@ async function guardarProducto() {
         ];
 
         for (const sede of sedesTiendas) {
-            // 1. Borrar inventario anterior de este producto en la sede
             await supabaseClient.from(sede.tabla).delete().eq('id_producto', prodTextId);
 
-            // 2. Insertar los nuevos registros con talla y color
             const opsSede = inventarioData.map(i => ({
                 id_producto: prodTextId,
                 talla: i.talla,
@@ -989,7 +989,7 @@ async function guardarProducto() {
             }
         }
 
-        // 2. Sincronización segura de Bodega (tabla legacy sin columnas de talla/color)
+        // 2. Sincronización segura de Bodega
         try {
             const totalBodega = inventarioData.reduce((acc, i) => acc + (parseInt(i.bodega) || 0), 0);
             await supabaseClient.from('inventario_bodega').delete().eq('id_producto', prodTextId);
@@ -1004,7 +1004,7 @@ async function guardarProducto() {
             console.warn('[Bodega] Sincronización opcional legacy omitida:', eBod);
         }
 
-        // 3. Actualizar Tabla Unificada 'inventario' (con soporte completo de variantes para todas las sedes, incluyendo Bodega)
+        // 3. Actualizar Tabla Unificada 'inventario'
         await supabaseClient.from('inventario').delete().eq('producto_id', prodTextId);
 
         const todasSedes = [
@@ -1054,40 +1054,36 @@ async function guardarProducto() {
     } finally {
         if (window.archivosTemporal) window.archivosTemporal.producto = null;
         if (typeof archivosTemporal !== 'undefined') archivosTemporal.producto = null;
-        if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerHTML = 'Guardar Producto'; }
+        if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.innerHTML = '💾 Guardar Producto'; }
     }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GESTIÓN DE IMÁGENES (BOCKET SUPABASE)
+// GESTIÓN DE IMÁGENES (BUCKET SUPABASE)
 // ═══════════════════════════════════════════════════════════════
 
-async function handleFileSelect(event, tipo) {
+function handleFileSelect(event, tipo) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Validar tamaño (5MB)
     if (file.size > 5 * 1024 * 1024) {
-        showToast('El archivo es muy pesado (máx 5MB)', 'error');
+        showToast('La imagen no debe superar los 5MB', 'error');
         return;
     }
 
     if (!window.archivosTemporal) window.archivosTemporal = {};
     window.archivosTemporal[tipo] = file;
-    if (typeof archivosTemporal !== 'undefined') archivosTemporal[tipo] = file;
 
-    // Previsualización
     const reader = new FileReader();
     reader.onload = (e) => {
-        const previewImg = document.getElementById(`preview${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
+        const preview = document.getElementById(`preview${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
         const container = document.getElementById(`previewContainer${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
         const dropzone = document.getElementById(`dropzone${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
 
-        if (previewImg && container) {
-            previewImg.src = e.target.result;
+        if (preview && container) {
+            preview.src = e.target.result;
             container.style.display = 'block';
             if (dropzone) {
-                // Ocultar textos del dropzone cuando hay preview
                 Array.from(dropzone.children).forEach(child => {
                     if (child.id !== `previewContainer${tipo.charAt(0).toUpperCase() + tipo.slice(1)}` && child.type !== 'file') {
                         child.style.visibility = 'hidden';
@@ -1129,31 +1125,20 @@ async function editarProducto(id) {
     const p = productosCache.find(x => x.id === id);
     if (!p) return;
 
-    await mostrarFormProducto(); // Resetea todo el form y memoria de archivos
-    document.getElementById('formTituloProducto').textContent = '✏️ Editar Producto';
+    await mostrarFormProducto();
+    document.getElementById('formTituloProducto').textContent = `✏️ Editando: ${p.nombre}`;
     document.getElementById('productoId').value = p.id;
+    const hiddenProdId = document.getElementById('productoIdProducto');
+    if (hiddenProdId) hiddenProdId.value = p.id_producto || p.id;
 
     document.getElementById('productoNombre').value = p.nombre;
     document.getElementById('productoReferencia').value = p.referencia || '';
     document.getElementById('productoCategoria').value = p.categoria;
-    // Trigger update UI for category
     actualizarFormularioPorCategoria();
     document.getElementById('productoSubcategoria').value = p.subcategoria || '';
     document.getElementById('productoMarca').value = p.marca;
 
     await cargarProveedoresEnSelectProducto(p.proveedor);
-
-    // Cargar Colores y Fotos
-    document.getElementById('containerColoresFotos').innerHTML = '';
-    if (p.variantes && Array.isArray(p.variantes)) {
-        p.variantes.forEach(v => {
-            if (typeof v === 'string') {
-                agregarFilaColor(v, '');
-            } else {
-                agregarFilaColor(v.color, v.url || '');
-            }
-        });
-    }
 
     document.getElementById('productoPrecio').value = p.precio;
     document.getElementById('productoPrecioCompra').value = p.precio_compra || 0;
@@ -1198,64 +1183,42 @@ async function editarProducto(id) {
         }
     }
 
-    // CARGAR TALLAS Y STOCK
-    // Consultamos las tablas de inventario para este producto
-    document.getElementById('tbodyTallasStock').innerHTML = '<tr><td colspan="6" class="text-center">Cargando inventario...</td></tr>';
+    // CARGAR MATRIZ UNIFICADA DE VARIANTES Y STOCK
+    const containerMatriz = document.getElementById('containerMatrizColores');
+    if (containerMatriz) containerMatriz.innerHTML = '<div class="text-center p-3">Cargando variantes y stock...</div>';
 
     try {
-        // Obtenemos id_producto (texto) si existe, o usamos el ID numérico/UUID como fallback
         const idProd = p.id_producto || p.id;
 
-        const [invA, invL, invJ] = await Promise.all([
+        const [invA, invL, invJ, invBod] = await Promise.all([
             supabaseClient.from('inventario_alcala').select('talla, color, cantidad').eq('id_producto', idProd),
             supabaseClient.from('inventario_01').select('talla, color, cantidad').eq('id_producto', idProd),
-            supabaseClient.from('inventario_jordan').select('talla, color, cantidad').eq('id_producto', idProd)
+            supabaseClient.from('inventario_jordan').select('talla, color, cantidad').eq('id_producto', idProd),
+            supabaseClient.from('inventario').select('talla, color, cantidad').eq('producto_id', idProd).eq('local_id', 'Bodega')
         ]);
 
-        // Unificar tallas y colores
-        const combinaciones = new Set();
-        (invA.data || []).forEach(i => combinaciones.add(JSON.stringify({ t: i.talla, c: i.color || '' })));
-        (invL.data || []).forEach(i => combinaciones.add(JSON.stringify({ t: i.talla, c: i.color || '' })));
-        (invJ.data || []).forEach(i => combinaciones.add(JSON.stringify({ t: i.talla, c: i.color || '' })));
+        if (containerMatriz) containerMatriz.innerHTML = '';
 
-        // Calcular Totales por Sede para los inputs legacy (visibilidad y backup)
-        const totalA = (invA.data || []).reduce((acc, i) => acc + (parseInt(i.cantidad) || 0), 0);
-        const totalL = (invL.data || []).reduce((acc, i) => acc + (parseInt(i.cantidad) || 0), 0);
-        const totalJ = (invJ.data || []).reduce((acc, i) => acc + (parseInt(i.cantidad) || 0), 0);
-
-        if (document.getElementById('stockAlcala')) document.getElementById('stockAlcala').value = totalA;
-        if (document.getElementById('stockLocal01')) document.getElementById('stockLocal01').value = totalL;
-        if (document.getElementById('stockJordan')) document.getElementById('stockJordan').value = totalJ;
-        if (document.getElementById('stockDigital')) document.getElementById('stockDigital').value = p.stock_digital || 0;
-
-        document.getElementById('tbodyTallasStock').innerHTML = '';
-
-        if (combinaciones.size === 0) {
-            // Si no hay datos detallados de tallas, lo tratamos como producto simple
-            // Usamos los totales encontrados para pre-llenar la fila Única
-            agregarFilaTalla('Única', '', totalA, totalL, totalJ);
+        const keysColores = Object.keys(coloresMap);
+        if (keysColores.length === 0) {
+            // Producto sin variantes
+            agregarTarjetaColor('', '', [{ talla: 'Única', alcala: 0, local01: 0, jordan: 0, bodega: 0 }]);
         } else {
-            // Ordenar tallas si es posible (alfabético o numérico)
-            const tallasColoresOrdenadas = Array.from(combinaciones).map(s => JSON.parse(s)).sort((a, b) => {
-                const compT = (a.t || '').toString().localeCompare((b.t || '').toString());
-                if (compT !== 0) return compT;
-                return (a.c || '').toString().localeCompare((b.c || '').toString());
-            });
-
-            tallasColoresOrdenadas.forEach(comb => {
-                const sA = (invA.data || []).find(i => i.talla === comb.t && (i.color || '') === comb.c)?.cantidad || 0;
-                const sL = (invL.data || []).find(i => i.talla === comb.t && (i.color || '') === comb.c)?.cantidad || 0;
-                const sJ = (invJ.data || []).find(i => i.talla === comb.t && (i.color || '') === comb.c)?.cantidad || 0;
-                agregarFilaTalla(comb.t, comb.c, sA, sL, sJ);
+            keysColores.forEach(cName => {
+                const item = coloresMap[cName];
+                agregarTarjetaColor(cName, item.url, item.tallas);
             });
         }
 
-    } catch (e) {
-        console.error('Error cargando stock detallado:', e);
-        document.getElementById('tbodyTallasStock').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error cargando stock</td></tr>';
+        sumarStocksGenerales();
+
+    } catch (eInv) {
+        console.error('Error cargando inventario detallado para editar:', eInv);
+        if (containerMatriz) {
+            containerMatriz.innerHTML = '';
+            agregarTarjetaColor('', '', [{ talla: 'Única', alcala: 0, local01: 0, jordan: 0, bodega: 0 }]);
+        }
     }
-    // Recalcular totales basados en lo cargado
-    sumarStocksGenerales();
 }
 
 async function duplicarProducto(id) {
@@ -1267,31 +1230,31 @@ async function duplicarProducto(id) {
 
     await mostrarFormProducto();
     document.getElementById('formTituloProducto').textContent = '📑 Duplicar Producto';
-    document.getElementById('productoId').value = ''; // CRÍTICO: vacío para crear nuevo
+    document.getElementById('productoId').value = ''; // Vacío para crear nuevo
 
     // Copiar todos los datos excepto el ID
     document.getElementById('productoNombre').value = p.nombre + ' (Copia)';
     document.getElementById('productoReferencia').value = p.referencia || '';
     document.getElementById('productoCategoria').value = p.categoria;
-
-    // Trigger update UI for category
     actualizarFormularioPorCategoria();
 
     document.getElementById('productoSubcategoria').value = p.subcategoria || '';
     document.getElementById('productoMarca').value = p.marca;
 
-    await cargarProveedoresEnSelectProducto(p.proveedor_id);
+    await cargarProveedoresEnSelectProducto(p.proveedor_id || p.proveedor);
 
-    // Cargar Variantes (Colores) al estilo nuevo
-    document.getElementById('containerColoresFotos').innerHTML = '';
-    if (p.variantes && Array.isArray(p.variantes)) {
+    // Cargar Variantes en la Matriz Unificada
+    const containerMatriz = document.getElementById('containerMatrizColores');
+    if (containerMatriz) containerMatriz.innerHTML = '';
+
+    if (p.variantes && Array.isArray(p.variantes) && p.variantes.length > 0) {
         p.variantes.forEach(v => {
-            if (typeof v === 'string') {
-                agregarFilaColor(v, '');
-            } else {
-                agregarFilaColor(v.color, v.url);
-            }
+            const cName = (typeof v === 'string' ? v : v.color || '').trim();
+            const cUrl = (typeof v === 'string' ? '' : v.url || '').trim();
+            agregarTarjetaColor(cName, cUrl, [{ talla: 'Única', alcala: 0, local01: 0, jordan: 0, bodega: 0 }]);
         });
+    } else {
+        agregarTarjetaColor('', '', [{ talla: 'Única', alcala: 0, local01: 0, jordan: 0, bodega: 0 }]);
     }
 
     document.getElementById('productoPrecio').value = p.precio;
@@ -1305,27 +1268,11 @@ async function duplicarProducto(id) {
     document.getElementById('productoDescTecnica').value = p.descripcion_tecnica || '';
     document.getElementById('productoImagen').value = '';
 
-    // IMPORTANTE: Limpiar preview de imagen principal al duplicar
-    const previewContainer = document.getElementById('previewContainerProducto');
-    const dropzone = document.getElementById('dropzoneProducto');
-    if (previewContainer) previewContainer.style.display = 'none';
-    if (dropzone) {
-        Array.from(dropzone.children).forEach(child => {
-            child.style.visibility = 'visible';
-        });
-    }
+    removerPreview('producto');
+    document.getElementById('stockDigital').value = p.stock_digital || 0;
 
-    if (window.archivosTemporal) window.archivosTemporal['producto'] = null;
-    const fileInput = document.getElementById('fileInputProducto');
-    if (fileInput) fileInput.value = '';
-
-
-    document.getElementById('stockDigital').value = p.stock_digital || p.stock_tiendas?.digital || 0;
-
-    // Limpiar tabla de tallas para el duplicado (o podríamos copiar la estructura sin stock, pero mejor limpiar)
-    document.getElementById('tbodyTallasStock').innerHTML = '';
-    agregarFilaTalla(); // Agregar fila vacía
-    showToast('Datos copiados. Modifica y guarda.', 'info');
+    sumarStocksGenerales();
+    showToast('Datos copiados a nuevo producto. Modifica y guarda.', 'info');
 }
 
 async function eliminarProducto(id) {
