@@ -413,7 +413,7 @@ async function editarProducto(id) {
 // MATRIZ UNIFICADA DE VARIANTES GESTOR
 // ═══════════════════════════════════════════════════════════════
 
-const PLACEHOLDER_IMG_FALLBACK = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23f1f5f9" width="100" height="100"/><text fill="%2394a3b8" font-family="sans-serif" font-size="11" x="50%" y="50%" text-anchor="middle" dy="0.3em">Sin Foto</text></svg>';
+const PLACEHOLDER_IMG_FALLBACK = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20fill%3D%22%23f1f5f9%22%20width%3D%22100%22%20height%3D%22100%22%2F%3E%3Ctext%20fill%3D%22%2394a3b8%22%20font-family%3D%22sans-serif%22%20font-size%3D%2212%22%20font-weight%3D%22bold%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20text-anchor%3D%22middle%22%20dy%3D%220.3em%22%3ESin%20Foto%3C%2Ftext%3E%3C%2Fsvg%3E";
 
 function agregarTarjetaColor(color = '', url = '', tallas = []) {
     const container = document.getElementById('containerMatrizColores');
@@ -445,7 +445,7 @@ function agregarTarjetaColor(color = '', url = '', tallas = []) {
                 <input type="hidden" class="input-color-url" value="${url}">
                 <!-- Miniatura de Imagen Agrandada para Claridad Visual -->
                 <div class="color-preview-img" style="width: 85px; height: 85px; background: #ffffff; border-radius: 10px; overflow: hidden; border: 2px solid #cbd5e1; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; position: relative;">
-                    <img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: contain; padding: 2px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                    <img class="img-preview-tarjeta" style="width: 100%; height: 100%; object-fit: contain; padding: 2px; transition: transform 0.2s;">
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="subirImagenColorTarjeta('${cardId}')" title="Subir foto" style="display: flex; align-items: center; justify-content: center; gap: 0.35rem; font-weight: 600; padding: 0.4rem 0.85rem;">
@@ -485,6 +485,9 @@ function agregarTarjetaColor(color = '', url = '', tallas = []) {
     `;
 
     container.appendChild(card);
+
+    const imgEl = card.querySelector('.img-preview-tarjeta');
+    if (imgEl) imgEl.src = imgUrl;
 
     const listaTallas = Array.isArray(tallas) && tallas.length > 0 ? tallas : [{ talla: 'Única', alcala: 0, local01: 0, jordan: 0, bodega: 0 }];
     listaTallas.forEach(t => {
