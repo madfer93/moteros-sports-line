@@ -501,12 +501,40 @@
                 alt="Moteros Sports Line" class="locked-logo logo-img">
             <h1>Admin Panel</h1>
             <p class="subtitle">Moteros Sports Line</p>
-            <input type="email" id="adminEmail" class="login-input" placeholder="Correo electrónico"
+            <input type="text" id="adminEmail" class="login-input" placeholder="Correo electrónico o Usuario"
                 onkeypress="if(event.key==='Enter')document.getElementById('adminPassword').focus()">
             <input type="password" id="adminPassword" class="login-input" placeholder="Contraseña"
                 onkeypress="if(event.key==='Enter')loginAdmin()">
             <button onclick="loginAdmin()" class="login-btn">Iniciar Sesión</button>
             <p id="loginError" class="login-error"></p>
+        </div>
+
+        <!-- PANTALLA 2FA ADMIN -->
+        <div id="admin2FAScreen" style="display:none; text-align:center; max-width: 480px; width: 90%; background: white; padding: 2.5rem; border-radius: 1.25rem; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">📲</div>
+            <h2 id="titulo2FAAdmin" style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">Verificación 2FA</h2>
+            <p id="subtitulo2FAAdmin" style="color: #64748b; font-size: 0.88rem; margin-bottom: 1.5rem;">Ingresa el código dinámico de 6 dígitos de tu Google Authenticator:</p>
+
+            <div id="boxSetupNuevo2FAAdmin" style="display: none; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 1rem; padding: 1.25rem; margin-bottom: 1.5rem; text-align: center;">
+                <div style="background: white; padding: 0.75rem; border-radius: 0.75rem; display: inline-block; margin-bottom: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <img id="imgQr2FAAdmin" src="" alt="QR 2FA" style="width: 180px; height: 180px; display: block;">
+                </div>
+                <p style="font-size: 0.8rem; color: #475569; margin-bottom: 0.35rem;">O copia esta clave en la app:</p>
+                <code id="txtSecretManual2FAAdmin" style="background: #e2e8f0; padding: 0.3rem 0.6rem; border-radius: 0.35rem; font-size: 0.85rem; font-weight: 800; color: #ff6b00; letter-spacing: 1px;"></code>
+            </div>
+
+            <form onsubmit="validar2FAAdmin(event)">
+                <input type="text" id="inputCodigo2FAAdmin" class="login-input" placeholder="000 000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" style="text-align: center; font-size: 1.85rem; font-weight: 900; letter-spacing: 6px; height: 56px; border: 2px solid #ff6b00; margin-bottom: 1.5rem;" required autofocus>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="btn btn-secondary" onclick="cancelar2FAAdmin()" style="flex: 1; justify-content: center; padding: 0.85rem; border-radius: 0.65rem; font-weight: 700;">
+                        ← Volver
+                    </button>
+                    <button type="submit" id="btnValidar2FAAdmin" class="login-btn" style="flex: 2; justify-content: center; margin: 0; padding: 0.85rem; border-radius: 0.65rem; font-weight: 800;">
+                        ✅ Verificar y Acceder
+                    </button>
+                </div>
+            </form>
+            <p id="error2FAAdmin" class="login-error" style="margin-top: 1rem;"></p>
         </div>
     </div>
 
@@ -568,7 +596,7 @@
                         <a href="#" data-section="categorias">📁 Categorías</a>
                         <a href="#" data-section="destacados">⭐ Destacados</a>
                         <a href="#" data-section="inventario">📋 Inventario</a>
-                        <a href="#" data-section="conteo-ciego" style="font-weight: 700; color: #0284c7;">🔢 Conteo Físico Ciego</a>
+                        <a href="conteo.html" target="_blank" style="font-weight: 700; color: #ff6b00;">📱 Ir a Toma de Conteo</a>
                         <a href="#" data-section="conciliacion-auditoria" style="font-weight: 700; color: #16a34a;">🔍 Conciliación y Auditoría</a>
                         <a href="#" data-section="auditoria-inventario">📜 Historial de Auditoría</a>
                         <a href="#" data-section="traslados">🔄 Traslados</a>
@@ -2551,99 +2579,6 @@
                 </div>
             </section>
 
-            <!-- ═══════════════════ CONTEO FÍSICO CIEGO (OPERARIOS) ═══════════════════ -->
-            <section id="conteo-ciegoSection" class="section">
-                <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                    <div>
-                        <h1 style="display: flex; align-items: center; gap: 0.5rem;">🔢 Toma Física Ciega de Inventario</h1>
-                        <p style="color: #64748b; margin: 0;">Los operarios cuentan unidades físicas sin ver el stock del sistema para una auditoría 100% transparente.</p>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button onclick="navegarASeccion('conciliacion-auditoria')" class="btn btn-warning" style="font-weight: 700;">
-                            🔍 Ir a Conciliación de Auditoría
-                        </button>
-                    </div>
-                </div>
-
-                <!-- TARJETA DE CONFIGURACIÓN INICIAL DE SESIÓN DE CONTEO -->
-                <div id="conteoConfigCard" class="card" style="background: white; border-radius: 1rem; border: 1px solid #cbd5e1; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
-                    <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem; font-weight: 800; color: #0f172a;">🚀 Iniciar Nueva Jornada de Conteo</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; align-items: end;">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label style="font-weight: 700;">🏪 Sede / Local a Contar:</label>
-                            <select id="conteoSelectSede" class="form-control" style="font-weight: 700; height: 44px;">
-                                <option value="Bodega">📦 Bodega Central</option>
-                                <option value="Alcalá">🏪 Tienda Alcalá</option>
-                                <option value="Local 01">🏬 Tienda Local 01</option>
-                                <option value="Jordán">🏢 Tienda Jordán</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label style="font-weight: 700;">👤 Responsable / Equipo del Conteo:</label>
-                            <input type="text" id="conteoInputOperario" class="form-control" placeholder="Ej: Carlos / Equipo Bodega" style="font-weight: 600; height: 44px;">
-                        </div>
-                        <div>
-                            <button type="button" class="btn btn-primary" onclick="iniciarSesionConteo()" style="width: 100%; height: 44px; font-weight: 800; font-size: 1rem;">
-                                ▶️ Empezar a Contar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ÁREA DE TRABAJO DE CONTEO ACTIVO (CERO MODALES - PANTALLA COMPLETA) -->
-                <div id="conteoAreaTrabajo" style="display: none;">
-                    
-                    <!-- BARRA DE ESTADO Y PROGRESO -->
-                    <div style="background: white; border-radius: 1rem; border: 1px solid #e2e8f0; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <span id="conteoBadgeSede" style="background: #0284c7; color: white; padding: 0.35rem 0.85rem; border-radius: 2rem; font-weight: 800; font-size: 0.9rem;">📍 Bodega</span>
-                                <span id="conteoBadgeOperario" style="background: #f1f5f9; color: #334155; padding: 0.35rem 0.85rem; border-radius: 2rem; font-weight: 700; font-size: 0.9rem;">👤 Operario</span>
-                            </div>
-                            <div style="display: flex; gap: 1.5rem; font-size: 0.95rem; font-weight: 700;">
-                                <span style="color: #475569;">Total Ítems: <strong id="conteoProgresoTotal" style="color: #0f172a;">0</strong></span>
-                                <span style="color: #16a34a;">✅ Contados: <strong id="conteoProgresoContados">0</strong></span>
-                                <span style="color: #ea580c;">⏳ Pendientes: <strong id="conteoProgresoPendientes">0</strong></span>
-                                <span style="color: #0284c7;">Progreso: <strong id="conteoProgresoPorcentaje">0%</strong></span>
-                            </div>
-                        </div>
-
-                        <!-- Barra visual de progreso -->
-                        <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden;">
-                            <div id="conteoBarraProgreso" style="width: 0%; height: 100%; background: linear-gradient(90deg, #0284c7, #10b981); transition: width 0.3s ease;"></div>
-                        </div>
-                    </div>
-
-                    <!-- BARRA DE BÚSQUEDA Y FILTROS RÁPIDOS -->
-                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0;">
-                        <div style="flex: 2; min-width: 250px;">
-                            <input type="text" id="conteoInputBuscar" class="form-control" placeholder="🔍 Buscar por nombre, referencia, marca, color o talla..." oninput="filtrarConteo()" style="height: 42px;">
-                        </div>
-                        <div style="flex: 1; min-width: 180px;">
-                            <select id="conteoFiltroCategoria" class="form-control" onchange="filtrarConteo()" style="height: 42px;">
-                                <option value="">Todas las Categorías</option>
-                            </select>
-                        </div>
-                        <div style="flex: 1; min-width: 180px;">
-                            <select id="conteoFiltroEstado" class="form-control" onchange="filtrarConteo()" style="height: 42px;">
-                                <option value="todos">Todos los productos</option>
-                                <option value="pendientes">⏳ Solo Pendientes de Contar</option>
-                                <option value="contados">✅ Solo Ya Contados</option>
-                            </select>
-                        </div>
-                        <button type="button" class="btn btn-secondary" onclick="cargarProductosParaConteo()" style="height: 42px; padding: 0 1.25rem;">
-                            🔄 Recargar
-                        </button>
-                    </div>
-
-                    <!-- GRID DE PRODUCTOS PARA CONTEO CIEGO (2 COLUMNAS / RESPONSIVE) -->
-                    <div id="conteoGridItems" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem;">
-                        <!-- Tarjetas de conteo ciego -->
-                    </div>
-
-                </div>
-            </section>
-
             <!-- ═══════════════════ CONCILIACIÓN Y AUDITORÍA ADMIN ═══════════════════ -->
             <section id="conciliacion-auditoriaSection" class="section">
                 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
@@ -2652,9 +2587,9 @@
                         <p style="color: #64748b; margin: 0;">Compara en tiempo real las cantidades físicas contadas a ciegas vs el stock en sistema.</p>
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button onclick="navegarASeccion('conteo-ciego')" class="btn btn-outline-primary" style="font-weight: 700;">
-                            🔢 Ir al Conteo Ciego
-                        </button>
+                        <a href="conteo.html" target="_blank" class="btn btn-outline-primary" style="font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+                            📱 Abrir Toma de Conteo
+                        </a>
                         <button onclick="exportarConciliacionCSV()" class="btn btn-success" style="font-weight: 700;">
                             📊 Exportar Excel/CSV
                         </button>
@@ -7026,7 +6961,8 @@
     <script src="js/ai-widget.js"></script>
     <script src="js/ticket-printer.js"></script>
     <script src="js/report-exporter.js"></script>
-    <script src="js/admin.js?v=20260318-2"></script>
+    <script src="js/totp-auth.js?v=20260318-5"></script>
+    <script src="js/admin.js?v=20260318-5"></script>
     <script src="js/admin-feedback.js"></script>
     <script src="js/admin-nomina.js"></script>
     <script src="js/admin-compras.js"></script>

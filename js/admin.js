@@ -148,55 +148,221 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loginAdmin() {
-    const email = document.getElementById('adminEmail').value.trim();
-    const password = document.getElementById('adminPassword').value;
+    const email = (document.getElementById('adminEmail')?.value || '').trim();
+    const password = document.getElementById('adminPassword')?.value;
     const loginBtn = document.querySelector('.login-btn');
+    const errBox = document.getElementById('loginError');
 
     if (!email || !password) {
-        document.getElementById('loginError').textContent = '📧 Ingresa correo y contraseña';
-        document.getElementById('loginError').style.display = 'block';
+        if (errBox) { errBox.textContent = '📧 Ingresa correo electrónico y contraseña'; errBox.style.display = 'block'; }
         return;
     }
 
     if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = 'Verificando...'; }
+    if (errBox) errBox.style.display = 'none';
 
     try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
+        let loginValido = false;
+        let adminInfo = null;
+
+        // 1. Validar si existe en administradores_sistema
+        const { data: adminReg } = await supabaseClient
+            .from('administradores_sistema')
+            .select('*')
+            .eq('email', email.toLowerCase())
+            .eq('activo', true)
+            .maybeSingle();
+
+        // 2. Intentar Supabase Auth
+        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password
         });
 
-        if (error) throw error;
+        if (!authError && authData?.user && adminReg) {
+            loginValido = true;
+            adminInfo = adminReg;
+        } else {
+            // 3. Validación alternativa contra empleados_tienda (rol Administrador)
+            const { data: empAdmins } = await supabaseClient
+                .from('empleados_tienda')
+                .select('*')
+                .eq('activo', true)
+                .eq('cargo', 'Administrador');
 
-        // Validar permisos en tabla administradores_sistema
-        const { data: adminData, error: adminError } = await supabaseClient
-            .from('administradores_sistema')
-            .select('panel_acceso, activo')
-            .eq('email', email.toLowerCase())
-            .single();
+            const empEncontrado = (empAdmins || []).find(e => {
+                const matchUser = (e.usuario && e.usuario.toLowerCase() === email.toLowerCase()) ||
+                                  (e.cedula && e.cedula === email) ||
+                                  (adminReg && e.nombre && e.nombre.toLowerCase().includes(adminReg.nombre.toLowerCase()));
+                const matchPass = (e.password && e.password === password) || (e.pin && e.pin === password);
+                return matchUser && matchPass;
+            });
 
-        if (adminError || !adminData || !adminData.activo || (adminData.panel_acceso !== 'admin' && adminData.panel_acceso !== 'ambos')) {
-            await supabaseClient.auth.signOut(); // Desloguear inmediatamente
-            throw new Error('No tienes permisos para acceder al Panel Principal.');
+            if (empEncontrado) {
+                loginValido = true;
+                adminInfo = adminReg || {
+                    id: empEncontrado.id,
+                    email: email,
+                    nombre: empEncontrado.nombre,
+                    rol: 'Administrador',
+                    panel_acceso: 'admin'
+                };
+            }
         }
 
-        // Login exitoso - onAuthStateChange manejar la UI
-        showToast('!Bienvenido al panel de administración!', 'success');
+        if (!loginValido || !adminInfo) {
+            throw new Error('Credenciales incorrectas o no tienes permisos de Administrador.');
+        }
+
+        // 3. Unificar 2FA: Buscar en administradores_sistema o en el empleado autenticado
+        let secret2FA = adminInfo.secret_2fa || localStorage.getItem(`moteros_2fa_admin_${adminInfo.id}`) || '';
+        let dosFactoresActivo = !!adminInfo.dos_factores_activo || !!localStorage.getItem(`moteros_2fa_admin_activo_${adminInfo.id}`);
+
+        if (!secret2FA && empEncontrado) {
+            if (empEncontrado.secret_2fa) {
+                secret2FA = empEncontrado.secret_2fa;
+                dosFactoresActivo = true;
+            } else if (empEncontrado.id) {
+                const loc = localStorage.getItem(`moteros_2fa_secret_${empEncontrado.id}`);
+                if (loc) {
+                    secret2FA = loc;
+                    dosFactoresActivo = true;
+                }
+            }
+        }
+
+        // Preparar sesión temporal para 2FA
+        window.adminTemporal2FA = {
+            email: email,
+            nombre: adminInfo.nombre || email,
+            id: adminInfo.id,
+            secret_2fa: secret2FA,
+            dos_factores_activo: dosFactoresActivo
+        };
+
+        mostrarPantalla2FAAdmin();
 
     } catch (err) {
         console.error('Login error:', err);
-        const msg = err.message === 'Invalid login credentials' ? 'Credenciales inválidas' : err.message;
-        document.getElementById('loginError').textContent = `❌​ Error: ${msg}`;
-        document.getElementById('loginError').style.display = 'block';
+        const msg = err.message === 'Invalid login credentials' ? 'Credenciales inválidas. Revisa correo y contraseña.' : err.message;
+        if (errBox) { errBox.textContent = `❌ ${msg}`; errBox.style.display = 'block'; }
     } finally {
-        if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Iniciar sesión'; }
+        if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Iniciar Sesión'; }
+    }
+}
+
+function mostrarPantalla2FAAdmin() {
+    const admin = window.adminTemporal2FA;
+    if (!admin) return;
+
+    document.getElementById('pantallaAbrirCaja').style.display = 'none';
+    document.getElementById('admin2FAScreen').style.display = 'block';
+    const inp = document.getElementById('inputCodigo2FAAdmin');
+    if (inp) { inp.value = ''; inp.focus(); }
+
+    const boxSetup = document.getElementById('boxSetupNuevo2FAAdmin');
+    const qrImg = document.getElementById('imgQr2FAAdmin');
+    const txtSecret = document.getElementById('txtSecretManual2FAAdmin');
+
+    if (!admin.secret_2fa || !admin.dos_factores_activo) {
+        // Primer ingreso: Reutilizar o generar secret consistente
+        const prevKey = localStorage.getItem(`moteros_2fa_admin_${admin.id}`);
+        window.secretAdminTemporal = prevKey || TOTP_AUTH.generarSecret();
+        localStorage.setItem(`moteros_2fa_admin_${admin.id}`, window.secretAdminTemporal);
+
+        const otpUrl = TOTP_AUTH.generarOtpAuthUrl(`Admin_${admin.nombre}`, window.secretAdminTemporal);
+        if (qrImg) qrImg.src = TOTP_AUTH.generarQrImageUrl(otpUrl, 180);
+        if (txtSecret) txtSecret.textContent = window.secretAdminTemporal;
+        if (boxSetup) boxSetup.style.display = 'block';
+        document.getElementById('titulo2FAAdmin').textContent = '📲 Vincula tu Google Authenticator';
+        document.getElementById('subtitulo2FAAdmin').textContent = 'Escanea este código QR con la app Google Authenticator e ingresa los 6 dígitos:';
+    } else {
+        window.secretAdminTemporal = admin.secret_2fa;
+        if (boxSetup) boxSetup.style.display = 'none';
+        document.getElementById('titulo2FAAdmin').textContent = '🔒 Verificación 2FA';
+        document.getElementById('subtitulo2FAAdmin').textContent = `Hola ${admin.nombre}, ingresa el código de 6 dígitos de tu app Google Authenticator:`;
+    }
+}
+
+function cancelar2FAAdmin() {
+    window.adminTemporal2FA = null;
+    window.secretAdminTemporal = '';
+    document.getElementById('admin2FAScreen').style.display = 'none';
+    document.getElementById('pantallaAbrirCaja').style.display = 'block';
+}
+
+async function validar2FAAdmin(e) {
+    if (e) e.preventDefault();
+    const codigo = (document.getElementById('inputCodigo2FAAdmin')?.value || '').trim();
+    const btn = document.getElementById('btnValidar2FAAdmin');
+    const errBox = document.getElementById('error2FAAdmin');
+    const admin = window.adminTemporal2FA;
+
+    if (!admin || !window.secretAdminTemporal) {
+        if (errBox) errBox.textContent = 'Sesión temporal inválida. Vuelve a iniciar sesión.';
+        return;
+    }
+
+    if (codigo.length !== 6) {
+        if (errBox) errBox.textContent = 'Ingresa el código de 6 dígitos.';
+        return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Validando...'; }
+    if (errBox) errBox.textContent = '';
+
+    try {
+        const esValido = await TOTP_AUTH.validarCodigo(codigo, window.secretAdminTemporal);
+        if (!esValido) {
+            if (errBox) {
+                errBox.textContent = '❌ Código 2FA incorrecto o expirado. Revisa tu app.';
+                errBox.style.display = 'block';
+            }
+            if (btn) { btn.disabled = false; btn.textContent = '✅ Verificar y Acceder'; }
+            document.getElementById('inputCodigo2FAAdmin')?.select();
+            return;
+        }
+
+        // Guardar persistencia en Supabase (Nube)
+        if (supabaseClient) {
+            try {
+                await supabaseClient
+                    .from('administradores_sistema')
+                    .update({ secret_2fa: window.secretAdminTemporal, dos_factores_activo: true })
+                    .eq('email', admin.email.toLowerCase());
+
+                await supabaseClient
+                    .from('empleados_tienda')
+                    .update({ secret_2fa: window.secretAdminTemporal, dos_factores_activo: true })
+                    .eq('nombre', admin.nombre);
+            } catch(e) {
+                console.warn('Persistencia en nube:', e);
+            }
+        }
+
+        // Login y 2FA completados con éxito
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        showToast(`¡Bienvenido/a, ${admin.nombre}!`, 'success');
+        inicializarAdmin();
+
+    } catch (err) {
+        console.error(err);
+        if (errBox) { errBox.textContent = 'Error validando 2FA: ' + err.message; errBox.style.display = 'block'; }
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '✅ Verificar y Acceder'; }
     }
 }
 
 async function logout() {
-    if (confirm('🚪​ Cerrar sesión?')) {
+    if (confirm('🚪 ¿Cerrar sesión del panel de administración?')) {
         await supabaseClient.auth.signOut();
-        // UI se actualiza via onAuthStateChange
+        sessionStorage.clear();
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('admin2FAScreen').style.display = 'none';
+        document.getElementById('pantallaAbrirCaja').style.display = 'block';
+        document.getElementById('loginScreen').style.display = 'flex';
+        showToast('Sesión cerrada correctamente', 'info');
     }
 }
 
@@ -442,7 +608,6 @@ async function cargarSeccion(section) {
         case 'empleados': await cargarEmpleados(); break;
         case 'control-acceso': if (typeof inicializarPanelControlAccesoAdmin === 'function') await inicializarPanelControlAccesoAdmin(); break;
         case 'auditoria-inventario': if (typeof inicializarPanelAuditoriaInventario === 'function') await inicializarPanelAuditoriaInventario(); break;
-        case 'conteo-ciego': if (typeof cargarProductosParaConteo === 'function') await cargarProductosParaConteo(); break;
         case 'conciliacion-auditoria': if (typeof cargarConciliacionAuditoria === 'function') await cargarConciliacionAuditoria(); break;
         case 'traslados': await cargarTraslados(); break;
         case 'feedback': await cargarFeedback(); break;

@@ -103,7 +103,7 @@ async function inicializarPanelAuditoriaInventario() {
         try {
             const { data: prods } = await window.supabaseClient
                 .from('productos')
-                .select('id, id_producto, nombre, codigo_barras');
+                .select('id, id_producto, nombre, referencia');
 
             (prods || []).forEach(p => {
                 if (p.id_producto) prodMap[p.id_producto] = p;
@@ -121,7 +121,7 @@ async function inicializarPanelAuditoriaInventario() {
                 ...a,
                 id: a.id || `aud_${Math.random()}`,
                 producto_nombre: a.producto_nombre || prodMap[a.producto_id]?.nombre || a.producto_id,
-                producto_codigo: a.producto_codigo || prodMap[a.producto_id]?.codigo_barras || ''
+                producto_codigo: a.producto_codigo || prodMap[a.producto_id]?.referencia || ''
             });
         });
 
@@ -132,7 +132,7 @@ async function inicializarPanelAuditoriaInventario() {
                 id: item.id || `inv_${item.ultima_actualizacion}`,
                 producto_id: item.producto_id || 'N/A',
                 producto_nombre: infoP.nombre || item.producto_id || 'Producto',
-                producto_codigo: infoP.codigo_barras || '',
+                producto_codigo: infoP.referencia || '',
                 empleado_id: '',
                 empleado_nombre: item.usuario_modifico || 'Sistema',
                 tipo_accion: 'Ajuste Stock',

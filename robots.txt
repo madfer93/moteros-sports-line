@@ -14,12 +14,16 @@ Allow: /privacidad.html
 Allow: /habeas-data.html
 Allow: /politicas-domicilios.html
 
-# Bloquear paneles de gestión internos, POS, Bodega y scripts
+# Bloquear paneles de gestión internos, POS, Bodega, Conteo y scripts
 Disallow: /admin.html
 Disallow: /admin-administrativa.html
 Disallow: /bodega.html
 Disallow: /gestor-productos.html
 Disallow: /acceso.html
+Disallow: /conteo.html
+Disallow: /informe-ejecutivo.html
+Disallow: /pos.html
+Disallow: /pos-caja.html
 Disallow: /branding-studio.html
 Disallow: /recovery.html
 Disallow: /pos/

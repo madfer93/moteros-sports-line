@@ -90,3 +90,7 @@ playwright/.cache/
 tests/
 playwright.config.js
 SECURITY_SETUP.md
+
+# INFORMES PRIVADOS / CONFIDENCIALES
+informe-ejecutivo.html
+

@@ -25,7 +25,9 @@ self.addEventListener('install', event => {
         caches.open(CACHE_NAME)
             .then(cache => {
                 console.log('SW: Cache Open');
-                return cache.addAll(ASSETS_TO_CACHE);
+                return Promise.allSettled(
+                    ASSETS_TO_CACHE.map(url => cache.add(url).catch(err => console.warn('SW Skip:', url, err)))
+                );
             })
     );
 });

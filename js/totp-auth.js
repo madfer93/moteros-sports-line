@@ -92,7 +92,7 @@ const TOTP_AUTH = (function () {
         if (cleanCode.length !== 6) return false;
 
         const ahora = Date.now();
-        const ventanas = [-1, 0, 1]; // Ventana actual, anterior y siguiente
+        const ventanas = [-2, -1, 0, 1, 2]; // Ventana amplia (+/- 60s) para evitar problemas de reloj
 
         for (const offset of ventanas) {
             const tiempoPrueba = ahora + (offset * 30 * 1000);
