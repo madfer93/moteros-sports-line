@@ -96,8 +96,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         } else {
             const saludo = window.moterosIA.userName
-                ? `¡Hola de nuevo, ${window.moterosIA.userName}! 👋 ¿En qué producto de Moteros Sport Line te puedo asesorar hoy?`
-                : `¡Hola! Soy tu asesor virtual de Moteros Sport Line. 🏍️ ¿Con quién tengo el gusto de hablar hoy para asesorarte?`;
+                ? `¡Hola de nuevo, ${window.moterosIA.userName}! 🏍️ ¿En qué producto o accesorio te asesoramos hoy?`
+                : `¡Hola, Biker! 🏍️ Bienvenido a Moteros Sport Line. ¿Buscas algún producto en especial (cascos, chaquetas, impermeables) o deseas consultar tallas y financiación?`;
 
             appendMessage('assistant', saludo);
         }
