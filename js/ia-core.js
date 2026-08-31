@@ -13,6 +13,7 @@ class MoterosIA {
         this.userName = this.perfilCliente?.nombre || localStorage.getItem('ai_user_name') || '';
         this.systemPromptBase = this.generarSystemPromptBase();
         this.ultimoWhatsAppGuardado = null;
+        this.leadSesion = { id: null, whatsapp: null, timer: null, enviadoTelegram: false };
 
         // Seguridad y Blindaje
         this.intentosHacking = 0;
@@ -305,8 +306,33 @@ PROTOCOLO COMERCIAL Y CAPTURA DE CLIENTES (HABEAS DATA):
         }
     }
 
+    extraerResumenConversacion() {
+        const userMsgs = this.historial.filter(m => m.role === 'user').map(m => m.content);
+        if (userMsgs.length === 0) return 'Consulta general en tienda virtual';
+
+        const categorias = window.CONFIG?.CATEGORIAS?.filter(cat =>
+            this.historial.some(h => h.content.toLowerCase().includes(cat.toLowerCase()))
+        ) || [];
+
+        const temas = [];
+        if (categorias.length > 0) temas.push(`🛍️ ${categorias.join(', ')}`);
+        if (this.historial.some(h => /addi|siste|cr[eé]dito/i.test(h.content))) {
+            temas.push('💳 Financiación');
+        }
+        if (this.historial.some(h => /alcal[aá]|jord[aá]n|\b01\b|sede|local|tienda/i.test(h.content))) {
+            temas.push('📍 Sedes/Stock');
+        }
+        if (this.historial.some(h => /env[ií]o|domicilio|entrega/i.test(h.content))) {
+            temas.push('🚚 Envíos');
+        }
+
+        const temasStr = temas.length > 0 ? temas.join(' | ') : 'Interés general';
+        const ultimasConsultas = userMsgs.slice(-3).map(m => `"${m.slice(0, 80)}"`).join(' ➡️ ');
+
+        return `${temasStr}\n\n💬 <b>Resumen Chat:</b> ${ultimasConsultas}`;
+    }
+
     async enriquecerLead() {
-        // Lógica para obtener metadatos del historial
         const categoriasEncontradas = window.CONFIG?.CATEGORIAS?.filter(cat =>
             this.historial.some(h => h.content.toLowerCase().includes(cat.toLowerCase()))
         ) || [];
@@ -317,21 +343,40 @@ PROTOCOLO COMERCIAL Y CAPTURA DE CLIENTES (HABEAS DATA):
         }
 
         return {
-            interes: categoriasEncontradas.length > 0 ? 'Alto' : 'Medio',
-            necesidad: `Interesado en: ${categoriasEncontradas.join(', ') || 'Consultas generales'}`,
+            interes: categoriasEncontradas.length > 0 ? 'Alta' : 'Medio',
+            necesidad: this.extraerResumenConversacion(),
             nombre_cliente: this.userName || this.perfilCliente?.nombre || ''
         };
     }
 
-    async guardarLead(whatsapp, datosManuales = null) {
-        if (!window.supabaseClient) return;
-
-        // Validar que sea un número de teléfono real (mínimo 7 a 15 dígitos)
+    programarDespachoLead(whatsapp, datosManuales = null) {
         const waLimpio = (whatsapp || '').toString().replace(/\D/g, '');
         if (!waLimpio || waLimpio.length < 7) return;
 
-        // CONTROL DE DUPLICADOS
-        if (this.ultimoWhatsAppGuardado === waLimpio) return;
+        this.leadSesion.whatsapp = waLimpio;
+        if (this.leadSesion.timer) {
+            clearTimeout(this.leadSesion.timer);
+        }
+
+        // Espera 10 segundos de silencio para consolidar toda la conversación en un solo lead maestro
+        this.leadSesion.timer = setTimeout(() => {
+            this.guardarLeadConsolidado(waLimpio, datosManuales);
+        }, 10000);
+    }
+
+    async guardarLead(whatsapp, datosManuales = null, inmediato = false) {
+        if (!inmediato) {
+            this.programarDespachoLead(whatsapp, datosManuales);
+            return;
+        }
+        await this.guardarLeadConsolidado(whatsapp, datosManuales);
+    }
+
+    async guardarLeadConsolidado(whatsapp, datosManuales = null) {
+        if (!window.supabaseClient) return;
+
+        const waLimpio = (whatsapp || this.leadSesion.whatsapp || '').toString().replace(/\D/g, '');
+        if (!waLimpio || waLimpio.length < 7) return;
 
         try {
             const enrichment = await this.enriquecerLead();
@@ -351,31 +396,50 @@ PROTOCOLO COMERCIAL Y CAPTURA DE CLIENTES (HABEAS DATA):
             };
 
             let leadGuardado = null;
-            const { data, error } = await window.supabaseClient.from('leads_ia').insert([payload]).select().single();
 
-            if (!error && data) {
-                leadGuardado = data;
+            if (this.leadSesion.id) {
+                // Actualizar el mismo registro existente en lugar de crear filas duplicadas
+                const { data } = await window.supabaseClient
+                    .from('leads_ia')
+                    .update(payload)
+                    .eq('id', this.leadSesion.id)
+                    .select()
+                    .single();
+                leadGuardado = data || { id: this.leadSesion.id, ...payload };
             } else {
-                // Plan B: Mínimo viable
-                const payloadB = {
-                    nombre: payload.nombre,
-                    whatsapp: payload.whatsapp,
-                    fragmento_interes: payload.fragmento_interes,
-                    contexto: payload.contexto,
-                    historial_asociado: JSON.stringify(payload.historial_asociado)
-                };
-                const { data: dataB } = await window.supabaseClient.from('leads_ia').insert([payloadB]).select().single();
-                leadGuardado = dataB || payload;
+                // Crear el registro maestro consolidado
+                const { data, error } = await window.supabaseClient
+                    .from('leads_ia')
+                    .insert([payload])
+                    .select()
+                    .single();
+
+                if (!error && data) {
+                    leadGuardado = data;
+                    this.leadSesion.id = data.id;
+                } else {
+                    const payloadB = {
+                        nombre: payload.nombre,
+                        whatsapp: payload.whatsapp,
+                        fragmento_interes: payload.fragmento_interes,
+                        contexto: payload.contexto,
+                        historial_asociado: JSON.stringify(payload.historial_asociado)
+                    };
+                    const { data: dataB } = await window.supabaseClient.from('leads_ia').insert([payloadB]).select().single();
+                    leadGuardado = dataB || payload;
+                    if (dataB?.id) this.leadSesion.id = dataB.id;
+                }
+
+                // Enviar UNA SOLA alerta a Telegram por sesión
+                if (leadGuardado && !this.leadSesion.enviadoTelegram) {
+                    this.leadSesion.enviadoTelegram = true;
+                    this.enviarAlertaTelegram(leadGuardado);
+                }
             }
 
             this.ultimoWhatsAppGuardado = waLimpio;
-
-            // ENVIAR ALERTA INMEDIATA A TELEGRAM CON BOTONES
-            if (leadGuardado) {
-                this.enviarAlertaTelegram(leadGuardado);
-            }
         } catch (e) {
-            if (window.registrarLogSistema) window.registrarLogSistema('error_ia', 'Error crítico guardando lead', e.message);
+            if (window.registrarLogSistema) window.registrarLogSistema('error_ia', 'Error consolidando lead', e.message);
         }
     }
 
