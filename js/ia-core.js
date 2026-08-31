@@ -285,9 +285,12 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
                 nivel_interes: interes
             };
 
-            const { error } = await window.supabaseClient.from('leads_ia').insert([payload]);
+            let leadGuardado = null;
+            const { data, error } = await window.supabaseClient.from('leads_ia').insert([payload]).select().single();
 
-            if (error) {
+            if (!error && data) {
+                leadGuardado = data;
+            } else {
                 // Plan B: Mínimo viable
                 const payloadB = {
                     nombre: payload.nombre,
@@ -296,12 +299,76 @@ SEDES Y LOCALES FÍSICOS EN VILLAVICENCIO:
                     contexto: payload.contexto,
                     historial_asociado: JSON.stringify(payload.historial_asociado)
                 };
-                await window.supabaseClient.from('leads_ia').insert([payloadB]);
+                const { data: dataB } = await window.supabaseClient.from('leads_ia').insert([payloadB]).select().single();
+                leadGuardado = dataB || payload;
             }
 
             this.ultimoWhatsAppGuardado = whatsapp;
+
+            // ENVIAR ALERTA INMEDIATA A TELEGRAM CON BOTONES
+            if (leadGuardado) {
+                this.enviarAlertaTelegram(leadGuardado);
+            }
         } catch (e) {
             if (window.registrarLogSistema) window.registrarLogSistema('error_ia', 'Error crítico guardando lead', e.message);
+        }
+    }
+
+    async enviarAlertaTelegram(lead) {
+        try {
+            const configTelegram = window.CONFIG?.TELEGRAM_LEADS;
+            if (!configTelegram || !configTelegram.HABILITADO || !configTelegram.BOT_TOKEN || !configTelegram.CHAT_ID) {
+                return;
+            }
+
+            const nombre = lead.nombre || 'Cliente Web';
+            const waRaw = (lead.whatsapp || '').replace(/\D/g, '');
+            let waClean = waRaw;
+            if (waClean.length === 10) waClean = '57' + waClean;
+            const waLink = waClean ? `https://wa.me/${waClean}?text=${encodeURIComponent(`Hola ${nombre}! Te contactamos de Moteros Sport Line para asesorarte con tu compra.`)}` : 'https://wa.me/573113408416';
+            const interes = lead.nivel_interes || 'Medio';
+            const producto = lead.fragmento_interes || 'Consulta de asesoría en tienda virtual';
+            const fecha = new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' });
+            const leadId = lead.id || 'temp_' + Date.now();
+
+            const emojiInteres = (interes || '').toLowerCase() === 'alta' ? '🔥 ALTO INTERÉS (Prioritario)' : '⚡ INTERÉS MEDIO';
+
+            const mensaje = `🏍️ <b>¡NUEVO CLIENTE CAPTURADO POR MOTEROS IA!</b> 🏍️\n\n` +
+                `👤 <b>Cliente:</b> ${nombre}\n` +
+                `📱 <b>WhatsApp:</b> +${waClean || lead.whatsapp}\n` +
+                `🎯 <b>Nivel:</b> ${emojiInteres}\n` +
+                `🛍️ <b>Producto / Necesidad:</b>\n<i>${producto}</i>\n\n` +
+                `🕒 <b>Fecha:</b> ${fecha}\n` +
+                `📍 <b>Origen:</b> Tienda Virtual Web`;
+
+            const replyMarkup = {
+                inline_keyboard: [
+                    [
+                        { text: '💬 Abrir WhatsApp Directo', url: waLink }
+                    ],
+                    [
+                        { text: '✅ Marcar Contactado', callback_data: `contactado_${leadId}` },
+                        { text: '💰 Marcar Compró', callback_data: `compro_${leadId}` }
+                    ],
+                    [
+                        { text: '⏳ En Seguimiento', callback_data: `seguimiento_${leadId}` },
+                        { text: '❌ Descartado', callback_data: `descartado_${leadId}` }
+                    ]
+                ]
+            };
+
+            await fetch(`https://api.telegram.org/bot${configTelegram.BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: configTelegram.CHAT_ID,
+                    text: mensaje,
+                    parse_mode: 'HTML',
+                    reply_markup: replyMarkup
+                })
+            });
+        } catch (err) {
+            console.warn('Alerta Telegram Lead omitida o error:', err);
         }
     }
 

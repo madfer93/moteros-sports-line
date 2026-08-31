@@ -13496,8 +13496,12 @@ function getEstadoLeadColor(estado) {
         case 'nuevo': return 'badge-danger';
         case 'contactado': return 'badge-info';
         case 'en seguimiento': return 'badge-warning';
-        case 'cerrado': return 'badge-secondary';
-        default: return 'badge-danger';
+        case 'compro':
+        case 'compró':
+        case 'cerrado': return 'badge-success';
+        case 'descartado':
+        case 'no interesado': return 'badge-secondary';
+        default: return 'badge-info';
     }
 }
 
