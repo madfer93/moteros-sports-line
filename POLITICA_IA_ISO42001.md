@@ -5,7 +5,8 @@
 **Desarrollador y Consultor de IA:** J&M Tech Solutions (CEO: Manuel Madrid)  
 **Versión del Documento:** 1.0  
 **Fecha de Emisión:** Agosto 2026  
-**Ámbito de Aplicación:** Agente Inteligente *Moteros IA*, E-Commerce, Puntos de Venta (POS) y Canales de Automatización Comercial.
+**Ámbito de Aplicación:** Agente Inteligente *Moteros IA*, E-Commerce, Puntos de Venta (POS) y Canales de Automatización Comercial.  
+**Nota de Transparencia Regulatoria:** Este documento declara la **adhesión voluntaria, diseño arquitectónico y adopción de buenas prácticas** bajo los principios de la norma internacional ISO/IEC 42001 e ICONTEC. No constituye una certificación comercial emitida ni comprada ante un organismo acreditador externo, sino un marco de autorregulación ética y técnica de J&M Tech Solutions.
 
 ---
 
