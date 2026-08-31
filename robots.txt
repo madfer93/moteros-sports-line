@@ -13,6 +13,7 @@ Allow: /terminos.html
 Allow: /privacidad.html
 Allow: /habeas-data.html
 Allow: /politicas-domicilios.html
+Allow: /politica-ia.html
 
 # Bloquear paneles de gestión internos, POS, Bodega, Conteo y scripts
 Disallow: /admin.html
