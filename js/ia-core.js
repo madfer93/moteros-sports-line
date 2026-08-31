@@ -543,8 +543,61 @@ PROTOCOLO COMERCIAL Y CAPTURA DE CLIENTES (HABEAS DATA):
     }
 
 
+    verificarRateLimit() {
+        if (this.contexto === 'ADMIN') return null; // Sin límite para administradores
+
+        const ahora = Date.now();
+        const unMinuto = 60 * 1000;
+        const unDia = 24 * 60 * 60 * 1000;
+
+        let tracking = {
+            ultimoEnvio: 0,
+            mensajesMinuto: [],
+            mensajesDia: [],
+            fechaInicioDia: ahora
+        };
+
+        try {
+            const guardado = localStorage.getItem('ai_rate_limit_data');
+            if (guardado) tracking = JSON.parse(guardado);
+        } catch (e) { }
+
+        // 1. Cooldown de 1.5 segundos entre mensajes
+        if (ahora - (tracking.ultimoEnvio || 0) < 1500) {
+            return "⏳ Por favor espera un momento antes de enviar otro mensaje.";
+        }
+
+        // 2. Límite de 8 mensajes por minuto
+        tracking.mensajesMinuto = (tracking.mensajesMinuto || []).filter(ts => ahora - ts < unMinuto);
+        if (tracking.mensajesMinuto.length >= 8) {
+            return "⚠️ Estás enviando mensajes muy rápido. Espera unos segundos para continuar.";
+        }
+
+        // 3. Límite diario de 40 consultas
+        if (ahora - (tracking.fechaInicioDia || ahora) > unDia) {
+            tracking.mensajesDia = [];
+            tracking.fechaInicioDia = ahora;
+        }
+        if ((tracking.mensajesDia || []).length >= 40) {
+            return "🏍️ Has alcanzado el límite de consultas automáticas de hoy. Para una atención ilimitada y personalizada, habla directamente con nuestros asesores por WhatsApp al +57 311 340 8416.";
+        }
+
+        // Registrar uso
+        tracking.ultimoEnvio = ahora;
+        tracking.mensajesMinuto.push(ahora);
+        tracking.mensajesDia.push(ahora);
+        try {
+            localStorage.setItem('ai_rate_limit_data', JSON.stringify(tracking));
+        } catch (e) { }
+
+        return null;
+    }
+
     async enviarMensaje(mensajeUsuario) {
         if (this.bloqueado) return "🚫 Sesión suspendida por seguridad. Refresca la página para intentar de nuevo con consultas sobre productos.";
+
+        const avisoRateLimit = this.verificarRateLimit();
+        if (avisoRateLimit) return avisoRateLimit;
 
         const avisoSeguridad = await this.detectarIntentoHacking(mensajeUsuario);
         if (avisoSeguridad) return avisoSeguridad;
