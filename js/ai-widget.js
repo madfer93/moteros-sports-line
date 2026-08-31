@@ -62,12 +62,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${!isInsideAdmin ? '<button id="aiCloseBtn" class="ai-close-btn">❌</button>' : ''}
         </div>
         <div id="aiMessages" class="ai-messages"></div>
-        <div id="aiLeadCapture" class="ai-lead-capture hidden">
-            <div class="ai-legal-banner">
-                <input type="checkbox" id="aiHabeasCheck">
-                <label for="aiHabeasCheck">Acepto la <a href="privacidad.html" target="_blank">política de tratamiento de datos</a></label>
+        <div id="aiLeadCapture" class="ai-lead-capture hidden" style="background: rgba(20, 20, 25, 0.95); border: 1px solid rgba(255, 107, 0, 0.4); border-radius: 12px; padding: 12px; margin: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            <div style="font-size: 0.85rem; font-weight: bold; color: #ff6b00; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>📲</span> ¿Deseas asesoría directa por WhatsApp?
             </div>
-            <button id="aiSubmitLead" class="ai-submit-lead-btn" disabled>🚀 Enviar mis datos de contacto</button>
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+                <input type="text" id="aiLeadNombre" placeholder="Tu Nombre completo" style="width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #333; background: #111; color: #fff; font-size: 0.82rem;">
+                <input type="tel" id="aiLeadWhatsApp" placeholder="Número de WhatsApp (10 dígitos)" maxlength="15" style="width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #333; background: #111; color: #fff; font-size: 0.82rem;">
+            </div>
+            <div class="ai-legal-banner" style="margin-bottom: 8px; font-size: 0.74rem; display: flex; align-items: flex-start; gap: 6px; color: #bbb; line-height: 1.3;">
+                <input type="checkbox" id="aiHabeasCheck" style="margin-top: 2px;">
+                <label for="aiHabeasCheck">Autorizo el tratamiento de mis datos personales según la <a href="habeas-data.html" target="_blank" style="color: #ff6b00; text-decoration: underline;">Política de Habeas Data</a>.</label>
+            </div>
+            <div style="display: flex; gap: 6px;">
+                <button id="aiSubmitLead" class="ai-submit-lead-btn" style="flex: 1; background: #25d366; color: #000; font-weight: bold; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; opacity: 0.5;" disabled>🚀 Solicitar Asesor</button>
+                <button id="aiCancelLead" type="button" style="background: transparent; color: #888; border: 1px solid #333; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem;" title="Cerrar">✕</button>
+            </div>
         </div>
         <div id="aiQuickReplies" class="ai-quick-replies">
             <button class="ai-chip-btn" data-query="🪖 ¿Qué cascos tienen disponibles en catálogo?">🪖 Cascos</button>
@@ -103,8 +113,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         } else {
             const saludo = window.moterosIA.userName
-                ? `¡Hola de nuevo, ${window.moterosIA.userName}! 👋 ¿En qué más puedo ayudarte hoy?`
-                : `¡Hola! Soy tu asistente virtual de Moteros Sport Line. 🏍️ ¿Con quién tengo el gusto de hablar?`;
+                ? `¡Hola de nuevo, ${window.moterosIA.userName}! 👋 ¿En qué producto de Moteros Sport Line te puedo asesorar hoy?`
+                : `¡Hola! Soy tu asesor virtual de Moteros Sport Line. 🏍️ ¿Con quién tengo el gusto de hablar hoy para asesorarte?`;
 
             appendMessage('assistant', saludo);
         }
@@ -118,9 +128,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const input = document.getElementById('aiInput');
     const sendBtn = document.getElementById('aiSendBtn');
     const captchaContainer = document.getElementById('aiLeadCapture');
+    const leadNombreInput = document.getElementById('aiLeadNombre');
+    const leadWhatsAppInput = document.getElementById('aiLeadWhatsApp');
     const habeasCheck = document.getElementById('aiHabeasCheck');
     const submitLeadBtn = document.getElementById('aiSubmitLead');
-    // messagesContainer ya está declarado arriba
+    const cancelLeadBtn = document.getElementById('aiCancelLead');
 
     if (fabBtn) fabBtn.addEventListener('click', toggleChat);
     if (closeBtn) closeBtn.addEventListener('click', toggleChat);
@@ -129,31 +141,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.key === 'Enter') sendMessage();
     });
 
-    habeasCheck.addEventListener('change', () => {
-        submitLeadBtn.disabled = !habeasCheck.checked;
-    });
+    function validarFormularioLead() {
+        const waClean = (leadWhatsAppInput.value || '').replace(/\D/g, '');
+        const valido = habeasCheck.checked && waClean.length >= 10;
+        submitLeadBtn.disabled = !valido;
+        submitLeadBtn.style.opacity = valido ? '1' : '0.5';
+    }
+
+    habeasCheck.addEventListener('change', validarFormularioLead);
+    leadWhatsAppInput.addEventListener('input', validarFormularioLead);
+    if (cancelLeadBtn) {
+        cancelLeadBtn.addEventListener('click', () => {
+            captchaContainer.classList.add('hidden');
+        });
+    }
 
     submitLeadBtn.addEventListener('click', async () => {
-        if (!habeasCheck.checked) return;
+        const waClean = (leadWhatsAppInput.value || '').replace(/\D/g, '');
+        if (!habeasCheck.checked || waClean.length < 10) return;
 
-        const lastUserMsg = window.moterosIA.historial.filter(m => m.role === 'user').pop()?.content || '';
-        const whatsapp = lastUserMsg.match(/\d{7,15}/)?.[0] || 'Manual';
+        const nombreCliente = (leadNombreInput.value || '').trim() || window.moterosIA.userName || 'Cliente Web';
 
-        submitLeadBtn.innerText = '⏳ Enviando...';
+        submitLeadBtn.innerText = '⏳ Conectando asesor...';
         submitLeadBtn.disabled = true;
 
-        await window.moterosIA.guardarLead(whatsapp);
+        if (window.moterosIA) {
+            window.moterosIA.userName = nombreCliente;
+            await window.moterosIA.guardarLead(waClean, {
+                nombre: nombreCliente,
+                interes: 'Solicitud directa de asesoría personalizada desde widget'
+            });
+        }
 
-        submitLeadBtn.innerText = '✅ Datos Enviados';
+        submitLeadBtn.innerText = '✅ Solicitud Enviada';
+        appendMessage('assistant', `✅ ¡Listo, ${nombreCliente}! Ya enviamos tu solicitud a nuestros asesores. Te contactaremos al WhatsApp <b>+57 ${waClean}</b> en breve para enviarte fotos y cotización.`);
+
         setTimeout(() => {
             captchaContainer.classList.add('hidden');
-            // Resetear estado del formulario para próximas interacciones
             setTimeout(() => {
-                submitLeadBtn.innerText = '🚀 Enviar mis datos de contacto';
+                submitLeadBtn.innerText = '🚀 Solicitar Asesor';
                 submitLeadBtn.disabled = true;
+                submitLeadBtn.style.opacity = '0.5';
                 habeasCheck.checked = false;
+                leadWhatsAppInput.value = '';
             }, 400);
-        }, 2000);
+        }, 1500);
     });
 
     function toggleChat() {
@@ -191,9 +223,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             hideTyping();
             appendMessage('assistant', formatResponse(response));
 
-            // Si el mensaje del usuario tiene un número o la respuesta de la IA lo sugiere, mostrar banner
-            if (text.match(/\d{7,15}/) || response.toLowerCase().includes('whatsapp') || response.toLowerCase().includes('contacto')) {
+            // Si el mensaje del usuario tiene un número o la respuesta de la IA sugiere contacto/asesoría, mostrar formulario
+            const palabrasContacto = ['whatsapp', 'contacto', 'asesor', 'teléfono', 'numero', 'número', 'habeas', 'crédito', 'addi', 'sistecrédito', 'precio', 'cotiz'];
+            const pideContacto = palabrasContacto.some(p => response.toLowerCase().includes(p) || text.toLowerCase().includes(p));
+
+            if (text.match(/\d{7,15}/) || pideContacto) {
+                if (window.moterosIA?.userName && leadNombreInput && !leadNombreInput.value) {
+                    leadNombreInput.value = window.moterosIA.userName;
+                }
+                const matchWA = text.match(/3\d{9}/);
+                if (matchWA && leadWhatsAppInput && !leadWhatsAppInput.value) {
+                    leadWhatsAppInput.value = matchWA[0];
+                }
+                validarFormularioLead();
                 captchaContainer.classList.remove('hidden');
+                scrollToBottom();
             }
         } catch (error) {
             hideTyping();
