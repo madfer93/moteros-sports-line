@@ -1400,9 +1400,22 @@
         <main class="productos-main">
             <!-- Navegación Visual de Subcategorías (Dinámica) -->
             <div id="categoriasVisuales" class="categorias-visuales-container" style="display: none;">
-                <h2 id="tituloCategoriaVisual">Explora por Categoría</h2>
-                <div class="categorias-visuales-grid" id="gridCategoriasVisuales">
-                    <!-- Se llena con JS -->
+                <div class="categorias-visuales-header">
+                    <h2 id="tituloCategoriaVisual">Explora por Categoría</h2>
+                    <span class="categorias-visuales-hint"><i class="fas fa-hand-pointer"></i> Pasa el cursor o toca para explorar</span>
+                </div>
+                <div class="categorias-visuales-slider-outer">
+                    <button type="button" class="subcat-nav-btn prev" id="subcatPrevBtn" onclick="moverSubcategorias(-1)" aria-label="Subcategorías anteriores">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="categorias-visuales-track-wrapper">
+                        <div class="categorias-visuales-grid" id="gridCategoriasVisuales">
+                            <!-- Se llena con JS -->
+                        </div>
+                    </div>
+                    <button type="button" class="subcat-nav-btn next" id="subcatNextBtn" onclick="moverSubcategorias(1)" aria-label="Subcategorías siguientes">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
                 </div>
             </div>
 

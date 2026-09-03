@@ -154,12 +154,73 @@ const SUBCATEGORIAS_VISUALES = {
 };
 
 
-function renderizarSubcategoriasVisuales(categoria) {
+let categoriaVisualActual = null;
+let subcatAnimFrame = null;
+let subcatScrollPos = 0;
+let subcatIsPaused = false;
+let subcatResumeTimeout = null;
 
+function iniciarAutoScrollSubcategorias() {
+    cancelAnimationFrame(subcatAnimFrame);
+    const wrapper = document.querySelector('.categorias-visuales-track-wrapper');
+    const grid = document.getElementById('gridCategoriasVisuales');
+    if (!wrapper || !grid) return;
+
+    subcatScrollPos = wrapper.scrollLeft;
+    const speed = 0.65; // Desplazamiento fluido y agradable (~40px/segundo)
+
+    function loop() {
+        if (!subcatIsPaused && wrapper) {
+            const mitad = grid.scrollWidth / 2;
+            if (mitad > 0) {
+                subcatScrollPos += speed;
+                if (subcatScrollPos >= mitad) {
+                    subcatScrollPos -= mitad;
+                }
+                wrapper.scrollLeft = subcatScrollPos;
+            }
+        }
+        subcatAnimFrame = requestAnimationFrame(loop);
+    }
+    subcatAnimFrame = requestAnimationFrame(loop);
+}
+
+window.moverSubcategorias = function (direccion) {
+    const wrapper = document.querySelector('.categorias-visuales-track-wrapper');
+    const grid = document.getElementById('gridCategoriasVisuales');
+    if (!wrapper || !grid) return;
+
+    subcatIsPaused = true;
+    clearTimeout(subcatResumeTimeout);
+
+    const cantidad = 280 * direccion;
+    const mitad = grid.scrollWidth / 2;
+
+    if (mitad > 0) {
+        if (direccion < 0 && wrapper.scrollLeft < 60) {
+            wrapper.scrollLeft += mitad;
+            subcatScrollPos = wrapper.scrollLeft;
+        } else if (direccion > 0 && wrapper.scrollLeft >= mitad + 60) {
+            wrapper.scrollLeft -= mitad;
+            subcatScrollPos = wrapper.scrollLeft;
+        }
+    }
+
+    wrapper.scrollBy({ left: cantidad, behavior: 'smooth' });
+
+    subcatResumeTimeout = setTimeout(() => {
+        if (wrapper) subcatScrollPos = wrapper.scrollLeft;
+        subcatIsPaused = false;
+    }, 2800);
+};
+
+function renderizarSubcategoriasVisuales(categoria) {
     const container = document.getElementById('categoriasVisuales');
     const grid = document.getElementById('gridCategoriasVisuales');
     const titulo = document.getElementById('tituloCategoriaVisual');
     const filtroSubcat = document.getElementById('filtroSubcategoria');
+
+    if (!container || !grid) return;
 
     // Normalizar búsqueda (Case Insensitive)
     let categoriaKey = null;
@@ -167,73 +228,145 @@ function renderizarSubcategoriasVisuales(categoria) {
         categoriaKey = Object.keys(SUBCATEGORIAS_VISUALES).find(k => k.toLowerCase() === categoria.toLowerCase());
     }
 
-
-
     // Si no hay categoría válida o no tiene subcategorías visuales definidas
     if (!categoriaKey) {
-        if (container) container.style.display = 'none';
+        container.style.display = 'none';
+        categoriaVisualActual = null;
+        grid.innerHTML = '';
+        cancelAnimationFrame(subcatAnimFrame);
         return;
     }
 
-    const subcategorias = SUBCATEGORIAS_VISUALES[categoriaKey];
+    const subcategorias = SUBCATEGORIAS_VISUALES[categoriaKey] || [];
+    if (subcategorias.length === 0) {
+        container.style.display = 'none';
+        categoriaVisualActual = null;
+        grid.innerHTML = '';
+        cancelAnimationFrame(subcatAnimFrame);
+        return;
+    }
 
     // Mostrar contenedor
-    if (container) container.style.display = 'block';
+    container.style.display = 'block';
     if (titulo) titulo.textContent = `${categoriaKey}`;
-    if (grid) {
-        grid.innerHTML = ''; // Limpiar contenido previo para evitar duplicados
 
-        // Aplicar estilos al contenedor GRID directamente para asegurar horizontalidad
-        grid.style.display = 'flex';
-        grid.style.flexWrap = 'nowrap';
-        grid.style.justifyContent = 'flex-start';
-        grid.style.gap = '3rem';
-        grid.style.overflowX = 'auto';
-        grid.style.padding = '10px';
+    const valorSubcatSeleccionada = (filtroSubcat ? filtroSubcat.value : '').trim().toLowerCase();
 
-        subcategorias.forEach(sub => {
-            const item = document.createElement('div');
-            item.className = 'categoria-visual-item';
-
-            // Marcar activo si ya está filtrado
-            if (filtroSubcat && filtroSubcat.value === sub.nombre) {
+    // Si ya está renderizada la misma categoría, SOLO sincronizamos la clase 'active' para no reiniciar la animación
+    if (categoriaVisualActual === categoriaKey && grid.children.length > 0) {
+        grid.querySelectorAll('.categoria-visual-item').forEach(item => {
+            const nombreItem = (item.getAttribute('data-subcat') || '').trim().toLowerCase();
+            if (valorSubcatSeleccionada && nombreItem === valorSubcatSeleccionada) {
                 item.classList.add('active');
+            } else {
+                item.classList.remove('active');
             }
-
-            // Evento Click
-            item.onclick = () => {
-                if (filtroSubcat) {
-                    if (item.classList.contains('active')) {
-                        filtroSubcat.value = '';
-                        item.classList.remove('active');
-                    } else {
-                        filtroSubcat.value = sub.nombre;
-                        document.querySelectorAll('.categoria-visual-item').forEach(i => i.classList.remove('active'));
-                        item.classList.add('active');
-                    }
-                    aplicarFiltros();
-                    document.getElementById('productosGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            };
-
-            const activeStyle = (filtroSubcat && filtroSubcat.value === sub.nombre)
-                ? 'border-color:#ea580c; background-color:white; transform:scale(1.05);'
-                : 'border-color:transparent; background-color:#f8f9fa;';
-
-            const activeImgStyle = (filtroSubcat && filtroSubcat.value === sub.nombre)
-                ? 'filter:none;'
-                : 'filter:grayscale(100%); opacity:0.7;';
-
-            item.innerHTML = `
-                <div class="categoria-visual-icon">
-                    <img src="${sub.icono}" alt="${sub.nombre}" class="categoria-visual-item-img">
-                </div>
-                <span>${sub.nombre}</span>
-            `;
-            grid.appendChild(item);
         });
+        return;
+    }
+
+    categoriaVisualActual = categoriaKey;
+    grid.innerHTML = '';
+    grid.removeAttribute('style'); // Limpiar estilos inline para que mande el CSS responsivo
+
+    // Si hay muchas subcategorías (6+ en escritorio o 4+ en móvil), activamos modo slider interactivo
+    const isMobile = window.innerWidth <= 768;
+    const threshold = isMobile ? 4 : 6;
+    const needsMarquee = subcategorias.length >= threshold;
+
+    let itemsToRender = subcategorias;
+
+    if (needsMarquee) {
+        container.classList.add('has-marquee');
+        // Duplicamos exactamente una vez para bucle infinito continuo
+        itemsToRender = [...subcategorias, ...subcategorias];
+    } else {
+        container.classList.remove('has-marquee');
+        cancelAnimationFrame(subcatAnimFrame);
+        const wrapper = document.querySelector('.categorias-visuales-track-wrapper');
+        if (wrapper) wrapper.scrollLeft = 0;
+    }
+
+    itemsToRender.forEach(sub => {
+        const item = document.createElement('div');
+        item.className = 'categoria-visual-item';
+        item.setAttribute('data-subcat', sub.nombre);
+
+        // Marcar activo si ya está filtrado
+        if (valorSubcatSeleccionada && sub.nombre.toLowerCase() === valorSubcatSeleccionada) {
+            item.classList.add('active');
+        }
+
+        // Evento Click
+        item.onclick = (e) => {
+            e.stopPropagation();
+            if (filtroSubcat) {
+                const estabaActivo = (filtroSubcat.value || '').trim().toLowerCase() === sub.nombre.toLowerCase();
+                if (estabaActivo) {
+                    filtroSubcat.value = '';
+                } else {
+                    filtroSubcat.value = sub.nombre;
+                }
+                aplicarFiltros();
+                const prodGrid = document.getElementById('productosGrid');
+                if (prodGrid) {
+                    prodGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        };
+
+        item.innerHTML = `
+            <div class="categoria-visual-icon">
+                <img src="${sub.icono}" alt="${sub.nombre}" class="categoria-visual-item-img" loading="lazy">
+            </div>
+            <span>${sub.nombre}</span>
+        `;
+        grid.appendChild(item);
+    });
+
+    const wrapper = document.querySelector('.categorias-visuales-track-wrapper');
+    if (needsMarquee && wrapper) {
+        // Iniciar auto-scroll
+        iniciarAutoScrollSubcategorias();
+
+        // Pausar con hover
+        container.onmouseenter = () => { subcatIsPaused = true; };
+        container.onmouseleave = () => {
+            clearTimeout(subcatResumeTimeout);
+            if (wrapper) subcatScrollPos = wrapper.scrollLeft;
+            subcatIsPaused = false;
+        };
+
+        // Pausar con touch en móvil
+        wrapper.ontouchstart = () => { subcatIsPaused = true; };
+        wrapper.ontouchend = () => {
+            clearTimeout(subcatResumeTimeout);
+            subcatResumeTimeout = setTimeout(() => {
+                if (wrapper) subcatScrollPos = wrapper.scrollLeft;
+                subcatIsPaused = false;
+            }, 2000);
+        };
+
+        // Sincronizar scroll manual
+        wrapper.onscroll = () => {
+            if (subcatIsPaused) {
+                subcatScrollPos = wrapper.scrollLeft;
+            }
+        };
     }
 }
+
+let resizeSubcatTimeout = null;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeSubcatTimeout);
+    resizeSubcatTimeout = setTimeout(() => {
+        const cat = document.getElementById('filtroCategoria')?.value;
+        if (cat && categoriaVisualActual) {
+            categoriaVisualActual = null;
+            renderizarSubcategoriasVisuales(cat);
+        }
+    }, 250);
+});
 // ═══════════════════════════════════════════════════════════════
 // UI & MENÚ
 // ═══════════════════════════════════════════════════════════════
